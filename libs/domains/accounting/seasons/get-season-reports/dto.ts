@@ -66,6 +66,8 @@ export type GetSeasonReportsOutput = {
     id?: number;
     /** Libellé du compte, lu de `accounts`. */
     label: string;
+    /** Compte de tiers (classe 4) : hors du total de trésorerie, présenté comme une somme due. */
+    thirdParty?: boolean;
     initialBalance: number;
     /** Solde COMPTABLE de fin de période. C'est lui qui se reporte à-nouveau. */
     finalBalance: number;
@@ -87,6 +89,10 @@ export type GetSeasonReportsOutput = {
     totalDeferredRevenueCents: number;
     totalDeferredExpensesCents: number;
     netAvailableCashCents: number;
+    /** Solde brut signé des comptes de tiers, hors des totaux ci-dessus. */
+    thirdPartyGrossCents?: number;
+    /** Ce que le club doit aux adhérents (négatif du précédent, rendu positif). */
+    duesToThirdPartiesCents?: number;
     deferredRevenues: DeferredCashBreakdown[];
     deferredExpenses: DeferredCashBreakdown[];
   };

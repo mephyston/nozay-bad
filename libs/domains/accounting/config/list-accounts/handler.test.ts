@@ -8,9 +8,11 @@ describe('listAccounts (Integration)', () => {
 
     const accounts = await listAccounts(db);
 
-    expect(accounts.map((a) => a.code)).toEqual(['current', 'savings', 'cash', 'badnet']);
+    expect(accounts.map((a) => a.code)).toEqual(['current', 'savings', 'cash', 'badnet', 'member_advances']);
     const badnet = accounts.find((a) => a.code === 'badnet');
-    expect(badnet).toMatchObject({ label: 'Porte-monnaie Badnet', classCode: '4091', classType: 'tresorerie' });
+    expect(badnet).toMatchObject({ label: 'Porte-monnaie Badnet', classCode: '517', classType: 'tresorerie' });
+    const advances = accounts.find((a) => a.code === 'member_advances');
+    expect(advances).toMatchObject({ label: 'Fonds reçus pour le compte des adhérents', classCode: '467', classType: 'tresorerie' });
     expect(accounts.every((a) => a.classType === 'tresorerie')).toBe(true);
   });
 });

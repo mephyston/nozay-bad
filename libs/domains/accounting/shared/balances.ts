@@ -32,6 +32,25 @@ export interface AccountRef {
   id: number;
   code: string;
   label?: string;
+  /** Code de la classe du plan comptable (`512`, `517`, `530`, `467`…), quand il est connu. */
+  classCode?: string | null;
+}
+
+/**
+ * Un compte de tiers, reconnu à sa classe : la classe 4 du plan comptable associatif.
+ *
+ * Le compte d'attente des adhérents (467) reçoit ce qu'une adhérente vire au club et se vide
+ * quand le club le lui rend sur Badnet. Il est typé trésorerie pour que les virements y passent,
+ * mais son solde n'est pas de l'argent disponible : c'est une dette (négatif) ou une avance
+ * consentie (positif). La nature vient du plan comptable, pas d'une colonne de plus — rien
+ * d'autre ne lit les codes de classe, et une colonne aurait réclamé son écran de configuration.
+ */
+export function isThirdPartyClassCode(classCode: string | null | undefined): boolean {
+  return /^4/.test(String(classCode ?? ''));
+}
+
+export function isThirdPartyAccount(account: Pick<AccountRef, 'classCode'>): boolean {
+  return isThirdPartyClassCode(account.classCode);
 }
 
 /**
@@ -60,6 +79,8 @@ export interface AccountBalance {
   accountId: number;
   accountCode: string;
   accountLabel?: string;
+  /** Compte de tiers (classe 4) : hors des totaux de trésorerie, présenté comme une dette. */
+  thirdParty: boolean;
   initialBalanceCents: number;
   /** À-nouveau + toutes les écritures. Le solde des livres. */
   grossCents: number;
@@ -71,8 +92,15 @@ export interface AccountBalance {
   bankTheoreticalCents: number;
 }
 
-/** Les mêmes agrégats, tous comptes confondus. */
-export type AccountBalanceTotals = Omit<AccountBalance, 'accountId' | 'accountCode' | 'accountLabel'>;
+/**
+ * Les mêmes agrégats, tous comptes de **disponibilités** confondus.
+ *
+ * Les comptes de tiers n'entrent dans aucun des cinq champs : leur solde brut est rendu à part,
+ * signé, pour que l'appelant le présente comme une somme due (négatif) ou une avance (positif).
+ */
+export type AccountBalanceTotals = Omit<AccountBalance, 'accountId' | 'accountCode' | 'accountLabel' | 'thirdParty'> & {
+  thirdPartyGrossCents: number;
+};
 
 /** Un à-nouveau, tel que `season_balances` le porte. */
 export interface InitialBalanceLike {
@@ -153,6 +181,7 @@ export function computeAccountBalance(
     accountId: account.id,
     accountCode: account.code,
     accountLabel: account.label,
+    thirdParty: isThirdPartyAccount(account),
     initialBalanceCents,
     grossCents,
     inVaultCents,
@@ -173,15 +202,26 @@ export function computeAccountBalances(
 
 export function sumAccountBalances(balances: AccountBalance[]): AccountBalanceTotals {
   return balances.reduce<AccountBalanceTotals>(
-    (totals, b) => ({
-      initialBalanceCents: totals.initialBalanceCents + b.initialBalanceCents,
-      grossCents: totals.grossCents + b.grossCents,
-      inVaultCents: totals.inVaultCents + b.inVaultCents,
-      pendingDebitCents: totals.pendingDebitCents + b.pendingDebitCents,
-      bankTheoreticalCents: totals.bankTheoreticalCents + b.bankTheoreticalCents
-    }),
-    { initialBalanceCents: 0, grossCents: 0, inVaultCents: 0, pendingDebitCents: 0, bankTheoreticalCents: 0 }
+    (totals, b) => {
+      if (b.thirdParty) {
+        return { ...totals, thirdPartyGrossCents: totals.thirdPartyGrossCents + b.grossCents };
+      }
+      return {
+        initialBalanceCents: totals.initialBalanceCents + b.initialBalanceCents,
+        grossCents: totals.grossCents + b.grossCents,
+        inVaultCents: totals.inVaultCents + b.inVaultCents,
+        pendingDebitCents: totals.pendingDebitCents + b.pendingDebitCents,
+        bankTheoreticalCents: totals.bankTheoreticalCents + b.bankTheoreticalCents,
+        thirdPartyGrossCents: totals.thirdPartyGrossCents
+      };
+    },
+    { initialBalanceCents: 0, grossCents: 0, inVaultCents: 0, pendingDebitCents: 0, bankTheoreticalCents: 0, thirdPartyGrossCents: 0 }
   );
+}
+
+/** Ce que le club doit aux tiers : le solde négatif des comptes de tiers, rendu positif. */
+export function duesToThirdPartiesCents(totals: Pick<AccountBalanceTotals, 'thirdPartyGrossCents'>): number {
+  return Math.max(0, -totals.thirdPartyGrossCents);
 }
 
 /**

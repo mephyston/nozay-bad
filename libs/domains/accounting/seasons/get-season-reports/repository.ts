@@ -1,3 +1,4 @@
+import { listAccounts, type AccountSummary } from '../../config/queries';
 import { ledgerEntriesTable, categoriesTable } from '@nba/accounting/schema';
 import { type DbOrTx } from '@nba/db';
 import { eq, and, gte, lte, or, inArray, lt } from 'drizzle-orm';
@@ -88,8 +89,9 @@ export class GetSeasonReportsRepository {
     return latest;
   }
 
-  async getAccounts(db: DbOrTx): Promise<any[]> {
-    return db.select().from(accountsTable).all();
+  /** Tous les comptes avec leur classe : c'est elle qui dit lesquels sont des comptes de tiers. */
+  async getAccounts(db: DbOrTx): Promise<AccountSummary[]> {
+    return listAccounts(db);
   }
 
   async getPastSeasons(db: DbOrTx, currentSeasonStartDate: string): Promise<any[]> {

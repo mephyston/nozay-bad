@@ -39,6 +39,8 @@ export interface BalanceReport {
   id?: number;
   /** Libellé du compte, lu de `accounts`. C'est lui qui nomme les cartes et les sélecteurs. */
   label?: string;
+  /** Compte de tiers (classe 4) : son solde est une dette envers les adhérents, pas de la trésorerie. */
+  thirdParty?: boolean;
   initialBalance: number;
   /** Solde COMPTABLE : à-nouveau + écritures. Ce n'est pas le solde du relevé. */
   finalBalance: number;

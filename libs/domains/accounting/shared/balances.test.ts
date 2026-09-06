@@ -6,6 +6,8 @@ import {
   computeAccountBalance,
   computeAccountBalances,
   sumAccountBalances,
+  duesToThirdPartiesCents,
+  isThirdPartyClassCode,
   unpointedEntryTotalCents,
   computeTransitCents,
   findHalfPointedTransferIds,
@@ -183,6 +185,41 @@ describe('computeAccountBalances / sumAccountBalances', () => {
     expect(totals.inVaultCents).toBe(5_000);
     expect(totals.pendingDebitCents).toBe(2_000);
     expect(totals.bankTheoreticalCents).toBe(0);
+    expect(totals.thirdPartyGrossCents).toBe(0);
+  });
+
+  it("tient un compte de tiers hors des totaux, et rend sa dette à part", () => {
+    /*
+     * Le compte d'attente des adhérents (classe 4) reçoit ce qu'une adhérente vire au club
+     * avant que le club le lui rende sur Badnet. Son solde négatif n'est pas de l'argent en
+     * moins : c'est une dette. Le total de trésorerie disponible ne doit ni le compter, ni
+     * le compenser avec le compte courant qui a reçu l'argent.
+     */
+    const ADVANCES = { id: 5, code: 'member_advances', label: 'Fonds reçus pour le compte des adhérents', classCode: '467' };
+    const balances = computeAccountBalances(
+      [{ ...CURRENT, classCode: '512' }, ADVANCES],
+      [{ accountId: 1, initialBalanceCents: 100_000 }],
+      transferLegs({ amountCents: 30_000, sourceAccountId: 5, destinationAccountId: 1 })
+    );
+
+    expect(balances.map((b) => [b.accountCode, b.thirdParty, b.grossCents])).toEqual([
+      ['current', false, 130_000],
+      ['member_advances', true, -30_000]
+    ]);
+    const totals = sumAccountBalances(balances);
+    expect(totals.grossCents).toBe(130_000);
+    expect(totals.bankTheoreticalCents).toBe(130_000);
+    expect(totals.thirdPartyGrossCents).toBe(-30_000);
+    expect(duesToThirdPartiesCents(totals)).toBe(30_000);
+    // Une avance consentie (solde positif) n'est pas une dette.
+    expect(duesToThirdPartiesCents({ thirdPartyGrossCents: 1_000 })).toBe(0);
+  });
+
+  it('reconnaît un compte de tiers à sa classe 4, et rien d\'autre', () => {
+    expect(isThirdPartyClassCode('467')).toBe(true);
+    expect(isThirdPartyClassCode('4091')).toBe(true);
+    expect(isThirdPartyClassCode('517')).toBe(false);
+    expect(isThirdPartyClassCode(undefined)).toBe(false);
   });
 });
 

@@ -28,7 +28,7 @@ export class GetSeasonBalanceRepository {
    */
   async getTreasuryAccounts(db: DbOrTx): Promise<AccountRef[]> {
     return db
-      .select({ id: accountsTable.id, code: accountsTable.code, label: accountsTable.label })
+      .select({ id: accountsTable.id, code: accountsTable.code, label: accountsTable.label, classCode: accountClassesTable.code })
       .from(accountsTable)
       .innerJoin(accountClassesTable, eq(accountsTable.accountClassId, accountClassesTable.id))
       .where(eq(accountClassesTable.type, 'tresorerie'))

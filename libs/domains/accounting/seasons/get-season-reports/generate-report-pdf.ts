@@ -435,7 +435,11 @@ export async function generateSeasonReportPdf(
     page.drawLine({ start: { x: MARGIN, y }, end: { x: rightEdge, y }, thickness: 0.6, color: GREY });
     y -= 15;
 
-    for (const item of reportRaw.bilanTrésorerie) {
+    // Les comptes de tiers (classe 4) sortent du tableau : ils se lisent plus bas, comme une dette.
+    const disponibilites = reportRaw.bilanTrésorerie.filter((item) => !item.thirdParty);
+    const tiers = reportRaw.bilanTrésorerie.filter((item) => item.thirdParty);
+
+    for (const item of disponibilites) {
       const mvt = item.finalBalance - item.initialBalance;
       ensureSpace(15);
       page.drawText(clip(item.label || item.accountId, bold, 10, labelMax), { x: MARGIN, y, size: 10, font: bold, color: INK });
@@ -443,6 +447,25 @@ export async function generateSeasonReportPdf(
       drawRight(formatDelta(mvt), colMvt, 9.5, font, mvt >= 0 ? GREEN : RED);
       drawRight(formatEuros(item.finalBalance), colFinal, 10, bold, INK);
       y -= 15;
+    }
+
+    const tiersGross = tiers.reduce((sum, item) => sum + item.finalBalance, 0);
+    if (tiersGross !== 0) {
+      /*
+       * Avant le retour anticipé sur les régularisations, sinon ce bloc sauterait chaque fois
+       * qu'il n'y en a pas. Un solde négatif : le club doit encore rendre cet argent aux
+       * adhérents. Positif : une avance qu'il leur a consentie. Jamais de la trésorerie.
+       */
+      y -= 4;
+      ensureSpace(15 + tiers.length * 13);
+      page.drawText(tiersGross < 0 ? 'Sommes dues aux adhérents (hors trésorerie)' : 'Avances consenties aux adhérents (hors trésorerie)', { x: MARGIN, y, size: 10, font: bold, color: GREY });
+      drawRight(formatEuros(Math.abs(tiersGross)), colFinal, 10, bold, INK);
+      y -= 13;
+      for (const item of tiers) {
+        page.drawText(`•  ${clip(item.label || item.accountId, font, 9, labelMax - 14)}`, { x: MARGIN + 14, y, size: 9, font, color: GREY });
+        drawRight(formatEuros(Math.abs(item.finalBalance)), colFinal, 9, font, GREY);
+        y -= 13;
+      }
     }
 
     const dispo = reportRaw.tresorerieDisponible;

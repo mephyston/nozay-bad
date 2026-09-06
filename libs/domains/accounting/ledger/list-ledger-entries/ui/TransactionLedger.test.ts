@@ -166,7 +166,8 @@ describe('TransactionLedger Component', () => {
           { id: 1, accountId: 'current', label: 'Compte Courant', initialBalance: 0, finalBalance: 0 },
           { id: 2, accountId: 'savings', label: 'Livret A / Épargne', initialBalance: 0, finalBalance: 0 },
           { id: 3, accountId: 'cash', label: 'Caisse Buvette', initialBalance: 0, finalBalance: 0 },
-          { id: 4, accountId: 'badnet', label: 'Porte-monnaie Badnet', initialBalance: 100000, finalBalance: 100000 }
+          { id: 4, accountId: 'badnet', label: 'Porte-monnaie Badnet', initialBalance: 100000, finalBalance: 100000 },
+          { id: 5, accountId: 'member_advances', label: 'Fonds reçus pour le compte des adhérents', thirdParty: true, initialBalance: 0, finalBalance: -12000 }
         ],
         accountId: 'current'
       }
@@ -179,6 +180,10 @@ describe('TransactionLedger Component', () => {
     expect(target.innerHTML).toContain('Livret A / Épargne');
     expect(target.innerHTML).toContain('Caisse Buvette');
     expect(target.innerHTML).toContain('Porte-monnaie Badnet');
+    // Le compte d'attente des adhérents se lit en dette positive, hors trésorerie.
+    expect(target.innerHTML).toContain('Dû aux adhérents');
+    expect(target.innerHTML.replace(/&nbsp;|[\u00a0\u202f]/g, ' ')).toContain('120,00');
+    expect(target.innerHTML.replace(/&nbsp;|[\u00a0\u202f]/g, ' ')).not.toContain('-120,00');
     expect(target.querySelectorAll('[data-slot="card"], .grid > div').length).toBeGreaterThanOrEqual(4);
 
     unmount(component);

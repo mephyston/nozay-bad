@@ -91,7 +91,7 @@
 
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {#each balances as balance (balance.accountId)}
-          <FormField id="{balance.accountId}-initial" label={balance.label}>
+          <FormField id="{balance.accountId}-initial" label={balance.thirdParty ? `${balance.label} (dette, négatif)` : balance.label}>
             <AmountInput
               id="{balance.accountId}-initial"
               bind:value={values[balance.accountId]}

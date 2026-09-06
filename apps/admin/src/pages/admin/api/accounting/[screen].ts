@@ -61,13 +61,15 @@ function saisonPrecedente(code: string): string {
 const RAPPORT_VIDE = () => ({
   compteResultat: { totalRecettes: 0, totalDepenses: 0, netResult: 0, categories: {} },
   bilanTrésorerie: [
-    ['current', 'Compte Courant'],
-    ['savings', 'Livret A / Épargne'],
-    ['cash', 'Caisse Buvette'],
-    ['badnet', 'Porte-monnaie Badnet']
-  ].map(([accountId, label]) => ({
+    ['current', 'Compte Courant', false],
+    ['savings', 'Livret A / Épargne', false],
+    ['cash', 'Caisse Buvette', false],
+    ['badnet', 'Porte-monnaie Badnet', false],
+    ['member_advances', 'Fonds reçus pour le compte des adhérents', true]
+  ].map(([accountId, label, thirdParty]) => ({
     accountId,
     label,
+    thirdParty,
     initialBalance: 0,
     finalBalance: 0,
     inVaultCents: 0,
@@ -710,6 +712,9 @@ export const ECRANS: Record<string, Ecran> = {
         lire('/accounting/accounts').then((r: any) => r ?? [])
       ]);
 
+      // Classe 4 du plan comptable : un compte de tiers, dont le solde est une dette et non de la trésorerie.
+      const estCompteDeTiers = (compte: any) => /^4/.test(String(compte.classCode ?? ''));
+
       const soldeDe = (soldes: any[], compte: any) =>
         soldes.find(
           (b) => b.accountId === compte.code || b.accountId === compte.id || b.accountNumericId === compte.id
@@ -735,6 +740,7 @@ export const ECRANS: Record<string, Ecran> = {
                 initialBalances: comptes.map((c) => ({
                   accountId: c.code,
                   label: c.label,
+                  thirdParty: estCompteDeTiers(c),
                   initialBalanceCents: soldeDe(soldes, c)?.initialBalanceCents ?? soldeDe(soldes, c)?.initialBalance ?? 0
                 }))
               };
@@ -749,7 +755,7 @@ export const ECRANS: Record<string, Ecran> = {
             const initialBalances = comptes.map((c) => {
               const ligne = bilan.find((b) => b.accountId === c.code);
               if (ligne) isAutoFilled = true;
-              return { accountId: c.code, label: c.label, initialBalanceCents: ligne?.finalBalance ?? 0 };
+              return { accountId: c.code, label: c.label, thirdParty: estCompteDeTiers(c), initialBalanceCents: ligne?.finalBalance ?? 0 };
             });
             return { ...s, isAutoFilled, initialBalances };
           })

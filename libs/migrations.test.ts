@@ -128,9 +128,9 @@ describe('données de référence', () => {
   });
 
   it.each([
-    ['account_classes', 'code', ['60', '512', '530', '4091']],
+    ['account_classes', 'code', ['60', '512', '530', '467']],
     ['payment_methods', 'code', ['virement', 'cheque', 'especes']],
-    ['accounts', 'code', ['current', 'savings', 'cash', 'badnet']]
+    ['accounts', 'code', ['current', 'savings', 'cash', 'badnet', 'member_advances']]
   ])('sème %s', (table, column, codes) => {
     const rows = db.prepare(`SELECT ${column} AS code FROM ${table}`).all() as { code: string }[];
     const present = rows.map((r) => r.code);
@@ -167,18 +167,30 @@ describe('données de référence', () => {
     expect(row?.default_entry_status).toBe('cleared');
   });
 
-  it('rattache le porte-monnaie Badnet à une classe de trésorerie', () => {
+  const classOf = (code: string) =>
+    db
+      .prepare(
+        'SELECT ac.code AS class_code, ac.type FROM accounts a JOIN account_classes ac ON ac.id = a.account_class_id WHERE a.code = ?'
+      )
+      .get(code) as { class_code: string; type: string } | undefined;
+
+  it('range le porte-monnaie Badnet parmi les disponibilités', () => {
     /*
      * `getTreasuryAccounts` ne retient que les comptes dont la classe est typée `tresorerie` :
      * un compte semé sous un autre type disparaîtrait du bilan et des soldes sans erreur.
+     * La migration 0030 l'avait mis en 4091 (avance chez un fournisseur) ; l'argent en étant
+     * retirable, la 0031 le range en 517 avec le livret, et retire la classe devenue inutile.
      */
-    const row = db
-      .prepare(
-        "SELECT ac.code AS class_code, ac.type FROM accounts a JOIN account_classes ac ON ac.id = a.account_class_id WHERE a.code = 'badnet'"
-      )
-      .get() as { class_code: string; type: string } | undefined;
+    expect(classOf('badnet')).toEqual({ class_code: '517', type: 'tresorerie' });
+    expect(db.prepare("SELECT COUNT(*) AS n FROM account_classes WHERE code = '4091'").get()).toEqual({ n: 0 });
+  });
 
-    expect(row).toEqual({ class_code: '4091', type: 'tresorerie' });
+  it("porte le compte d'attente des adhérents en classe 4, typé trésorerie", () => {
+    /*
+     * Classe 4 : le code y lit une opération pour compte de tiers, à écarter des totaux de
+     * trésorerie disponible. Type trésorerie : sans lui, aucun virement ne pourrait y passer.
+     */
+    expect(classOf('member_advances')).toEqual({ class_code: '467', type: 'tresorerie' });
   });
 
   it("garantit qu'un virement se tient en deux jambes, et pas une de plus", () => {

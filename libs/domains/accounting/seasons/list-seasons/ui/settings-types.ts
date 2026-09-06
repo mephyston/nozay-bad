@@ -3,6 +3,8 @@ export interface SeasonInitialBalance {
   /** Code du compte (`current`, `badnet`…), ce que l'API attend à l'écriture. */
   accountId: string;
   label: string;
+  /** Compte de tiers (classe 4) : le solde saisi est une dette, normalement nulle ou négative. */
+  thirdParty?: boolean;
   initialBalanceCents: number;
 }
 

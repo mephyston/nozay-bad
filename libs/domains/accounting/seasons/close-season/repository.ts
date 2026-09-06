@@ -3,7 +3,7 @@ import { ledgerEntriesTable } from '@nba/accounting/schema';
 import { type DbOrTx, type Db } from '@nba/db';
 import { eq, and, gte, lte, or, inArray, isNotNull } from 'drizzle-orm';
 import { getUnvalidatedPaidOrders as getShopUnvalidatedPaidOrders } from '@nba/shop-api';
-import { listAccountsWithStatements } from '../../config/queries';
+import { listAccounts, listAccountsWithStatements } from '../../config/queries';
 import { bankStatementLinesTable, bankStatementBalancesTable, checkDepositsTable, checksTable, seasonBalancesTable, accountsTable, seasonCategoryBudgetsTable } from '../../shared/schema';
 
 export interface CloseSeasonRepositoryInterface {
@@ -121,7 +121,7 @@ export class CloseSeasonRepository implements CloseSeasonRepositoryInterface {
   }
 
   async getAccounts(db: DbOrTx): Promise<any[]> {
-    return db.select().from(accountsTable).all();
+    return listAccounts(db);
   }
 
   async getAccountsWithStatements(db: DbOrTx): Promise<{ id: number; code: string; label: string }[]> {

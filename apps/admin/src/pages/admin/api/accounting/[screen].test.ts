@@ -42,7 +42,8 @@ vi.mock('../../../../lib/api', () => ({
               data: [
                 { id: 1, code: 'current', label: 'Compte Courant', classCode: '512', classType: 'tresorerie' },
                 { id: 3, code: 'cash', label: 'Caisse Buvette', classCode: '530', classType: 'tresorerie' },
-                { id: 4, code: 'badnet', label: 'Porte-monnaie Badnet', classCode: '4091', classType: 'tresorerie' }
+                { id: 4, code: 'badnet', label: 'Porte-monnaie Badnet', classCode: '517', classType: 'tresorerie' },
+                { id: 5, code: 'member_advances', label: 'Fonds reçus pour le compte des adhérents', classCode: '467', classType: 'tresorerie' }
               ]
             }),
             { status: 200 }
@@ -235,9 +236,10 @@ describe('comptabilité — les soldes initiaux', () => {
 
     expect(s2526.isAutoFilled).toBe(false);
     expect(s2526.initialBalances).toEqual([
-      { accountId: 'current', label: 'Compte Courant', initialBalanceCents: 0 },
-      { accountId: 'cash', label: 'Caisse Buvette', initialBalanceCents: 1234 },
-      { accountId: 'badnet', label: 'Porte-monnaie Badnet', initialBalanceCents: 0 }
+      { accountId: 'current', label: 'Compte Courant', thirdParty: false, initialBalanceCents: 0 },
+      { accountId: 'cash', label: 'Caisse Buvette', thirdParty: false, initialBalanceCents: 1234 },
+      { accountId: 'badnet', label: 'Porte-monnaie Badnet', thirdParty: false, initialBalanceCents: 0 },
+      { accountId: 'member_advances', label: 'Fonds reçus pour le compte des adhérents', thirdParty: true, initialBalanceCents: 0 }
     ]);
     expect(s2526.initialCurrentBalance).toBeUndefined();
   });

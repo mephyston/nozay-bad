@@ -10,5 +10,9 @@ export type GetSeasonBalanceOutput = {
   pendingDebitCents: number;
   /** Ce que les relevés devraient afficher : `grossCents − inVaultCents + pendingDebitCents`. */
   bankTheoreticalCents: number;
+  /** Solde brut signé des comptes de tiers (classe 4), hors des totaux ci-dessus. */
+  thirdPartyGrossCents: number;
+  /** Ce que le club doit aux adhérents : le négatif du précédent, rendu positif. */
+  duesToThirdPartiesCents: number;
   accounts: AccountBalance[];
 };

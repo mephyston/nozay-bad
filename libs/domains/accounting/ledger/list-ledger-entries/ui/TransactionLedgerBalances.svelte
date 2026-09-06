@@ -41,11 +41,23 @@
     {@const gross = grossCentsOf(balance)}
     {@const releve = balance?.statementBalanceCents ?? null}
     {@const ecart = releve === null ? 0 : releve - gross}
-    <Card.Root>
+    <!--
+      Un compte de tiers (le compte d'attente des adhérents) n'est pas de la trésorerie : son
+      solde, normalement nul ou négatif, se lit en positif comme ce que le club doit rendre.
+    -->
+    <Card.Root class={balance.thirdParty ? 'border-dashed bg-muted/30' : ''}>
       <Card.Header class="pb-2">
         <Card.Title class="text-sm font-medium text-muted-foreground">{label}</Card.Title>
       </Card.Header>
       <Card.Content>
+        {#if balance.thirdParty}
+          <div class="text-3xl font-bold text-foreground">
+            <Amount cents={Math.abs(gross)} />
+          </div>
+          <p class="mt-1 text-xs text-muted-foreground">
+            {gross < 0 ? 'Dû aux adhérents' : gross > 0 ? 'Avancé aux adhérents' : 'Rien à rendre'} · hors trésorerie
+          </p>
+        {:else}
         <div class="text-3xl font-bold text-foreground">
           <Amount cents={gross} />
         </div>
@@ -63,7 +75,9 @@
           </p>
         {/if}
 
-        {#if (balance?.inVaultCents ?? 0) > 0 || (balance?.pendingDebitCents ?? 0) > 0}
+        {/if}
+
+        {#if !balance.thirdParty && ((balance?.inVaultCents ?? 0) > 0 || (balance?.pendingDebitCents ?? 0) > 0)}
           <p class="mt-2 text-xs text-muted-foreground">
             {#if (balance?.inVaultCents ?? 0) > 0}
               <span class="block">
