@@ -22,19 +22,29 @@
     return new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(val);
   }
 
-  // Internal string value bound to the input
+  // Le texte affiché, lié au champ. Le nombre n'en est tiré qu'à la sortie du champ.
   let displayValue = $state(formatValue(value));
 
-  // Sync from outside if value changes externally
+  /*
+   * Se resynchroniser quand la valeur change de l'extérieur — et seulement alors.
+   *
+   * L'effet précédent lisait aussi le texte affiché : à chaque frappe, il comparait le texte
+   * au nombre encore inchangé, les trouvait différents, et remettait le texte à l'ancien
+   * nombre. Toute saisie d'un montant différent était effacée sous les doigts, sauf quand le
+   * texte tapé revenait par hasard au même nombre. Le seul écran qui utilisait ce champ ne
+   * sauvegardait rien, personne ne l'a vu.
+   */
+  let lastValue = value;
   $effect(() => {
-    const currentParsed = parseValue(displayValue);
-    if (currentParsed !== value) {
+    if (value !== lastValue) {
+      lastValue = value;
       displayValue = formatValue(value);
     }
   });
 
   function handleBlur() {
     value = parseValue(displayValue);
+    lastValue = value;
     displayValue = formatValue(value);
   }
 </script>
