@@ -353,26 +353,27 @@
           </div>
 
           {#if canWrite || canDelete || canReadRegistrations}
-            <div class="flex items-center justify-end gap-2 border-t border-border/50 pt-2">
+            <!-- Jusqu'à quatre actions quand les inscriptions sont ouvertes : on autorise le passage à la ligne. -->
+            <div class="flex flex-wrap items-center justify-end gap-2 border-t border-border/50 pt-2">
               {#if canWrite}
-                <Button variant="outline" size="sm" onclick={() => startEdit(row)} class="h-8 flex-1 gap-1.5 text-xs font-semibold">
+                <Button variant="outline" size="sm" onclick={() => startEdit(row)} class="h-8 flex-1 basis-[40%] gap-1.5 text-xs font-semibold">
                   <Edit class="h-3.5 w-3.5" />
                   <span>Modifier</span>
                 </Button>
                 {#if row.status !== 'published'}
-                  <Button variant="outline" size="sm" onclick={() => setStatus(row, 'published')} class="h-8 flex-1 gap-1.5 text-xs font-semibold">
+                  <Button variant="outline" size="sm" onclick={() => setStatus(row, 'published')} class="h-8 flex-1 basis-[40%] gap-1.5 text-xs font-semibold">
                     <Eye class="h-3.5 w-3.5" />
                     <span>Publier</span>
                   </Button>
                 {:else}
-                  <Button variant="outline" size="sm" onclick={() => setStatus(row, 'cancelled')} class="h-8 flex-1 gap-1.5 text-xs font-semibold">
+                  <Button variant="outline" size="sm" onclick={() => setStatus(row, 'cancelled')} class="h-8 flex-1 basis-[40%] gap-1.5 text-xs font-semibold">
                     <Ban class="h-3.5 w-3.5" />
                     <span>Annuler</span>
                   </Button>
                 {/if}
               {/if}
               {#if canReadRegistrations && row.registration !== 'none'}
-                <Button variant="outline" size="sm" onclick={() => openRegistrations(row)} class="h-8 flex-1 gap-1.5 text-xs font-semibold">
+                <Button variant="outline" size="sm" onclick={() => openRegistrations(row)} class="h-8 flex-1 basis-[40%] gap-1.5 text-xs font-semibold">
                   <Users class="h-3.5 w-3.5" />
                   <span>Inscrits</span>
                 </Button>
@@ -382,7 +383,7 @@
                   variant="outline"
                   size="sm"
                   onclick={() => remove(row)}
-                  class="h-8 flex-1 gap-1.5 border-destructive/30 text-xs font-semibold text-destructive hover:bg-destructive/10"
+                  class="h-8 flex-1 basis-[40%] gap-1.5 border-destructive/30 text-xs font-semibold text-destructive hover:bg-destructive/10"
                 >
                   <Trash2 class="h-3.5 w-3.5" />
                   <span>Supprimer</span>
