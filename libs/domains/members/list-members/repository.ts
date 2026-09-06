@@ -1,6 +1,6 @@
 import { membershipsTable, personsTable } from '@nba/members/schema';
 import { getSeasonId } from '@nba/accounting-api';
-import { eq, and, or, like, sql } from 'drizzle-orm';
+import { eq, and, or, like, sql, asc } from 'drizzle-orm';
 import { type DbOrTx } from '@nba/db';
 import { selectMembers, type MemberSummary } from '../shared/queries';
 
@@ -80,8 +80,15 @@ export class ListMembersRepository {
   async list(db: DbOrTx, filters: ListMembersFilters, pagination: { limit: number; offset: number }): Promise<MemberSummary[]> {
     const conditions = await this.buildConditions(db, filters);
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+    /*
+     * L'ordre est fixé, et non laissé au plan de SQLite : sans `ORDER BY`, la liste
+     * sortait par nom tant qu'elle partait de l'index de saison, puis par licence dès
+     * qu'un filtre sur le statut — sans index — la faisait partir de celui des licences.
+     * L'identifiant en dernier tient la pagination stable entre deux homonymes.
+     */
     return selectMembers(db)
       .where(whereClause)
+      .orderBy(asc(personsTable.lastName), asc(personsTable.firstName), asc(personsTable.id))
       .limit(pagination.limit)
       .offset(pagination.offset)
       .all();

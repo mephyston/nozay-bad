@@ -59,4 +59,24 @@ describe('recherche dans la liste des adhérents', () => {
   it('trouve toujours par un seul terme', async () => {
     expect(await search('dupont')).toEqual(['DUPONT']);
   });
+
+  it('rend la liste par nom puis prénom, quel que soit le filtre', async () => {
+    /*
+      Les licences croissent à rebours des noms : sans ordre explicite, le filtre par
+      statut faisait basculer SQLite sur l'index des licences, et la liste changeait
+      d'ordre selon qu'on filtrait ou non.
+    */
+    await insertMemberFixtures(db, [
+      { licence: '00000001', seasonId, lastName: 'ZOLA', firstName: 'Émile', gender: 'M', status: 'en_attente' },
+      { licence: '00000002', seasonId, lastName: 'MARTIN', firstName: 'Paul', gender: 'M', status: 'en_attente' },
+      { licence: '00000003', seasonId, lastName: 'MARTIN', firstName: 'Anne', gender: 'F', status: 'en_attente' },
+      { licence: '00000004', seasonId, lastName: 'ALBERT', firstName: 'Zoé', gender: 'F', status: 'valide' }
+    ]);
+    const noms = async (status?: string) => {
+      const { data } = await listMembers(db, { season: '26-27', status } as any, { page: 1, limit: 50 });
+      return data.map((m: any) => `${m.lastName} ${m.firstName}`);
+    };
+    expect(await noms('en_attente')).toEqual(['MARTIN Anne', 'MARTIN Paul', 'ZOLA Émile']);
+    expect(await noms()).toEqual(['ALBERT Zoé', 'DUPONT Marc', 'GAUTIER DE LAHAUT Chloé', 'MARTIN Anne', 'MARTIN Paul', 'ZOLA Émile']);
+  });
 });
