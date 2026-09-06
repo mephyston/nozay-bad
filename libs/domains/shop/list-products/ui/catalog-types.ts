@@ -39,6 +39,18 @@ export const paymentMethodsList = [
   { value: 'up_loisir', label: 'Up Loisir' }
 ];
 
+/**
+ * Ce que la boutique de l'espace adhérent propose : virement, chèque, espèces.
+ *
+ * Les coupons sport et chèques-vacances restent connus — la saisie du bureau les
+ * offre toujours, et les commandes qui en portent un restent lisibles — mais un
+ * adhérent qui commande des volants ne les emploie jamais : ils allongeaient la liste
+ * sans être choisis.
+ */
+export const STOREFRONT_PAYMENT_METHODS = paymentMethodsList.filter((pm) =>
+  ['virement', 'cheque', 'especes'].includes(pm.value)
+);
+
 export const categoriesList = [
   { value: 0, label: 'Toutes les catégories' },
   { value: 1, label: 'Volants' },

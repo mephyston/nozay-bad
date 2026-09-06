@@ -100,6 +100,26 @@ describe('ShopCatalog Component', () => {
     expect(target.querySelector('[data-testid="orders-history-link"]')).toBeNull();
   });
 
+  it('ne propose que le virement, le chèque et les espèces', async () => {
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+    mount(ShopCatalog, {
+      target,
+      props: { members, products, activeSeasonId: '25-26', lockToMembers: true, initialMemberId: '1' }
+    });
+    flushSync();
+
+    // Adhérent verrouillé : produit (0) puis mode de paiement (1).
+    const combo = target.querySelectorAll('[role="combobox"]')[1] as HTMLButtonElement;
+    combo.click();
+    flushSync();
+    await vi.waitFor(() => {
+      expect(document.querySelector('[data-slot="command-item"]')).not.toBeNull();
+    });
+    const options = Array.from(document.querySelectorAll('[data-slot="command-item"]')).map((el) => el.textContent?.trim());
+    expect(options).toEqual(['Virement', 'Chèque', 'Espèces']);
+  });
+
   it('ouvre le formulaire sans article choisi', () => {
     const target = document.createElement('div');
     document.body.appendChild(target);

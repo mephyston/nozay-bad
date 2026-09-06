@@ -12,6 +12,7 @@
     selectedProduct,
     maxQuantity,
     outOfStockCount = 0,
+    paymentMethods = paymentMethodsList,
     onIncrementQty,
     onDecrementQty
   }: {
@@ -24,6 +25,8 @@
     maxQuantity: number;
     /** Articles masqués car en rupture — signalé pour éviter l'effet « article disparu ». */
     outOfStockCount?: number;
+    /** Moyens de paiement proposés ; tous par défaut, la boutique de l'adhérent en passe moins. */
+    paymentMethods?: { value: string; label: string }[];
     onIncrementQty: () => void;
     onDecrementQty: () => void;
   } = $props();
@@ -111,7 +114,7 @@
 <div class="pb-1">
   <FormField id="payment-method-select" label="Mode de paiement">
     <SearchableCombobox
-      items={paymentMethodsList.map((pm) => ({ label: pm.label, value: pm.value }))}
+      items={paymentMethods.map((pm) => ({ label: pm.label, value: pm.value }))}
       placeholder="Sélectionner..."
       bind:value={selectedPaymentMethod}
     />

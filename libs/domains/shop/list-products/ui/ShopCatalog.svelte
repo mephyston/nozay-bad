@@ -4,7 +4,7 @@
   import { ShoppingBag, Info, AlertCircle, History } from "@lucide/svelte";
   import { Card, Button, Alert } from '@nba/ui';
   import type { Member, OrderConfirmation, Product } from './catalog-types';
-  import { isOutOfStock, maxOrderableQuantity } from './catalog-types';
+  import { isOutOfStock, maxOrderableQuantity, STOREFRONT_PAYMENT_METHODS } from './catalog-types';
   import { formatMemberName } from './catalog-utils';
   import { handleMemberKeyDown, submitOrder } from './catalog-order-action';
   import ShopCatalogMemberSelect from './ShopCatalogMemberSelect.svelte';
@@ -249,6 +249,7 @@
       {selectedProduct}
       {maxQuantity}
       {outOfStockCount}
+      paymentMethods={STOREFRONT_PAYMENT_METHODS}
       onIncrementQty={incrementQty}
       onDecrementQty={decrementQty}
     />
