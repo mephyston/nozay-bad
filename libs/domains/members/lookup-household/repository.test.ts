@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { setupMockDb } from '@nba/db/test-utils';
 import { seasonsTable } from '@nba/accounting/schema';
-import { LookupHouseholdRepository, parisToday } from './repository';
+import { LookupHouseholdRepository, licenceCandidates, parisToday } from './repository';
 import { insertMemberFixture, insertMemberFixtures } from '@nba/members/test-fixtures';
 
 // Date figée à l'intérieur de la saison 25-26 : les tests ne doivent rien devoir à
@@ -82,6 +82,19 @@ describe('LookupHouseholdRepository', () => {
       expect(res.status).toBe('granted');
       expect(res.accountEmail).toBe('parent@ex.fr');
       expect(res.members).toHaveLength(3);
+    });
+
+    it('accepte un ancien numéro de licence saisi sans ses zéros de tête', async () => {
+      await insertMemberFixture(db, {
+        ...baseMember, seasonId: currentId, licence: '00712345', lastName: 'Ancien', firstName: 'Guy',
+        email: 'guy@ex.fr', type: 'adulte', birthDate: '1960-01-01'
+      });
+
+      for (const typed of ['712345', '0712345', '00712345', '00 712 345']) {
+        const res = await lookup(typed);
+        expect(res.status, typed).toBe('granted');
+        expect(res.accountEmail, typed).toBe('guy@ex.fr');
+      }
     });
 
     it('isole un adhérent non rattaché', async () => {
@@ -270,6 +283,19 @@ describe('LookupHouseholdRepository', () => {
       const res = await repo.lookup(db, 'parent@ex.fr', '2027-10-01');
       expect(res.status).toBe('granted');
       expect(res.seasonCode).toBe('26-27');
+    });
+  });
+
+  describe('licenceCandidates', () => {
+    it('complète à huit chiffres sans perdre la saisie d’origine', () => {
+      expect(licenceCandidates('712345')).toEqual(['712345', '00712345']);
+      expect(licenceCandidates('07104079')).toEqual(['07104079']);
+      expect(licenceCandidates('07 104 079')).toEqual(['07104079']);
+    });
+
+    it('ne complète pas ce qui n’est pas un numéro', () => {
+      expect(licenceCandidates('ABC123')).toEqual(['ABC123']);
+      expect(licenceCandidates('123456789')).toEqual(['123456789']);
     });
   });
 

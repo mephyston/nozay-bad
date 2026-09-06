@@ -1,5 +1,5 @@
 import { membershipsTable, personsTable } from '@nba/members/schema';
-import { and, eq, or, sql } from 'drizzle-orm';
+import { and, eq, inArray, or, sql } from 'drizzle-orm';
 import { type DbOrTx } from '@nba/db';
 import { getSeasonAtDate, getAdjacentSeason, type SeasonRow } from '@nba/accounting-api';
 import { membershipGrantsAccess } from '../shared/membership-status';
@@ -52,6 +52,21 @@ export interface HouseholdLookupResult {
 
 function normalizeEmail(value: string): string {
   return value.trim().toLowerCase();
+}
+
+/**
+ * Formes sous lesquelles chercher un numéro de licence saisi à la main.
+ *
+ * La FFBaD a porté les numéros à huit chiffres en complétant les anciens par des zéros de
+ * tête (`7104079` est devenu `07104079`). Les licenciés de longue date l'ignorent et tapent
+ * leur numéro historique, avec un, deux ou aucun zéro de moins : on cherche donc la saisie
+ * telle quelle et complétée à huit chiffres. Les espaces (« 07 104 079 ») sont ignorés.
+ */
+export function licenceCandidates(raw: string): string[] {
+  const compact = raw.replace(/\s+/g, '');
+  const candidates = new Set([compact]);
+  if (/^\d{1,8}$/.test(compact)) candidates.add(compact.padStart(8, '0'));
+  return [...candidates];
 }
 
 /**
@@ -115,7 +130,7 @@ export class LookupHouseholdRepository {
 
   // Email au dossier d'une licence, la saison servant à vérifier qu'elle a bien adhéré
   // cette année-là — l'adresse, elle, ne dépend plus de la saison.
-  private async emailByLicence(db: DbOrTx, licence: string, seasonId: number): Promise<string | null> {
+  private async emailByLicence(db: DbOrTx, licences: string[], seasonId: number): Promise<string | null> {
     const member = await db
       .select({
         email: personsTable.email,
@@ -124,7 +139,7 @@ export class LookupHouseholdRepository {
       })
       .from(membershipsTable)
       .innerJoin(personsTable, eq(personsTable.id, membershipsTable.personId))
-      .where(and(eq(personsTable.licence, licence), eq(membershipsTable.seasonId, seasonId)))
+      .where(and(inArray(personsTable.licence, licences), eq(membershipsTable.seasonId, seasonId)))
       .get();
     const found = member?.email || member?.parent1Email || member?.parent2Email || null;
     return found ? normalizeEmail(found) : null;
@@ -179,8 +194,9 @@ export class LookupHouseholdRepository {
     if (raw.includes('@')) {
       accountEmail = normalizeEmail(raw);
     } else {
+      const licences = licenceCandidates(raw);
       for (const season of searchable) {
-        accountEmail = await this.emailByLicence(db, raw, season.id);
+        accountEmail = await this.emailByLicence(db, licences, season.id);
         if (accountEmail) break;
       }
     }
