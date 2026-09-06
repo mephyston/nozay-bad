@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { Check, ChevronDown, Link2, Sparkles, Pencil } from '@lucide/svelte';
+  import { Check, ChevronDown, Link2, Sparkles, Pencil, HandCoins } from '@lucide/svelte';
+  import MemberTransferDialog from './MemberTransferDialog.svelte';
   import { Amount, Badge, Button } from '@nba/ui';
   import { accrualLabel } from '../../../shared/accrual-labels';
   import { parseSuggestion, isOneClickValidatable } from './reconciliation-suggestion';
@@ -57,6 +58,16 @@
   const hasExistingEntry = $derived(matchingEntries.length > 0);
 
   const canValidateInOneClick = $derived(isOneClickValidatable(sug) && !hasExistingEntry);
+
+  /*
+   * Une ligne au crédit du compte courant peut être le virement d'une adhérente qui alimente son
+   * porte-monnaie Badnet par le club. Ce n'est pas une recette : le bouton crée le virement
+   * interne depuis le compte d'attente et pointe la ligne, en un geste.
+   */
+  const canBeMemberTransfer = $derived(
+    line.status === 'pending' && cents > 0 && (line.accountId === 'current' || String(line.accountId) === '1')
+  );
+  let showMemberTransfer = $state(false);
 
   /** Ouvrir la ligne mène là où se trouve la décision : pointer, ou saisir. */
   function openOn(tab: 'manual' | 'ledger') {
@@ -211,6 +222,21 @@
           </Button>
         {/if}
 
+        {#if canBeMemberTransfer}
+          <Button
+            size="sm"
+            variant="ghost"
+            class="h-8 gap-1.5 text-xs"
+            data-action="member-transfer"
+            title="Virement reçu d'une adhérente pour son porte-monnaie Badnet"
+            disabled={reconState.isClosed || reconState.isSubmitting}
+            onclick={() => (showMemberTransfer = true)}
+          >
+            <HandCoins class="h-3.5 w-3.5" />
+            <span class="hidden sm:inline">Adhérente</span>
+          </Button>
+        {/if}
+
         <Button
           size="sm"
           variant="ghost"
@@ -247,3 +273,12 @@
     </div>
   {/if}
 </div>
+
+{#if canBeMemberTransfer}
+  <MemberTransferDialog
+    bind:open={showMemberTransfer}
+    {line}
+    isSubmitting={reconState.isSubmitting}
+    onConfirm={(description) => reconState.handleMemberTransfer(line, description)}
+  />
+{/if}

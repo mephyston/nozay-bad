@@ -14,7 +14,8 @@ Depuis **Réglages → Saisons comptables**, le bouton **Soldes** de la saison o
 - **Compte Courant**
 - **Livret A / Épargne**
 - **Caisse Buvette**
-- **Porte-monnaie Badnet**, l'avance prépayée du club chez Badnet (voir [Porte-monnaie Badnet](/admin/help/porte-monnaie-badnet))
+- **Porte-monnaie Badnet**, le compte prépayé du club chez Badnet (voir [Porte-monnaie Badnet](/admin/help/porte-monnaie-badnet))
+- **Fonds reçus pour le compte des adhérents**, marqué *dette* : l'argent viré par des adhérentes et pas encore rendu sur leur porte-monnaie Badnet. Son solde est nul ou **négatif**, et il n'entre pas dans la trésorerie disponible.
 
 ## Pré-remplissage automatique
 

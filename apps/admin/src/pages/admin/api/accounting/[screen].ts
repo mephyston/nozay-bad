@@ -527,6 +527,28 @@ export const ECRANS: Record<string, Ecran> = {
           }
         ])
       ),
+      /*
+        Le virement reçu d'une adhérente, saisi depuis sa ligne de relevé : le relais ne fait
+        qu'un appel par écriture, donc l'écran crée le virement ici, puis pointe sa jambe
+        bancaire par « match ». Même corps blanchi que le grand livre.
+      */
+      'create-transfer': {
+        permission: 'accounting:ledger:write',
+        route: (data) => ({
+          chemin: '/accounting/internal-transfers',
+          method: 'POST',
+          body: {
+            seasonId: data.seasonId,
+            sourceAccountId: data.sourceAccountId,
+            destinationAccountId: data.destinationAccountId,
+            amountCents: data.amountCents,
+            sourceDate: data.sourceDate,
+            destinationDate: data.destinationDate,
+            description: data.description,
+            reference: data.reference
+          }
+        })
+      },
       ...Object.fromEntries(
         (['bulk', 'reconcile-bulk'] as const).map((action) => [
           action,

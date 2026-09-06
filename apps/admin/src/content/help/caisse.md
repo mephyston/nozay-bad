@@ -5,7 +5,7 @@ category: "comptabilite"
 order: 3
 ---
 
-La rubrique **Caisse** est une vue dédiée au compte **Caisse physique** : les billets et les pièces détenus par le club.
+La rubrique **Caisse** est la vue du compte **Caisse** : les billets et les pièces détenus par le club. C'est le même écran qui sert à tout compte sans relevé bancaire, comme le [porte-monnaie Badnet](/admin/help/porte-monnaie-badnet) : chacun a son adresse, `/admin/accounting/accounts/<code>`, et ses gestes pré-câblés.
 
 ## Ce que montre l'écran
 
@@ -15,18 +15,13 @@ En dessous, l'historique des mouvements, filtrable par recherche libre sur le li
 
 ## Enregistrer un mouvement
 
-Le bouton **Nouveau mouvement** ouvre un formulaire simplifié (pour une entrée ou une sortie d'espèces ; un dépôt en banque se saisit au grand livre, voir plus bas) :
-
-- **Type** — Entrée (recette, par exemple une vente à la buvette) ou Sortie (dépense, par exemple un achat de boissons) ;
-- **Montant** et **date** ;
-- **Catégorie** — la liste s'adapte au sens du mouvement : *Événements & buvette*, *Boutique & cordages*, *Adhésion & cotisation*, *Divers* en entrée ; *Événements & buvette (achats)*, *Matériel club*, *Divers* en sortie ;
-- **Description**.
+Le bouton **Nouveau** propose les trois gestes de la caisse : **Entrée d'espèces** (une recette, par exemple une vente à la buvette), **Sortie d'espèces** (une dépense, par exemple un achat de boissons) et **Dépôt en banque** (voir plus bas). Chacun ouvre le formulaire du grand livre avec le compte et le mode de règlement déjà choisis ; il reste le montant, la date, la catégorie et la description.
 
 ## Déposer les espèces en banque
 
-Un dépôt d'espèces n'est ni une recette ni une dépense : c'est un **virement interne**. Il se saisit depuis le [Grand livre](/admin/help/grand-livre) :
+Un dépôt d'espèces n'est ni une recette ni une dépense : c'est un **virement interne**. Le bouton **Nouveau → Dépôt en banque** l'ouvre avec les deux comptes déjà choisis :
 
-- **Compte source** : Caisse physique
+- **Compte source** : Caisse
 - **Compte destinataire** : Compte Courant
 - **Date** : le jour où les espèces quittent réellement la caisse
 - **Date de crédit** : le jour où la banque les porte au compte, s'il est différent
