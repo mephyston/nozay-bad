@@ -1,7 +1,8 @@
 export interface BankStatementLine {
   id: number;
   fitid: string;
-  accountId: 'current' | 'savings' | 'cash';
+  /** Code du compte, lu de `accounts`. */
+  accountId: string;
   amount: number;
   /** Certaines réponses portent le montant en centimes sous ce nom ; `amount` sinon. */
   amountCents?: number;
@@ -17,7 +18,8 @@ export interface GLTransaction {
   /** L'exercice de rattachement : un exercice clos n'accepte plus aucun pointage. */
   seasonId?: number | string;
   type: 'recette' | 'depense' | 'transfert';
-  accountId: 'current' | 'savings' | 'cash';
+  /** Code du compte, lu de `accounts`. */
+  accountId: string;
   amount: number;
   /** Certaines réponses portent le montant en centimes sous ce nom ; `amount` sinon. */
   amountCents?: number;
@@ -191,9 +193,3 @@ export interface ReconciliationStateFields {
   isCategoryDropdownOpen: boolean;
   categoryHighlightedIndex: number;
 }
-
-export const accountLabels = {
-  current: 'Compte Courant',
-  savings: 'Compte Livret',
-  cash: 'Caisse Physique'
-};

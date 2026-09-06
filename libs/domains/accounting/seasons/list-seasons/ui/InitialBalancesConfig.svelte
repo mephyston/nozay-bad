@@ -1,88 +1,72 @@
 <script lang="ts">
-  import { Wallet2, Loader2, Save, AlertCircle } from "@lucide/svelte";
-  import { Button, AmountInput, Alert, FormField, submitForm } from "@nba/ui";
-
-  interface Season {
-    id: string;
-    code?: string;
-    name: string;
-    closed?: boolean;
-    isAutoFilled?: boolean;
-    initialCurrentBalance?: number;
-    initialSavingsBalance?: number;
-    initialCashBalance?: number;
-  }
+  import { Loader2, Save, AlertCircle } from "@lucide/svelte";
+  import { Button, AmountInput, Alert, FormField } from "@nba/ui";
+  import { runSettingsAction, type SettingsState } from './settings-api-classes';
+  import type { Season, SeasonInitialBalance } from './settings-types';
 
   let { seasons = [], seasonId = '25-26' } = $props<{
     seasons: Season[];
     seasonId: string;
   }>();
 
-  let currentInitial = $state(0);
-  let savingsInitial = $state(0);
-  let cashInitial = $state(0);
-  
-  let isSaving = $state(false);
-  let errorMsg = $state('');
+  const findSeason = (list: Season[], id: string) =>
+    list.find((s: Season) => s.id === id || s.code === id || String(s.id) === id);
 
-  const currentSeason = $derived(seasons.find((s: Season) => s.id === seasonId || s.code === seasonId || String(s.id) === seasonId));
+  /** Les soldes en euros, par code de compte, tels que l'exercice les donne. */
+  const eurosOf = (season: Season | undefined): Record<string, number> => {
+    const next: Record<string, number> = {};
+    for (const b of season?.initialBalances ?? []) next[b.accountId] = (b.initialBalanceCents ?? 0) / 100;
+    return next;
+  };
+
+  /*
+    La saisie, en euros, par code de compte. Remplie dès l'initialisation, et non dans un
+    effet : un champ lié à une clé encore absente refuse de se monter.
+  */
+  let values = $state<Record<string, number>>(eurosOf(findSeason(seasons, seasonId)));
+  let viewState = $state<SettingsState>({ errorMsg: '', isSubmitting: false });
+
+  const currentSeason = $derived(findSeason(seasons, seasonId));
   const isClosed = $derived(currentSeason?.closed || false);
   const isAutoFilled = $derived(currentSeason?.isAutoFilled || false);
 
+  /*
+    Un champ par compte de trésorerie, dans l'ordre où le relais les donne. L'écran ne
+    connaît aucun compte par son nom : le porte-monnaie Badnet y est entré sans qu'une
+    ligne d'ici ne change.
+  */
+  const balances = $derived<SeasonInitialBalance[]>(currentSeason?.initialBalances ?? []);
 
-
-  // Update initial inputs when seasonId changes
+  // Changer d'exercice recharge la saisie ; une saisie en cours n'y survit pas, comme avant.
   $effect(() => {
-    const season = seasons.find((s: Season) => s.id === seasonId || s.code === seasonId || String(s.id) === seasonId);
-    if (season) {
-      currentInitial = season.initialCurrentBalance !== undefined ? season.initialCurrentBalance / 100 : 0;
-      savingsInitial = season.initialSavingsBalance !== undefined ? season.initialSavingsBalance / 100 : 0;
-      cashInitial = season.initialCashBalance !== undefined ? season.initialCashBalance / 100 : 0;
-    } else {
-      currentInitial = 0;
-      savingsInitial = 0;
-      cashInitial = 0;
-    }
+    values = eurosOf(currentSeason);
   });
 
   async function handleSaveBalances(e: SubmitEvent) {
     e.preventDefault();
-    isSaving = true;
-    errorMsg = '';
-
-    const payload = {
-      action: 'update_balances',
-      seasonId,
-      balances: {
-        current: Math.round(currentInitial * 100),
-        savings: Math.round(savingsInitial * 100),
-        cash: Math.round(cashInitial * 100)
-      }
-    };
-
-    await submitForm({
-      submit: async () => {
-        // L'adresse unique d'écriture de la rubrique, et non la page hôte.
-        const res = await fetch('/admin/api/settings/config', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        if (!res.ok) throw new Error(await res.text() || 'Erreur lors de l\'enregistrement.');
+    /*
+      Un tableau d'un solde par compte, ce que l'API attend. L'ancien envoi — un objet à trois
+      clés, vers une adresse de relais qui n'existait pas — n'enregistrait rien.
+    */
+    await runSettingsAction(viewState, {
+      body: {
+        action: 'update_balances',
+        seasonId,
+        balances: balances.map((b) => ({
+          accountId: b.accountId,
+          initialBalanceCents: Math.round((values[b.accountId] ?? 0) * 100)
+        }))
       },
-      success: 'Soldes initiaux enregistrés.',
-      onError: (message) => { errorMsg = message; }
+      success: 'Soldes initiaux enregistrés.'
     });
-
-    isSaving = false;
   }
 </script>
 
 <div class="space-y-6">
-    {#if errorMsg}
+    {#if viewState.errorMsg}
       <Alert.Root variant="destructive">
         <AlertCircle class="w-4 h-4" />
-        <Alert.Description>{errorMsg}</Alert.Description>
+        <Alert.Description>{viewState.errorMsg}</Alert.Description>
       </Alert.Root>
     {/if}
 
@@ -101,43 +85,31 @@
     {/if}
 
     <form onsubmit={handleSaveBalances} class="space-y-4">
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <FormField id="current-initial" label="Compte Courant">
-          <AmountInput 
-            id="current-initial" 
-            bind:value={currentInitial} 
-            required
-            disabled={isClosed}
-          />
-        </FormField>
+      {#if balances.length === 0}
+        <p class="text-sm text-muted-foreground">Aucun compte de trésorerie à reporter pour cet exercice.</p>
+      {/if}
 
-          <FormField id="savings-initial" label="Compte Livret">
-          <AmountInput 
-            id="savings-initial" 
-            bind:value={savingsInitial} 
-            required
-            disabled={isClosed}
-          />
-        </FormField>
-
-          <FormField id="cash-initial" label="Caisse physique">
-          <AmountInput 
-            id="cash-initial" 
-            bind:value={cashInitial} 
-            required
-            disabled={isClosed}
-          />
-        </FormField>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {#each balances as balance (balance.accountId)}
+          <FormField id="{balance.accountId}-initial" label={balance.label}>
+            <AmountInput
+              id="{balance.accountId}-initial"
+              bind:value={values[balance.accountId]}
+              required
+              disabled={isClosed}
+            />
+          </FormField>
+        {/each}
       </div>
 
-      {#if !isClosed}
+      {#if !isClosed && balances.length > 0}
         <div class="pt-4 border-t border-border flex justify-end">
-          <Button 
-            type="submit" 
-            disabled={isSaving} 
+          <Button
+            type="submit"
+            disabled={viewState.isSubmitting}
             size="sm"
           >
-            {#if isSaving}
+            {#if viewState.isSubmitting}
               <Loader2 class="w-3.5 h-3.5 animate-spin" />
               Enregistrement...
             {:else}

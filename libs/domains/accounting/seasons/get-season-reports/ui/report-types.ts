@@ -14,6 +14,10 @@ export interface ReportData {
   bilanTrésorerie: {
     /** Code du compte, lu de `accounts` : plus une union figée depuis que les comptes sont des données. */
     accountId: string;
+    /** Identifiant numérique du compte, celui que portent les écritures. */
+    id?: number;
+    /** Libellé du compte, lu de `accounts`. */
+    label?: string;
     initialBalance: number;
     /** Solde COMPTABLE de fin de période. C'est lui qui se reporte à-nouveau. */
     finalBalance: number;

@@ -2,7 +2,7 @@
 title: "Rapprochement bancaire"
 description: "Importer le relevé, associer chaque ligne à une écriture, une facture ou un adhérent."
 category: "comptabilite"
-order: 4
+order: 5
 ---
 
 Le rapprochement consiste à faire correspondre chaque ligne du relevé de banque avec la comptabilité du club. C'est aussi le moyen le plus rapide de saisir : une ligne non rapprochée peut créer son écriture d'un clic.

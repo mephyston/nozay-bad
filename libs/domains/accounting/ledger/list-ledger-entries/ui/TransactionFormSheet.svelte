@@ -2,7 +2,8 @@
   import { AlertCircle } from '@lucide/svelte';
   import { Button, Input, Sheet, Label, Alert, SearchableCombobox, FormField, toSeasonOptions } from '@nba/ui';
   import type { Season, Category } from './ledger-types';
-  import { accountLabels, methodLabels, formAccountOptions } from './ledger-types';
+  import { methodLabels } from './ledger-types';
+  import { toAccountOptions, type AccountLike } from '../../../shared/account-labels';
 
   let {
     open = $bindable(false),
@@ -21,6 +22,7 @@
     accrualNote = $bindable(''),
     targetSeasonId = $bindable(''),
     seasons = [],
+    accounts = [],
     activeCategories = [],
     isSubmitting = $bindable(false),
     errorMsg = $bindable(''),
@@ -32,8 +34,8 @@
     amount: string;
     date: string;
     category: string;
-    formAccountId: 'current' | 'savings' | 'cash';
-    destinationAccountId: 'current' | 'savings' | 'cash';
+    formAccountId: string;
+    destinationAccountId: string;
     destinationDate: string;
     paymentMethod: string;
     description: string;
@@ -42,6 +44,8 @@
     accrualNote: string;
     targetSeasonId: string;
     seasons?: Season[];
+    /** Les comptes de trésorerie, lus de la base : un sélecteur par compte, quel qu'en soit le nombre. */
+    accounts?: AccountLike[];
     activeCategories: { id: string; code: string; name: string }[];
     isSubmitting: boolean;
     errorMsg: string;
@@ -54,10 +58,8 @@
       : [{ label: 'Saison 2025-2026', value: '25-26' }]
   );
   const categoryItems = $derived(activeCategories.map((cat) => ({ label: cat.name, value: String(cat.id) })));
-  const accountItems = $derived(formAccountOptions.map(({ value, label }) => ({ label, value: String(value) })));
-  const destinationItems = $derived(
-    formAccountOptions.filter(({ value }) => value !== formAccountId).map(({ value, label }) => ({ label, value: String(value) }))
-  );
+  const accountItems = $derived(toAccountOptions(accounts));
+  const destinationItems = $derived(toAccountOptions(accounts.filter((a) => a.code !== formAccountId)));
   const paymentItems = $derived(Object.entries(methodLabels).map(([key, label]) => ({ label: label as string, value: key })));
   const accrualItems = $derived([
     { label: 'Normal (Même exercice comptable)', value: 'normal' },

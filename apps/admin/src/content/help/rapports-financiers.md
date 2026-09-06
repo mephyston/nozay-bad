@@ -2,7 +2,7 @@
 title: "Rapports financiers"
 description: "Compte de résultat, suivi analytique, bilan et prévisionnel de trésorerie."
 category: "comptabilite"
-order: 8
+order: 9
 ---
 
 **Comptabilité → Rapports financiers** donne accès à quatre rapports. Chacun se lit pour une saison, choisie avec le sélecteur en haut de page.

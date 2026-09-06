@@ -2,7 +2,7 @@
 title: "Exports comptables"
 description: "Récupérer le journal, les factures et les justificatifs d'une saison."
 category: "comptabilite"
-order: 10
+order: 11
 ---
 
 L'application produit quatre exports, tous portant sur **une saison**. Ils servent à constituer le dossier de l'exercice, à le transmettre au vérificateur aux comptes, ou à archiver hors de l'application.

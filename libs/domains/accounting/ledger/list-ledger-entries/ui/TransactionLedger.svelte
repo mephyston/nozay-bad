@@ -8,6 +8,7 @@
   import TransactionLedgerHeader from './TransactionLedgerHeader.svelte';
   import TransactionLedgerTable from './TransactionLedgerTable.svelte';
   import TransactionFormSheet from './TransactionFormSheet.svelte';
+  import { findAccount, toAccountOptions, type AccountLike } from '../../../shared/account-labels';
 
   let {
     transactions = [],
@@ -135,8 +136,8 @@
   let amount = $state('');
   let date = $state(new Date().toISOString().split('T')[0]);
   let category = $state('1');
-  let formAccountId = $state<'current' | 'savings' | 'cash'>('current');
-  let destinationAccountId = $state<'current' | 'savings' | 'cash'>('cash');
+  let formAccountId = $state<string>('current');
+  let destinationAccountId = $state<string>('cash');
   /** Date de valeur au crédit : vide tant que le trésorier ne la distingue pas de celle du débit. */
   let destinationDate = $state('');
   let paymentMethod = $state('virement');
@@ -189,19 +190,10 @@
   function startEdit(tx: Transaction, e: MouseEvent) {
     e.stopPropagation();
     editingId = tx.id;
-    const reverseAccountMap: Record<number | string, 'current' | 'savings' | 'cash'> = {
-      1: 'current',
-      2: 'savings',
-      3: 'cash',
-      'current': 'current',
-      'savings': 'savings',
-      'cash': 'cash'
-    };
-
     amount = (tx.amount / 100).toFixed(2);
     date = tx.date;
     category = tx.categoryId ? String(tx.categoryId) : '1';
-    formAccountId = reverseAccountMap[tx.accountId as any] || 'current';
+    formAccountId = findAccount(accounts, tx.accountId)?.code ?? 'current';
     paymentMethod = tx.paymentMethod;
     description = tx.description;
     reference = tx.reference || '';
@@ -265,11 +257,14 @@
       ? toSeasonOptions(seasons)
       : [{ label: 'Saison 2025-2026', value: '25-26' }]
   );
-  const accountItems = [
-    { label: 'Compte Courant', value: 'current' },
-    { label: 'Compte Livret', value: 'savings' },
-    { label: 'Caisse Physique', value: 'cash' }
-  ];
+  /*
+   * Les comptes viennent du bilan de trésorerie, une ligne par compte lu de la base : les
+   * sélecteurs, les cartes et le sens des virements en dérivent. Plus de liste de trois codes.
+   */
+  const accounts = $derived<AccountLike[]>(
+    balances.map((b) => ({ id: b.id, code: b.accountId, label: b.label ?? b.accountId }))
+  );
+  const accountItems = $derived(toAccountOptions(accounts));
   const monthItems = [
     { label: 'Tous les mois', value: '' },
     { label: 'Janvier', value: '01' }, { label: 'Février', value: '02' }, { label: 'Mars', value: '03' },
@@ -308,6 +303,7 @@
   <TransactionLedgerTable
     {transactions}
     {pagination}
+    {accounts}
     {activeCategories}
     {isClosed}
     selectedSeasonId={currentSeasonNumericId}
@@ -408,6 +404,7 @@
     bind:accrualNote
     bind:targetSeasonId
     {seasons}
+    {accounts}
     {activeCategories}
     bind:isSubmitting
     bind:errorMsg

@@ -60,8 +60,14 @@ function saisonPrecedente(code: string): string {
  */
 const RAPPORT_VIDE = () => ({
   compteResultat: { totalRecettes: 0, totalDepenses: 0, netResult: 0, categories: {} },
-  bilanTrésorerie: ['current', 'savings', 'cash'].map((accountId) => ({
+  bilanTrésorerie: [
+    ['current', 'Compte Courant'],
+    ['savings', 'Livret A / Épargne'],
+    ['cash', 'Caisse Buvette'],
+    ['badnet', 'Porte-monnaie Badnet']
+  ].map(([accountId, label]) => ({
     accountId,
+    label,
     initialBalance: 0,
     finalBalance: 0,
     inVaultCents: 0,
@@ -71,13 +77,6 @@ const RAPPORT_VIDE = () => ({
     statementDate: null as string | null
   }))
 });
-
-/** Comptes de trésorerie : l'identifiant est tantôt textuel, tantôt numérique en base. */
-const COMPTES = [
-  { cle: 'initialCurrentBalance', id: 'current', num: 1 },
-  { cle: 'initialSavingsBalance', id: 'savings', num: 2 },
-  { cle: 'initialCashBalance', id: 'cash', num: 3 }
-] as const;
 
 /** Code de saison ou de classe, tel qu'il rejoindra un chemin d'API. */
 function code(valeur: unknown, quoi: string): string {
@@ -700,7 +699,21 @@ export const ECRANS: Record<string, Ecran> = {
   seasons: {
     permission: 'accounting:seasons:write',
     charger: async (lire) => {
-      const saisons: any[] = (await lire('/accounting/seasons')) ?? [];
+      /*
+        Les comptes viennent de la base, plus d'une table de trois codes : un compte ajouté
+        après le seed (le porte-monnaie Badnet) a droit à son solde initial comme les autres.
+        Le solde d'un compte se retrouve par son code ou par son identifiant numérique, les
+        deux formes cohabitant encore dans les données.
+      */
+      const [saisons, comptes]: [any[], any[]] = await Promise.all([
+        lire('/accounting/seasons').then((r: any) => r ?? []),
+        lire('/accounting/accounts').then((r: any) => r ?? [])
+      ]);
+
+      const soldeDe = (soldes: any[], compte: any) =>
+        soldes.find(
+          (b) => b.accountId === compte.code || b.accountId === compte.id || b.accountNumericId === compte.id
+        );
 
       /*
         Une lecture par saison, plus une seconde quand la saison n'a pas encore de soldes :
@@ -714,32 +727,31 @@ export const ECRANS: Record<string, Ecran> = {
             const codeSaison = s.code || String(s.id);
             const soldes: any[] =
               (await lire(`/accounting/seasons/${encodeURIComponent(codeSaison)}/balances`)) ?? [];
-            const enrichie: Record<string, unknown> = { ...s, isAutoFilled: false };
 
             if (soldes.length > 0) {
-              for (const compte of COMPTES) {
-                const ligne = soldes.find(
-                  (b) => b.accountId === compte.id || b.accountId === compte.num
-                );
-                enrichie[compte.cle] = ligne?.initialBalanceCents ?? ligne?.initialBalance ?? 0;
-              }
-              return enrichie;
+              return {
+                ...s,
+                isAutoFilled: false,
+                initialBalances: comptes.map((c) => ({
+                  accountId: c.code,
+                  label: c.label,
+                  initialBalanceCents: soldeDe(soldes, c)?.initialBalanceCents ?? soldeDe(soldes, c)?.initialBalance ?? 0
+                }))
+              };
             }
 
-            for (const compte of COMPTES) enrichie[compte.cle] = 0;
             const avant = saisonPrecedente(codeSaison);
-            if (!avant) return enrichie;
-
-            const rapport = await lire(`/accounting/seasons/${encodeURIComponent(avant)}/reports`);
+            const rapport = avant
+              ? await lire(`/accounting/seasons/${encodeURIComponent(avant)}/reports`)
+              : null;
             const bilan: any[] = rapport?.bilanTrésorerie ?? [];
-            for (const compte of COMPTES) {
-              const ligne = bilan.find((b) => b.accountId === compte.id);
-              if (ligne) {
-                enrichie[compte.cle] = ligne.finalBalance;
-                enrichie.isAutoFilled = true;
-              }
-            }
-            return enrichie;
+            let isAutoFilled = false;
+            const initialBalances = comptes.map((c) => {
+              const ligne = bilan.find((b) => b.accountId === c.code);
+              if (ligne) isAutoFilled = true;
+              return { accountId: c.code, label: c.label, initialBalanceCents: ligne?.finalBalance ?? 0 };
+            });
+            return { ...s, isAutoFilled, initialBalances };
           })
         )
       };

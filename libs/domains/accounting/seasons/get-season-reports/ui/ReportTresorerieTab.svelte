@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Table, Card } from '@nba/ui';
   import type { ReportData, Season } from './report-types';
-  import { formatAmount, formatDelta, accountLabels } from './report-utils';
+  import { formatAmount, formatDelta } from './report-utils';
   import ReportTreasuryForecast from './ReportTreasuryForecast.svelte';
 import ReportAIAnalysis from './ReportAIAnalysis.svelte';
 
@@ -60,7 +60,7 @@ import ReportAIAnalysis from './ReportAIAnalysis.svelte';
             {@const decale = releve !== null && releve !== undefined && releve !== item.finalBalance}
             <Table.Row>
               <Table.Cell class="px-2 py-3 sm:p-4 font-semibold align-top sm:align-middle">
-                <div>{accountLabels[item.accountId] || item.accountId}</div>
+                <div>{item.label || item.accountId}</div>
                 <div class="sm:hidden flex flex-col gap-0.5 mt-1 text-xs font-normal text-muted-foreground">
                   <span>Initial: {formatAmount(item.initialBalance)}</span>
                   <span class="{item.finalBalance - item.initialBalance >= 0 ? 'text-success' : 'text-destructive'}">

@@ -4,7 +4,7 @@ import SettingsManager from "./SettingsManager.svelte";
 
 describe("SettingsManager Component", () => {
   const seasons = [
-    { id: "25-26", name: "Saison 2025-2026", active: true, initialCurrentBalance: 150000 },
+    { id: "25-26", name: "Saison 2025-2026", active: true, initialBalances: [{ accountId: "current", label: "Compte Courant", initialBalanceCents: 150000 }] },
     { id: "24-25", name: "Saison 2024-2025", active: false }
   ];
 

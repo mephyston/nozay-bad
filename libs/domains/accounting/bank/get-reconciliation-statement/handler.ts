@@ -82,9 +82,7 @@ export async function getReconciliationStatement(
 
 interface StatementInputs {
   account: AccountRef;
-  season: { id: number; code: string; startDate: string; endDate: string   /** Identifiants des comptes ayant un relevé, les seuls dont une jambe puisse être pointée. */
-  pointableAccountIds: Set<number>;
-};
+  season: { id: number; code: string; startDate: string; endDate: string };
   asOfDate: string;
   initialBalanceCents: number;
   /** Toutes les écritures de la période — le tri par compte est l'affaire du calcul. */
@@ -95,6 +93,8 @@ interface StatementInputs {
   lastBankLineDate: string | null;
   /** Vrai quand l'à-nouveau a été calculé faute de clôture, et peut donc encore bouger. */
   openingBalanceProvisional: boolean;
+  /** Identifiants des comptes ayant un relevé, les seuls dont une jambe puisse être pointée. */
+  pointableAccountIds: Set<number>;
 }
 
 /**

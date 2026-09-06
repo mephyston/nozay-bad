@@ -23,7 +23,6 @@ import {
   UNCLASSIFIED_CLASS_LABEL
 } from './ui/report-calculations';
 import { defaultChargeClasses, defaultProduitClasses } from './ui/report-constants';
-import { accountLabels } from './ui/report-utils';
 
 export type ReportPdfType = 'income-statement' | 'analytics' | 'cash-flow';
 
@@ -439,7 +438,7 @@ export async function generateSeasonReportPdf(
     for (const item of reportRaw.bilanTrésorerie) {
       const mvt = item.finalBalance - item.initialBalance;
       ensureSpace(15);
-      page.drawText(clip(accountLabels[item.accountId] || item.accountId, bold, 10, labelMax), { x: MARGIN, y, size: 10, font: bold, color: INK });
+      page.drawText(clip(item.label || item.accountId, bold, 10, labelMax), { x: MARGIN, y, size: 10, font: bold, color: INK });
       drawRight(formatEuros(item.initialBalance), colInit, 9.5, font, INK);
       drawRight(formatDelta(mvt), colMvt, 9.5, font, mvt >= 0 ? GREEN : RED);
       drawRight(formatEuros(item.finalBalance), colFinal, 10, bold, INK);

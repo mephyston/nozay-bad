@@ -2,7 +2,7 @@
 title: "Factures"
 description: "Émettre une facture au nom du club, suivre son règlement et l'exporter."
 category: "comptabilite"
-order: 6
+order: 7
 ---
 
 La rubrique **Factures** sert aux factures **émises par le club** : une commune, un partenaire, un comité d'entreprise à qui l'association facture une prestation.

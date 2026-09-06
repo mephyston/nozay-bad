@@ -2,7 +2,7 @@
 title: "Saisons comptables"
 description: "Créer un exercice, l'activer, le clôturer et reporter les soldes."
 category: "comptabilite"
-order: 11
+order: 12
 ---
 
 Une **saison** est un exercice comptable. Elle isole les écritures, les budgets, les factures, les commandes et les dossiers d'adhérents. L'écran se trouve dans **Réglages → Saisons comptables**.

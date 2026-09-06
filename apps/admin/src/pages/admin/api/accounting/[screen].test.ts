@@ -34,14 +34,31 @@ vi.mock('../../../../lib/api', () => ({
           )
         );
       }
+      if (chemin === '/accounting/accounts') {
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({
+              success: true,
+              data: [
+                { id: 1, code: 'current', label: 'Compte Courant', classCode: '512', classType: 'tresorerie' },
+                { id: 3, code: 'cash', label: 'Caisse Buvette', classCode: '530', classType: 'tresorerie' },
+                { id: 4, code: 'badnet', label: 'Porte-monnaie Badnet', classCode: '4091', classType: 'tresorerie' }
+              ]
+            }),
+            { status: 200 }
+          )
+        );
+      }
       if (chemin.endsWith('/reports')) {
         return Promise.resolve(
-          new Response(JSON.stringify({ success: true, data: { bilanTrésorerie: [{ accountId: 'cash' }] } }), { status: 200 })
+          new Response(JSON.stringify({ success: true, data: { bilanTrésorerie: [{ accountId: 'cash', label: 'Caisse Buvette', finalBalance: 4200 }] } }), { status: 200 })
         );
       }
       if (chemin.endsWith('/balances')) {
+        // L'exercice 26-27 n'a pas encore de report : c'est lui qui se pré-remplit.
+        const data = chemin.includes('26-27') ? [] : [{ accountId: 'cash', initialBalanceCents: 1234 }];
         return Promise.resolve(
-          new Response(JSON.stringify({ success: true, data: [{ accountId: 'cash', initialBalanceCents: 1234 }] }), { status: 200 })
+          new Response(JSON.stringify({ success: true, data }), { status: 200 })
         );
       }
       if (chemin.startsWith('/accounting/bank-transactions')) {
@@ -206,6 +223,35 @@ describe('comptabilité — le grand livre', () => {
     const appel = appels.find((a) => a.url.includes('/accounting/transactions?'))!.url;
     expect(appel).not.toContain('category=');
     expect(appel).not.toContain('search=');
+  });
+});
+
+describe('comptabilité — les soldes initiaux', () => {
+  const DROITS_SAISONS = ['accounting:seasons:write'];
+
+  it('aplatit un solde par compte lu de la base, à zéro pour un compte sans report', async () => {
+    const d = await donnees(await lire('seasons', '', DROITS_SAISONS));
+    const s2526 = d.seasons.find((s: any) => s.code === '25-26');
+
+    expect(s2526.isAutoFilled).toBe(false);
+    expect(s2526.initialBalances).toEqual([
+      { accountId: 'current', label: 'Compte Courant', initialBalanceCents: 0 },
+      { accountId: 'cash', label: 'Caisse Buvette', initialBalanceCents: 1234 },
+      { accountId: 'badnet', label: 'Porte-monnaie Badnet', initialBalanceCents: 0 }
+    ]);
+    expect(s2526.initialCurrentBalance).toBeUndefined();
+  });
+
+  it("pré-remplit un exercice sans report depuis le bilan de l'exercice précédent", async () => {
+    saisons.push({ code: '26-27', startDate: '2026-09-01', endDate: '2027-08-31', active: 0, name: 'Saison 26-27', closedAt: null });
+
+    const d = await donnees(await lire('seasons', '', DROITS_SAISONS));
+    const s2627 = d.seasons.find((s: any) => s.code === '26-27');
+
+    expect(s2627.isAutoFilled).toBe(true);
+    expect(s2627.initialBalances.find((b: any) => b.accountId === 'cash').initialBalanceCents).toBe(4200);
+    expect(s2627.initialBalances.find((b: any) => b.accountId === 'badnet').initialBalanceCents).toBe(0);
+    expect(appels.some((a) => a.url.endsWith('/accounting/seasons/25-26/reports'))).toBe(true);
   });
 });
 
