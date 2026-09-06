@@ -91,6 +91,7 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     ...ACCOUNTING_CONTEXT,
     // Lecture intégrale : la présidence doit pouvoir tout consulter.
     'members:members:read',
+    'members:members:export',
     'members:attestations:read',
     'accounting:ledger:read',
     'accounting:invoices:read',
@@ -188,6 +189,7 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'members:members:read',
     'members:members:write',
     'members:members:import',
+    'members:members:export',
     'members:attestations:read',
     'members:attestations:write',
     // Communication du club.

@@ -18,6 +18,7 @@ export const ALL_PERMISSIONS = [
   'members:members:read',
   'members:members:write', // autorisation note de frais, édition de fiche
   'members:members:import', // import CSV Poona
+  'members:members:export', // fichier des adresses mail : des données personnelles
   'members:attestations:read', // consultation config CSE + génération du PDF
   'members:attestations:write', // modèle et signature
 

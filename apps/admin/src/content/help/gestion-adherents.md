@@ -43,5 +43,11 @@ Le menu d'actions de chaque ligne propose :
 
 Le bouton **Import Poona**, en haut de la liste, mène à l'écran d'import. Voir [Import Poona](/admin/help/import-poona).
 
+## Exporter les mails
+
+Le bouton **Exporter les mails**, à côté de l'import, télécharge un fichier CSV (nom, prénom, licence, statut, adresse) ouvrable dans un tableur. Il suit **les filtres en cours** : filtrez par statut « En attente de paiement » et vous obtenez les adresses à relancer ; sans filtre, toute la saison affichée.
+
+Seule l'adresse propre de l'adhérent y figure, pas celles des parents ; un adhérent sans adresse n'apparaît pas dans le fichier. Le bouton n'est proposé qu'aux rôles qui ont le droit d'exporter le fichier des adhérents (présidence, secrétariat).
+
 > [!NOTE]
-> Il n'existe pas d'export de la liste des adhérents depuis cet écran. Les exports disponibles sont ceux de la comptabilité (journal, factures, justificatifs) — voir [Exports comptables](/admin/help/exports-comptables).
+> Les autres exports sont ceux de la comptabilité (journal, factures, justificatifs) — voir [Exports comptables](/admin/help/exports-comptables).

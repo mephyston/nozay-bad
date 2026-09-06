@@ -41,6 +41,7 @@ export const ROUTE_PERMISSIONS: RouteRule[] = [
   // ── Adhérents ──────────────────────────────────────────────────────────────
   { method: 'GET', path: '/members', permission: 'members:members:read' },
   { method: 'POST', path: '/members/import', permission: 'members:members:import' },
+  { method: 'GET', path: '/members/export', permission: 'members:members:export' },
   // Recherche du foyer à la connexion OTP : appelée avant toute session.
   { method: 'POST', path: '/members/lookup-household', permission: 'members:members:read', service: true },
   // Anniversaires du jour, affichés sur l'accueil de l'espace adhérent : même contenu

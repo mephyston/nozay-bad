@@ -66,7 +66,7 @@ export const ECRANS: Record<string, Ecran> = {
 
   list: {
     permission: 'members:members:read',
-    charger: async (lire, _locals, params) => {
+    charger: async (lire, locals, params) => {
       /*
         Les filtres voyagent tels quels. `season` n'est pas facultatif : `/members` rend
         des ADHÉSIONS, une ligne par licence ET par saison (ADR-0006) — sans lui, un
@@ -104,6 +104,8 @@ export const ECRANS: Record<string, Ecran> = {
         seasons,
         season,
         seasonName: courante?.name ? String(courante.name).replace('Saison ', '') : season,
+        // Le bouton d'export ne s'affiche qu'à qui peut s'en servir : la route, elle, garde.
+        canExport: can(locals, 'members:members:export'),
         filters: {
           search: requete.get('search'),
           gender: requete.get('gender'),

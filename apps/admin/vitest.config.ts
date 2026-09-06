@@ -29,6 +29,8 @@ export default defineConfig({
       '@nba/teams/championship': path.resolve(__dirname, '../../libs/domains/teams/shared/championship.ts'),
       // La fiche d'un adhérent n'affiche que des fonctions de la liste connue.
       '@nba/members/club-functions': path.resolve(__dirname, '../../libs/domains/members/shared/club-functions.ts'),
+      // L'export des adresses mail ne relaie qu'un statut de la liste connue.
+      '@nba/members/membership-status': path.resolve(__dirname, '../../libs/domains/members/shared/membership-status.ts'),
       'libs/shared/ui': path.resolve(__dirname, '../../libs/shared/ui'),
     },
     conditions: ['browser'],

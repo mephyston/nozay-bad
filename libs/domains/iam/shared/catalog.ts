@@ -12,6 +12,7 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   'members:members:read': 'Consulter les adhérents',
   'members:members:write': 'Modifier une fiche adhérent',
   'members:members:import': 'Importer les licences (Poona)',
+  'members:members:export': 'Exporter les adresses mail des adhérents',
   'members:attestations:read': 'Consulter et générer les attestations CSE',
   'members:attestations:write': "Modifier le modèle et la signature d'attestation",
 

@@ -162,6 +162,7 @@ export default defineConfig({
         '@nba/teams/championship': path.resolve(__dirname, '../../libs/domains/teams/shared/championship.ts'),
         // Liste fermée des fonctions au club, partagée ; alias étroit plutôt que le barrel.
         '@nba/members/club-functions': path.resolve(__dirname, '../../libs/domains/members/shared/club-functions.ts'),
+        '@nba/members/membership-status': path.resolve(__dirname, '../../libs/domains/members/shared/membership-status.ts'),
         '@nba/teams-ui': path.resolve(__dirname, '../../libs/domains/teams/shared/ui.ts')
       }
     },

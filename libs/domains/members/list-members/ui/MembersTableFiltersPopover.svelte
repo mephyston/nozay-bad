@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Download } from '@lucide/svelte';
   import { DataTableToolbar, Button, SearchableCombobox, toSeasonOptions } from '@nba/ui';
   import { MEMBERSHIP_STATUSES, MEMBERSHIP_STATUS_LABELS } from '../../shared/membership-status';
   import type { Season } from './members-table-types';
@@ -10,6 +11,7 @@
     selectedType = $bindable(''),
     selectedStatus = $bindable(''),
     seasons = [],
+    exportHref = null,
     onApply,
     onReset
   }: {
@@ -19,6 +21,8 @@
     selectedType: string;
     selectedStatus: string;
     seasons: Season[];
+    /** Adresse du fichier des mails aux filtres en cours, ou `null` sans le droit. */
+    exportHref?: string | null;
     onApply: () => void;
     onReset: () => void;
   } = $props();
@@ -86,6 +90,12 @@
   {/snippet}
 
   {#snippet actions()}
+    {#if exportHref}
+      <Button href={exportHref} download variant="secondary" class="h-9 gap-2 w-full sm:w-auto">
+        <Download class="w-4 h-4" />
+        Exporter les mails
+      </Button>
+    {/if}
     <a
       href="/admin/members/import"
       class="px-4 py-2 bg-primary text-primary-foreground text-sm font-medium rounded-md shadow hover:bg-primary/90 cursor-pointer inline-flex items-center justify-center gap-2 border-0 no-underline h-9 w-full sm:w-auto"

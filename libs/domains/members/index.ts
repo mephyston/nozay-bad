@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { importMembersRoute } from './import-members-csv/route';
 import { listMembersRoute } from './list-members/route';
+import { exportMembersRoute } from './export-members/route';
 import { lookupHouseholdRoute } from './lookup-household/route';
 import { setExpenseAuthorizationRoute } from './set-expense-authorization/route';
 import { listClubFunctionsRoute } from './list-club-functions/route';
@@ -28,6 +29,8 @@ export const membersRouter = new Hono<{ Bindings: Bindings }>();
 
 membersRouter.route('/', importMembersRoute);
 membersRouter.route('/', listMembersRoute);
+// `/export` est littérale : avant `/:licence`, qui la prendrait pour un numéro.
+membersRouter.route('/', exportMembersRoute);
 // Route littérale avant `/:licence` pour ne pas être capturée par le paramètre.
 membersRouter.route('/', lookupHouseholdRoute);
 // Littérale elle aussi : `/birthdays` serait sinon lu comme un numéro de licence.
@@ -71,6 +74,7 @@ export {
 } from './shared/queries';
 export * from './shared/dashboard';
 export { listMembers } from './list-members/handler';
+export { exportMembersEmails } from './export-members/handler';
 export { listClubFunctions } from './list-club-functions/handler';
 export { saveClubFunctions } from './save-club-functions/handler';
 export type { ClubFunctionAssignment } from './list-club-functions/dto';

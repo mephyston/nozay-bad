@@ -32,6 +32,7 @@
         pagination={d.pagination}
         filters={d.filters}
         seasons={d.seasons}
+        canExport={d.canExport ?? false}
       />
     {/snippet}
   </EcranDistant>

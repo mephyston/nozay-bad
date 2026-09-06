@@ -112,7 +112,7 @@ describe('définition des rôles', () => {
     // et le fichier des adhérents reste en lecture seule.
     for (const p of [
       'shop:orders:approve',
-      'members:members:write', 'members:members:import',
+      'members:members:write', 'members:members:import', 'members:members:export',
       'accounting:ledger:read', 'accounting:ledger:write',
       'expenses:reports:read', 'notifications:messages:send'
     ]) {

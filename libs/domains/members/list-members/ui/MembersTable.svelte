@@ -7,7 +7,22 @@
   import { membershipStatusLabel, membershipStatusVariant } from '../../shared/membership-status';
   import MembersTableFiltersPopover from './MembersTableFiltersPopover.svelte';
 
-  let { data = [], pagination, filters, seasons = [] }: { data: Member[]; pagination: Pagination; filters: Filters; seasons?: Season[] } = $props();
+  let { data = [], pagination, filters, seasons = [], canExport = false }: { data: Member[]; pagination: Pagination; filters: Filters; seasons?: Season[]; canExport?: boolean } = $props();
+
+  /**
+   * L'export suit les filtres **appliqués**, pas ceux du panneau : une recherche tapée
+   * mais pas encore lancée ne doit pas changer le fichier qu'on télécharge.
+   */
+  const exportHref = $derived.by(() => {
+    if (!canExport) return null;
+    const params = new URLSearchParams();
+    for (const cle of ['search', 'gender', 'type', 'status'] as const) {
+      const valeur = filters?.[cle];
+      if (valeur) params.set(cle, valeur);
+    }
+    params.set('season', filters?.season || '25-26');
+    return `/admin/api/members/export?${params.toString()}`;
+  });
 
   /**
    * Adresse du portrait, ou `null` : la silhouette prend alors le relais.
@@ -122,6 +137,7 @@
         bind:selectedType
         bind:selectedStatus
         {seasons}
+        {exportHref}
         onApply={applyFilters}
         onReset={resetFilters}
       />
