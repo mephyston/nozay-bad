@@ -8,6 +8,7 @@ const apiFetch = vi.fn();
 const sendOtpEmail = vi.fn(async () => ({ ok: true }));
 const sendRenewalEmail = vi.fn(async () => ({ ok: true }));
 const sendUpcomingAccessEmail = vi.fn(async () => ({ ok: true }));
+const sendPaymentPendingEmail = vi.fn(async () => ({ ok: true }));
 // Le limiteur est interrogé sur deux clés : `otp-ip:` (avant toute recherche) et
 // `otp-mail:`. Les tests ne veulent piloter que la seconde.
 const mailRateLimited = { value: false };
@@ -25,7 +26,8 @@ vi.mock('../../../lib/turnstile', () => ({
 vi.mock('../../../lib/email', () => ({
   sendOtpEmail: (...a: any[]) => sendOtpEmail(...(a as [])),
   sendRenewalEmail: (...a: any[]) => sendRenewalEmail(...(a as [])),
-  sendUpcomingAccessEmail: (...a: any[]) => sendUpcomingAccessEmail(...(a as []))
+  sendUpcomingAccessEmail: (...a: any[]) => sendUpcomingAccessEmail(...(a as [])),
+  sendPaymentPendingEmail: (...a: any[]) => sendPaymentPendingEmail(...(a as []))
 }));
 
 // Évite d'avoir à résoudre le module virtuel `cloudflare:workers` dans les tests.
@@ -74,6 +76,7 @@ const GRANTED = {
 };
 const LAPSED = { accountEmail: 'qui@ex.fr', members: [], status: 'lapsed', seasonCode: '25-26', seasonName: 'Saison 25-26', accessOpensOn: null };
 const UPCOMING = { accountEmail: 'qui@ex.fr', members: [], status: 'upcoming', seasonCode: '25-26', seasonName: 'Saison 26-27', accessOpensOn: '2026-09-01' };
+const UNPAID = { accountEmail: 'qui@ex.fr', members: [], status: 'unpaid', seasonCode: '25-26', seasonName: 'Saison 25-26', accessOpensOn: null };
 const UNKNOWN = { accountEmail: 'qui@ex.fr', members: [], status: 'unknown', seasonCode: '25-26', seasonName: 'Saison 25-26', accessOpensOn: null };
 
 describe('request-code — indiscernabilité des refus', () => {
@@ -147,11 +150,22 @@ describe('request-code — aiguillage des emails', () => {
     expect(sendOtpEmail).not.toHaveBeenCalled();
   });
 
+  it('licence sans aucun règlement → email d’attente, jamais de code, réponse identique à l’inconnu', async () => {
+    lookupReturns(UNPAID);
+    const unpaid = await requestCode();
+    lookupReturns(UNKNOWN);
+    const unknown = await requestCode();
+    expect(unpaid).toEqual(unknown);
+    expect(sendPaymentPendingEmail).toHaveBeenCalledWith(expect.anything(), 'qui@ex.fr', 'Saison 25-26');
+    expect(sendOtpEmail).not.toHaveBeenCalled();
+  });
+
   it('inconnu → aucun email du tout', async () => {
     lookupReturns(UNKNOWN);
     await requestCode();
     expect(sendOtpEmail).not.toHaveBeenCalled();
     expect(sendRenewalEmail).not.toHaveBeenCalled();
     expect(sendUpcomingAccessEmail).not.toHaveBeenCalled();
+    expect(sendPaymentPendingEmail).not.toHaveBeenCalled();
   });
 });

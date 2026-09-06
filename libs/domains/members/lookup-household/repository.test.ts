@@ -152,6 +152,44 @@ describe('LookupHouseholdRepository', () => {
     });
   });
 
+  describe('licence en cours mais aucun règlement → `unpaid`', () => {
+    it("n'ouvre pas la session tant qu'aucun versement n'est enregistré dans le foyer", async () => {
+      await insertMemberFixture(db, {
+        ...baseMember, seasonId: currentId, licence: '5000001', lastName: 'Attend', firstName: 'Paul',
+        email: 'paul@ex.fr', type: 'adulte', birthDate: '1990-01-01', status: 'en_attente'
+      });
+
+      const res = await lookup('paul@ex.fr');
+      expect(res.status).toBe('unpaid');
+      expect(res.members).toEqual([]);
+      // On connaît l'email : c'est par lui qu'on explique l'attente.
+      expect(res.accountEmail).toBe('paul@ex.fr');
+      expect(res.seasonName).toBe('Saison 25-26');
+    });
+
+    it('un dossier annulé ne compte pas comme un versement', async () => {
+      await insertMemberFixture(db, {
+        ...baseMember, seasonId: currentId, licence: '5000002', lastName: 'Annulé', firstName: 'Max',
+        email: 'max@ex.fr', type: 'adulte', birthDate: '1990-01-01', status: 'suspendu', paid: true
+      });
+
+      expect((await lookup('max@ex.fr')).status).toBe('unpaid');
+    });
+
+    it('un versement partiel suffit à ouvrir le foyer entier, dossiers en attente compris', async () => {
+      await insertMemberFixtures(db, [
+        { ...baseMember, seasonId: currentId, licence: '5000003', lastName: 'Foyer', firstName: 'Acompte', email: null, parent1Email: 'foyer@ex.fr', status: 'incomplet' },
+        { ...baseMember, seasonId: currentId, licence: '5000004', lastName: 'Foyer', firstName: 'Attente', email: null, parent1Email: 'foyer@ex.fr', status: 'en_attente' }
+      ]);
+
+      const res = await lookup('foyer@ex.fr');
+      expect(res.status).toBe('granted');
+      expect(res.members.map((m) => m.firstName).sort()).toEqual(['Acompte', 'Attente']);
+      // Le statut reste au domaine : la session n'en a pas l'usage.
+      expect(Object.keys(res.members[0])).not.toContain('status');
+    });
+  });
+
   describe('sans licence en cours', () => {
     it('inscription anticipée : `upcoming`, sans aucun dossier en session', async () => {
       await insertMemberFixture(db, {

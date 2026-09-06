@@ -9,7 +9,7 @@ import {
   resolveSessionSecret,
   type SessionMember
 } from '../../../lib/auth';
-import { sendOtpEmail, sendRenewalEmail, sendUpcomingAccessEmail } from '../../../lib/email';
+import { sendOtpEmail, sendRenewalEmail, sendUpcomingAccessEmail, sendPaymentPendingEmail } from '../../../lib/email';
 import { resolveEnv, clientIp, json, IS_DEV, COOKIE_SECURE } from '../../../lib/request-context';
 
 export const POST: APIRoute = async ({ request, locals }) => {
@@ -63,7 +63,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
   const api = createApiClient(env);
   let accountEmail: string | null = null;
   let members: SessionMember[] = [];
-  let status: 'granted' | 'upcoming' | 'lapsed' | 'unknown' = 'unknown';
+  let status: 'granted' | 'unpaid' | 'upcoming' | 'lapsed' | 'unknown' = 'unknown';
   let seasonCode = '';
   let seasonName = '';
   let accessOpensOn = '';
@@ -107,11 +107,13 @@ export const POST: APIRoute = async ({ request, locals }) => {
   // Pas de licence en cours : on explique par email, sans jamais poser d'OTP en base.
   // Y compris sous rate-limit, la réponse reste celle de l'inconnu — un 429 ici
   // trahirait que l'adresse est au fichier du club.
-  if (status === 'lapsed' || status === 'upcoming') {
+  if (status === 'lapsed' || status === 'upcoming' || status === 'unpaid') {
     if (!mailRateLimited) {
       await (status === 'lapsed'
         ? sendRenewalEmail(env, accountEmail, seasonName)
-        : sendUpcomingAccessEmail(env, accountEmail, seasonName, accessOpensOn));
+        : status === 'upcoming'
+          ? sendUpcomingAccessEmail(env, accountEmail, seasonName, accessOpensOn)
+          : sendPaymentPendingEmail(env, accountEmail, seasonName));
     }
     return decoy();
   }

@@ -29,7 +29,7 @@ La colonne `Date de paiement` sert de **date d'émission sur l'attestation CSE**
 - Chaque dossier est identifié par le couple **licence + saison**. Un dossier déjà présent est mis à jour, sinon il est créé.
 - Le genre `H` ou `M` est enregistré comme masculin, `F` comme féminin.
 - Les dates au format `JJ-MM-AAAA` sont converties ; les autres formats non reconnus font rejeter la ligne.
-- Le statut est ramené à *valide* (`Oui`, `valide`, dossier « finalisé ») ou *suspendu* (`Non`, `suspendu`, dossier « annulé »).
+- Le statut se déduit du règlement : *Validé* quand plus rien n'est dû (ou `Payé` = Oui), *Paiement partiel* quand un montant a été reçu mais qu'il reste un solde, *En attente de paiement* quand rien n'a été reçu. Un dossier « annulé » reste *Suspendu* quels que soient les montants. Sans les colonnes de règlement dans le fichier, un dossier finalisé est *Validé* et un dossier `Non` validé est *En attente de paiement*.
 
 ## Le compte rendu
 

@@ -1,6 +1,7 @@
 import { type Db } from '@nba/db';
 import { ImportMembersRepository } from './repository';
 import { CsvHeadersInvalidError } from '../shared/errors';
+import { deriveMembershipStatus } from '../shared/membership-status';
 import { ImportMembersFromCsvInput, ImportMembersFromCsvOutput } from "./dto";
 
 interface ParsedMember {
@@ -57,7 +58,9 @@ export async function importMembersFromCsv(db: Db, csvText: ImportMembersFromCsv
   const birthDateIdx = headers.findIndex(h => h === 'Date naissance' || h === 'Date de naissance');
   const emailIdx = headers.findIndex(h => h === 'Email');
   const phoneIdx = headers.findIndex(h => h === 'Téléphone' || h === 'Tél. du contact 1');
-  const statusIdx = headers.findIndex(h => h === 'Statut' || h === 'Adhérent validé' || h === 'Etat de dossier' || h === 'État de dossier');
+  const statusIdx = headers.findIndex(h => h === 'Statut' || h === 'Adhérent validé');
+  // Poona exporte l'état du dossier à part : c'est lui qui dit « annulé ».
+  const dossierIdx = headers.findIndex(h => h === 'Etat de dossier' || h === 'État de dossier');
   const typeIdx = headers.findIndex(h => h === 'Type' || h === 'Tarif');
 
   const amountDueIdx = headers.findIndex(h => h === 'Montant');
@@ -92,6 +95,7 @@ export async function importMembersFromCsv(db: Db, csvText: ImportMembersFromCsv
     const email = emailIdx !== -1 ? (columns[emailIdx] || null) : null;
     const phone = phoneIdx !== -1 ? (columns[phoneIdx] || null) : null;
     const rawStatus = statusIdx !== -1 ? (columns[statusIdx] || 'valide') : 'valide';
+    const rawDossier = dossierIdx !== -1 ? (columns[dossierIdx] || '') : '';
     const type = columns[typeIdx];
 
     if (!licence || !lastName || !firstName || !rawBirthDate || !type || !seasonCode) {
@@ -116,13 +120,6 @@ export async function importMembersFromCsv(db: Db, csvText: ImportMembersFromCsv
       continue;
     }
 
-    let status = 'valide';
-    if (rawStatus === 'Oui' || rawStatus === 'valide' || rawStatus.toLowerCase().includes('finalisé')) {
-      status = 'valide';
-    } else if (rawStatus === 'Non' || rawStatus === 'suspendu' || rawStatus.toLowerCase().includes('annulé')) {
-      status = 'suspendu';
-    }
-
     const parseAmount = (idx: number): number => {
       if (idx === -1 || !columns[idx]) return 0;
       const parsed = parseFloat(columns[idx]);
@@ -133,6 +130,16 @@ export async function importMembersFromCsv(db: Db, csvText: ImportMembersFromCsv
     const amountReceivedCents = parseAmount(amountReceivedIdx);
     const amountRemainingCents = parseAmount(amountRemainingIdx);
     const paid = paidIdx !== -1 && columns[paidIdx] === 'Oui';
+
+    // Le statut suit le règlement, pas la colonne « dossier » de Poona (cf. shared/membership-status.ts).
+    const status = deriveMembershipStatus({
+      rawStatus,
+      rawDossier,
+      hasPaymentColumns: paidIdx !== -1 || amountReceivedIdx !== -1 || amountRemainingIdx !== -1,
+      paid,
+      amountReceivedCents,
+      amountRemainingCents
+    });
     // Contrairement à la date de naissance, une date de paiement absente ou illisible
     // ne disqualifie pas la ligne : l'attestation retombe alors sur le 1er septembre.
     const paymentDate = paymentDateIdx !== -1 ? toIsoDate(columns[paymentDateIdx]) : null;

@@ -4,6 +4,7 @@
   import { Eye, ChevronRight, Receipt } from '@lucide/svelte';
   import { Button, Badge, DropdownMenu, DataTable, Table, DataTableColumnHeader, DataTableRowActions, MemberAvatar, uiConfirm, toast, flashAndReload, softNavigate } from '@nba/ui';
   import type { Member, Pagination, Filters, Season } from './members-table-types';
+  import { membershipStatusLabel, membershipStatusVariant } from '../../shared/membership-status';
   import MembersTableFiltersPopover from './MembersTableFiltersPopover.svelte';
 
   let { data = [], pagination, filters, seasons = [] }: { data: Member[]; pagination: Pagination; filters: Filters; seasons?: Season[] } = $props();
@@ -161,15 +162,9 @@
           </Badge>
         </Table.Cell>
         <Table.Cell>
-          {#if member.status === 'valide'}
-            <Badge variant="success">
-              Valide
-            </Badge>
-          {:else}
-            <Badge variant="destructive">
-              Suspendu
-            </Badge>
-          {/if}
+          <Badge variant={membershipStatusVariant(member.status)}>
+            {membershipStatusLabel(member.status)}
+          </Badge>
         </Table.Cell>
         <Table.Cell class="text-right relative">
           <div class="flex items-center justify-end gap-1">
@@ -229,15 +224,17 @@
               </div>
               <div class="text-xs text-muted-foreground flex items-center gap-2 mt-0.5">
                 <span>Licence: {member.licence}</span>
-                {#if member.status === 'valide'}
-                  <span class="inline-flex items-center text-[10px] font-semibold text-success">
-                    • Valide
-                  </span>
-                {:else}
-                  <span class="inline-flex items-center text-[10px] font-semibold text-destructive">
-                    • Suspendu
-                  </span>
-                {/if}
+                <span
+                  class="inline-flex items-center text-[10px] font-semibold {member.status === 'valide'
+                    ? 'text-success'
+                    : member.status === 'suspendu'
+                      ? 'text-destructive'
+                      : member.status === 'incomplet'
+                        ? 'text-warning'
+                        : 'text-muted-foreground'}"
+                >
+                  • {membershipStatusLabel(member.status)}
+                </span>
               </div>
             </div>
           </a>

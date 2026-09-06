@@ -2,6 +2,7 @@ import { membershipsTable, personsTable } from '@nba/members/schema';
 import { and, eq, or, sql } from 'drizzle-orm';
 import { type DbOrTx } from '@nba/db';
 import { getSeasonAtDate, getAdjacentSeason, type SeasonRow } from '@nba/accounting-api';
+import { membershipGrantsAccess } from '../shared/membership-status';
 
 export interface HouseholdMember {
   id: number;
@@ -13,7 +14,11 @@ export interface HouseholdMember {
 }
 
 /**
- * - `granted`  : licence détenue pour la saison en cours. Seul statut qui ouvre une session.
+ * - `granted`  : licence détenue pour la saison en cours et au moins un versement reçu dans le
+ *   foyer. Seul statut qui ouvre une session.
+ * - `unpaid`   : licence(s) pour la saison en cours, mais aucun règlement encore enregistré
+ *   (ou dossiers annulés). L'accès s'ouvrira au premier versement, même partiel, importé
+ *   depuis Poona.
  * - `upcoming` : inscription anticipée, licence prise pour la saison suivante seulement.
  *   L'accès s'ouvrira au premier jour de cette saison ; d'ici là, l'app n'aurait aucune de
  *   ses données à lui montrer.
@@ -21,7 +26,7 @@ export interface HouseholdMember {
  *   email : on peut l'inviter à réadhérer.
  * - `unknown`  : rien à moins d'une saison d'écart. Indiscernable d'un inconnu.
  */
-export type HouseholdStatus = 'granted' | 'upcoming' | 'lapsed' | 'unknown';
+export type HouseholdStatus = 'granted' | 'unpaid' | 'upcoming' | 'lapsed' | 'unknown';
 
 export interface HouseholdLookupResult {
   // Email au dossier vers lequel écrire (jamais renvoyé au client tel quel).
@@ -72,7 +77,11 @@ export class LookupHouseholdRepository {
   // L'adresse est désormais celle de la **personne**, pas de son dossier de l'année :
   // c'est elle qui identifie le foyer. La saison n'intervient plus que pour décider qui,
   // parmi les personnes trouvées, est adhérent — ce qui est exactement la question posée.
-  private async membersByEmail(db: DbOrTx, email: string, seasonId: number): Promise<HouseholdMember[]> {
+  private async membersByEmail(
+    db: DbOrTx,
+    email: string,
+    seasonId: number
+  ): Promise<Array<HouseholdMember & { status: string }>> {
     const rows = await db
       .select({
         id: membershipsTable.id,
@@ -80,7 +89,8 @@ export class LookupHouseholdRepository {
         lastName: personsTable.lastName,
         licence: personsTable.licence,
         paid: membershipsTable.paid,
-        expenseAuthorized: membershipsTable.expenseAuthorized
+        expenseAuthorized: membershipsTable.expenseAuthorized,
+        status: membershipsTable.status
       })
       .from(membershipsTable)
       .innerJoin(personsTable, eq(personsTable.id, membershipsTable.personId))
@@ -95,7 +105,12 @@ export class LookupHouseholdRepository {
         )
       )
       .all();
-    return rows as HouseholdMember[];
+    return rows as Array<HouseholdMember & { status: string }>;
+  }
+
+  /** Le statut ne quitte pas le domaine : la session n'en a pas besoin, et il alourdirait le cookie. */
+  private strip(rows: Array<HouseholdMember & { status: string }>): HouseholdMember[] {
+    return rows.map(({ status: _status, ...member }) => member);
   }
 
   // Email au dossier d'une licence, la saison servant à vérifier qu'elle a bien adhéré
@@ -171,13 +186,22 @@ export class LookupHouseholdRepository {
     }
     if (!accountEmail) return empty;
 
-    const members = await this.membersByEmail(db, accountEmail, current.id);
-    if (members.length > 0) {
-      // Le foyer entre. Reste à repérer ceux qu'on y a perdus en route : la comparaison se
-      // fait sur la licence, l'`id` changeant d'une saison à l'autre.
+    const enrolled = await this.membersByEmail(db, accountEmail, current.id);
+    if (enrolled.length > 0) {
+      // Le foyer n'entre qu'à partir du premier versement, même partiel, reçu pour l'un
+      // de ses dossiers. Tant qu'aucun règlement n'est importé de Poona, on le lui dit par
+      // email (cf. request-code), sans ouvrir de session.
+      if (!enrolled.some((m) => membershipGrantsAccess(m.status))) {
+        return { ...empty, accountEmail, status: 'unpaid' };
+      }
+
+      // Le foyer entre, avec tous ses dossiers de la saison : le règlement d'un enfant
+      // suffit à ouvrir le compte du parent. Reste à repérer ceux qu'on a perdus en route :
+      // la comparaison se fait sur la licence, l'`id` changeant d'une saison à l'autre.
+      const members = this.strip(enrolled);
       const licences = new Set(members.map((m) => m.licence));
       const lapsedMembers = previous
-        ? (await this.membersByEmail(db, accountEmail, previous.id)).filter((m) => !licences.has(m.licence))
+        ? this.strip(await this.membersByEmail(db, accountEmail, previous.id)).filter((m) => !licences.has(m.licence))
         : [];
       return { ...empty, accountEmail, members, status: 'granted', lapsedMembers };
     }

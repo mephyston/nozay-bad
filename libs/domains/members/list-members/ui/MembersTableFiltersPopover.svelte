@@ -1,5 +1,6 @@
 <script lang="ts">
   import { DataTableToolbar, Button, SearchableCombobox, toSeasonOptions } from '@nba/ui';
+  import { MEMBERSHIP_STATUSES, MEMBERSHIP_STATUS_LABELS } from '../../shared/membership-status';
   import type { Season } from './members-table-types';
 
   let {
@@ -47,8 +48,7 @@
   ];
   const statusItems = [
     { label: 'Tous les statuts', value: '' },
-    { label: 'Valide', value: 'valide' },
-    { label: 'Suspendu', value: 'suspendu' }
+    ...MEMBERSHIP_STATUSES.map((value) => ({ label: MEMBERSHIP_STATUS_LABELS[value], value }))
   ];
 </script>
 

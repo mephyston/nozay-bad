@@ -11,8 +11,12 @@ La rubrique **Adhérents** affiche les membres inscrits pour une saison. Les dos
 
 Chaque ligne montre le nom, la date de naissance, le numéro de licence, le genre, la formule d'adhésion (le *type* importé de Poona) et le statut du dossier :
 
-- **Valide** — dossier finalisé côté Poona ;
-- **Suspendu** — dossier annulé ou non validé.
+- **Validé** — cotisation réglée intégralement ;
+- **Paiement partiel** — un versement a été reçu, il reste un solde à devoir ;
+- **En attente de paiement** — aucun règlement enregistré pour l'instant ;
+- **Suspendu** — dossier annulé côté Poona.
+
+Le statut suit le règlement lu dans l'export Poona, il se met donc à jour à chaque import. L'accès à l'espace adhérent s'ouvre dès qu'un versement, même partiel, est enregistré pour l'un des dossiers du foyer ; un dossier en attente de paiement ou suspendu n'y donne pas accès.
 
 La liste est paginée par 20.
 
@@ -23,7 +27,7 @@ La barre de recherche porte sur le nom et le numéro de licence. Le bouton de fi
 - **Saison** — l'exercice consulté ;
 - **Genre** — Homme / Femme ;
 - **Type d'adhérent** — Compétiteur / Loisir ;
-- **Statut** — Valide / Suspendu.
+- **Statut** — Validé / Paiement partiel / En attente de paiement / Suspendu.
 
 Un bouton *Réinitialiser* remet les critères à leur valeur par défaut.
 

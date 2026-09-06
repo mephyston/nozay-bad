@@ -82,7 +82,8 @@ describe('POST /members/import', () => {
     expect(m1.birthDate).toBe('1985-05-15');
     expect(m1.email).toBe('pierre.martin@example.com');
     expect(m1.phone).toBe('0600000001');
-    expect(m1.status).toBe('valide');
+    // 100 € reçus sur 250 : le statut suit le règlement, pas la colonne « Statut » du fichier.
+    expect(m1.status).toBe('incomplet');
     expect(m1.type).toBe('Competiteur');
     expect(m1.amountDueCents).toBe(25000);
     expect(m1.amountReceivedCents).toBe(10000);
@@ -128,11 +129,14 @@ describe('POST /members/import', () => {
     expect(m1Updated.lastName).toBe('Martin Updated');
     expect(m1Updated.email).toBe('pierre.martin.new@example.com');
     expect(m1Updated.phone).toBe('0600000099');
+    // « suspendu » explicite dans le fichier : prime sur un règlement pourtant soldé.
     expect(m1Updated.status).toBe('suspendu');
     expect(m1Updated.amountDueCents).toBe(25000);
     expect(m1Updated.amountReceivedCents).toBe(25000);
     expect(m1Updated.amountRemainingCents).toBe(0);
     expect(m1Updated.paid).toBe(true);
+    // Rien reçu sur 200 € : en attente de paiement, et non « suspendu ».
+    expect(finalMembers.find(m => m.licence === '4444444')!.status).toBe('en_attente');
   });
 
   it('should import members from a real Poona CSV export format and map headers/values correctly', async () => {

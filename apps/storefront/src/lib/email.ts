@@ -222,6 +222,34 @@ export async function sendUpcomingAccessEmail(
   );
 }
 
+/**
+ * Envoyé à qui a bien une licence pour la saison en cours, mais dont le foyer n'a encore
+ * réglé aucune cotisation, même partiellement. L'accès s'ouvre au premier versement importé
+ * de Poona : on le dit, sans révéler sur la page de connexion que l'adresse est au fichier.
+ */
+export async function sendPaymentPendingEmail(
+  env: EmailEnv,
+  to: string,
+  seasonName: string
+): Promise<DeliveryResult> {
+  const season = seasonName || 'la saison en cours';
+  return deliver(
+    env,
+    to,
+    {
+      subject: `Votre accès adhérent ouvrira au premier règlement`,
+      html: paymentPendingHtml(season),
+      text:
+        `Bonjour,\n\n` +
+        `Votre licence pour ${season} est bien enregistrée — merci !\n\n` +
+        `Votre espace adhérent s'ouvrira dès que le club aura reçu un premier règlement de votre cotisation, même partiel. Si vous avez déjà réglé, il n'y a rien à faire : l'accès s'ouvrira dans les prochains jours, le temps que le club enregistre votre paiement.\n\n` +
+        `Une question ? Écrivez-nous à ${CONTACT_EMAIL}.\n\n` +
+        `Nozay Badminton Association`
+    },
+    (mode) => console.info(`[auth][${mode}] Cotisation en attente pour ${to} (email NON envoyé)`)
+  );
+}
+
 /** `2026-09-01` → `1er septembre 2026`. Repli sur la valeur brute si elle est inattendue. */
 function formatFrenchDate(iso: string): string {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || '');
@@ -261,6 +289,15 @@ function upcomingHtml(seasonName: string, date: string): string {
     <h1 style="font-size: 18px; color: #111;">Votre accès ouvre le ${date}</h1>
     <p style="color: #444;">Votre licence pour ${seasonName} est bien enregistrée — merci !</p>
     <p style="color: #444;">Votre espace adhérent ouvrira le <strong>${date}</strong>, premier jour de la saison. Il n'y a rien à faire d'ici là : reconnectez-vous à cette date avec le même identifiant.</p>
+    <p style="color: #666; font-size: 14px;">Une question ? Écrivez-nous à <a href="mailto:${CONTACT_EMAIL}" style="color:#111;">${CONTACT_EMAIL}</a>.</p>`);
+}
+
+function paymentPendingHtml(seasonName: string): string {
+  return shell(`
+    <h1 style="font-size: 18px; color: #111;">Votre accès adhérent ouvrira au premier règlement</h1>
+    <p style="color: #444;">Votre licence pour ${seasonName} est bien enregistrée — merci !</p>
+    <p style="color: #444;">Votre espace adhérent s'ouvrira dès que le club aura reçu un premier règlement de votre cotisation, même partiel.</p>
+    <p style="color: #666; font-size: 14px;">Si vous avez déjà réglé, il n'y a rien à faire : l'accès s'ouvrira dans les prochains jours, le temps que le club enregistre votre paiement.</p>
     <p style="color: #666; font-size: 14px;">Une question ? Écrivez-nous à <a href="mailto:${CONTACT_EMAIL}" style="color:#111;">${CONTACT_EMAIL}</a>.</p>`);
 }
 
