@@ -88,7 +88,7 @@ describe('ShopCatalog Component', () => {
     flushSync();
 
     const lien = target.querySelector('[data-testid="orders-history-link"]');
-    expect(lien?.textContent).toContain('Mes commandes');
+    expect(lien?.textContent).toContain('Mon historique de commandes');
     expect(lien?.getAttribute('href')).toBe('/mon-compte#commandes');
   });
 
@@ -250,7 +250,7 @@ describe('ShopCatalog Component', () => {
       await mountOrderable(target, { historyHref: '/mon-compte#commandes' });
       const dialog = await submit(target);
 
-      const lien = Array.from(dialog.querySelectorAll('a')).find((a) => a.textContent?.includes('Voir mes commandes'));
+      const lien = Array.from(dialog.querySelectorAll('a')).find((a) => a.textContent?.includes('Voir mon historique de commandes'));
       expect(lien?.getAttribute('href')).toBe('/mon-compte#commandes');
     });
 
@@ -261,7 +261,7 @@ describe('ShopCatalog Component', () => {
       await mountOrderable(target);
       const dialog = await submit(target);
 
-      expect(dialog.textContent).not.toContain('Voir mes commandes');
+      expect(dialog.textContent).not.toContain('Voir mon historique de commandes');
     });
 
     it("récapitule la commande dans une boîte modale plutôt qu'un encart", async () => {

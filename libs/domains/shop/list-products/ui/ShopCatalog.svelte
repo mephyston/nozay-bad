@@ -215,7 +215,7 @@
         data-testid="orders-history-link"
       >
         <History class="w-3.5 h-3.5" />
-        Mes commandes
+        Mon historique de commandes
       </a>
     {/if}
   </Card.Header>

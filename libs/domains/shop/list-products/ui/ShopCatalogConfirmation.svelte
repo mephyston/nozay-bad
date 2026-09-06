@@ -151,7 +151,7 @@
     <Dialog.Footer class="gap-2">
       {#if historyHref}
         <!-- La commande vient d'être enregistrée : c'est là qu'on voudra la suivre. -->
-        <Button variant="outline" class="w-full sm:w-auto" href={historyHref}>Voir mes commandes</Button>
+        <Button variant="outline" class="w-full sm:w-auto" href={historyHref}>Voir mon historique de commandes</Button>
       {/if}
       <Button class="w-full sm:w-auto" onclick={() => handleOpenChange(false)}>OK</Button>
     </Dialog.Footer>
