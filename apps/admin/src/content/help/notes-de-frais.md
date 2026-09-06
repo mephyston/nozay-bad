@@ -2,7 +2,7 @@
 title: "Notes de frais"
 description: "Traiter les demandes de remboursement des bénévoles, de la saisie au remboursement."
 category: "comptabilite"
-order: 7
+order: 8
 ---
 
 Une **note de frais** est une demande de remboursement pour un achat effectué pour le compte du club. L'écran se trouve dans **Comptabilité → Notes de frais** et présente deux listes : les demandes **en attente** et l'**historique** (validées et refusées), toutes deux avec une recherche libre sur le demandeur et le motif.

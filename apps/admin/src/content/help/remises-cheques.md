@@ -2,7 +2,7 @@
 title: "Chèques et remises"
 description: "Enregistrer un chèque reçu, générer un bordereau de remise et l'encaisser."
 category: "comptabilite"
-order: 5
+order: 6
 ---
 
 La rubrique **Comptabilité → Remises de chèques** se divise en deux écrans : la **gestion des chèques** reçus, et les **bordereaux de remise** déposés en banque.

@@ -15,6 +15,7 @@ export interface SeasonLike {
   code?: string | null;
   name?: string | null;
   startDate?: string | null;
+  endDate?: string | null;
   closed?: boolean | number | null;
 }
 
@@ -49,4 +50,18 @@ export function toSeasonOptions(
     value: value === 'id' ? String(s.id) : String(s.code ?? s.id),
     label: `${s.name || s.code || `Saison ${s.id}`}${markClosed && s.closed ? ' — clôturée' : ''}`
   }));
+}
+
+/**
+ * L'exercice dont les bornes contiennent une date, ou `undefined` si aucun ne la couvre.
+ *
+ * Une écriture se rattache à l'exercice de sa date, pas à celui que l'écran affiche : depuis
+ * le 1er septembre, l'exercice consulté est le nouveau, et une ligne de relevé d'août — ou un
+ * geste fait aujourd'hui depuis l'écran de l'exercice écoulé — tombe hors de ses bornes. La
+ * garde serveur refuse alors sans motif de rattachement. Les projections qui omettent les
+ * bornes ne trouvent rien : à l'appelant de retomber sur l'exercice consulté.
+ */
+export function seasonForDate<T extends SeasonLike>(seasons: T[], date: string): T | undefined {
+  if (!date) return undefined;
+  return seasons.find((s) => !!s.startDate && !!s.endDate && date >= s.startDate && date <= s.endDate);
 }

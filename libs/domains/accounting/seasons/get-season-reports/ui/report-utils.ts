@@ -26,12 +26,6 @@ export function formatDelta(cents: number): string {
   return sign + formatAmount(cents);
 }
 
-export const accountLabels: Record<string, string> = {
-  current: 'Compte Courant',
-  savings: 'Compte Livret',
-  cash: 'Caisse Physique'
-};
-
 export function generatePieSlices(items: { label: string; value: number }[]) {
   const validItems = items.filter(item => item.value > 0);
   const total = validItems.reduce((sum, item) => sum + item.value, 0);

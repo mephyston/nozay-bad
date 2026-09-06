@@ -1,11 +1,23 @@
+/** Le solde initial d'un compte de trésorerie, tel que le relais l'aplatit par exercice. */
+export interface SeasonInitialBalance {
+  /** Code du compte (`current`, `badnet`…), ce que l'API attend à l'écriture. */
+  accountId: string;
+  label: string;
+  /** Compte de tiers (classe 4) : le solde saisi est une dette, normalement nulle ou négative. */
+  thirdParty?: boolean;
+  initialBalanceCents: number;
+}
+
 export interface Season {
   id: string;
+  code?: string;
   name: string;
   active: boolean;
   closed?: boolean;
-  initialCurrentBalance?: number;
-  initialSavingsBalance?: number;
-  initialCashBalance?: number;
+  /** Un solde par compte, dans l'ordre des comptes — plus trois champs figés. */
+  initialBalances?: SeasonInitialBalance[];
+  /** Vrai quand les soldes viennent du bilan de l'exercice précédent, pas d'une saisie. */
+  isAutoFilled?: boolean;
 }
 
 export interface Category {

@@ -2,7 +2,7 @@
 title: "Plan comptable"
 description: "Les classes de compte qui structurent le compte de résultat."
 category: "comptabilite"
-order: 14
+order: 15
 ---
 
 Le **plan comptable** de l'application se réduit aux **classes de compte** : les rubriques qui regroupent les catégories dans le compte de résultat. Il se règle dans **Réglages → Catégories et classes**, onglet *Plan comptable*.

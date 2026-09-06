@@ -35,6 +35,12 @@ export interface Pagination {
 export interface BalanceReport {
   /** Code du compte, lu de `accounts` : plus une union figée depuis que les comptes sont des données. */
   accountId: string;
+  /** Identifiant numérique du compte, celui que portent les écritures. */
+  id?: number;
+  /** Libellé du compte, lu de `accounts`. C'est lui qui nomme les cartes et les sélecteurs. */
+  label?: string;
+  /** Compte de tiers (classe 4) : son solde est une dette envers les adhérents, pas de la trésorerie. */
+  thirdParty?: boolean;
   initialBalance: number;
   /** Solde COMPTABLE : à-nouveau + écritures. Ce n'est pas le solde du relevé. */
   finalBalance: number;
@@ -66,21 +72,6 @@ export interface AccountClass {
   label: string;
   type: 'recette' | 'depense';
 }
-
-export const accountLabels: Record<string, string> = {
-  current: 'Compte Courant',
-  savings: 'Compte Livret',
-  cash: 'Caisse Physique',
-  '1': 'Compte Courant',
-  '2': 'Compte Livret',
-  '3': 'Caisse Physique'
-};
-
-export const formAccountOptions = [
-  { value: 'current', label: 'Compte Courant' },
-  { value: 'savings', label: 'Compte Livret' },
-  { value: 'cash', label: 'Caisse Physique' }
-];
 
 export const methodLabels: Record<string, string> = {
   virement: 'Virement',

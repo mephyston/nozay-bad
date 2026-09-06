@@ -3,6 +3,7 @@ import { ledgerEntriesTable } from '@nba/accounting/schema';
 import { type DbOrTx, type Db } from '@nba/db';
 import { eq, and, gte, lte, or, inArray, isNotNull } from 'drizzle-orm';
 import { getUnvalidatedPaidOrders as getShopUnvalidatedPaidOrders } from '@nba/shop-api';
+import { listAccounts, listAccountsWithStatements } from '../../config/queries';
 import { bankStatementLinesTable, bankStatementBalancesTable, checkDepositsTable, checksTable, seasonBalancesTable, accountsTable, seasonCategoryBudgetsTable } from '../../shared/schema';
 
 export interface CloseSeasonRepositoryInterface {
@@ -16,6 +17,7 @@ export interface CloseSeasonRepositoryInterface {
   getSeasonBalances(db: DbOrTx, seasonId: number | string): Promise<any[]>;
   getTransactionsForSeason(db: DbOrTx, seasonId: number | string): Promise<any[]>;
   getAccounts(db: DbOrTx): Promise<any[]>;
+  getAccountsWithStatements(db: DbOrTx): Promise<{ id: number; code: string; label: string }[]>;
   getLatestBankStatementBalance(db: DbOrTx, accountId: number, asOfDate: string): Promise<{ date: string; balanceCents: number } | undefined>;
   getCategoryBudgets(db: DbOrTx, seasonId: number | string): Promise<any[]>;
   closeSeasonWithRollover(db: Db, seasonId: number | string, nextSeasonId: number | null, balancesToRollover: { accountId: number; finalBalanceCents: number }[], copyBudgets: boolean): Promise<any>;
@@ -119,7 +121,11 @@ export class CloseSeasonRepository implements CloseSeasonRepositoryInterface {
   }
 
   async getAccounts(db: DbOrTx): Promise<any[]> {
-    return db.select().from(accountsTable).all();
+    return listAccounts(db);
+  }
+
+  async getAccountsWithStatements(db: DbOrTx): Promise<{ id: number; code: string; label: string }[]> {
+    return listAccountsWithStatements(db);
   }
 
   /**

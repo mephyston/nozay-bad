@@ -48,7 +48,7 @@ Conformément à la réglementation des associations loi 1901 de petite taille (
 | :--- | :---: | :--- |
 | `seasons` | ✅ | Identifiant externe naturel — l'import Poona / MyFFBaD lit une colonne Saison valant `'25-26'`. |
 | `account_classes` | ✅ | Plan Comptable Associatif (PCA), défini à l'extérieur du système, universel et immuable. |
-| `accounts` | ✅ | Liste fermée et stable des comptes financiers (`current`, `savings`, `cash`), référencée en configuration. |
+| `accounts` | ✅ | Liste fermée et stable des comptes financiers (`current`, `savings`, `cash`, `badnet` depuis la migration 0030, `member_advances` depuis la 0031), référencée en configuration. Aucun écran ne les code en dur : ils se lisent par `GET /accounting/accounts` ou dans le bilan de trésorerie. Un compte dont la classe est en **classe 4** (`member_advances`, 467) est un compte de tiers : typé trésorerie pour que les virements y passent, mais écarté des totaux et présenté comme une dette (`isThirdPartyClassCode`, `shared/balances.ts`). |
 | `payment_methods` | ✅ | Liste fermée et stable des modes de règlement (`virement`, `cheque`, `cb`), mappée depuis les imports. |
 | `categories` | ❌ | Nomenclature analytique évolutive gérée par le trésorier. L'absence de code permet de scinder, fusionner ou renommer des catégories librement sans briser d'invariants système. |
 
@@ -186,9 +186,9 @@ erDiagram
 | Colonne | Type SQL | Contraintes / Modificateurs | Rôle & Justification Métier |
 | :--- | :--- | :--- | :--- |
 | `id` | `INTEGER` | `PRIMARY KEY AUTOINCREMENT` | Clé technique unique. |
-| `code` | `TEXT` | `UNIQUE NOT NULL` | Code fonctionnel (ex: `'current'`, `'savings'`, `'cash'`). |
+| `code` | `TEXT` | `UNIQUE NOT NULL` | Code fonctionnel (ex: `'current'`, `'savings'`, `'cash'`, `'badnet'`, `'member_advances'`). |
 | `label` | `TEXT` | `NOT NULL` | Nom d'usage (ex: `'Compte Courant LCL'`, `'Livret A'`, `'Caisse Buvette'`). |
-| `account_class_id` | `INTEGER` | `NOT NULL REFERENCES account_classes(id)` | Rattachement PCA (ex: compte 512, 517, 530). |
+| `account_class_id` | `INTEGER` | `NOT NULL REFERENCES account_classes(id)` | Rattachement PCA (ex: compte 512, 517, 530 ; 467 pour le compte d'attente des adhérents, typé trésorerie faute d'un type « tiers » — la classe 4 dit sa nature). |
 | `created_at` | `INTEGER` | `NOT NULL` | Timestamp de création. |
 
 #### Table `payment_methods` (Modes de Règlement)

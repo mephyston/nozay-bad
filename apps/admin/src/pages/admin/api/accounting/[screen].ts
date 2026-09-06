@@ -60,8 +60,16 @@ function saisonPrecedente(code: string): string {
  */
 const RAPPORT_VIDE = () => ({
   compteResultat: { totalRecettes: 0, totalDepenses: 0, netResult: 0, categories: {} },
-  bilanTrésorerie: ['current', 'savings', 'cash'].map((accountId) => ({
+  bilanTrésorerie: [
+    ['current', 'Compte Courant', false],
+    ['savings', 'Livret A / Épargne', false],
+    ['cash', 'Caisse Buvette', false],
+    ['badnet', 'Porte-monnaie Badnet', false],
+    ['member_advances', 'Fonds reçus pour le compte des adhérents', true]
+  ].map(([accountId, label, thirdParty]) => ({
     accountId,
+    label,
+    thirdParty,
     initialBalance: 0,
     finalBalance: 0,
     inVaultCents: 0,
@@ -72,12 +80,8 @@ const RAPPORT_VIDE = () => ({
   }))
 });
 
-/** Comptes de trésorerie : l'identifiant est tantôt textuel, tantôt numérique en base. */
-const COMPTES = [
-  { cle: 'initialCurrentBalance', id: 'current', num: 1 },
-  { cle: 'initialSavingsBalance', id: 'savings', num: 2 },
-  { cle: 'initialCashBalance', id: 'cash', num: 3 }
-] as const;
+/** Classe 4 du plan comptable : un compte de tiers, dont le solde est une dette et non de la trésorerie. */
+const estCompteDeTiers = (compte: any) => /^4/.test(String(compte.classCode ?? ''));
 
 /** Code de saison ou de classe, tel qu'il rejoindra un chemin d'API. */
 function code(valeur: unknown, quoi: string): string {
@@ -531,6 +535,28 @@ export const ECRANS: Record<string, Ecran> = {
           }
         ])
       ),
+      /*
+        Le virement reçu d'une adhérente, saisi depuis sa ligne de relevé : le relais ne fait
+        qu'un appel par écriture, donc l'écran crée le virement ici, puis pointe sa jambe
+        bancaire par « match ». Même corps blanchi que le grand livre.
+      */
+      'create-transfer': {
+        permission: 'accounting:ledger:write',
+        route: (data) => ({
+          chemin: '/accounting/internal-transfers',
+          method: 'POST',
+          body: {
+            seasonId: data.seasonId,
+            sourceAccountId: data.sourceAccountId,
+            destinationAccountId: data.destinationAccountId,
+            amountCents: data.amountCents,
+            sourceDate: data.sourceDate,
+            destinationDate: data.destinationDate,
+            description: data.description,
+            reference: data.reference
+          }
+        })
+      },
       ...Object.fromEntries(
         (['bulk', 'reconcile-bulk'] as const).map((action) => [
           action,
@@ -708,7 +734,21 @@ export const ECRANS: Record<string, Ecran> = {
   seasons: {
     permission: 'accounting:seasons:write',
     charger: async (lire) => {
-      const saisons: any[] = (await lire('/accounting/seasons')) ?? [];
+      /*
+        Les comptes viennent de la base, plus d'une table de trois codes : un compte ajouté
+        après le seed (le porte-monnaie Badnet) a droit à son solde initial comme les autres.
+        Le solde d'un compte se retrouve par son code ou par son identifiant numérique, les
+        deux formes cohabitant encore dans les données.
+      */
+      const [saisons, comptes]: [any[], any[]] = await Promise.all([
+        lire('/accounting/seasons').then((r: any) => r ?? []),
+        lire('/accounting/accounts').then((r: any) => r ?? [])
+      ]);
+
+      const soldeDe = (soldes: any[], compte: any) =>
+        soldes.find(
+          (b) => b.accountId === compte.code || b.accountId === compte.id || b.accountNumericId === compte.id
+        );
 
       /*
         Une lecture par saison, plus une seconde quand la saison n'a pas encore de soldes :
@@ -722,71 +762,105 @@ export const ECRANS: Record<string, Ecran> = {
             const codeSaison = s.code || String(s.id);
             const soldes: any[] =
               (await lire(`/accounting/seasons/${encodeURIComponent(codeSaison)}/balances`)) ?? [];
-            const enrichie: Record<string, unknown> = { ...s, isAutoFilled: false };
 
             if (soldes.length > 0) {
-              for (const compte of COMPTES) {
-                const ligne = soldes.find(
-                  (b) => b.accountId === compte.id || b.accountId === compte.num
-                );
-                enrichie[compte.cle] = ligne?.initialBalanceCents ?? ligne?.initialBalance ?? 0;
-              }
-              return enrichie;
+              return {
+                ...s,
+                isAutoFilled: false,
+                initialBalances: comptes.map((c) => ({
+                  accountId: c.code,
+                  label: c.label,
+                  thirdParty: estCompteDeTiers(c),
+                  initialBalanceCents: soldeDe(soldes, c)?.initialBalanceCents ?? soldeDe(soldes, c)?.initialBalance ?? 0
+                }))
+              };
             }
 
-            for (const compte of COMPTES) enrichie[compte.cle] = 0;
             const avant = saisonPrecedente(codeSaison);
-            if (!avant) return enrichie;
-
-            const rapport = await lire(`/accounting/seasons/${encodeURIComponent(avant)}/reports`);
+            const rapport = avant
+              ? await lire(`/accounting/seasons/${encodeURIComponent(avant)}/reports`)
+              : null;
             const bilan: any[] = rapport?.bilanTrésorerie ?? [];
-            for (const compte of COMPTES) {
-              const ligne = bilan.find((b) => b.accountId === compte.id);
-              if (ligne) {
-                enrichie[compte.cle] = ligne.finalBalance;
-                enrichie.isAutoFilled = true;
-              }
-            }
-            return enrichie;
+            let isAutoFilled = false;
+            const initialBalances = comptes.map((c) => {
+              const ligne = bilan.find((b) => b.accountId === c.code);
+              if (ligne) isAutoFilled = true;
+              return { accountId: c.code, label: c.label, thirdParty: estCompteDeTiers(c), initialBalanceCents: ligne?.finalBalance ?? 0 };
+            });
+            return { ...s, isAutoFilled, initialBalances };
           })
         )
       };
     }
   },
 
-  'cash-box': {
+  /**
+    Un compte sans relevé, vu de près : la caisse, le porte-monnaie Badnet, le compte
+    d'attente des adhérents. Le code vient de l'URL de la page et se vérifie contre la
+    liste des comptes ; les écritures passent par le relais du grand livre, qui sait déjà
+    tout écrire.
+  */
+  account: {
     permission: 'accounting:ledger:read',
     charger: async (lire, locals, params) => {
-      const saisonnier = await saison(lire, params);
-      const [soldes, mouvements] = await Promise.all([
-        lire(`/accounting/seasons/${encodeURIComponent(saisonnier.seasonId)}/balances`),
-        lire(`/accounting/transactions?season=${encodeURIComponent(saisonnier.seasonId)}&accountId=cash&limit=100`)
+      const codeCompte = String(params.get('account') ?? '');
+      if (!/^[a-z_]{1,32}$/.test(codeCompte)) throw new Refus('Code de compte invalide.');
+
+      const [saisonnier, comptes]: [any, any[]] = await Promise.all([
+        saison(lire, params),
+        lire('/accounting/accounts').then((r: any) => r ?? [])
+      ]);
+      const compte = comptes.find((c) => c.code === codeCompte);
+      if (!compte) throw new Refus(`Compte « ${codeCompte} » inconnu.`);
+
+      const s = encodeURIComponent(saisonnier.seasonId);
+      const enrichi = (c: any) => ({ id: c.id, code: c.code, label: c.label, thirdParty: estCompteDeTiers(c) });
+
+      /*
+        Les avances des adhérents se rendent depuis l'écran Badnet et se lisent sur celui du
+        compte d'attente : ces deux écrans reçoivent aussi les écritures du compte d'attente.
+      */
+      const veutAvances = codeCompte === 'badnet' || estCompteDeTiers(compte);
+
+      /*
+        Les avances se lisent sur TOUS les exercices ouverts, et non sur le seul consulté : un
+        virement reçu en août se rend en septembre, sur l'exercice suivant, et l'appariement
+        reçu/rendu doit voir les deux. Bornées à l'exercice affiché, l'avance d'août restait
+        « en attente » sur 25-26 pendant que son crédit vivait sur 26-27. Même borne que
+        l'archive du rapprochement : la clôture, seule chose qui ferme un exercice.
+      */
+      const exercicesOuverts = Array.from(new Set([
+        saisonnier.seasonId,
+        ...saisonnier.seasons.filter((x: any) => !x.closedAt).map((x: any) => String(x.code || x.id))
+      ]));
+      const lireAvances = () =>
+        Promise.all(
+          exercicesOuverts.map((code) =>
+            lire(`/accounting/transactions?season=${encodeURIComponent(code)}&accountId=member_advances&limit=200`)
+          )
+        ).then((listes) => listes.flatMap((l: any) => l ?? []));
+
+      const [soldes, mouvements, categories, avances] = await Promise.all([
+        lire(`/accounting/seasons/${s}/balances`),
+        lire(`/accounting/transactions?season=${s}&accountId=${encodeURIComponent(codeCompte)}&limit=200`),
+        lire('/accounting/categories'),
+        veutAvances ? lireAvances() : Promise.resolve(null)
       ]);
 
-      // La caisse porte deux identifiants selon l'âge de la donnée : l'un textuel, l'autre
-      // numérique. Les deux se rencontrent encore en base.
-      const caisse = (soldes ?? []).find((b: any) => b.accountId === 'cash' || b.accountId === 3);
+      const solde = (soldes ?? []).find((b: any) => b.accountId === compte.code || b.accountId === compte.id);
+      const ecritures = mouvements ?? [];
 
       return {
         ...saisonnier,
-        initialBalance: caisse?.initialBalanceCents ?? caisse?.initialBalance ?? 0,
-        transactions: mouvements ?? [],
+        account: enrichi(compte),
+        accounts: comptes.map(enrichi),
+        initialBalance: solde?.initialBalanceCents ?? solde?.initialBalance ?? 0,
+        transactions: ecritures,
+        categories: categories ?? [],
+        memberAdvanceEntries: veutAvances ? avances ?? [] : [],
         canWrite: can(locals, 'accounting:ledger:write'),
         canDelete: can(locals, 'accounting:ledger:delete')
       };
-    },
-    ecritures: {
-      create: {
-        permission: 'accounting:ledger:write',
-        route: (data) => ({ chemin: '/accounting/transactions', method: 'POST', body: data })
-      },
-      delete: {
-        permission: 'accounting:ledger:delete',
-        route: (data) => ({
-          chemin: `/accounting/transactions/${identifiant(data.id, "d'écriture")}`,
-          method: 'DELETE'
-        })
-      }
     }
   },
 

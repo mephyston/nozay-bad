@@ -33,9 +33,9 @@ describe('TransactionLedger Component', () => {
         },
         seasonId: '25-26',
         balances: [
-          { accountId: 'current', initialBalance: 100000, finalBalance: 104500 },
-          { accountId: 'savings', initialBalance: 200000, finalBalance: 200000 },
-          { accountId: 'cash', initialBalance: 5000, finalBalance: 5000 }
+          { id: 1, accountId: 'current', label: 'Compte Courant', initialBalance: 100000, finalBalance: 104500 },
+          { id: 2, accountId: 'savings', label: 'Livret A / Épargne', initialBalance: 200000, finalBalance: 200000 },
+          { id: 3, accountId: 'cash', label: 'Caisse Buvette', initialBalance: 5000, finalBalance: 5000 }
         ],
         seasons: [
           { id: '25-26', name: 'Saison 2025-2026', active: true }
@@ -162,16 +162,29 @@ describe('TransactionLedger Component', () => {
         transactions: [],
         pagination: { total: 0, page: 1, limit: 20, totalPages: 1 },
         seasonId: '25-26',
-        balances: [],
+        balances: [
+          { id: 1, accountId: 'current', label: 'Compte Courant', initialBalance: 0, finalBalance: 0 },
+          { id: 2, accountId: 'savings', label: 'Livret A / Épargne', initialBalance: 0, finalBalance: 0 },
+          { id: 3, accountId: 'cash', label: 'Caisse Buvette', initialBalance: 0, finalBalance: 0 },
+          { id: 4, accountId: 'badnet', label: 'Porte-monnaie Badnet', initialBalance: 100000, finalBalance: 100000 },
+          { id: 5, accountId: 'member_advances', label: 'Fonds reçus pour le compte des adhérents', thirdParty: true, initialBalance: 0, finalBalance: -12000 }
+        ],
         accountId: 'current'
       }
     });
 
-    // Le filtrage par compte est désormais dans le menu "Filtres" ; les trois
-    // comptes restent affichés en permanence via les cartes de solde en tête.
+    // Le filtrage par compte est désormais dans le menu "Filtres" ; les comptes restent
+    // affichés en permanence via les cartes de solde en tête — une par ligne du bilan, avec
+    // le libellé lu de la base, le porte-monnaie Badnet compris.
     expect(target.innerHTML).toContain('Compte Courant');
-    expect(target.innerHTML).toContain('Compte Livret');
-    expect(target.innerHTML).toContain('Caisse Physique');
+    expect(target.innerHTML).toContain('Livret A / Épargne');
+    expect(target.innerHTML).toContain('Caisse Buvette');
+    expect(target.innerHTML).toContain('Porte-monnaie Badnet');
+    // Le compte d'attente des adhérents se lit en dette positive, hors trésorerie.
+    expect(target.innerHTML).toContain('Dû aux adhérents');
+    expect(target.innerHTML.replace(/&nbsp;|[\u00a0\u202f]/g, ' ')).toContain('120,00');
+    expect(target.innerHTML.replace(/&nbsp;|[\u00a0\u202f]/g, ' ')).not.toContain('-120,00');
+    expect(target.querySelectorAll('[data-slot="card"], .grid > div').length).toBeGreaterThanOrEqual(4);
 
     unmount(component);
     document.body.removeChild(target);

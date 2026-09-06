@@ -1,11 +1,12 @@
 import type { BankStatementLine, ReconciliationStateFields, SplitRow } from './reconciliation-types';
-import { toast } from '@nba/ui';
+import { toast, seasonForDate } from '@nba/ui';
 import {
   apiLoadReconciliationStatements,
   apiLoadUnpaidInvoices,
   apiMatchLedgerEntry,
   apiCreateAndMatchSplit,
   apiCreateAndMatchSingle,
+  apiCreateMemberTransfer,
   apiDeleteLedgerEntry
 } from './reconciliation-api';
 import { scrollMemberOptionIntoView, scrollCategoryOptionIntoView } from './reconciliation-dropdowns';
@@ -227,6 +228,52 @@ export function createReconciliationActions(s: ReconciliationStateFields) {
     }
   }
 
+  /**
+   * Un virement reçu d'une adhérente, depuis sa ligne de relevé, en deux temps.
+   *
+   * Le relais ne sait faire qu'un appel par écriture : on crée le virement (compte d'attente →
+   * courant), puis on pointe sa jambe bancaire contre la ligne. Si le pointage échoue, le
+   * virement est supprimé — ses deux jambes — pour ne pas laisser un virement orphelin que
+   * l'écran ne saurait plus rattacher.
+   *
+   * Ce n'est ni une recette ni une dépense : l'argent appartient à l'adhérente, le club le lui
+   * rendra sur Badnet. Le saisir en recette fausserait le compte de résultat.
+   */
+  async function handleMemberTransfer(line: BankStatementLine, description: string) {
+    s.isSubmitting = true;
+    try {
+      const cents = (line as any).amountCents ?? line.amount ?? 0;
+      if (cents <= 0) throw new Error("Un virement reçu d'une adhérente est une ligne au crédit.");
+      if (!description.trim()) throw new Error("Le libellé doit nommer l'adhérente.");
+
+      /*
+       * L'exercice est celui de la DATE de la ligne, pas celui que l'écran affiche : la file
+       * n'a pas de borne d'exercice, et depuis le 1er septembre une ligne d'août rapprochée
+       * depuis le nouvel exercice tombait hors de ses bornes — refus sans motif de rattachement.
+       */
+      const season = seasonForDate(s.seasons, line.date);
+      const { legs } = await apiCreateMemberTransfer({
+        seasonId: season ? String(season.code ?? season.id) : s.selectedSeason,
+        amountCents: cents,
+        date: line.date,
+        description: description.trim(),
+        reference: line.fitid ? `BQ-${line.fitid}` : null
+      });
+      const destination = legs.find((l) => l.transferLeg === 'destination') ?? legs[0];
+
+      try {
+        const outcome = await apiMatchLedgerEntry(line.id, destination.id, null);
+        settle(outcome, 'Virement reçu enregistré et pointé. Pensez à le rendre sur Badnet.', line.id);
+      } catch (err) {
+        await apiDeleteLedgerEntry(destination.id).catch(() => undefined);
+        throw err;
+      }
+    } catch (err: any) {
+      toast.error(err.message);
+      s.isSubmitting = false;
+    }
+  }
+
   async function handleDeletePart(txId: number) {
     s.isSubmitting = true;
     try {
@@ -245,6 +292,6 @@ export function createReconciliationActions(s: ReconciliationStateFields) {
     toggleInvoiceSelection, addSplitRow, removeSplitRow, refreshStatements,
     loadUnpaidInvoices, prefillFromInvoices, validateSuggestion,
     selectMember, handleMemberKeyDown, selectCategory, handleCategoryKeyDown,
-    handleMatch, handleCreateAndMatch, handleDeletePart
+    handleMatch, handleCreateAndMatch, handleMemberTransfer, handleDeletePart
   };
 }

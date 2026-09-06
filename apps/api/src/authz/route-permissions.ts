@@ -90,6 +90,8 @@ export const ROUTE_PERMISSIONS: RouteRule[] = [
   { method: 'POST', path: '/accounting/categories', permission: 'accounting:config:write' },
   { method: 'PUT', path: '/accounting/categories/:id', permission: 'accounting:config:write' },
   { method: 'DELETE', path: '/accounting/categories/:id', permission: 'accounting:config:write' },
+  // Les comptes de trésorerie, pour les sélecteurs et l'écran des soldes initiaux.
+  { method: 'GET', path: '/accounting/accounts', permission: 'accounting:config:read' },
   { method: 'GET', path: '/accounting/account-classes', permission: 'accounting:config:read' },
   { method: 'POST', path: '/accounting/account-classes', permission: 'accounting:config:write' },
   { method: 'PUT', path: '/accounting/account-classes/:code', permission: 'accounting:config:write' },

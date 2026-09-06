@@ -34,14 +34,32 @@ vi.mock('../../../../lib/api', () => ({
           )
         );
       }
+      if (chemin === '/accounting/accounts') {
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({
+              success: true,
+              data: [
+                { id: 1, code: 'current', label: 'Compte Courant', classCode: '512', classType: 'tresorerie' },
+                { id: 3, code: 'cash', label: 'Caisse Buvette', classCode: '530', classType: 'tresorerie' },
+                { id: 4, code: 'badnet', label: 'Porte-monnaie Badnet', classCode: '517', classType: 'tresorerie' },
+                { id: 5, code: 'member_advances', label: 'Fonds reçus pour le compte des adhérents', classCode: '467', classType: 'tresorerie' }
+              ]
+            }),
+            { status: 200 }
+          )
+        );
+      }
       if (chemin.endsWith('/reports')) {
         return Promise.resolve(
-          new Response(JSON.stringify({ success: true, data: { bilanTrésorerie: [{ accountId: 'cash' }] } }), { status: 200 })
+          new Response(JSON.stringify({ success: true, data: { bilanTrésorerie: [{ accountId: 'cash', label: 'Caisse Buvette', finalBalance: 4200 }] } }), { status: 200 })
         );
       }
       if (chemin.endsWith('/balances')) {
+        // L'exercice 26-27 n'a pas encore de report : c'est lui qui se pré-remplit.
+        const data = chemin.includes('26-27') ? [] : [{ accountId: 'cash', initialBalanceCents: 1234 }];
         return Promise.resolve(
-          new Response(JSON.stringify({ success: true, data: [{ accountId: 'cash', initialBalanceCents: 1234 }] }), { status: 200 })
+          new Response(JSON.stringify({ success: true, data }), { status: 200 })
         );
       }
       if (chemin.startsWith('/accounting/bank-transactions')) {
@@ -176,7 +194,7 @@ describe('comptabilité — la saison', () => {
 
   it('signale une saison clôturée', async () => {
     saisons[1].closed = true;
-    const d = await donnees(await lire('cash-box'));
+    const d = await donnees(await lire('account', '?account=cash'));
     expect(d.isClosed).toBe(true);
   });
 });
@@ -209,12 +227,62 @@ describe('comptabilité — le grand livre', () => {
   });
 });
 
-describe('comptabilité — la caisse', () => {
-  it('trouve le solde initial quel que soit l’identifiant du compte', async () => {
+describe('comptabilité — les soldes initiaux', () => {
+  const DROITS_SAISONS = ['accounting:seasons:write'];
+
+  it('aplatit un solde par compte lu de la base, à zéro pour un compte sans report', async () => {
+    const d = await donnees(await lire('seasons', '', DROITS_SAISONS));
+    const s2526 = d.seasons.find((s: any) => s.code === '25-26');
+
+    expect(s2526.isAutoFilled).toBe(false);
+    expect(s2526.initialBalances).toEqual([
+      { accountId: 'current', label: 'Compte Courant', thirdParty: false, initialBalanceCents: 0 },
+      { accountId: 'cash', label: 'Caisse Buvette', thirdParty: false, initialBalanceCents: 1234 },
+      { accountId: 'badnet', label: 'Porte-monnaie Badnet', thirdParty: false, initialBalanceCents: 0 },
+      { accountId: 'member_advances', label: 'Fonds reçus pour le compte des adhérents', thirdParty: true, initialBalanceCents: 0 }
+    ]);
+    expect(s2526.initialCurrentBalance).toBeUndefined();
+  });
+
+  it("pré-remplit un exercice sans report depuis le bilan de l'exercice précédent", async () => {
+    saisons.push({ code: '26-27', startDate: '2026-09-01', endDate: '2027-08-31', active: 0, name: 'Saison 26-27', closedAt: null });
+
+    const d = await donnees(await lire('seasons', '', DROITS_SAISONS));
+    const s2627 = d.seasons.find((s: any) => s.code === '26-27');
+
+    expect(s2627.isAutoFilled).toBe(true);
+    expect(s2627.initialBalances.find((b: any) => b.accountId === 'cash').initialBalanceCents).toBe(4200);
+    expect(s2627.initialBalances.find((b: any) => b.accountId === 'badnet').initialBalanceCents).toBe(0);
+    expect(appels.some((a) => a.url.endsWith('/accounting/seasons/25-26/reports'))).toBe(true);
+  });
+});
+
+describe('comptabilité — un compte sans relevé', () => {
+  it('trouve le solde initial du compte demandé, quel que soit l’identifiant qu’il porte', async () => {
     // La caisse porte deux identifiants selon l'âge de la donnée : l'un textuel, l'autre
     // numérique. Les deux se rencontrent encore en base.
-    const d = await donnees(await lire('cash-box'));
+    const d = await donnees(await lire('account', '?account=cash'));
     expect(d.initialBalance).toBe(1234);
+    expect(d.account).toEqual({ id: 3, code: 'cash', label: 'Caisse Buvette', thirdParty: false });
+    expect(d.accounts.map((a: any) => a.code)).toEqual(['current', 'cash', 'badnet', 'member_advances']);
+    expect(appels.some((a) => a.url.includes('/accounting/transactions?season=25-26&accountId=cash&'))).toBe(true);
+    // La caisse ne rend pas d'avances : pas de lecture du compte d'attente.
+    expect(appels.some((a) => a.url.includes('accountId=member_advances'))).toBe(false);
+  });
+
+  it("charge les écritures du compte d'attente pour l'écran Badnet, sur tous les exercices ouverts", async () => {
+    const d = await donnees(await lire('account', '?account=badnet'));
+    expect(d.account.code).toBe('badnet');
+    // Une avance reçue en août se rend en septembre : l'appariement doit voir les deux exercices.
+    const avances = appels.filter((a) => a.url.includes('accountId=member_advances')).map((a) => a.url);
+    expect(avances.some((u) => u.includes('season=24-25'))).toBe(true);
+    expect(avances.some((u) => u.includes('season=25-26'))).toBe(true);
+    expect(Array.isArray(d.memberAdvanceEntries)).toBe(true);
+  });
+
+  it('refuse un compte inconnu ou un code mal formé', async () => {
+    expect((await lire('account', '?account=paypal')).status).toBe(400);
+    expect((await lire('account', '?account=../x')).status).toBe(400);
   });
 });
 

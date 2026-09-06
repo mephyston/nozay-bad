@@ -56,7 +56,8 @@ export const NAV_GROUPS: NavGroup[] = [
       { name: 'Factures', icon: 'FileCheck', href: '/admin/accounting/invoices', permission: 'accounting:invoices:read' },
       { name: 'Rapprochement bancaire', icon: 'Scale', href: '/admin/accounting/reconciliation', permission: 'accounting:bank:read' },
       { name: 'Remises de chèques', icon: 'Landmark', href: '/admin/accounting/cheques', permission: 'accounting:checks:read' },
-      { name: 'Caisse', icon: 'Wallet', href: '/admin/accounting/cash-box', permission: 'accounting:ledger:read' },
+      { name: 'Caisse', icon: 'Wallet', href: '/admin/accounting/accounts/cash', permission: 'accounting:ledger:read' },
+      { name: 'Badnet', icon: 'CreditCard', href: '/admin/accounting/accounts/badnet', permission: 'accounting:ledger:read' },
       { name: 'Notes de frais', icon: 'Coins', href: '/admin/expenses', permission: 'expenses:reports:read' }
     ]
   },

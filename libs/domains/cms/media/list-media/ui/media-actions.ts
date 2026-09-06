@@ -1,3 +1,4 @@
+import { readApiError } from '@nba/ui';
 import { prepareUpload } from './media-upload';
 import type { PickableMedia } from './media-types';
 
@@ -37,7 +38,7 @@ export async function uploadFile(
   if (prepared.height) form.append('height', String(prepared.height));
 
   const response = await fetch(RELAIS, { method: 'POST', body: form });
-  if (!response.ok) throw new Error(await extractError(response, 'Le dépôt a échoué.'));
+  if (!response.ok) throw new Error(await readApiError(response, 'Le dépôt a échoué.'));
 
   const body = (await response.json()) as { data?: PickableMedia; cree?: boolean };
   // Le fichier est déposé quoi qu'il arrive : le dire, plutôt que de laisser croire à un
@@ -61,7 +62,7 @@ export async function updateMediaAlt(id: number, alt: string): Promise<void> {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ action: 'update', id, alt })
   });
-  if (!response.ok) throw new Error(await extractError(response, 'La modification a échoué.'));
+  if (!response.ok) throw new Error(await readApiError(response, 'La modification a échoué.'));
 }
 
 export async function deleteMedia(id: number): Promise<void> {
@@ -70,14 +71,5 @@ export async function deleteMedia(id: number): Promise<void> {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ action: 'delete', id })
   });
-  if (!response.ok) throw new Error(await extractError(response, 'La suppression a échoué.'));
-}
-
-async function extractError(response: Response, fallback: string): Promise<string> {
-  try {
-    const body = (await response.json()) as { error?: string };
-    return body.error ?? fallback;
-  } catch {
-    return fallback;
-  }
+  if (!response.ok) throw new Error(await readApiError(response, 'La suppression a échoué.'));
 }

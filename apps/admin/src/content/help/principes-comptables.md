@@ -21,6 +21,10 @@ L'argent du club est suivi sur trois comptes :
 
 Chaque écriture désigne **un** de ces comptes. Un virement interne, lui, s'enregistre en **deux écritures** : une qui retire l'argent du compte de départ, une qui le verse au compte d'arrivée.
 
+## Les opérations pour compte de tiers
+
+De l'argent peut passer par le club sans lui appartenir : une adhérente vire une somme pour que le club la crédite sur son porte-monnaie Badnet. Ce n'est ni une recette ni une dépense, et ça ne doit jamais apparaître au compte de résultat. L'application le porte sur un **compte d'attente**, « Fonds reçus pour le compte des adhérents », que des virements internes remplissent et vident. Son solde, normalement nul ou négatif, se lit comme une **dette** : il est écarté de tous les totaux de trésorerie et présenté à part. Voir [Porte-monnaie Badnet](/admin/help/porte-monnaie-badnet).
+
 ## Les trois types d'écriture
 
 | Type | Effet | Particularité |

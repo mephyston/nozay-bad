@@ -4,11 +4,12 @@
   import { Button, Badge, Popover, Amount, DropdownMenu, DataTable, Table, DataTableColumnHeader, DataTableRowActions } from '@nba/ui';
   import { accrualLabel, isAccrual } from '../../../shared/accrual-labels';
   import type { Transaction, Pagination } from './ledger-types';
-  import { accountLabels } from './ledger-types';
+  import { accountLabelOf, type AccountLike } from '../../../shared/account-labels';
 
   let {
     transactions = [],
     pagination,
+    accounts = [],
     activeCategories = [],
     isClosed,
     selectedSeasonId,
@@ -20,6 +21,8 @@
   }: {
     transactions: Transaction[];
     pagination: Pagination;
+    /** Les comptes, pour nommer les deux bouts d'un virement. */
+    accounts?: AccountLike[];
     activeCategories: { id: string; code: string; name: string }[];
     isClosed: boolean;
     selectedSeasonId?: number | string;
@@ -148,9 +151,9 @@
       {#if tx.type === 'transfert'}
         <span class="text-xs text-muted-foreground whitespace-nowrap">
           {#if tx.transferLeg === 'destination'}
-            {accountLabels[String(tx.counterpartAccountId)] ?? '?'} → {accountLabels[String(tx.accountId)] ?? '?'}
+            {accountLabelOf(accounts, tx.counterpartAccountId)} → {accountLabelOf(accounts, tx.accountId)}
           {:else}
-            {accountLabels[String(tx.accountId)] ?? '?'} → {accountLabels[String(tx.counterpartAccountId)] ?? '?'}
+            {accountLabelOf(accounts, tx.accountId)} → {accountLabelOf(accounts, tx.counterpartAccountId)}
           {/if}
         </span>
       {:else}
@@ -263,8 +266,8 @@
       <div class="text-muted-foreground">
         {#if item.type === 'transfert'}
           {item.transferLeg === 'destination'
-            ? `${accountLabels[String(item.counterpartAccountId)] ?? '?'} → ${accountLabels[String(item.accountId)] ?? '?'}`
-            : `${accountLabels[String(item.accountId)] ?? '?'} → ${accountLabels[String(item.counterpartAccountId)] ?? '?'}`}
+            ? `${accountLabelOf(accounts, item.counterpartAccountId)} → ${accountLabelOf(accounts, item.accountId)}`
+            : `${accountLabelOf(accounts, item.accountId)} → ${accountLabelOf(accounts, item.counterpartAccountId)}`}
         {:else}
           Catégorie: <span class="font-medium text-foreground">{item.category ? (activeCategories.find(c => c.id === String(item.category))?.name || item.category) : '—'}</span>
         {/if}

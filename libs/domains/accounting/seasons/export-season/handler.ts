@@ -5,7 +5,8 @@ import { listInvoices } from '../../invoices/list-invoices/handler';
 import { getInvoice } from '../../invoices/get-invoice/handler';
 import { listExpenses } from '@nba/expenses-api';
 import { listLedgerEntries } from '../../ledger/list-ledger-entries/handler';
-import { accountLabels } from '../../ledger/list-ledger-entries/ui/ledger-types';
+import { listAccounts } from '../../config/queries';
+import { accountLabelOf } from '../../shared/account-labels';
 
 export async function exportSeasonArchive(db: Db, season: string, type: 'all' | 'ledger' | 'expenses' | 'invoices' = 'all'): Promise<{ data: Uint8Array, filename: string, mimeType: string }> {
   const zipData: Record<string, Uint8Array> = {};
@@ -65,8 +66,10 @@ export async function exportSeasonArchive(db: Db, season: string, type: 'all' | 
         const keys = ['Date', 'Type', 'Compte', 'Compte destinataire', 'Description', 'Montant EUR', 'Catégorie', 'Mode de paiement', 'Référence', 'Membre'];
         let csv = keys.join(';') + '\n';
 
+        // Les libellés viennent de la base, pas d'une table d'écran figée sur trois comptes.
+        const accounts = await listAccounts(db);
         const label = (accountId: number | string | null | undefined) =>
-          accountId === null || accountId === undefined ? '' : (accountLabels[String(accountId)] ?? String(accountId));
+          accountId === null || accountId === undefined ? '' : accountLabelOf(accounts, accountId);
 
         for (const row of ledger.data as any[]) {
           const amountCents = row.amount || 0;

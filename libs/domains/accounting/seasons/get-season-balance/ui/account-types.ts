@@ -1,4 +1,5 @@
-export interface CashTransaction {
+/** Une écriture d'un compte sans relevé, telle que l'API du grand livre la projette. */
+export interface AccountEntry {
   id: number;
   type: 'recette' | 'depense' | 'transfert';
   /*
@@ -15,6 +16,7 @@ export interface CashTransaction {
   transferLeg: 'source' | 'destination' | null;
   /** Le compte d'en face, lu sur la jambe jumelle. */
   counterpartAccountId: number | null;
+  /** Libellé de la catégorie (l'API projette `categories.admin_label`) ; `null` pour un virement. */
   category: string | null;
   amount: number;
   date: string;
@@ -24,19 +26,27 @@ export interface CashTransaction {
 }
 
 export interface Season {
-  id: string;
+  id: string | number;
+  code?: string;
   name: string;
   active: boolean;
   closed?: boolean;
+  startDate?: string;
+  endDate?: string;
 }
 
-export const categoryLabels: Record<string, string> = {
-  evenements_buvettes: 'Événements & Buvette',
-  evenements_club: 'Événements & Buvette',
-  boutique: 'Boutique & Cordages',
-  adhesions_inscriptions: 'Adhésion',
-  volants: 'Volants',
-  materiel_club: 'Matériel club',
-  divers_recette: 'Divers Recette',
-  divers_depense: 'Divers Dépense'
-};
+/** Le compte que l'écran affiche, tel que le relais le lit de `accounts`. */
+export interface ScreenAccount {
+  id?: number;
+  code: string;
+  label: string;
+  /** Compte de tiers (classe 4) : son solde est une dette envers les adhérents, pas de la trésorerie. */
+  thirdParty: boolean;
+}
+
+export interface CategoryOption {
+  id: number | string;
+  code?: string;
+  adminLabel: string;
+  active?: boolean;
+}

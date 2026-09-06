@@ -113,7 +113,12 @@ export async function getCloseSeasonChecks(
     });
   }
 
-  const halfPointedTransferIds = findHalfPointedTransferIds(seasonTxs);
+  // Seules les jambes d'un compte à relevé peuvent être pointées : la caisse et le porte-monnaie
+  // Badnet n'en ont pas, leurs virements ne sont pas des oublis. Même règle que l'état de rapprochement.
+  const pointableAccountIds = new Set((await repo.getAccountsWithStatements(db)).map((a) => a.id));
+  const halfPointedTransferIds = findHalfPointedTransferIds(
+    seasonTxs.filter((e: any) => pointableAccountIds.has(e.accountId))
+  );
   if (halfPointedTransferIds.length > 0) {
     warnings.push({
       code: 'HALF_POINTED_TRANSFERS',

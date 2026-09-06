@@ -61,6 +61,11 @@
       <p class="text-muted-foreground">
         Le saisir comme une recette ou une dépense fausserait le compte de résultat.
       </p>
+      <p>
+        S'il s'agit du virement d'une <strong>adhérente</strong> qui alimente son porte-monnaie Badnet par
+        le club, le bouton « Adhérente » de la ligne crée le virement depuis le compte d'attente et
+        pointe la ligne en un geste.
+      </p>
     </Alert.Description>
   </Alert.Root>
 {:else if sug}

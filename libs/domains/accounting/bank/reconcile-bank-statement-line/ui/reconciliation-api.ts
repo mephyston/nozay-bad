@@ -1,3 +1,4 @@
+import { readApiError } from '@nba/ui';
 import type { BankStatementLine, GLTransaction, Invoice, SplitRow } from './reconciliation-types';
 
 /**
@@ -29,7 +30,7 @@ async function postAction<T>(body: unknown, fallbackError: string): Promise<T> {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body)
   });
-  if (!res.ok) throw new Error((await res.text()) || fallbackError);
+  if (!res.ok) throw new Error(await readApiError(res, fallbackError));
   return (await res.json()) as T;
 }
 
@@ -76,7 +77,7 @@ export async function apiImportOfx(file: File, selectedAccount: string): Promise
   formData.append('file', file);
   formData.append('accountId', selectedAccount);
   const res = await fetch(DEPOT_RELEVE, { method: 'POST', body: formData });
-  if (!res.ok) throw new Error((await res.text()) || 'Erreur importation.');
+  if (!res.ok) throw new Error(await readApiError(res, 'Erreur importation.'));
   try {
     const json = await res.json();
     return (json && typeof json === 'object' ? json : {}) as ImportSummary;
@@ -167,6 +168,39 @@ export async function apiCreateAndMatchSingle(
         accrualNote
       }
   }, 'Erreur lors du rapprochement.'));
+}
+
+/**
+ * Le virement reçu d'une adhérente, créé depuis sa ligne de relevé.
+ *
+ * Deux jambes : le compte d'attente des adhérents (débité, l'argent n'appartient pas au club) et
+ * le compte courant (crédité, c'est la ligne du relevé). La réponse porte les jambes et leurs
+ * identifiants : c'est la jambe `destination` que l'écran pointe ensuite contre la ligne.
+ */
+export async function apiCreateMemberTransfer(input: {
+  seasonId: string;
+  amountCents: number;
+  date: string;
+  description: string;
+  reference?: string | null;
+}): Promise<{ legs: { id: number; transferLeg: 'source' | 'destination' }[] }> {
+  const json = await postAction<any>(
+    {
+      action: 'create-transfer',
+      seasonId: input.seasonId,
+      sourceAccountId: 'member_advances',
+      destinationAccountId: 'current',
+      amountCents: input.amountCents,
+      sourceDate: input.date,
+      destinationDate: input.date,
+      description: input.description,
+      reference: input.reference ?? null
+    },
+    "Le virement n'a pas pu être enregistré."
+  );
+  const legs = json?.legs ?? json?.data?.legs ?? [];
+  if (!Array.isArray(legs) || legs.length === 0) throw new Error("Le virement a été créé sans ses jambes : impossible de le pointer.");
+  return { legs };
 }
 
 /** Dissocier une jambe de virement en supprime deux : c'est le serveur qui dit lesquelles. */

@@ -5,7 +5,7 @@ import { GetSeasonReportsRepository } from './repository';
 import { GetSeasonReportsInput, GetSeasonReportsOutput, CategoryProjection, DeferredCashBreakdown } from "./dto";
 import { getSeasonFromDb } from '../../shared/accruals';
 import { generateTreasuryForecast } from './forecast-engine';
-import { computeAccountBalance, computeAccountBalances, sumAccountBalances, type AccountRef, signedEntryAmountCents } from '../../shared/balances';
+import { computeAccountBalance, computeAccountBalances, sumAccountBalances, duesToThirdPartiesCents, type AccountRef, signedEntryAmountCents } from '../../shared/balances';
 import { resolveOpeningBalances } from '../../shared/opening-balances';
 
 export async function getSeasonReports(db: Db, input: GetSeasonReportsInput): Promise<GetSeasonReportsOutput> {
@@ -86,7 +86,7 @@ export async function getSeasonReports(db: Db, input: GetSeasonReportsInput): Pr
    * le repli garde un tableau à trois lignes là où la base n'a pas encore été semée.
    */
   const treasuryAccounts: AccountRef[] = dbAccounts.length > 0
-    ? dbAccounts.map((a: any) => ({ id: a.id, code: a.code, label: a.label }))
+    ? dbAccounts.map((a: any) => ({ id: a.id, code: a.code, label: a.label, classCode: a.classCode }))
     : accountTypes.map((code) => ({ id: code as any, code }));
 
   /*
@@ -139,6 +139,11 @@ export async function getSeasonReports(db: Db, input: GetSeasonReportsInput): Pr
     const statement = statementBalances.get(b.accountId);
     return {
       accountId: b.accountCode,
+      /** Identifiant numérique et libellé, lus de `accounts` : les écrans n'ont plus de table à eux. */
+      id: typeof b.accountId === 'number' ? b.accountId : undefined,
+      label: b.accountLabel ?? b.accountCode,
+      /** Compte de tiers : à présenter comme une somme due, jamais dans le total de trésorerie. */
+      thirdParty: b.thirdParty,
       initialBalance: b.initialBalanceCents,
       /** Solde COMPTABLE de fin de période : à-nouveau + écritures, sans correction. */
       finalBalance: b.grossCents,
@@ -211,6 +216,9 @@ export async function getSeasonReports(db: Db, input: GetSeasonReportsInput): Pr
     totalDeferredRevenueCents,
     totalDeferredExpensesCents,
     netAvailableCashCents,
+    /* Les comptes de tiers, hors de tout ce qui précède : le brut signé, et la dette qu'il représente. */
+    thirdPartyGrossCents: cashTotals.thirdPartyGrossCents,
+    duesToThirdPartiesCents: duesToThirdPartiesCents(cashTotals),
     deferredRevenues,
     deferredExpenses
   };

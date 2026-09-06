@@ -2,18 +2,20 @@
 title: "Soldes initiaux"
 description: "Fixer l'état des comptes au premier jour de la saison."
 category: "comptabilite"
-order: 12
+order: 13
 ---
 
 Le **solde initial** est le montant présent sur chaque compte financier au premier jour de la saison comptable. Il sert de base à tous les calculs : solde progressif du grand livre, bilan de trésorerie, contrôle de clôture.
 
 ## Où les saisir
 
-Depuis **Réglages → Saisons comptables**, le bouton **Soldes** de la saison ouvre la saisie des trois montants :
+Depuis **Réglages → Saisons comptables**, le bouton **Soldes** de la saison ouvre la saisie d'un montant par compte financier :
 
 - **Compte Courant**
-- **Compte Livret**
-- **Caisse physique**
+- **Livret A / Épargne**
+- **Caisse Buvette**
+- **Porte-monnaie Badnet**, le compte prépayé du club chez Badnet (voir [Porte-monnaie Badnet](/admin/help/porte-monnaie-badnet))
+- **Fonds reçus pour le compte des adhérents**, marqué *dette* : l'argent viré par des adhérentes et pas encore rendu sur leur porte-monnaie Badnet. Son solde est nul ou **négatif**, et il n'entre pas dans la trésorerie disponible.
 
 ## Pré-remplissage automatique
 

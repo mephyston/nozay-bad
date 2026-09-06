@@ -1,7 +1,8 @@
 export interface BankStatementLine {
   id: number;
   fitid: string;
-  accountId: 'current' | 'savings' | 'cash';
+  /** Code du compte, lu de `accounts`. */
+  accountId: string;
   amount: number;
   /** Certaines réponses portent le montant en centimes sous ce nom ; `amount` sinon. */
   amountCents?: number;
@@ -17,7 +18,8 @@ export interface GLTransaction {
   /** L'exercice de rattachement : un exercice clos n'accepte plus aucun pointage. */
   seasonId?: number | string;
   type: 'recette' | 'depense' | 'transfert';
-  accountId: 'current' | 'savings' | 'cash';
+  /** Code du compte, lu de `accounts`. */
+  accountId: string;
   amount: number;
   /** Certaines réponses portent le montant en centimes sous ce nom ; `amount` sinon. */
   amountCents?: number;
@@ -37,6 +39,9 @@ export interface Season {
   name: string;
   active: boolean;
   closed?: boolean;
+  /** Bornes de l'exercice, telles que le référentiel les rend ; absentes des projections réduites. */
+  startDate?: string;
+  endDate?: string;
 }
 
 /** Ce qu'une facture encaissera, et sous quelle imputation. `categoryId: null` = à choisir. */
@@ -141,6 +146,8 @@ export interface SplitRow {
 export interface ReconciliationStateFields {
   bankStatementLines: BankStatementLine[];
   glTransactions: GLTransaction[];
+  /** Le référentiel des exercices, avec leurs bornes : l'exercice d'une écriture se déduit de sa date. */
+  seasons: Season[];
   pointableEntries: GLTransaction[];
   reconciliationStatements: any[];
   displayedTransactions: BankStatementLine[];
@@ -191,9 +198,3 @@ export interface ReconciliationStateFields {
   isCategoryDropdownOpen: boolean;
   categoryHighlightedIndex: number;
 }
-
-export const accountLabels = {
-  current: 'Compte Courant',
-  savings: 'Compte Livret',
-  cash: 'Caisse Physique'
-};

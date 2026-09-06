@@ -17,6 +17,7 @@ import { exportSeasonRoute } from './seasons/export-season/route';
 // Config Routes
 import { listCategoriesRoute } from './config/list-categories/route';
 import { listAccountClassesRoute } from './config/list-account-classes/route';
+import { listAccountsRoute } from './config/list-accounts/route';
 import { createCategoryRoute } from './config/create-category/route';
 import { updateCategoryRoute } from './config/update-category/route';
 import { deleteCategoryRoute } from './config/delete-category/route';
@@ -82,6 +83,7 @@ accountingRouter.route('/', exportSeasonRoute);
 // 2. CONFIG ROUTES
 accountingRouter.route('/', listCategoriesRoute);
 accountingRouter.route('/', listAccountClassesRoute);
+accountingRouter.route('/', listAccountsRoute);
 accountingRouter.route('/', createCategoryRoute);
 accountingRouter.route('/', updateCategoryRoute);
 accountingRouter.route('/', deleteCategoryRoute);

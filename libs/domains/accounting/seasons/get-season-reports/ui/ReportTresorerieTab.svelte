@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Table, Card } from '@nba/ui';
   import type { ReportData, Season } from './report-types';
-  import { formatAmount, formatDelta, accountLabels } from './report-utils';
+  import { formatAmount, formatDelta } from './report-utils';
   import ReportTreasuryForecast from './ReportTreasuryForecast.svelte';
 import ReportAIAnalysis from './ReportAIAnalysis.svelte';
 
@@ -13,8 +13,17 @@ import ReportAIAnalysis from './ReportAIAnalysis.svelte';
    * COMPTABLE, et il ne tombe juste sur aucun relevé dès qu'un chèque dort dans le coffre.
    * Les deux colonnes portent désormais leur nom, et l'écart n'apparaît que lorsqu'il existe.
    */
-  const totalFinal = $derived(report.bilanTrésorerie.reduce((sum, item) => sum + item.finalBalance, 0));
-  const totalInitial = $derived(report.bilanTrésorerie.reduce((sum, item) => sum + item.initialBalance, 0));
+  /*
+   * Les comptes de tiers (classe 4, le compte d'attente des adhérents) ne sont pas de la
+   * trésorerie : ils sortent du tableau et du total, et se lisent à part comme une dette.
+   * Le total ne doit ni les compter, ni les compenser avec le compte courant qui a reçu l'argent.
+   */
+  const disponibilites = $derived(report.bilanTrésorerie.filter((item) => !item.thirdParty));
+  const tiers = $derived(report.bilanTrésorerie.filter((item) => item.thirdParty));
+  const tiersGross = $derived(tiers.reduce((sum, item) => sum + item.finalBalance, 0));
+
+  const totalFinal = $derived(disponibilites.reduce((sum, item) => sum + item.finalBalance, 0));
+  const totalInitial = $derived(disponibilites.reduce((sum, item) => sum + item.initialBalance, 0));
   /*
    * La colonne montre le solde du RELEVÉ, pas un solde bancaire calculé.
    *
@@ -23,9 +32,9 @@ import ReportAIAnalysis from './ReportAIAnalysis.svelte';
    * aucune écriture — et un compte sans relevé n'affiche rien plutôt qu'un ersatz.
    */
   const totalReleve = $derived(
-    report.bilanTrésorerie.reduce((sum, item) => sum + (item.statementBalanceCents ?? 0), 0)
+    disponibilites.reduce((sum, item) => sum + (item.statementBalanceCents ?? 0), 0)
   );
-  const auMoinsUnReleve = $derived(report.bilanTrésorerie.some((item) => item.statementBalanceCents !== null));
+  const auMoinsUnReleve = $derived(disponibilites.some((item) => item.statementBalanceCents !== null));
 
   function formatDay(iso: string | null | undefined): string {
     if (!iso) return '';
@@ -55,12 +64,12 @@ import ReportAIAnalysis from './ReportAIAnalysis.svelte';
           </Table.Row>
         </Table.Header>
         <Table.Body class="divide-y divide-border">
-          {#each report.bilanTrésorerie as item}
+          {#each disponibilites as item}
             {@const releve = item.statementBalanceCents}
             {@const decale = releve !== null && releve !== undefined && releve !== item.finalBalance}
             <Table.Row>
               <Table.Cell class="px-2 py-3 sm:p-4 font-semibold align-top sm:align-middle">
-                <div>{accountLabels[item.accountId] || item.accountId}</div>
+                <div>{item.label || item.accountId}</div>
                 <div class="sm:hidden flex flex-col gap-0.5 mt-1 text-xs font-normal text-muted-foreground">
                   <span>Initial: {formatAmount(item.initialBalance)}</span>
                   <span class="{item.finalBalance - item.initialBalance >= 0 ? 'text-success' : 'text-destructive'}">
@@ -111,6 +120,26 @@ import ReportAIAnalysis from './ReportAIAnalysis.svelte';
         </Table.Footer>
       </Table.Root>
     </div>
+
+    {#if tiersGross !== 0}
+      <!--
+        Un solde négatif du compte d'attente est ce que le club doit encore rendre aux adhérents
+        (viré par elles, pas encore crédité sur leur porte-monnaie Badnet). Un solde positif serait
+        une avance que le club leur a consentie. Ni l'un ni l'autre n'est de la trésorerie.
+      -->
+      <div class="rounded-md border border-border bg-muted/30 px-4 py-3 text-sm" data-testid="tiers-block">
+        <div class="flex items-center justify-between font-semibold">
+          <span>{tiersGross < 0 ? 'Sommes dues aux adhérents' : 'Avances consenties aux adhérents'}</span>
+          <span>{formatAmount(Math.abs(tiersGross))}</span>
+        </div>
+        <ul class="mt-1 space-y-0.5 text-xs text-muted-foreground">
+          {#each tiers as item}
+            <li class="flex justify-between"><span>{item.label || item.accountId}</span><span>{formatAmount(Math.abs(item.finalBalance))}</span></li>
+          {/each}
+        </ul>
+        <p class="mt-1 text-xs text-muted-foreground">Hors trésorerie : fonds reçus pour le compte d'adhérents, à leur rendre.</p>
+      </div>
+    {/if}
   </Card.Content>
 </Card.Root>
 

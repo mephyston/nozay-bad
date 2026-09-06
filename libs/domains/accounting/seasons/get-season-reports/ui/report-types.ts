@@ -14,6 +14,12 @@ export interface ReportData {
   bilanTrésorerie: {
     /** Code du compte, lu de `accounts` : plus une union figée depuis que les comptes sont des données. */
     accountId: string;
+    /** Identifiant numérique du compte, celui que portent les écritures. */
+    id?: number;
+    /** Libellé du compte, lu de `accounts`. */
+    label?: string;
+    /** Compte de tiers (classe 4) : hors du total, présenté comme une somme due. */
+    thirdParty?: boolean;
     initialBalance: number;
     /** Solde COMPTABLE de fin de période. C'est lui qui se reporte à-nouveau. */
     finalBalance: number;
@@ -35,6 +41,10 @@ export interface ReportData {
     deferredRevenues: { categoryName: string; amountCents: number }[];
     deferredExpenses: { categoryName: string; amountCents: number }[];
     netAvailableCashCents: number;
+    /** Solde brut signé des comptes de tiers, hors des totaux ci-dessus. */
+    thirdPartyGrossCents?: number;
+    /** Ce que le club doit aux adhérents, rendu positif. */
+    duesToThirdPartiesCents?: number;
   };
   projections?: {
     categories: any[];

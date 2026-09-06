@@ -1,34 +1,60 @@
 <script lang="ts">
-  import { Wallet, TrendingUp, TrendingDown } from '@lucide/svelte';
+  import { Wallet, TrendingUp, TrendingDown, HandCoins } from '@lucide/svelte';
   import { Card, Amount } from '@nba/ui';
 
   let {
+    label,
+    thirdParty = false,
     initialBalance = 0,
     totalIn = 0,
     totalOut = 0,
     currentBalance = 0
   }: {
+    label: string;
+    /** Compte de tiers : le solde se lit comme une dette, en positif. */
+    thirdParty?: boolean;
     initialBalance: number;
     totalIn: number;
     totalOut: number;
     currentBalance: number;
   } = $props();
+
+  /*
+    Un compte de tiers (le compte d'attente des adhérents) n'a pas de « solde » au sens de la
+    trésorerie : négatif, c'est ce que le club doit rendre ; positif, ce qu'il a avancé.
+  */
+  const soldeTitre = $derived(
+    !thirdParty ? `Solde · ${label}`
+      : currentBalance < 0 ? 'Dû aux adhérents'
+      : currentBalance > 0 ? 'Avancé aux adhérents'
+      : 'Rien à rendre aux adhérents'
+  );
 </script>
 
 <div class="grid gap-4 md:grid-cols-3">
-  <Card.Root class="relative overflow-hidden flex flex-col justify-center p-5 shadow-sm transition-all hover:shadow-md group border-border/50 bg-gradient-to-b from-card/80 to-card">
+  <Card.Root class="relative overflow-hidden flex flex-col justify-center p-5 shadow-sm transition-all hover:shadow-md group border-border/50 bg-gradient-to-b from-card/80 to-card {thirdParty ? 'border-dashed' : ''}">
     <div class="absolute -right-4 -top-4 opacity-5 group-hover:opacity-10 transition-opacity duration-300">
-      <Wallet size={120} />
+      {#if thirdParty}<HandCoins size={120} />{:else}<Wallet size={120} />{/if}
     </div>
     <div class="flex items-center justify-between space-y-0 pb-2">
-      <h3 class="font-semibold text-sm tracking-tight text-muted-foreground">Solde de la Caisse</h3>
-      <div class="p-2 bg-success/10 text-success rounded-lg shrink-0"><Wallet size={18} /></div>
+      <h3 class="font-semibold text-sm tracking-tight text-muted-foreground">{soldeTitre}</h3>
+      <div class="p-2 bg-success/10 text-success rounded-lg shrink-0">
+        {#if thirdParty}<HandCoins size={18} />{:else}<Wallet size={18} />{/if}
+      </div>
     </div>
     <div class="text-3xl font-bold mt-1">
-      <Amount cents={currentBalance} class="" colorize={true} />
+      {#if thirdParty}
+        <Amount cents={Math.abs(currentBalance)} />
+      {:else}
+        <Amount cents={currentBalance} class="" colorize={true} />
+      {/if}
     </div>
     <div class="text-xs text-muted-foreground mt-2 flex items-center gap-1 z-10">
-      <span>Solde initial :</span>
+      {#if thirdParty}
+        <span>Hors trésorerie · solde initial :</span>
+      {:else}
+        <span>Solde initial :</span>
+      {/if}
       <Amount cents={initialBalance} class="font-normal text-muted-foreground" />
     </div>
   </Card.Root>

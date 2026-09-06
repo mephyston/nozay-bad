@@ -2,7 +2,7 @@
 title: "Catégories comptables"
 description: "L'imputation choisie par les bénévoles, et son lien avec le plan comptable."
 category: "comptabilite"
-order: 13
+order: 14
 ---
 
 Une **catégorie comptable** est l'imputation que choisit le bénévole au moment de saisir une écriture, de déposer une note de frais ou d'enregistrer un chèque. Elle évite d'avoir à connaître le plan comptable.

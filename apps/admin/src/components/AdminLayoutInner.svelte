@@ -37,7 +37,8 @@
     Signpost,
     DoorOpen,
     KeyRound,
-    CircleAlert
+    CircleAlert,
+    CreditCard
   } from "@lucide/svelte";
   import { DropdownMenu } from "bits-ui";
   import { onMount } from "svelte";
@@ -63,7 +64,7 @@
   const ICONS: Record<string, any> = {
     LayoutDashboard, Users, BarChart3, BookOpen, FileCheck, Scale,
     Landmark, Wallet, Coins, Package, ShoppingCart, Bell, Megaphone, Image, FileText, Newspaper, CalendarClock, CalendarDays, PanelBottom, Settings, User, HelpCircle,
-    Trophy, ChartNoAxesColumn, ShieldCheck, Signpost, DoorOpen, KeyRound,
+    Trophy, ChartNoAxesColumn, ShieldCheck, Signpost, DoorOpen, KeyRound, CreditCard,
     Menu: MenuIcon
   };
 
@@ -237,8 +238,11 @@
     if (item.href === "/admin/accounting/cheques") {
       return primary === "comptabilité" && sub === "remises de chèques";
     }
-    if (item.href === "/admin/accounting/cash-box") {
+    if (item.href === "/admin/accounting/accounts/cash") {
       return primary === "comptabilité" && sub === "caisse";
+    }
+    if (item.href === "/admin/accounting/accounts/badnet") {
+      return primary === "comptabilité" && sub === "badnet";
     }
     if (item.href === "/admin/accounting/config") {
       return primary === "comptabilité" && sub === "soldes initiaux";

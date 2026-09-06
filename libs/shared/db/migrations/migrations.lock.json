@@ -30,6 +30,8 @@
     "0026_index_de_lecture.sql": "30d6a19d8367e4f7",
     "0027_index_accrual_et_releve.sql": "6c591e9b252f51dc",
     "0028_index_statut_releve.sql": "0e8bdafd88093377",
-    "0029_supprimer_lignes_masquees.sql": "9d5254ff2a5a7ea3"
+    "0029_supprimer_lignes_masquees.sql": "9d5254ff2a5a7ea3",
+    "0030_compte_badnet.sql": "712bf039b5a3498e",
+    "0031_fonds_adherents.sql": "940a013754c6a414"
   }
 }

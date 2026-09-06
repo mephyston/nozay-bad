@@ -1,3 +1,4 @@
+import { seasonForDate } from './seasons';
 import { describe, it, expect } from 'vitest';
 import { toSeasonOptions, sortSeasons } from './seasons';
 
@@ -53,5 +54,24 @@ describe('sortSeasons', () => {
     const entree = [...seasons];
     expect(sortSeasons(entree).map((s) => s.code)).toEqual(['24-25', '25-26', '26-27']);
     expect(entree.map((s) => s.id)).toEqual([2, 1, 3]);
+  });
+});
+
+describe('seasonForDate', () => {
+  const seasons = [
+    { id: 1, code: '25-26', startDate: '2025-09-01', endDate: '2026-08-31' },
+    { id: 2, code: '26-27', startDate: '2026-09-01', endDate: '2027-08-31' }
+  ];
+
+  it("rend l'exercice dont les bornes contiennent la date, bornes comprises", () => {
+    expect(seasonForDate(seasons, '2026-08-21')?.code).toBe('25-26');
+    expect(seasonForDate(seasons, '2026-08-31')?.code).toBe('25-26');
+    expect(seasonForDate(seasons, '2026-09-01')?.code).toBe('26-27');
+  });
+
+  it("ne trouve rien hors de tout exercice, sans date, ou sur une projection sans bornes", () => {
+    expect(seasonForDate(seasons, '2024-01-01')).toBeUndefined();
+    expect(seasonForDate(seasons, '')).toBeUndefined();
+    expect(seasonForDate([{ id: 1, code: '25-26' }], '2026-01-01')).toBeUndefined();
   });
 });

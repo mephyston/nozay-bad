@@ -29,12 +29,17 @@ generateAiAnalysisRoute.post(
 
     let prompt = '';
     if (section === 'tresorerie') {
-      const treso = report.bilanTrésorerie;
+      // Les comptes de tiers (classe 4) ne sont pas de la trésorerie : hors des totaux, nommés à part.
+      const treso = report.bilanTrésorerie.filter((t: any) => !t.thirdParty);
       const initial = treso.reduce((acc: number, t: any) => acc + t.initialBalance, 0);
       const final = treso.reduce((acc: number, t: any) => acc + t.finalBalance, 0);
-      
+      const dues = report.bilanTrésorerie
+        .filter((t: any) => t.thirdParty)
+        .reduce((acc: number, t: any) => acc - t.finalBalance, 0);
+      const duesPhrase = dues > 0 ? ` Sommes dues aux adhérents (fonds reçus pour leur compte, hors trésorerie) = ${dues / 100} €.` : '';
+
       prompt = `Tu es le trésorier d'une association sportive. Rédige un commentaire très concis (1 paragraphe, maximum 4-5 lignes) pour le bilan de trésorerie de cette saison.
-Les données : Solde initial total = ${initial / 100} €. Solde final = ${final / 100} €. Évolution = ${(final - initial) / 100} €.
+Les données : Solde initial total = ${initial / 100} €. Solde final = ${final / 100} €. Évolution = ${(final - initial) / 100} €.${duesPhrase}
 Explique brièvement la tendance. Ton ton doit être professionnel, rassurant, et s'adresser à l'Assemblée Générale. Ne dis pas bonjour, va droit au but.`;
     } else {
       const net = (report.compteResultat?.netResult || 0) / 100;

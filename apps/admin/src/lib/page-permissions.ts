@@ -31,7 +31,9 @@ export const PAGE_PERMISSIONS: Record<string, Permission | null> = {
   '/admin/members/import': 'members:members:import',
 
   '/admin/accounting': 'accounting:ledger:read',
+  // L'ancienne adresse de la Caisse redirige vers l'écran par compte.
   '/admin/accounting/cash-box': 'accounting:ledger:read',
+  '/admin/accounting/accounts/[code]': 'accounting:ledger:read',
   '/admin/accounting/reconciliation': 'accounting:bank:read',
   '/admin/accounting/invoices': 'accounting:invoices:read',
   '/admin/accounting/invoices/[id]': 'accounting:invoices:read',

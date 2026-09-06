@@ -2,7 +2,7 @@
 title: "Budget prévisionnel"
 description: "Saisir le budget de la saison, catégorie par catégorie, et le comparer au réalisé."
 category: "comptabilite"
-order: 9
+order: 10
 ---
 
 Le **Budget prévisionnel** se saisit depuis **Comptabilité → Rapports financiers → Budget prévisionnel**. Il sert de référence à la colonne *prévisionnel* du compte de résultat et alimente la projection de trésorerie.

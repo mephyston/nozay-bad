@@ -1,7 +1,7 @@
 import { AppError, type Db } from '@nba/db';
 import { GetSeasonBalanceRepository } from './repository';
 import { GetSeasonBalanceInput, GetSeasonBalanceOutput } from "./dto";
-import { computeAccountBalances, sumAccountBalances } from '../../shared/balances';
+import { computeAccountBalances, duesToThirdPartiesCents, sumAccountBalances } from '../../shared/balances';
 
 export async function getSeasonBalance(db: Db, seasonId: GetSeasonBalanceInput): Promise<GetSeasonBalanceOutput> {
   const repo = new GetSeasonBalanceRepository();
@@ -26,6 +26,9 @@ export async function getSeasonBalance(db: Db, seasonId: GetSeasonBalanceInput):
    * `balance` reste le solde COMPTABLE, et garde son nom : c'est ce que le tableau de bord
    * affiche depuis toujours. Les trois autres nombres l'accompagnent désormais, pour que
    * l'appelant puisse dire lequel des soldes il montre au lieu d'avoir à le deviner.
+   *
+   * Les comptes de tiers (classe 4) restent dans `accounts`, avec leur drapeau, mais n'entrent
+   * dans aucun total : l'argent reçu pour le compte d'une adhérente n'est pas disponible.
    */
   return {
     balance: totals.grossCents,
@@ -33,6 +36,8 @@ export async function getSeasonBalance(db: Db, seasonId: GetSeasonBalanceInput):
     inVaultCents: totals.inVaultCents,
     pendingDebitCents: totals.pendingDebitCents,
     bankTheoreticalCents: totals.bankTheoreticalCents,
+    thirdPartyGrossCents: totals.thirdPartyGrossCents,
+    duesToThirdPartiesCents: duesToThirdPartiesCents(totals),
     accounts: perAccount
   };
 }
