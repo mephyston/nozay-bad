@@ -194,7 +194,7 @@ describe('comptabilité — la saison', () => {
 
   it('signale une saison clôturée', async () => {
     saisons[1].closed = true;
-    const d = await donnees(await lire('cash-box'));
+    const d = await donnees(await lire('account', '?account=cash'));
     expect(d.isClosed).toBe(true);
   });
 });
@@ -257,12 +257,29 @@ describe('comptabilité — les soldes initiaux', () => {
   });
 });
 
-describe('comptabilité — la caisse', () => {
-  it('trouve le solde initial quel que soit l’identifiant du compte', async () => {
+describe('comptabilité — un compte sans relevé', () => {
+  it('trouve le solde initial du compte demandé, quel que soit l’identifiant qu’il porte', async () => {
     // La caisse porte deux identifiants selon l'âge de la donnée : l'un textuel, l'autre
     // numérique. Les deux se rencontrent encore en base.
-    const d = await donnees(await lire('cash-box'));
+    const d = await donnees(await lire('account', '?account=cash'));
     expect(d.initialBalance).toBe(1234);
+    expect(d.account).toEqual({ id: 3, code: 'cash', label: 'Caisse Buvette', thirdParty: false });
+    expect(d.accounts.map((a: any) => a.code)).toEqual(['current', 'cash', 'badnet', 'member_advances']);
+    expect(appels.some((a) => a.url.includes('/accounting/transactions?season=25-26&accountId=cash&'))).toBe(true);
+    // La caisse ne rend pas d'avances : pas de lecture du compte d'attente.
+    expect(appels.some((a) => a.url.includes('accountId=member_advances'))).toBe(false);
+  });
+
+  it("charge les écritures du compte d'attente pour l'écran Badnet, d'où l'on rend les avances", async () => {
+    const d = await donnees(await lire('account', '?account=badnet'));
+    expect(d.account.code).toBe('badnet');
+    expect(appels.some((a) => a.url.includes('accountId=member_advances'))).toBe(true);
+    expect(Array.isArray(d.memberAdvanceEntries)).toBe(true);
+  });
+
+  it('refuse un compte inconnu ou un code mal formé', async () => {
+    expect((await lire('account', '?account=paypal')).status).toBe(400);
+    expect((await lire('account', '?account=../x')).status).toBe(400);
   });
 });
 

@@ -80,6 +80,9 @@ const RAPPORT_VIDE = () => ({
   }))
 });
 
+/** Classe 4 du plan comptable : un compte de tiers, dont le solde est une dette et non de la trésorerie. */
+const estCompteDeTiers = (compte: any) => /^4/.test(String(compte.classCode ?? ''));
+
 /** Code de saison ou de classe, tel qu'il rejoindra un chemin d'API. */
 function code(valeur: unknown, quoi: string): string {
   const brut = String(valeur ?? '');
@@ -712,9 +715,6 @@ export const ECRANS: Record<string, Ecran> = {
         lire('/accounting/accounts').then((r: any) => r ?? [])
       ]);
 
-      // Classe 4 du plan comptable : un compte de tiers, dont le solde est une dette et non de la trésorerie.
-      const estCompteDeTiers = (compte: any) => /^4/.test(String(compte.classCode ?? ''));
-
       const soldeDe = (soldes: any[], compte: any) =>
         soldes.find(
           (b) => b.accountId === compte.code || b.accountId === compte.id || b.accountNumericId === compte.id
@@ -764,39 +764,56 @@ export const ECRANS: Record<string, Ecran> = {
     }
   },
 
-  'cash-box': {
+  /**
+    Un compte sans relevé, vu de près : la caisse, le porte-monnaie Badnet, le compte
+    d'attente des adhérents. Le code vient de l'URL de la page et se vérifie contre la
+    liste des comptes ; les écritures passent par le relais du grand livre, qui sait déjà
+    tout écrire.
+  */
+  account: {
     permission: 'accounting:ledger:read',
     charger: async (lire, locals, params) => {
-      const saisonnier = await saison(lire, params);
-      const [soldes, mouvements] = await Promise.all([
-        lire(`/accounting/seasons/${encodeURIComponent(saisonnier.seasonId)}/balances`),
-        lire(`/accounting/transactions?season=${encodeURIComponent(saisonnier.seasonId)}&accountId=cash&limit=100`)
+      const codeCompte = String(params.get('account') ?? '');
+      if (!/^[a-z_]{1,32}$/.test(codeCompte)) throw new Refus('Code de compte invalide.');
+
+      const [saisonnier, comptes]: [any, any[]] = await Promise.all([
+        saison(lire, params),
+        lire('/accounting/accounts').then((r: any) => r ?? [])
+      ]);
+      const compte = comptes.find((c) => c.code === codeCompte);
+      if (!compte) throw new Refus(`Compte « ${codeCompte} » inconnu.`);
+
+      const s = encodeURIComponent(saisonnier.seasonId);
+      const enrichi = (c: any) => ({ id: c.id, code: c.code, label: c.label, thirdParty: estCompteDeTiers(c) });
+
+      /*
+        Les avances des adhérents se rendent depuis l'écran Badnet et se lisent sur celui du
+        compte d'attente : ces deux écrans reçoivent aussi les écritures du compte d'attente.
+      */
+      const veutAvances = codeCompte === 'badnet' || estCompteDeTiers(compte);
+      const [soldes, mouvements, categories, avances] = await Promise.all([
+        lire(`/accounting/seasons/${s}/balances`),
+        lire(`/accounting/transactions?season=${s}&accountId=${encodeURIComponent(codeCompte)}&limit=200`),
+        lire('/accounting/categories'),
+        veutAvances && codeCompte !== 'member_advances'
+          ? lire(`/accounting/transactions?season=${s}&accountId=member_advances&limit=200`)
+          : Promise.resolve(null)
       ]);
 
-      // La caisse porte deux identifiants selon l'âge de la donnée : l'un textuel, l'autre
-      // numérique. Les deux se rencontrent encore en base.
-      const caisse = (soldes ?? []).find((b: any) => b.accountId === 'cash' || b.accountId === 3);
+      const solde = (soldes ?? []).find((b: any) => b.accountId === compte.code || b.accountId === compte.id);
+      const ecritures = mouvements ?? [];
 
       return {
         ...saisonnier,
-        initialBalance: caisse?.initialBalanceCents ?? caisse?.initialBalance ?? 0,
-        transactions: mouvements ?? [],
+        account: enrichi(compte),
+        accounts: comptes.map(enrichi),
+        initialBalance: solde?.initialBalanceCents ?? solde?.initialBalance ?? 0,
+        transactions: ecritures,
+        categories: categories ?? [],
+        memberAdvanceEntries: veutAvances ? (codeCompte === 'member_advances' ? ecritures : avances ?? []) : [],
         canWrite: can(locals, 'accounting:ledger:write'),
         canDelete: can(locals, 'accounting:ledger:delete')
       };
-    },
-    ecritures: {
-      create: {
-        permission: 'accounting:ledger:write',
-        route: (data) => ({ chemin: '/accounting/transactions', method: 'POST', body: data })
-      },
-      delete: {
-        permission: 'accounting:ledger:delete',
-        route: (data) => ({
-          chemin: `/accounting/transactions/${identifiant(data.id, "d'écriture")}`,
-          method: 'DELETE'
-        })
-      }
     }
   },
 

@@ -1,0 +1,40 @@
+---
+import Layout from '../../../../layouts/Layout.astro';
+import AdminLayout from '../../../../components/AdminLayout.svelte';
+import AccountScreen from '../../../../components/AccountScreen.svelte';
+
+/**
+ * Un compte sans relevé, en coquille : la caisse, le porte-monnaie Badnet, le compte
+ * d'attente des adhérents — et tout compte qu'on ajouterait.
+ *
+ * La page ne connaît le compte que par son code, pris dans l'URL et contrôlé par sa forme.
+ * C'est le relais qui le vérifie contre la liste des comptes et rend son libellé ; la page
+ * ne porte qu'un titre d'onglet, tiré d'une petite table qui retombe sur le code.
+ */
+const TITRES: Record<string, string> = {
+  cash: 'Caisse',
+  badnet: 'Porte-monnaie Badnet',
+  member_advances: 'Avances des adhérents'
+};
+
+const code = Astro.params.code ?? '';
+if (!/^[a-z_]{1,32}$/.test(code)) return Astro.redirect('/admin/accounting/accounts/cash');
+
+const titre = TITRES[code] ?? `Compte ${code}`;
+const season = Astro.url.searchParams.get('season') ?? '';
+---
+
+<Layout title={`${titre} - NBA 91`}>
+  <AdminLayout
+    realEmail={Astro.locals.realUser?.email || ''}
+    name={Astro.locals.user?.name}
+    client:idle
+    email={Astro.locals.user?.email || ''}
+    permissions={Astro.locals.user?.permissions || []}
+    breadcrumb={`Comptabilité / ${titre}`}
+  >
+    <div class="space-y-6">
+      <AccountScreen client:load {code} {season} />
+    </div>
+  </AdminLayout>
+</Layout>
