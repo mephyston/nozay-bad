@@ -18,7 +18,7 @@ export { Checkbox } from './components/ui/checkbox';
 export { Skeleton } from './components/ui/skeleton';
 export * as HoverCard from './components/ui/hover-card';
 export { Label } from './components/ui/label';
-export { toSeasonOptions, sortSeasons, type SeasonLike, type SeasonOption } from './lib/seasons';
+export { toSeasonOptions, sortSeasons, seasonForDate, type SeasonLike, type SeasonOption } from './lib/seasons';
 export { ScrollArea } from './components/ui/scroll-area';
 export * as Sheet from './components/ui/sheet';
 export * as Tabs from './components/ui/tabs';

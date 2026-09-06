@@ -12,9 +12,13 @@ import { BADNET_CODE, CURRENT_CODE } from './account-actions';
  *
  * L'appariement n'a pas de clé en base — un virement ne connaît pas l'autre. Il se fait sur le
  * montant, puis sur la référence quand les deux en portent une, sinon sur le libellé normalisé,
- * et à défaut sur le seul montant, du plus ancien au plus récent. Le bouton « Rembourser » de
- * l'écran pré-remplit le libellé et la référence depuis la ligne choisie : c'est ce qui rend
- * l'appariement sûr sur le chemin normal.
+ * et à défaut sur le seul montant, du plus ancien au plus récent. Le bouton « Créditer son
+ * Badnet » de l'écran pré-remplit le libellé et la référence depuis la ligne choisie : c'est ce
+ * qui rend l'appariement sûr sur le chemin normal.
+ *
+ * Les écritures reçues ici couvrent tous les exercices ouverts, pas seulement celui que
+ * l'écran affiche : un virement reçu en août se rend en septembre, sur l'exercice suivant, et
+ * l'appariement doit voir les deux. Une avance non rendue au 31 août reste due.
  */
 export interface PendingAdvance {
   id: number;

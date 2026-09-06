@@ -20,9 +20,9 @@ Les deux gestes sont deux virements internes, chacun à sa vraie date :
 | Geste réel | Bouton | Virement écrit |
 | --- | --- | --- |
 | Son virement arrive sur le compte courant | **Virement reçu d'une adhérente** | Fonds reçus des adhérents → Compte Courant, à son nom |
-| Vous créditez son porte-monnaie depuis celui du club | **Remboursement sur son porte-monnaie Badnet** | Porte-monnaie Badnet → Fonds reçus des adhérents, à son nom |
+| Vous créditez son porte-monnaie depuis celui du club | **Crédit du porte-monnaie Badnet d'une adhérente** | Porte-monnaie Badnet → Fonds reçus des adhérents, à son nom |
 
-L'encart **Avances d'adhérents en attente** liste les virements reçus que rien n'a encore rendus, avec leur ancienneté. Le bouton **Rembourser** d'une ligne pré-remplit le second virement depuis la première : c'est ce qui les apparie. Rendez l'argent dans le mois, pour que la liste ne s'allonge pas.
+L'encart **Avances d'adhérents en attente** liste les virements reçus que rien n'a encore rendus, avec leur ancienneté, sur tous les exercices non clôturés. Le bouton **Créditer son Badnet** d'une ligne pré-remplit le second virement depuis la première : c'est ce qui les apparie. Chaque virement se rattache à l'exercice de sa date : une avance reçue fin août se crédite en septembre sur le nouvel exercice, sans rien à choisir. Rendez l'argent dans le mois, pour que la liste ne s'allonge pas.
 
 > [!TIP]
 > Au [rapprochement bancaire](/admin/help/rapprochement-bancaire), une ligne au crédit du compte courant porte un bouton **Adhérente** : il crée le virement reçu et pointe la ligne en un geste. Vous n'avez plus qu'à revenir sur l'écran Badnet pour le rembourser.

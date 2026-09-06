@@ -39,6 +39,9 @@ export interface Season {
   name: string;
   active: boolean;
   closed?: boolean;
+  /** Bornes de l'exercice, telles que le référentiel les rend ; absentes des projections réduites. */
+  startDate?: string;
+  endDate?: string;
 }
 
 /** Ce qu'une facture encaissera, et sous quelle imputation. `categoryId: null` = à choisir. */
@@ -143,6 +146,8 @@ export interface SplitRow {
 export interface ReconciliationStateFields {
   bankStatementLines: BankStatementLine[];
   glTransactions: GLTransaction[];
+  /** Le référentiel des exercices, avec leurs bornes : l'exercice d'une écriture se déduit de sa date. */
+  seasons: Season[];
   pointableEntries: GLTransaction[];
   reconciliationStatements: any[];
   displayedTransactions: BankStatementLine[];

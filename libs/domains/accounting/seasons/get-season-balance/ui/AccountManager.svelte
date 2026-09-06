@@ -8,7 +8,7 @@
   import TransactionFormSheet from '../../../ledger/list-ledger-entries/ui/TransactionFormSheet.svelte';
   import { submitTransaction, validateTransaction, deleteTransaction, type TransactionFormValues } from '../../../ledger/list-ledger-entries/ui/ledger-actions';
   import type { AccountLike } from '../../../shared/account-labels';
-  import { toast, submitForm, uiConfirm, flashAndReload } from '@nba/ui';
+  import { toast, submitForm, uiConfirm, flashAndReload, seasonForDate } from '@nba/ui';
 
   /**
    * Un compte sans relevé — la caisse, le porte-monnaie Badnet, le compte d'attente des
@@ -123,10 +123,16 @@
     showPanel = values.showPanel;
   }
 
-  const seasonForForm = () => String(currentSeason?.id ?? seasonId);
+  /*
+   * L'exercice d'affectation est celui de la date du geste, pas celui que l'écran affiche :
+   * une avance reçue en août se rend en septembre, depuis l'écran de l'exercice écoulé où
+   * elle apparaît, et le virement appartient au nouvel exercice. Sans bornes connues, on
+   * retombe sur l'exercice consulté.
+   */
+  const seasonForForm = (date: string) => String(seasonForDate(seasons, date)?.id ?? currentSeason?.id ?? seasonId);
 
   function startAction(action: AccountAction, pending?: PendingAdvance) {
-    applyValues(prefillAction(action, { today, targetSeasonId: seasonForForm(), accounts, pending: pending ?? null }));
+    applyValues(prefillAction(action, { today, targetSeasonId: seasonForForm(today), accounts, pending: pending ?? null }));
   }
 
   function refund(advance: PendingAdvance) {

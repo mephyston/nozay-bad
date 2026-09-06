@@ -270,10 +270,13 @@ describe('comptabilité — un compte sans relevé', () => {
     expect(appels.some((a) => a.url.includes('accountId=member_advances'))).toBe(false);
   });
 
-  it("charge les écritures du compte d'attente pour l'écran Badnet, d'où l'on rend les avances", async () => {
+  it("charge les écritures du compte d'attente pour l'écran Badnet, sur tous les exercices ouverts", async () => {
     const d = await donnees(await lire('account', '?account=badnet'));
     expect(d.account.code).toBe('badnet');
-    expect(appels.some((a) => a.url.includes('accountId=member_advances'))).toBe(true);
+    // Une avance reçue en août se rend en septembre : l'appariement doit voir les deux exercices.
+    const avances = appels.filter((a) => a.url.includes('accountId=member_advances')).map((a) => a.url);
+    expect(avances.some((u) => u.includes('season=24-25'))).toBe(true);
+    expect(avances.some((u) => u.includes('season=25-26'))).toBe(true);
     expect(Array.isArray(d.memberAdvanceEntries)).toBe(true);
   });
 

@@ -813,13 +813,30 @@ export const ECRANS: Record<string, Ecran> = {
         compte d'attente : ces deux écrans reçoivent aussi les écritures du compte d'attente.
       */
       const veutAvances = codeCompte === 'badnet' || estCompteDeTiers(compte);
+
+      /*
+        Les avances se lisent sur TOUS les exercices ouverts, et non sur le seul consulté : un
+        virement reçu en août se rend en septembre, sur l'exercice suivant, et l'appariement
+        reçu/rendu doit voir les deux. Bornées à l'exercice affiché, l'avance d'août restait
+        « en attente » sur 25-26 pendant que son crédit vivait sur 26-27. Même borne que
+        l'archive du rapprochement : la clôture, seule chose qui ferme un exercice.
+      */
+      const exercicesOuverts = Array.from(new Set([
+        saisonnier.seasonId,
+        ...saisonnier.seasons.filter((x: any) => !x.closedAt).map((x: any) => String(x.code || x.id))
+      ]));
+      const lireAvances = () =>
+        Promise.all(
+          exercicesOuverts.map((code) =>
+            lire(`/accounting/transactions?season=${encodeURIComponent(code)}&accountId=member_advances&limit=200`)
+          )
+        ).then((listes) => listes.flatMap((l: any) => l ?? []));
+
       const [soldes, mouvements, categories, avances] = await Promise.all([
         lire(`/accounting/seasons/${s}/balances`),
         lire(`/accounting/transactions?season=${s}&accountId=${encodeURIComponent(codeCompte)}&limit=200`),
         lire('/accounting/categories'),
-        veutAvances && codeCompte !== 'member_advances'
-          ? lire(`/accounting/transactions?season=${s}&accountId=member_advances&limit=200`)
-          : Promise.resolve(null)
+        veutAvances ? lireAvances() : Promise.resolve(null)
       ]);
 
       const solde = (soldes ?? []).find((b: any) => b.accountId === compte.code || b.accountId === compte.id);
@@ -832,7 +849,7 @@ export const ECRANS: Record<string, Ecran> = {
         initialBalance: solde?.initialBalanceCents ?? solde?.initialBalance ?? 0,
         transactions: ecritures,
         categories: categories ?? [],
-        memberAdvanceEntries: veutAvances ? (codeCompte === 'member_advances' ? ecritures : avances ?? []) : [],
+        memberAdvanceEntries: veutAvances ? avances ?? [] : [],
         canWrite: can(locals, 'accounting:ledger:write'),
         canDelete: can(locals, 'accounting:ledger:delete')
       };

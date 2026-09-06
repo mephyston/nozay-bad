@@ -31,6 +31,8 @@ export interface Season {
   name: string;
   active: boolean;
   closed?: boolean;
+  startDate?: string;
+  endDate?: string;
 }
 
 /** Le compte que l'écran affiche, tel que le relais le lit de `accounts`. */

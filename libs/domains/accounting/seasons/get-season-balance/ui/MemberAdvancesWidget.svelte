@@ -41,7 +41,7 @@
             <span class="text-xs text-muted-foreground whitespace-nowrap">{advance.ageDays} j</span>
             <span class="font-semibold whitespace-nowrap"><Amount cents={advance.amountCents} /></span>
             {#if onRefund}
-              <Button size="sm" variant="outline" onclick={() => onRefund(advance)}>Rembourser</Button>
+              <Button size="sm" variant="outline" title="Depuis le porte-monnaie Badnet du club vers le sien" onclick={() => onRefund(advance)}>Créditer son Badnet</Button>
             {/if}
           </li>
         {/each}

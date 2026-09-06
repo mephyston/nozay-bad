@@ -85,18 +85,18 @@ describe('AccountManager', () => {
     expect(texteCarte).not.toContain('-25,00');
     const widget = target.querySelector('[data-testid="member-advances"]')!;
     expect(widget.textContent).toContain('Reçu de Mme Dupont');
-    // Le remboursement se propose ici comme sur l'écran Badnet : c'est le même virement.
-    expect(widget.textContent).toContain('Rembourser');
+    // Le crédit se propose ici comme sur l'écran Badnet : c'est le même virement.
+    expect(widget.textContent).toContain('Créditer son Badnet');
   });
 
-  it("propose sur l'écran Badnet le remboursement d'une avance, pré-rempli", () => {
+  it("propose sur l'écran Badnet le crédit d'une avance, pré-rempli", () => {
     mountWith({
       account: ACCOUNTS[2],
       initialBalance: 100_000,
       memberAdvanceEntries: [entry({ id: 9, type: 'transfert', accountId: 5, transferLeg: 'source', counterpartAccountId: 1, amount: 2500, category: null, description: 'Reçu de Mme Dupont', paymentMethod: 'virement_interne' })]
     });
     const widget = target.querySelector('[data-testid="member-advances"]')!;
-    const refund = Array.from(widget.querySelectorAll('button')).find((b) => /Rembourser/.test(b.textContent || ''))!;
+    const refund = Array.from(widget.querySelectorAll('button')).find((b) => /Créditer son Badnet/.test(b.textContent || ''))!;
     expect(refund).toBeDefined();
     refund.click();
     flushSync();
@@ -106,5 +106,28 @@ describe('AccountManager', () => {
     const amount = document.body.querySelector('#amount-input') as HTMLInputElement;
     expect(amount.value).toBe('25.00');
     if (description) expect(description.value).toBe('Rendu à Mme Dupont');
+  });
+
+  it("rattache le crédit à l'exercice de sa date, même depuis l'écran de l'exercice écoulé", () => {
+    // L'horloge des tests est figée au 30 août 2026 : le geste tombe dans 25-26, alors que
+    // l'écran consulte 24-25, là où l'avance apparaît. Sans cela, la garde d'exercice refusait.
+    mountWith({
+      account: ACCOUNTS[2],
+      seasonId: '24-25',
+      seasons: [
+        { id: 1, code: '24-25', name: 'Saison 2024-2025', active: false, startDate: '2024-09-01', endDate: '2025-08-31' },
+        { id: 2, code: '25-26', name: 'Saison 2025-2026', active: true, startDate: '2025-09-01', endDate: '2026-08-31' }
+      ],
+      memberAdvanceEntries: [entry({ id: 9, type: 'transfert', accountId: 5, transferLeg: 'source', counterpartAccountId: 1, amount: 2500, category: null, description: 'Reçu de Mme Dupont', date: '2025-08-20', paymentMethod: 'virement_interne' })]
+    });
+    const widget = target.querySelector('[data-testid="member-advances"]')!;
+    const refund = Array.from(widget.querySelectorAll('button')).find((b) => /Créditer son Badnet/.test(b.textContent || ''))!;
+    refund.click();
+    flushSync();
+
+    // Le sélecteur de saison du formulaire affiche le libellé de l'exercice retenu.
+    const selecteurs = Array.from(document.body.querySelectorAll('[role="combobox"]')).map((b) => b.textContent ?? '');
+    expect(selecteurs.some((t) => t.includes('Saison 2025-2026'))).toBe(true);
+    expect(selecteurs.some((t) => t.includes('Saison 2024-2025'))).toBe(false);
   });
 });

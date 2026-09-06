@@ -28,7 +28,10 @@ describe('handleMemberTransfer', () => {
     bankStatementLines: [line],
     glTransactions: [],
     seasonId: '26-27',
-    seasons: [{ id: '26-27', name: '2026-2027', active: true }],
+    seasons: [
+      { id: '25-26', name: '2025-2026', active: false, startDate: '2025-09-01', endDate: '2026-08-31' },
+      { id: '26-27', name: '2026-2027', active: true, startDate: '2026-09-01', endDate: '2027-08-31' }
+    ],
     members: []
   });
 
@@ -64,6 +67,21 @@ describe('handleMemberTransfer', () => {
     expect(appels.some((a) => a.action === 'delete-transaction')).toBe(false);
     expect(toastError).not.toHaveBeenCalled();
     expect(s.bankStatementLines[0].status).toBe('reconciled');
+  });
+
+  it("rattache le virement à l'exercice de la date de la ligne, pas à celui affiché", async () => {
+    repond((body) => {
+      if (body.action === 'create-transfer') return { json: { legs: [{ id: 41, transferLeg: 'source' }, { id: 42, transferLeg: 'destination' }] } };
+      if (body.action === 'match') return { json: { line: { ...line, status: 'reconciled' }, entries: [{ id: 42, bankStatementLineId: 7 }] } };
+      return { json: [] };
+    });
+    const s = etat();
+
+    // Une ligne d'août, rapprochée depuis 26-27 : sans cela, la garde d'exercice refusait.
+    await s.handleMemberTransfer({ ...line, date: '2026-08-21' }, 'Reçu de Mme Eyharts');
+
+    const creation = appels.find((a) => a.action === 'create-transfer');
+    expect(creation).toMatchObject({ seasonId: '25-26', sourceDate: '2026-08-21' });
   });
 
   it('supprime le virement quand le pointage échoue, et le dit', async () => {

@@ -46,8 +46,8 @@ const MEMBER_RECEIVED: AccountAction = {
 
 const MEMBER_REFUND: AccountAction = {
   key: 'member-refund',
-  label: 'Remboursement sur son porte-monnaie Badnet',
-  hint: 'Le club crédite le porte-monnaie de l’adhérente depuis le sien : la dette est éteinte.',
+  label: "Crédit du porte-monnaie Badnet d'une adhérente",
+  hint: "Depuis le porte-monnaie du club vers le sien, pour l'argent qu'elle a viré : la dette est éteinte.",
   panel: 'transfert',
   source: BADNET_CODE,
   destination: MEMBER_ADVANCES_CODE,

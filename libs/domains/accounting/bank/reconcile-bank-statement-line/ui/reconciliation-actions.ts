@@ -1,5 +1,5 @@
 import type { BankStatementLine, ReconciliationStateFields, SplitRow } from './reconciliation-types';
-import { toast } from '@nba/ui';
+import { toast, seasonForDate } from '@nba/ui';
 import {
   apiLoadReconciliationStatements,
   apiLoadUnpaidInvoices,
@@ -246,8 +246,14 @@ export function createReconciliationActions(s: ReconciliationStateFields) {
       if (cents <= 0) throw new Error("Un virement reçu d'une adhérente est une ligne au crédit.");
       if (!description.trim()) throw new Error("Le libellé doit nommer l'adhérente.");
 
+      /*
+       * L'exercice est celui de la DATE de la ligne, pas celui que l'écran affiche : la file
+       * n'a pas de borne d'exercice, et depuis le 1er septembre une ligne d'août rapprochée
+       * depuis le nouvel exercice tombait hors de ses bornes — refus sans motif de rattachement.
+       */
+      const season = seasonForDate(s.seasons, line.date);
       const { legs } = await apiCreateMemberTransfer({
-        seasonId: s.selectedSeason,
+        seasonId: season ? String(season.code ?? season.id) : s.selectedSeason,
         amountCents: cents,
         date: line.date,
         description: description.trim(),
