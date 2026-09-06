@@ -213,7 +213,7 @@ describe('OrdersManager Component', () => {
     vi.unstubAllGlobals();
   });
 
-  it('renders orders awaiting validation by default', () => {
+  it('renders every open order by default: awaiting validation and awaiting payment alike', () => {
     const target = document.createElement('div');
     document.body.appendChild(target);
 
@@ -226,20 +226,60 @@ describe('OrdersManager Component', () => {
       }
     });
 
-    // L'onglet « à valider » est actif par défaut : seule la commande créée est rendue.
+    // La vue « en cours » est celle qu'on ouvre : la demande à valider et la commande
+    // à encaisser y figurent ensemble, chacune avec son étape.
     expect(target.innerHTML).toContain('Dupont');
     expect(target.innerHTML).toContain('Jean');
     expect(target.innerHTML).toContain('Yonex BG65 String');
     expect(target.innerHTML).toContain('50,00');
     expect(target.innerHTML).toContain('Virement');
+    expect(target.innerHTML).toContain('À valider');
+    expect(target.innerHTML).toContain('Renard');
+    expect(target.innerHTML).toContain('En attente de paiement');
+    expect(target.innerHTML).toContain('01/07/2026');
 
+    // La première ligne est la demande à valider : ses actions sont celles de son étape.
     openActions(target);
     expect(actionButton(target, 'Valider')).not.toBeUndefined();
     expect(actionButton(target, 'Refuser')).not.toBeUndefined();
 
-    // Les autres étapes ne débordent pas sur cet onglet.
+    // L'historique ne déborde pas sur cette vue.
+    expect(target.innerHTML).not.toContain('Martin');
+    expect(target.innerHTML).not.toContain('Noel');
+  });
+
+  it('renders only orders awaiting validation on that view', () => {
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+
+    mount(OrdersManager, {
+      target,
+      props: { seasons, orders, seasonId: '25-26', activeTab: 'created' }
+    });
+    flushSync();
+
+    expect(target.innerHTML).toContain('Dupont');
     expect(target.innerHTML).not.toContain('Martin');
     expect(target.innerHTML).not.toContain('Renard');
+  });
+
+  it('encaisse une commande en attente de paiement depuis la vue réunie', async () => {
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+
+    mount(OrdersManager, {
+      target,
+      props: { seasons, orders: orders.filter((o) => o.order.status === 'awaiting_payment'), seasonId: '25-26' }
+    });
+    flushSync();
+
+    openActions(target);
+    actionButton(target, 'Encaisser').click();
+    flushSync();
+
+    expect(globalThis.fetch).toHaveBeenCalledWith('/admin/api/shop/orders', expect.objectContaining({
+      body: JSON.stringify({ action: 'pay', id: 4 })
+    }));
   });
 
   it('renders orders awaiting payment with how long they have been waiting', () => {

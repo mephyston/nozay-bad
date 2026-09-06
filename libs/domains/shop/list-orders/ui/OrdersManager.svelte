@@ -19,7 +19,7 @@
     members = [],
     seasonId,
     initialAction = null,
-    activeTab = $bindable('created')
+    activeTab = $bindable('open')
   }: {
     seasons: Season[];
     orders: OrderItem[];
@@ -94,6 +94,8 @@
 
   let createdOrders = $derived(filteredOrders.filter(item => item.order.status === 'created'));
   let awaitingPaymentOrders = $derived(filteredOrders.filter(item => item.order.status === 'awaiting_payment'));
+  // Tout ce qui attend encore quelque chose du club : une décision, puis un règlement.
+  let openOrders = $derived(filteredOrders.filter(item => item.order.status === 'created' || item.order.status === 'awaiting_payment'));
   let historyOrders = $derived(
     filteredOrders.filter(item =>
       item.order.status === 'paid' ||
@@ -123,6 +125,12 @@
   const handlePay = (orderId: number) => runTransition(orderId, (id) => payOrder(id));
   const handleReject = (orderId: number) => runTransition(orderId, rejectOrder);
   const handleCancel = (orderId: number) => runTransition(orderId, cancelOrder);
+
+  // Dans la vue réunie, chaque ligne suit les transitions de sa propre étape.
+  const isAwaitingPayment = (orderId: number) =>
+    ordersList.find(item => item.order.id === orderId)?.order.status === 'awaiting_payment';
+  const handleOpenPrimary = (orderId: number) => (isAwaitingPayment(orderId) ? handlePay : handleValidate)(orderId);
+  const handleOpenSecondary = (orderId: number) => (isAwaitingPayment(orderId) ? handleCancel : handleReject)(orderId);
 </script>
 
 <div class="space-y-6">
@@ -145,6 +153,7 @@
       <SearchableCombobox 
         id="filter-status" 
         items={[
+          { label: `En cours (${openOrders.length})`, value: 'open' },
           { label: `À valider (${createdOrders.length})`, value: 'created' },
           { label: `En attente de paiement (${awaitingPaymentOrders.length})`, value: 'awaiting_payment' },
           { label: 'Historique', value: 'history' }
@@ -160,7 +169,19 @@
     </Button>
   {/snippet}
 
-  {#if activeTab === 'created'}
+  {#if activeTab === 'open'}
+    <OrdersOpenTable
+      orders={openOrders}
+      stage="open"
+      {processingId}
+      {isClosed}
+      {toolbarFilters}
+      {toolbarActions}
+      bind:searchTerm
+      onPrimary={handleOpenPrimary}
+      onSecondary={handleOpenSecondary}
+    />
+  {:else if activeTab === 'created'}
     <OrdersOpenTable
       orders={createdOrders}
       stage="created"

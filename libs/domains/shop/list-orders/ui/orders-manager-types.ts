@@ -16,8 +16,11 @@ export interface Order {
   createdAt: string | Date;
 }
 
-/** Onglets de la page commandes. Un onglet par étape du workflow, plus l'historique. */
-export type OrdersTab = 'created' | 'awaiting_payment' | 'history';
+/**
+ * Vues de la page commandes : tout ce qui est en cours (les deux étapes ouvertes
+ * ensemble, la vue par défaut), chaque étape seule, et l'historique.
+ */
+export type OrdersTab = 'open' | 'created' | 'awaiting_payment' | 'history';
 
 export interface Member {
   id: number;

@@ -5,7 +5,7 @@ category: "boutique"
 order: 2
 ---
 
-**Boutique → Commandes** présente trois listes : les commandes **à valider**, celles **en attente de paiement** et l'**historique** (payées, refusées, annulées). La recherche porte sur l'adhérent, sa licence, le produit, le moyen de paiement et le montant.
+**Boutique → Commandes** s'ouvre sur les commandes **en cours** : celles **à valider** et celles **en attente de paiement**, ensemble, chacune avec son statut et ses actions. Le sélecteur de statut permet de n'en voir qu'une étape, ou l'**historique** (payées, refusées, annulées). La recherche porte sur l'adhérent, sa licence, le produit, le moyen de paiement et le montant.
 
 Une commande suit le parcours **créée** → **en attente de paiement** → **payée**. Deux issues la referment sans règlement : le **refus** d'une demande non validée, et l'**annulation** d'une commande validée que le paiement n'a jamais suivie.
 

@@ -12,6 +12,10 @@
    * `created` se joue entre valider et refuser ; `awaiting_payment` entre encaisser
    * et annuler. Les deux tables ne diffèrent que par ce couple d'actions et par la
    * colonne d'ancienneté, d'où un seul composant plutôt que deux presque identiques.
+   *
+   * La vue `open` les réunit : c'est celle qu'on ouvre, et qui montre d'un coup ce
+   * qui attend une décision et ce qui attend un règlement. Chaque ligne y garde les
+   * actions de sa propre étape, et une colonne dit laquelle.
    */
   let {
     orders = [],
@@ -25,7 +29,7 @@
     onSecondary
   }: {
     orders?: OrderItem[];
-    stage: 'created' | 'awaiting_payment';
+    stage: 'open' | 'created' | 'awaiting_payment';
     processingId?: number | null;
     isClosed?: boolean;
     toolbarFilters?: Snippet;
@@ -35,20 +39,35 @@
     onSecondary: (id: number) => void;
   } = $props();
 
+  type Stage = 'created' | 'awaiting_payment';
+  const ACTIONS: Record<Stage, { primary: string; secondary: string }> = {
+    created: { primary: 'Valider', secondary: 'Refuser' },
+    awaiting_payment: { primary: 'Encaisser', secondary: 'Annuler' }
+  };
+  const STAGE_LABELS: Record<Stage, string> = {
+    created: 'À valider',
+    awaiting_payment: 'En attente de paiement'
+  };
+
+  /** L'étape d'une ligne : celle de la table, ou celle de la commande dans la vue réunie. */
+  const stageOf = (item: OrderItem): Stage =>
+    stage === 'open' ? (item.order.status === 'awaiting_payment' ? 'awaiting_payment' : 'created') : stage;
+
   const copy = $derived(
     stage === 'created'
       ? {
-          primary: 'Valider',
-          secondary: 'Refuser',
           emptyTitle: 'Aucune commande à valider',
           emptyDescription: "Aucune demande d'achat en attente de validation."
         }
-      : {
-          primary: 'Encaisser',
-          secondary: 'Annuler',
-          emptyTitle: 'Aucune commande à encaisser',
-          emptyDescription: 'Aucune commande validée n\'attend de règlement.'
-        }
+      : stage === 'awaiting_payment'
+        ? {
+            emptyTitle: 'Aucune commande à encaisser',
+            emptyDescription: 'Aucune commande validée n\'attend de règlement.'
+          }
+        : {
+            emptyTitle: 'Aucune commande en cours',
+            emptyDescription: "Aucune demande d'achat à valider, aucune commande à encaisser."
+          }
   );
 
   const dateFr = (value: string | Date | null | undefined) => {
@@ -131,7 +150,13 @@
             </Badge>
           </div>
 
-          {#if stage === 'awaiting_payment'}
+          {#if stage === 'open'}
+            <Badge variant={stageOf(item) === 'created' ? 'warning' : 'secondary'} size="xs">
+              {STAGE_LABELS[stageOf(item)]}
+            </Badge>
+          {/if}
+
+          {#if stageOf(item) === 'awaiting_payment'}
             {@const days = daysWaiting(item.order.awaitingPaymentSince)}
             <div class="flex items-center justify-between text-xs">
               <span class="text-muted-foreground">
@@ -153,12 +178,12 @@
               disabled={processingId !== null || isClosed}
               class="h-9 text-xs font-bold gap-1.5 flex-1 bg-success/10 text-success hover:bg-success/10 border-success/20"
             >
-              {#if stage === 'created'}
+              {#if stageOf(item) === 'created'}
                 <Check class="w-4 h-4" />
               {:else}
                 <Banknote class="w-4 h-4" />
               {/if}
-              <span>{copy.primary}</span>
+              <span>{ACTIONS[stageOf(item)].primary}</span>
             </Button>
             <Button
               variant="outline"
@@ -168,7 +193,7 @@
               class="h-9 text-xs font-bold gap-1.5 flex-1 bg-destructive/10 text-destructive hover:bg-destructive/20 border-destructive/30"
             >
               <X class="w-4 h-4" />
-              <span>{copy.secondary}</span>
+              <span>{ACTIONS[stageOf(item)].secondary}</span>
             </Button>
           </div>
         </Card.Content>
@@ -181,7 +206,10 @@
             <Table.Head>Adhérent</Table.Head>
             <Table.Head>Produit</Table.Head>
             <Table.Head class="text-center">Qté</Table.Head>
-            {#if stage === 'awaiting_payment'}
+            {#if stage === 'open'}
+              <Table.Head>Statut</Table.Head>
+            {/if}
+            {#if stage !== 'created'}
               <Table.Head>En attente depuis</Table.Head>
             {/if}
             <Table.Head>Règlement</Table.Head>
@@ -216,10 +244,17 @@
               <Table.Cell class="text-center font-semibold text-foreground">
                 {item.order.quantity}
               </Table.Cell>
-              {#if stage === 'awaiting_payment'}
+              {#if stage === 'open'}
+                <Table.Cell class="whitespace-nowrap">
+                  <Badge variant={stageOf(item) === 'created' ? 'warning' : 'secondary'}>
+                    {STAGE_LABELS[stageOf(item)]}
+                  </Badge>
+                </Table.Cell>
+              {/if}
+              {#if stage !== 'created'}
                 {@const days = daysWaiting(item.order.awaitingPaymentSince)}
                 <Table.Cell class="whitespace-nowrap text-muted-foreground">
-                  {dateFr(item.order.awaitingPaymentSince)}
+                  {stageOf(item) === 'awaiting_payment' ? dateFr(item.order.awaitingPaymentSince) : '—'}
                   {#if days !== null && days >= 7}
                     <Badge variant="warning" size="xs" class="ml-1.5">
                       {days} j
@@ -258,12 +293,12 @@
                       disabled={processingId !== null || isClosed}
                       class="text-success focus:text-success font-semibold cursor-pointer"
                     >
-                      {#if stage === 'created'}
+                      {#if stageOf(item) === 'created'}
                         <Check class="w-3.5 h-3.5 mr-2" />
                       {:else}
                         <Banknote class="w-3.5 h-3.5 mr-2" />
                       {/if}
-                      {copy.primary}
+                      {ACTIONS[stageOf(item)].primary}
                     </DropdownMenu.Item>
                     <DropdownMenu.Item
                       onclick={() => onSecondary(item.order.id)}
@@ -271,7 +306,7 @@
                       class="text-destructive focus:text-destructive font-semibold cursor-pointer"
                     >
                       <X class="w-3.5 h-3.5 mr-2" />
-                      {copy.secondary}
+                      {ACTIONS[stageOf(item)].secondary}
                     </DropdownMenu.Item>
                   </DropdownMenu.Content>
                 </DropdownMenu.Root>
