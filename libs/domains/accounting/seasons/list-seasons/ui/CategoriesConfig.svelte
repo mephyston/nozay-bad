@@ -84,7 +84,7 @@
       <CategoryAddForm
         {accountClasses}
         {isSubmitting}
-        onCreateCategory={handleCreate}
+        onSubmitCategory={handleCreate}
       />
     </div>
   </Sheet.Content>

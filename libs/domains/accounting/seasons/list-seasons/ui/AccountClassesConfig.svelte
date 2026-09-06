@@ -68,7 +68,7 @@
     <div class="pt-4">
       <AccountClassAddForm
         {isSubmitting}
-        onCreateAccountClass={handleCreate}
+        onSubmitAccountClass={handleCreate}
       />
     </div>
   </Sheet.Content>
