@@ -3,8 +3,8 @@ import { generateDepositSlipRoute } from './route';
 import { setupMockDb } from '@nba/db/test-utils';
 import { generateDepositSlip } from './handler';
 
-// Le handler est doublé, comme dans les autres tests de route : importé pour de vrai, il
-// tire `@nba/members-api`, qui remonte jusqu'au routeur accounting en cours d'évaluation.
+// Le handler est doublé, comme dans les autres tests de route : la génération du PDF n'a
+// rien à faire dans un test de validation d'URL.
 vi.mock('./handler', () => ({
   generateDepositSlip: vi.fn()
 }));

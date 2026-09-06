@@ -7,7 +7,6 @@ function remise(nbCheques: number): DepositSlipData {
     number: String(1000000 + i),
     emitter: `Émetteur ${i + 1} avec un nom particulièrement long pour forcer la troncature`,
     bank: i % 3 === 0 ? null : 'Crédit Agricole',
-    memberName: i % 2 === 0 ? `ADHÉRENT ${i + 1}` : null,
     amountCents: 1250 * (i + 1)
   }));
   return {

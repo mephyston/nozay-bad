@@ -17,7 +17,6 @@ export type DepositSlipCheck = {
   number: string;
   emitter: string;
   bank: string | null;
-  memberName: string | null;
   amountCents: number;
 };
 
@@ -51,14 +50,16 @@ function ellipsize(text: string, font: PDFFont, size: number, maxWidth: number):
 
 /*
  * Colonnes du tableau : largeurs en points, la dernière (montant) prend le reste.
- * L'émetteur et l'adhérent sont les cellules longues, elles reçoivent le plus de place.
+ * L'émetteur est la cellule longue, elle reçoit le plus de place.
+ *
+ * Le bordereau est destiné à la banque : elle n'a que faire de l'adhérent rattaché au chèque,
+ * une donnée interne au club. La colonne a été retirée, l'émetteur en récupère la largeur.
  */
 const COLUMNS = [
   { key: 'index', label: '#', width: 22, align: 'right' as const },
-  { key: 'emitter', label: 'Émetteur', width: 132, align: 'left' as const },
-  { key: 'bank', label: 'Banque', width: 78, align: 'left' as const },
-  { key: 'number', label: 'N° chèque', width: 66, align: 'left' as const },
-  { key: 'memberName', label: 'Adhérent', width: 112, align: 'left' as const },
+  { key: 'emitter', label: 'Émetteur', width: 200, align: 'left' as const },
+  { key: 'bank', label: 'Banque', width: 110, align: 'left' as const },
+  { key: 'number', label: 'N° chèque', width: 78, align: 'left' as const },
   { key: 'amount', label: 'Montant', width: 0, align: 'right' as const }
 ];
 const ROW_H = 15;
@@ -176,8 +177,7 @@ export async function generateDepositSlipPdf(data: DepositSlipData): Promise<Uin
     drawCell(1, check.emitter, bold, 9);
     drawCell(2, check.bank || '—', font, 9);
     drawCell(3, check.number, font, 9);
-    drawCell(4, check.memberName || '—', font, 9, check.memberName ? INK : GREY);
-    drawCell(5, formatEuros(check.amountCents), font, 9);
+    drawCell(4, formatEuros(check.amountCents), font, 9);
     page.drawLine({ start: { x: MARGIN, y }, end: { x: rightEdge, y }, thickness: 0.4, color: RULE_GREY });
   });
 

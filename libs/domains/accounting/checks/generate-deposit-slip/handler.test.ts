@@ -22,7 +22,7 @@ describe('generateDepositSlip', () => {
   it('nomme le fichier d\'après la référence, en ASCII sûr pour Content-Disposition', async () => {
     getDepositWithChecks.mockResolvedValue({
       reference: 'REMISE-20260315-3 (été)', date: '2026-03-15', amountCents: 4200, status: 'deposited',
-      checks: [{ number: '1234567', emitter: 'Durand', bank: 'LCL', memberName: 'DURAND Marie', amountCents: 4200 }]
+      checks: [{ number: '1234567', emitter: 'Durand', bank: 'LCL', amountCents: 4200 }]
     });
 
     const { pdf, filename } = await generateDepositSlip({} as any, 3);
