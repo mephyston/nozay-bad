@@ -1,20 +1,21 @@
 <script lang="ts">
-  import { Search, Link, MoreHorizontal, Trash2, FileText, Camera } from '@lucide/svelte';
+  import { Link, MoreHorizontal, Pencil, Trash2, FileText, Camera } from '@lucide/svelte';
   import { Button, Input, Checkbox, Amount, DropdownMenu, DataTable, Table, DataTableToolbar, FormField, SearchableCombobox, softNavigate, toSeasonOptions } from '@nba/ui';
   import type { CheckDepositState } from './check-deposit-state.svelte';
+  import type { Check } from './check-deposit-types';
 
   import type { Snippet } from 'svelte';
-  import { onMount } from 'svelte';
 
   interface Props {
     depositState: CheckDepositState;
     seasonId: string;
     seasons: any[];
+    onEditCheck: (check: Check) => void;
     onDeleteCheck: (id: number) => Promise<void>;
     tabsNav?: Snippet;
   }
 
-  let { depositState, seasonId, seasons, onDeleteCheck, tabsNav }: Props = $props();
+  let { depositState, seasonId, seasons, onEditCheck, onDeleteCheck, tabsNav }: Props = $props();
 </script>
 
 <DataTable
@@ -48,7 +49,7 @@
         {#if !depositState.isClosed}
           <div class="flex flex-wrap justify-center sm:justify-end gap-2 w-full sm:w-auto">
             <Button
-              onclick={() => depositState.showAddCheckModal = true}
+              onclick={() => depositState.openCreateCheck()}
               class="flex items-center justify-center gap-2 h-9 w-full sm:w-auto"
             >
               <Camera class="h-4 w-4" />
@@ -141,6 +142,10 @@
 
             <DropdownMenu.Content align="end">
               <DropdownMenu.Label>Actions</DropdownMenu.Label>
+              <DropdownMenu.Item onclick={() => onEditCheck(check)} class="cursor-pointer">
+                <Pencil class="w-3.5 h-3.5 mr-2" />
+                Modifier
+              </DropdownMenu.Item>
               <DropdownMenu.Item
                 onclick={() => onDeleteCheck(check.id)}
                 class="text-destructive focus:text-destructive cursor-pointer"

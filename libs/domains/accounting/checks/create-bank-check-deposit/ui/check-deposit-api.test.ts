@@ -14,7 +14,7 @@ vi.mock('@nba/ui', async (importOriginal) => {
   };
 });
 
-const { handleAddCheck } = await import('./check-deposit-api');
+const { handleSaveCheck } = await import('./check-deposit-api');
 
 /** Message que `flashAndReload` mémorise pour le rejouer après le réaffichage. */
 function pendingFlash(): { type: string; message: string } | null {
@@ -22,7 +22,7 @@ function pendingFlash(): { type: string; message: string } | null {
   return raw ? JSON.parse(raw) : null;
 }
 
-describe('handleAddCheck', () => {
+describe('handleSaveCheck', () => {
   const state = () => ({
     checkNumber: '0012345',
     checkAmount: '42.50',
@@ -30,6 +30,8 @@ describe('handleAddCheck', () => {
     checkBank: 'Crédit Agricole',
     checkDate: '2026-08-01',
     checkMemberId: '',
+    checkCategory: '2',
+    editingCheckId: null as number | null,
     isSubmittingCheck: false,
     formError: '',
     showAddCheckModal: true
@@ -54,7 +56,7 @@ describe('handleAddCheck', () => {
     vi.stubGlobal('fetch', fetchMock);
 
     const s = state();
-    await handleAddCheck({ preventDefault() {} } as any, '25-26', s);
+    await handleSaveCheck({ preventDefault() {} } as any, '25-26', s);
 
     const body = JSON.parse(fetchMock.mock.calls[0][1].body);
     // La régression : `add-check` / `checkNumber` ne correspondaient à aucune branche
@@ -64,8 +66,11 @@ describe('handleAddCheck', () => {
     expect(body.emitter).toBe('Marie Durand');
     expect(body.amount).toBe(4250);
     expect(body.seasonId).toBe('25-26');
+    // La catégorie choisie partait à la trappe : l'API prenait « Adhésion » quoi qu'on choisisse.
+    expect(body.category).toBe('2');
     // `memberId: null` était refusé par le validateur (Optional(Number)) : on l'omet.
     expect('memberId' in body).toBe(false);
+    expect('id' in body).toBe(false);
 
     expect(s.showAddCheckModal).toBe(false);
     expect(pendingFlash()).toMatchObject({ type: 'success', message: 'Chèque enregistré.' });
@@ -79,7 +84,7 @@ describe('handleAddCheck', () => {
     vi.stubGlobal('fetch', fetchMock);
 
     const s = state();
-    await handleAddCheck({ preventDefault() {} } as any, '25-26', s);
+    await handleSaveCheck({ preventDefault() {} } as any, '25-26', s);
 
     expect(s.formError).toBe('Numéro de chèque déjà enregistré.');
     expect(toastError).toHaveBeenCalledWith('Numéro de chèque déjà enregistré.');
@@ -93,10 +98,38 @@ describe('handleAddCheck', () => {
     vi.stubGlobal('fetch', fetchMock);
 
     const s = { ...state(), checkNumber: '' };
-    await handleAddCheck({ preventDefault() {} } as any, '25-26', s);
+    await handleSaveCheck({ preventDefault() {} } as any, '25-26', s);
 
     expect(fetchMock).not.toHaveBeenCalled();
     expect(s.formError).toContain('numéro');
     expect(s.showAddCheckModal).toBe(true);
+  });
+
+  it("relaie une modification sur l'identifiant du chèque, adhérent détaché à null", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, text: async () => '{"success":true}' });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const s = { ...state(), editingCheckId: 7 };
+    await handleSaveCheck({ preventDefault() {} } as any, '25-26', s);
+
+    const body = JSON.parse(fetchMock.mock.calls[0][1].body);
+    expect(body.action).toBe('update-check');
+    expect(body.id).toBe(7);
+    expect(body.category).toBe('2');
+    // En modification, vider le champ adhérent doit détacher : `null` est envoyé, pas omis.
+    expect(body.memberId).toBeNull();
+
+    expect(s.showAddCheckModal).toBe(false);
+    expect(pendingFlash()).toMatchObject({ type: 'success', message: 'Chèque modifié.' });
+  });
+
+  it('envoie l\'adhérent choisi en modification', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, text: async () => '{"success":true}' });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const s = { ...state(), editingCheckId: 7, checkMemberId: '12' };
+    await handleSaveCheck({ preventDefault() {} } as any, '25-26', s);
+
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body).memberId).toBe(12);
   });
 });

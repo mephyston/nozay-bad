@@ -72,17 +72,6 @@
     display: block !important;
   }
 
-  /*
-   * Un autre composant (ViewDepositSlipModal) déclare GLOBALEMENT
-   * `@media print { body * { visibility: hidden !important } }`, ce qui masque
-   * toute la page à l'impression sur l'admin. On rétablit explicitement la
-   * visibilité de notre zone d'impression pour la contrer.
-   */
-  .print-area,
-  .print-area * {
-    visibility: visible !important;
-  }
-
   /* Alléger le chrome des cartes. */
   .bg-card {
     border: none !important;

@@ -30,13 +30,8 @@ export type InvoiceItem = {
   totalPriceCents: number;
 };
 
-// Infos club statiques (en dur — changent rarement, cf. décision de plan).
-const BANK = {
-  titulaire: 'Nozay Badminton',
-  nom: 'Société Générale',
-  iban: 'FR76 3000 3008 4600 0500 0784 720',
-  bic: 'SOGEFRPP'
-};
+import { CLUB_BANK as BANK } from '../../shared/club-bank';
+
 const REGLEMENT = 'Virement';
 
 // Mention d'exonération de TVA (association à but non lucratif). À confirmer.

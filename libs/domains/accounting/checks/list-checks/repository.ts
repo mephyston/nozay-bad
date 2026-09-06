@@ -1,4 +1,4 @@
-import { seasonsTable } from '@nba/accounting/schema';
+import { seasonsTable, ledgerEntriesTable } from '@nba/accounting/schema';
 import { type DbOrTx } from '@nba/db';
 import { eq, and, desc } from 'drizzle-orm';
 import { checksTable, checkDepositsTable } from '../../shared/schema';
@@ -31,9 +31,14 @@ export class ListChecksRepository {
       ledgerEntryId: checksTable.ledgerEntryId,
       status: checksTable.status,
       photoUrl: checksTable.photoUrl,
-      createdAt: checksTable.createdAt
+      createdAt: checksTable.createdAt,
+      // Date d'émission et catégorie vivent sur la recette liée : le formulaire de
+      // modification les prérenseigne depuis la liste, sans second appel.
+      date: ledgerEntriesTable.date,
+      categoryId: ledgerEntriesTable.categoryId
     })
       .from(checksTable)
+      .leftJoin(ledgerEntriesTable, eq(checksTable.ledgerEntryId, ledgerEntriesTable.id))
       .where(and(...conditions))
       .orderBy(desc(checksTable.createdAt))
       .all();

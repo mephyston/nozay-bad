@@ -1,0 +1,42 @@
+---
+import Layout from '../../../../../layouts/Layout.astro';
+import { createAdminApiClient } from '../../../../../lib/api';
+
+// Proxy vers le bordereau PDF généré par l'API (pdf-lib, papier à lettre du club).
+// L'onglet ouvert affiche directement le PDF ; en cas d'erreur (remise introuvable)
+// on rend une page HTML lisible plutôt qu'un PDF cassé.
+const { id } = Astro.params;
+const apiService = createAdminApiClient(Astro.locals);
+
+let errorMsg = '';
+
+try {
+  const res = await apiService.fetch(`http://localhost/accounting/check-deposits/${id}/deposit-slip.pdf`);
+  if (res.ok) {
+    return new Response(res.body, {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': res.headers.get('Content-Disposition') ?? 'inline',
+        'Cache-Control': 'no-store'
+      }
+    });
+  }
+  const errorJson = (await res.json().catch(() => ({ error: 'Erreur lors de la génération.' }))) as any;
+  errorMsg = errorJson.error || `Impossible de générer le bordereau de la remise #${id}.`;
+} catch (err: any) {
+  errorMsg = err?.message || 'Une erreur inattendue est survenue.';
+}
+---
+
+<Layout title="Bordereau de remise">
+  <div class="min-h-screen bg-background flex items-center justify-center p-6">
+    <div class="p-6 bg-card border border-destructive/30 text-destructive rounded-lg max-w-lg shadow-sm">
+      <h2 class="text-lg font-bold mb-2">Bordereau indisponible</h2>
+      <p class="text-sm text-muted-foreground">{errorMsg}</p>
+      <a href="/admin/accounting/cheques/deposits" class="mt-4 inline-block text-primary hover:underline text-sm font-semibold">
+        &larr; Retour aux remises
+      </a>
+    </div>
+  </div>
+</Layout>

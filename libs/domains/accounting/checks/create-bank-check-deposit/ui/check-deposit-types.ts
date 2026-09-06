@@ -11,6 +11,9 @@ export interface Check {
   status: 'received' | 'deposited';
   photoUrl: string | null;
   createdAt: string;
+  /** Date d'émission et catégorie, portées par la recette liée (null pour un chèque orphelin). */
+  date: string | null;
+  categoryId: number | null;
   memberName: string | null;
   memberLicence: string | null;
 }

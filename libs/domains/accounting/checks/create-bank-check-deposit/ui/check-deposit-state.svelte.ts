@@ -15,13 +15,10 @@ export function createCheckDepositState(props: () => {
   let activeTab = $state<'checks' | 'deposits'>(p.initialTab || 'checks');
   const isClosed = $derived(p.seasons.find(s => s.id === p.seasonId)?.closed || false);
 
-  // View / Print deposit slip states
-  let showViewDepositModal = $state(false);
-  let selectedDepositToView = $state<CheckDeposit | null>(null);
-  const checksInViewDeposit = $derived(selectedDepositToView ? p.checks.filter(c => c.checkDepositId === selectedDepositToView!.id) : []);
-
-  // Add Check Form State
+  // Check form state (création et modification partagent le même formulaire)
+  const today = () => new Date().toISOString().split('T')[0];
   let showAddCheckModal = $state(false);
+  let editingCheckId = $state<number | null>(null);
   let isAnalyzing = $state(false);
   let isSubmittingCheck = $state(false);
   let checkNumber = $state('');
@@ -30,13 +27,47 @@ export function createCheckDepositState(props: () => {
   let checkBank = $state('');
   let checkMemberId = $state<string>('');
   let checkCategory = $state('1');
-  let checkDate = $state(new Date().toISOString().split('T')[0]);
+  let checkDate = $state(today());
   let formError = $state('');
 
   // Search filter for checks & members in select
   let checkSearchQuery = $state('');
   let memberSearchQuery = $state('');
   let matchedMemberName = $state('');
+
+  function resetCheckForm() {
+    editingCheckId = null;
+    checkNumber = '';
+    checkAmount = '';
+    checkEmitter = '';
+    checkBank = '';
+    checkMemberId = '';
+    checkCategory = '1';
+    checkDate = today();
+    formError = '';
+    memberSearchQuery = '';
+    matchedMemberName = '';
+    categorySearchQuery = '';
+  }
+
+  function openCreateCheck() {
+    resetCheckForm();
+    showAddCheckModal = true;
+  }
+
+  /** Prérenseigne le formulaire depuis la ligne : la date et la catégorie viennent de la recette liée. */
+  function openEditCheck(check: Check) {
+    resetCheckForm();
+    editingCheckId = check.id;
+    checkNumber = check.number;
+    checkAmount = (check.amount / 100).toString();
+    checkEmitter = check.emitter;
+    checkBank = check.bank ?? '';
+    checkMemberId = check.memberId ? String(check.memberId) : '';
+    checkCategory = String(check.categoryId ?? 1);
+    checkDate = check.date ?? String(check.createdAt).slice(0, 10);
+    showAddCheckModal = true;
+  }
 
   // Combobox states
   let isMemberDropdownOpen = $state(false);
@@ -118,10 +149,11 @@ export function createCheckDepositState(props: () => {
   return {
     get activeTab() { return activeTab; }, set activeTab(v) { activeTab = v; },
     get isClosed() { return isClosed; },
-    get showViewDepositModal() { return showViewDepositModal; }, set showViewDepositModal(v) { showViewDepositModal = v; },
-    get selectedDepositToView() { return selectedDepositToView; }, set selectedDepositToView(v) { selectedDepositToView = v; },
-    get checksInViewDeposit() { return checksInViewDeposit; },
     get showAddCheckModal() { return showAddCheckModal; }, set showAddCheckModal(v) { showAddCheckModal = v; },
+    get editingCheckId() { return editingCheckId; }, set editingCheckId(v) { editingCheckId = v; },
+    resetCheckForm,
+    openCreateCheck,
+    openEditCheck,
     get isAnalyzing() { return isAnalyzing; }, set isAnalyzing(v) { isAnalyzing = v; },
     get isSubmittingCheck() { return isSubmittingCheck; }, set isSubmittingCheck(v) { isSubmittingCheck = v; },
     get checkNumber() { return checkNumber; }, set checkNumber(v) { checkNumber = v; },

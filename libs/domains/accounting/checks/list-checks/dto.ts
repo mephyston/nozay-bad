@@ -11,6 +11,9 @@ export interface ListChecksOutput {
   status: 'received' | 'deposited' | 'cleared' | 'bounced';
   photoUrl: string | null;
   createdAt: Date;
+  /** Date d'émission portée par la recette liée (null pour un chèque orphelin). */
+  date: string | null;
+  categoryId: number | null;
   memberName: string | null;
   memberLicence: string | null;
 }

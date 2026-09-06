@@ -238,6 +238,22 @@ describe('comptabilité — les chèques', () => {
     expect(res.status).toBe(403);
     expect(appels).toHaveLength(0);
   });
+
+  it("relaie la modification d'un chèque en PUT sur son identifiant", async () => {
+    const res = await ecrire('cheques', {
+      action: 'update-check', id: 7, number: '1234567', amount: 1500, emitter: 'Durand', date: '2026-09-01'
+    });
+    expect(res.status).toBe(200);
+    const appel = appels.find((a) => a.url.endsWith('/accounting/checks/7'));
+    expect(appel?.init?.method).toBe('PUT');
+    expect(JSON.parse(String(appel?.init?.body)).number).toBe('1234567');
+  });
+
+  it("n'accorde pas la modification d'un chèque à qui sait seulement lire", async () => {
+    const res = await ecrire('cheques', { action: 'update-check', id: 7 }, ['accounting:checks:read']);
+    expect(res.status).toBe(403);
+    expect(appels).toHaveLength(0);
+  });
 });
 
 describe('comptabilité — le rapprochement', () => {

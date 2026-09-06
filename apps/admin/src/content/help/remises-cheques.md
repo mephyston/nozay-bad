@@ -26,6 +26,10 @@ Depuis **Gestion des chèques**, le bouton **Enregistrer un chèque** ouvre un f
 
 Supprimer un chèque supprime l'écriture correspondante et défait ce report.
 
+### Modifier un chèque
+
+Depuis la liste, le menu **⋯** d'une ligne propose **Modifier** : tous les champs se corrigent (numéro, montant, émetteur, banque, adhérent, catégorie, date d'émission) et la recette du grand livre suit. Un chèque déjà inclus dans un bordereau ne se modifie plus : supprimez d'abord la remise, corrigez, puis recréez-la.
+
 ## 2. Générer un bordereau de remise
 
 Lorsque vous partez déposer plusieurs chèques :
@@ -35,7 +39,7 @@ Lorsque vous partez déposer plusieurs chèques :
 3. La **référence est proposée automatiquement** (du type `REMISE-20260315-3`) et reste modifiable ; renseignez la date ;
 4. Validez.
 
-Les chèques sélectionnés passent en *déposé* et la remise apparaît dans l'écran **Bordereaux de remise**, où elle peut être consultée et **imprimée** pour accompagner le dépôt.
+Les chèques sélectionnés passent en *déposé* et la remise apparaît dans l'écran **Bordereaux de remise**. **Consulter / Imprimer** ouvre le bordereau en PDF dans un nouvel onglet, sur le papier à lettre du club, à joindre au dépôt.
 
 ## 3. Encaisser la remise
 

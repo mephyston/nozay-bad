@@ -286,6 +286,14 @@ export const ECRANS: Record<string, Ecran> = {
         permission: 'accounting:checks:write',
         route: (data) => ({ chemin: '/accounting/checks', method: 'POST', body: data })
       },
+      'update-check': {
+        permission: 'accounting:checks:write',
+        route: (data) => ({
+          chemin: `/accounting/checks/${identifiant(data.id, 'de chèque')}`,
+          method: 'PUT',
+          body: data
+        })
+      },
       'delete-check': {
         permission: 'accounting:checks:delete',
         route: (data) => ({

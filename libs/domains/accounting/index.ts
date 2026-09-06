@@ -51,6 +51,7 @@ import { deleteTransactionRoute } from './ledger/delete-ledger-entry/route';
 import { listChecksRoute } from './checks/list-checks/route';
 import { recordCheckTransactionRoute } from './checks/record-check-ledger-entry/route';
 import { createBankCheckDepositRoute } from './checks/create-bank-check-deposit/route';
+import { generateDepositSlipRoute } from './checks/generate-deposit-slip/route';
 
 // AI Routes
 import { generateAiAnalysisRoute } from './ai/generate-analysis/route';
@@ -115,6 +116,7 @@ accountingRouter.route('/', deleteTransactionRoute);
 accountingRouter.route('/', listChecksRoute);
 accountingRouter.route('/', recordCheckTransactionRoute);
 accountingRouter.route('/', createBankCheckDepositRoute);
+accountingRouter.route('/', generateDepositSlipRoute);
 
 export { normalizeCategory, cleanName } from './shared/helpers';
 export { getSeasonReports } from './seasons/get-season-reports/handler';

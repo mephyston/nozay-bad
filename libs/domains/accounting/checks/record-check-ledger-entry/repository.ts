@@ -49,6 +49,22 @@ export class RecordCheckTransactionRepository {
     });
   }
 
+  buildUpdateCheckStatement(
+    db: DbOrTx,
+    id: number,
+    values: { number: string; amountCents: number; emitter: string; bank: string | null; memberId: number | null }
+  ): any {
+    return db.update(checksTable).set(values).where(eq(checksTable.id, id));
+  }
+
+  buildUpdateLedgerEntryStatement(
+    db: DbOrTx,
+    id: number,
+    values: { amountCents: number; date: string; categoryId: number | null; memberId: number | null; reference: string; description: string }
+  ): any {
+    return db.update(ledgerEntriesTable).set(values).where(eq(ledgerEntriesTable.id, id));
+  }
+
   buildDeleteLedgerEntryStatement(db: DbOrTx, id: number): any {
     return db.delete(ledgerEntriesTable).where(eq(ledgerEntriesTable.id, id));
   }

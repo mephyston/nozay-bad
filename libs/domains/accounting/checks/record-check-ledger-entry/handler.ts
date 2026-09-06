@@ -1,7 +1,7 @@
 import { RecordCheckTransactionRepository } from './repository';
 import { AppError, type Db, type Tx } from '@nba/db';
 import { cleanName } from '../../shared/helpers';
-import type { CreateCheckInput, AnalyzeCheckOutput } from './dto';
+import type { CreateCheckInput, UpdateCheckInput, AnalyzeCheckOutput } from './dto';
 import { assertMembershipMatchesSeason } from '../../shared/member-season';
 
 /** Liaison Workers AI : seule `run` est utilisée. */
@@ -213,6 +213,11 @@ Return ONLY the raw JSON object. Do not wrap it in markdown or other text.`;
   };
 }
 
+/** Libellé automatique de la recette liée : une modification du chèque ne le régénère que s'il est encore intact. */
+function autoDescription(number: string, emitter: string): string {
+  return `Règlement par chèque n°${number} de ${emitter}`;
+}
+
 export async function createCheck(db: Db, body: CreateCheckInput) {
   if (!body.seasonId || !body.number || !body.amount || !body.emitter) {
     throw new AppError('Champs requis manquants.', 400);
@@ -234,7 +239,7 @@ export async function createCheck(db: Db, body: CreateCheckInput) {
   await assertMembershipMatchesSeason(db, body.memberId || null, seasonIdInt);
 
   // Phase 2 : Décision (en mémoire)
-  const descStr = body.description || `Règlement par chèque n°${body.number} de ${body.emitter}`;
+  const descStr = body.description || autoDescription(body.number, body.emitter);
 
   const stmtLedgerEntry = repo.buildCreateLedgerEntryStatement(db, {
     seasonId: seasonIdInt,
@@ -294,4 +299,77 @@ export async function deleteCheck(db: Db, id: number) {
 
   // Phase 3 : Écriture (db.batch)
   await db.batch(statements as any);
+}
+
+/**
+ * Modification d'un chèque encore en coffre.
+ *
+ * Le chèque et la recette qu'il a créée se corrigent d'un seul geste : montant, adhérent,
+ * date et catégorie sont reportés sur l'écriture, sans quoi le grand livre continuerait
+ * de raconter la première saisie. Deux verrous :
+ * - un chèque déjà remis ne bouge plus, son montant est figé dans le bordereau ;
+ * - une écriture déjà pointée non plus, la banque l'a confrontée à une ligne de relevé.
+ * La saison n'est pas modifiable : elle est reprise du chèque existant.
+ *
+ * Pas de garde « saison clôturée » côté serveur, par cohérence avec la création et la
+ * suppression qui ne l'ont pas ; l'écran masque les actions d'un exercice clos.
+ */
+export async function updateCheck(db: Db, id: number, body: UpdateCheckInput) {
+  if (!body.number || !body.amount || !body.emitter || !body.date) {
+    throw new AppError('Champs requis manquants.', 400);
+  }
+
+  const repo = new RecordCheckTransactionRepository();
+
+  // Phase 1 : Lecture (hors batch)
+  const existing = await repo.getCheckById(db, id);
+  if (!existing) {
+    throw new AppError('Chèque non trouvé.', 404);
+  }
+  if (existing.status === 'deposited') {
+    throw new AppError("Un chèque déjà remis en banque ne se modifie plus : supprimez d'abord le bordereau.", 400);
+  }
+
+  const memberId = body.memberId ?? null;
+  await assertMembershipMatchesSeason(db, memberId, existing.seasonId);
+
+  const ledger = existing.ledgerEntryId ? await repo.getTransactionById(db, existing.ledgerEntryId) : undefined;
+  if (ledger && ledger.bankStatementLineId !== null && ledger.bankStatementLineId !== undefined) {
+    throw new AppError('La recette de ce chèque est déjà pointée sur le relevé : elle ne se modifie plus.', 400);
+  }
+
+  // Phase 2 : Décision (en mémoire)
+  const amountCents = Math.round(body.amount);
+  const statements: any[] = [
+    repo.buildUpdateCheckStatement(db, id, {
+      number: body.number,
+      amountCents,
+      emitter: body.emitter,
+      bank: body.bank || null,
+      memberId
+    })
+  ];
+
+  if (ledger) {
+    const categoryId = body.category ? Number(body.category) : (ledger.categoryId ?? 1);
+    const description =
+      ledger.description === autoDescription(existing.number, existing.emitter)
+        ? autoDescription(body.number, body.emitter)
+        : ledger.description;
+    statements.push(
+      repo.buildUpdateLedgerEntryStatement(db, ledger.id, {
+        amountCents,
+        date: body.date,
+        categoryId,
+        memberId,
+        reference: `Chèque n°${body.number}`,
+        description
+      })
+    );
+  }
+
+  // Phase 3 : Écriture (db.batch)
+  await db.batch(statements as any);
+
+  return repo.getCheckById(db, id);
 }

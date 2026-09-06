@@ -113,10 +113,7 @@
 
         <DropdownMenu.Content class="w-48" align="end">
           <DropdownMenu.Item
-            onclick={() => {
-              depositState.selectedDepositToView = dep;
-              depositState.showViewDepositModal = true;
-            }}
+            onclick={() => window.open(`/admin/accounting/cheques/deposits/${dep.id}`, '_blank')}
             class="cursor-pointer"
           >
             <FileText class="w-3.5 h-3.5 mr-2" />

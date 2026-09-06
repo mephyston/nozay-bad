@@ -141,11 +141,13 @@ export const ROUTE_PERMISSIONS: RouteRule[] = [
   { method: 'GET', path: '/accounting/checks', permission: 'accounting:checks:read' },
   { method: 'POST', path: '/accounting/checks', permission: 'accounting:checks:write' },
   { method: 'POST', path: '/accounting/checks/analyze', permission: 'accounting:checks:write' },
+  { method: 'PUT', path: '/accounting/checks/:id', permission: 'accounting:checks:write' },
   { method: 'DELETE', path: '/accounting/checks/:id', permission: 'accounting:checks:delete' },
   { method: 'GET', path: '/accounting/check-deposits', permission: 'accounting:checks:read' },
   { method: 'POST', path: '/accounting/check-deposits', permission: 'accounting:checks:write' },
   { method: 'POST', path: '/accounting/check-deposits/:id/clear', permission: 'accounting:checks:write' },
   { method: 'POST', path: '/accounting/check-deposits/:id/delete', permission: 'accounting:checks:delete' },
+  { method: 'GET', path: '/accounting/check-deposits/:id/deposit-slip.pdf', permission: 'accounting:checks:read' },
 
   // ── Notes de frais ─────────────────────────────────────────────────────────
   // L'adhérent consulte et dépose ses propres notes depuis le storefront ; la

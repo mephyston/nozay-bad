@@ -77,10 +77,19 @@ export async function handlePhotoSelected(e: Event, seasonId: string, state: any
   await handleAnalyzeScan(file, seasonId, state);
 }
 
-export async function handleAddCheck(e: SubmitEvent, seasonId: string, state: any) {
+/**
+ * Enregistrement d'un chèque, nouveau ou corrigé : le formulaire est le même, seule
+ * l'action relayée change (`editingCheckId` porté par l'état). En modification,
+ * `memberId: null` détache l'adhérent ; en création on l'omet, le validateur de l'API
+ * n'accepte pas `null` sur ce chemin.
+ */
+export async function handleSaveCheck(e: SubmitEvent, seasonId: string, state: any) {
   e.preventDefault();
   state.isSubmittingCheck = true;
   state.formError = '';
+
+  const editing = state.editingCheckId !== null && state.editingCheckId !== undefined;
+  const memberId = state.checkMemberId ? parseInt(state.checkMemberId) : undefined;
 
   await submitForm({
     validate: () =>
@@ -91,23 +100,25 @@ export async function handleAddCheck(e: SubmitEvent, seasonId: string, state: an
       const res = await fetch(RELAIS, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        // `create-check` et les noms de champs doivent correspondre exactement au
+        // Les intitulés d'action et les noms de champs doivent correspondre exactement au
         // contrat de l'API (number / emitter) : un intitulé d'action inconnu passait
         // à travers toutes les branches de la page et renvoyait un faux succès.
         body: JSON.stringify({
-          action: 'create-check',
+          action: editing ? 'update-check' : 'create-check',
+          id: editing ? state.editingCheckId : undefined,
           seasonId,
           number: state.checkNumber,
           amount: Math.round(parseFloat(state.checkAmount) * 100),
           emitter: state.checkEmitter,
           bank: state.checkBank,
           date: state.checkDate,
-          memberId: state.checkMemberId ? parseInt(state.checkMemberId) : undefined
+          category: state.checkCategory,
+          memberId: memberId ?? (editing ? null : undefined)
         })
       });
-      if (!res.ok) throw new Error((await readError(res)) || 'Erreur lors de la création du chèque.');
+      if (!res.ok) throw new Error((await readError(res)) || (editing ? 'Erreur lors de la modification du chèque.' : 'Erreur lors de la création du chèque.'));
     },
-    success: 'Chèque enregistré.',
+    success: editing ? 'Chèque modifié.' : 'Chèque enregistré.',
     close: () => { state.showAddCheckModal = false; },
     onError: (message) => { state.formError = message; toast.error(message); }
   });

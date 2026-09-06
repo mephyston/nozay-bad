@@ -39,6 +39,7 @@ export const PAGE_PERMISSIONS: Record<string, Permission | null> = {
   '/admin/accounting/cheques': 'accounting:checks:read',
   '/admin/accounting/cheques/list': 'accounting:checks:read',
   '/admin/accounting/cheques/deposits': 'accounting:checks:read',
+  '/admin/accounting/cheques/deposits/[id]': 'accounting:checks:read',
   '/admin/accounting/reports': 'accounting:reports:read',
   '/admin/accounting/reports/[report]': 'accounting:reports:read',
 

@@ -2262,6 +2262,39 @@ VERSION:102
     const txId = getBody.data[0].ledgerEntryId;
     const checkTx = (await db.select().from(ledgerEntriesTable).where(eq(ledgerEntriesTable.id, txId)).get())!;
     expect(checkTx.date).toBe('2026-07-10');
+    // La liste porte la date et la catégorie de la recette : le formulaire de
+    // modification les prérenseigne sans second appel.
+    expect(getBody.data[0].date).toBe('2026-07-10');
+    expect(getBody.data[0].categoryId).toBe(1);
+
+    // 4b. Corriger le chèque : numéro, montant, date, catégorie, et détacher l'adhérent.
+    //     La recette liée suit d'un seul geste.
+    const putRes = await app.request(`http://localhost/accounting/checks/${checkId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        number: '8877666',
+        amount: 25000,
+        emitter: 'Jean Dupont',
+        bank: 'Bred',
+        memberId: null,
+        category: 2,
+        date: '2026-07-11'
+      })
+    }, { DB: mockD1 as any });
+    expect(putRes.status).toBe(200);
+
+    const updatedCheck = (await db.select().from(checksTable).where(eq(checksTable.id, checkId)).get())!;
+    expect(updatedCheck.number).toBe('8877666');
+    expect(updatedCheck.amountCents).toBe(25000);
+    expect(updatedCheck.memberId).toBeNull();
+    const updatedTx = (await db.select().from(ledgerEntriesTable).where(eq(ledgerEntriesTable.id, txId)).get())!;
+    expect(updatedTx.amountCents).toBe(25000);
+    expect(updatedTx.date).toBe('2026-07-11');
+    expect(updatedTx.categoryId).toBe(2);
+    expect(updatedTx.memberId).toBeNull();
+    expect(updatedTx.reference).toBe('Chèque n°8877666');
+    expect(updatedTx.description).toBe('Règlement par chèque n°8877666 de Jean Dupont');
 
     // 5. Créer un bordereau de remise de chèques
     const depositRes = await app.request('http://localhost/accounting/check-deposits', {
@@ -2276,7 +2309,7 @@ VERSION:102
     }, { DB: mockD1 as any });
     expect(depositRes.status).toBe(200);
     const depositBody = await depositRes.json() as any;
-    expect(depositBody.data.amount).toBe(26000);
+    expect(depositBody.data.amount).toBe(25000);
 
     const depositId = depositBody.data.id;
 
@@ -2285,6 +2318,26 @@ VERSION:102
     expect(checkAfterDeposit.status).toBe('deposited');
     expect(checkAfterDeposit.checkDepositId).toBe(depositId);
 
+    // 6b. Un chèque remis ne se modifie plus : son montant est figé dans le bordereau.
+    const putAfterDeposit = await app.request(`http://localhost/accounting/checks/${checkId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ number: '8877666', amount: 100, emitter: 'Jean Dupont', date: '2026-07-11' })
+    }, { DB: mockD1 as any });
+    expect(putAfterDeposit.status).toBe(400);
+    expect(updatedCheck.amountCents).toBe(25000);
+
+    // 6c. Le bordereau s'imprime en PDF sur le papier à lettre du club.
+    const pdfRes = await app.request(`http://localhost/accounting/check-deposits/${depositId}/deposit-slip.pdf`, undefined, { DB: mockD1 as any });
+    expect(pdfRes.status).toBe(200);
+    expect(pdfRes.headers.get('content-type')).toBe('application/pdf');
+    expect(pdfRes.headers.get('content-disposition')).toBe('inline; filename="Bordereau-REMISE-DE-TEST.pdf"');
+    const pdfBytes = new Uint8Array(await pdfRes.arrayBuffer());
+    expect(new TextDecoder().decode(pdfBytes.slice(0, 4))).toBe('%PDF');
+
+    const pdfMissing = await app.request('http://localhost/accounting/check-deposits/424242/deposit-slip.pdf', undefined, { DB: mockD1 as any });
+    expect(pdfMissing.status).toBe(404);
+
     // 7. Simuler le rapprochement avec une transaction de relevé bancaire (id: 999)
     // On doit d'abord insérer cette transaction fictive ou simuler son existence
     await db.insert(bankStatementLinesTable).values({
@@ -2292,7 +2345,7 @@ VERSION:102
       fitid: 'SG-DEPOT-999',
       seasonId: 1,
       accountId: 1,
-      amountCents: 26000,
+      amountCents: 25000,
       date: '2026-07-13',
       name: 'SG DEPOT CHEQUE',
       status: 'pending',

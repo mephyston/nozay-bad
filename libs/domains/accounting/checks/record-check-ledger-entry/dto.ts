@@ -20,3 +20,13 @@ export interface AnalyzeCheckOutput {
   memberName: string | null;
   date: string | null;
 }
+
+export interface UpdateCheckInput {
+  number: string;
+  amount: number;
+  emitter: string;
+  bank?: string | null;
+  memberId?: number | null;
+  category?: string | number;
+  date: string;
+}

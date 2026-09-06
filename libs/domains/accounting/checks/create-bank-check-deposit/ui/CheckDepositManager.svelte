@@ -5,12 +5,11 @@
   import CheckDepositTabsNav from './CheckDepositTabsNav.svelte';
   import CheckDepositTable from './CheckDepositTable.svelte';
   import CheckDepositListTable from './CheckDepositListTable.svelte';
-  import AddCheckModal from './AddCheckModal.svelte';
-  import ViewDepositSlipModal from './ViewDepositSlipModal.svelte';
+  import CheckFormSheet from './CheckFormSheet.svelte';
   import { createCheckDepositState } from './check-deposit-state.svelte';
   import {
     handlePhotoSelected,
-    handleAddCheck,
+    handleSaveCheck,
     handleDeleteCheck,
     handleCreateDeposit,
     handleDeleteDeposit,
@@ -46,21 +45,22 @@
   onMount(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('action') === 'new-cheque' && !depositState.isClosed) {
-      depositState.showAddCheckModal = true;
+      depositState.openCreateCheck();
       const newUrl = new URL(window.location.href);
       newUrl.searchParams.delete('action');
       window.history.replaceState({}, '', newUrl);
     }
 
     const handleCustomEvent = () => {
-      if (!depositState.isClosed) depositState.showAddCheckModal = true;
+      if (!depositState.isClosed) depositState.openCreateCheck();
     };
     window.addEventListener('open-new-cheque', handleCustomEvent);
     return () => window.removeEventListener('open-new-cheque', handleCustomEvent);
   });
 
   const onPhotoSelected = (e: Event) => handlePhotoSelected(e, props.seasonId, depositState);
-  const onAddCheck = (e: SubmitEvent) => handleAddCheck(e, props.seasonId, depositState);
+  const onSaveCheck = (e: SubmitEvent) => handleSaveCheck(e, props.seasonId, depositState);
+  const onEditCheck = (check: Check) => depositState.openEditCheck(check);
   const onDeleteCheck = (id: number) => handleDeleteCheck(id, props.seasonId);
   const onCreateDeposit = (e: SubmitEvent) => handleCreateDeposit(e, props.seasonId, depositState);
   const onDeleteDeposit = (id: number) => handleDeleteDeposit(id, props.seasonId);
@@ -84,6 +84,7 @@
         {depositState}
         seasonId={props.seasonId}
         seasons={props.seasons}
+        {onEditCheck}
         {onDeleteCheck}
         {tabsNav}
       />
@@ -102,11 +103,10 @@
   </Tabs.Root>
 </div>
 
-<!-- Modal 1: Register Check with Photo upload & OCR -->
-<AddCheckModal
+<!-- Sheet 1: enregistrer ou modifier un chèque (photo IA en création seulement) -->
+<CheckFormSheet
   {depositState}
-  seasonId={props.seasonId}
-  {onAddCheck}
+  {onSaveCheck}
   {onPhotoSelected}
 />
 
@@ -152,6 +152,3 @@
     {/if}
   </Dialog.Content>
 </Dialog.Root>
-
-<!-- Modal 4: View / Print deposit slip details -->
-<ViewDepositSlipModal {depositState} />
