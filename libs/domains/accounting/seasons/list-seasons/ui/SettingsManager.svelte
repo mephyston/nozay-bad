@@ -5,13 +5,14 @@
   import CategoriesConfig from "./CategoriesConfig.svelte";
   import AccountClassesConfig from "./AccountClassesConfig.svelte";
   import ProductCategoriesConfig from "./ProductCategoriesConfig.svelte";
-  import type { Season, Category, AccountClass, ProductCategory } from "./settings-types";
+  import type { Season, Category, AccountClass, ProductCategory, TreasuryAccount } from "./settings-types";
   import * as api from "./settings-api";
 
   let {
     seasons = [],
     categories = [],
     accountClasses = [],
+    accounts = [],
     productCategories = [],
     seasonId,
     view = 'seasons',
@@ -20,6 +21,7 @@
     seasons: Season[];
     categories: Category[];
     accountClasses?: AccountClass[];
+    accounts?: TreasuryAccount[];
     productCategories?: ProductCategory[];
     seasonId: string;
     view?: 'seasons' | 'compta' | 'classes' | 'shop';
@@ -176,6 +178,7 @@
       {#if activeView === 'classes'}
         <AccountClassesConfig
           {accountClasses}
+          {accounts}
           isSubmitting={viewState.isSubmitting}
           onUpdateAccountClass={handleUpdateAccountClass}
           onDeleteAccountClass={handleDeleteAccountClass}

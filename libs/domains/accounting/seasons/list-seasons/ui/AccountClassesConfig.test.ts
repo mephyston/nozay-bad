@@ -62,4 +62,42 @@ describe('AccountClassesConfig — création', () => {
 
     await vi.waitFor(() => expect(document.body.querySelector('#new-class-code')).toBeNull());
   });
+
+  it('liste les comptes du club en lecture seule, avec leur classe et leur nature', () => {
+    target = document.createElement('div');
+    document.body.appendChild(target);
+
+    component = mount(AccountClassesConfig, {
+      target,
+      props: {
+        accountClasses: [
+          { code: '467', label: 'Autres comptes débiteurs ou créditeurs', type: 'tresorerie' },
+          { code: '517', label: 'Autres placements et livrets', type: 'tresorerie' }
+        ],
+        accounts: [
+          { id: 4, code: 'badnet', label: 'Porte-monnaie Badnet', classCode: '517', classType: 'tresorerie' },
+          { id: 5, code: 'member_advances', label: 'Fonds reçus pour le compte des adhérents', classCode: '467', classType: 'tresorerie' }
+        ],
+        isSubmitting: false,
+        onCreateAccountClass: vi.fn().mockResolvedValue(true),
+        onUpdateAccountClass: vi.fn().mockResolvedValue(true),
+        onDeleteAccountClass: vi.fn().mockResolvedValue(true)
+      }
+    });
+    flushSync();
+
+    const section = target.querySelector('[data-testid="treasury-accounts"]')!;
+    expect(section).not.toBeNull();
+    const rows = Array.from(section.querySelectorAll('tbody tr')).map((r) => r.textContent ?? '');
+    expect(rows).toHaveLength(2);
+    // Le porte-monnaie est de la trésorerie ; le compte d'attente, une dette envers les adhérents.
+    expect(rows[0]).toContain('Porte-monnaie Badnet');
+    expect(rows[0]).toContain('517');
+    expect(rows[0]).toContain('Disponibilités');
+    expect(rows[1]).toContain('Fonds reçus pour le compte des adhérents');
+    expect(rows[1]).toContain('467');
+    expect(rows[1]).toContain('Tiers');
+    // Aucun bouton : ces comptes se créent par migration, pas depuis l'écran.
+    expect(section.querySelectorAll('button')).toHaveLength(0);
+  });
 });

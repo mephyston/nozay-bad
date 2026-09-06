@@ -64,6 +64,7 @@
         seasons={d.seasons ?? []}
         categories={d.categories ?? []}
         accountClasses={d.accountClasses ?? []}
+        accounts={d.accounts ?? []}
         productCategories={d.productCategories ?? []}
         seasonId=""
         view={vue}

@@ -37,6 +37,15 @@ export interface AccountClass {
   type: 'recette' | 'depense' | 'tresorerie';
 }
 
+/** Un compte de trésorerie du club, avec la classe qui le porte (projection de `GET /accounting/accounts`). */
+export interface TreasuryAccount {
+  id: number;
+  code: string;
+  label: string;
+  classCode: string;
+  classType: 'recette' | 'depense' | 'tresorerie';
+}
+
 export interface ProductCategory {
   id: number;
   label: string;

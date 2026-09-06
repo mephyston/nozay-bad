@@ -27,5 +27,11 @@ Une [catégorie comptable](/admin/help/categories-comptables) porte jusqu'à deu
 
 Le bouton **Nouvelle classe** ouvre le formulaire. La modification porte sur le libellé et le type, jamais sur le code. La suppression retire la rubrique du compte de résultat : les catégories qui s'y rattachaient n'y apparaîtront plus tant qu'une autre classe ne leur est pas assignée.
 
-> [!NOTE]
-> Les **comptes financiers** — Compte Courant, Compte Livret, Caisse physique — ne se règlent pas ici : ce sont les trois emplacements fixes où l'argent du club est détenu. Voir [Principes comptables](/admin/help/principes-comptables).
+## Les comptes de trésorerie
+
+Sous la liste des classes, l'encart **Comptes de trésorerie** montre les comptes sur lesquels les mouvements sont enregistrés — Compte Courant, Livret A, Caisse, [Porte-monnaie Badnet](/admin/help/porte-monnaie-badnet), Fonds reçus pour le compte des adhérents — avec la classe qui porte chacun et sa nature :
+
+- **Disponibilités** : de l'argent du club (classes 51 à 53) ;
+- **Tiers · dette** : de l'argent qui ne lui appartient pas (classe 4), dont le solde est une dette et reste hors des totaux de trésorerie.
+
+Cette liste est en lecture seule : un compte se crée par une mise à jour de l'application, pas depuis l'écran. Voir [Principes comptables](/admin/help/principes-comptables).

@@ -615,11 +615,13 @@ export const ECRANS: Record<string, Ecran> = {
   config: {
     permission: 'accounting:config:read',
     charger: async (lire) => {
-      const [categories, classes] = await Promise.all([
+      const [categories, classes, comptes] = await Promise.all([
         lire('/accounting/categories'),
-        lire('/accounting/account-classes')
+        lire('/accounting/account-classes'),
+        // Les comptes du club, en lecture seule : l'écran dit où chacun se range dans le plan.
+        lire('/accounting/accounts')
       ]);
-      return { categories: categories ?? [], accountClasses: classes ?? [] };
+      return { categories: categories ?? [], accountClasses: classes ?? [], accounts: comptes ?? [] };
     },
     ecritures: {
       create_category: {

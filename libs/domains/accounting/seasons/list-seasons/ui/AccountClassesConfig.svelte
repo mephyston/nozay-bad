@@ -1,12 +1,14 @@
 <script lang="ts">
   import { Settings, Plus } from "@lucide/svelte";
   import { Card, Button, Sheet } from "@nba/ui";
-  import type { AccountClass } from "./settings-types";
+  import type { AccountClass, TreasuryAccount } from "./settings-types";
   import AccountClassListTable from "./AccountClassListTable.svelte";
+  import TreasuryAccountsList from "./TreasuryAccountsList.svelte";
   import AccountClassAddForm from "./AccountClassAddForm.svelte";
 
   let {
     accountClasses = [],
+    accounts = [],
     isSubmitting = false,
     onUpdateAccountClass,
     onDeleteAccountClass,
@@ -14,6 +16,8 @@
     tabsNav
   }: {
     accountClasses?: AccountClass[];
+    /** Les comptes du club : listés ici en lecture seule, ils se créent par migration. */
+    accounts?: TreasuryAccount[];
     isSubmitting: boolean;
     onUpdateAccountClass: (code: string, updates: { label: string; type: 'recette' | 'depense' | 'tresorerie' }) => Promise<boolean>;
     onDeleteAccountClass: (code: string) => Promise<boolean>;
@@ -52,6 +56,8 @@
       </Button>
     {/snippet}
   </AccountClassListTable>
+
+  <TreasuryAccountsList {accounts} {accountClasses} />
 </div>
 
 <Sheet.Root bind:open={showAddSheet}>

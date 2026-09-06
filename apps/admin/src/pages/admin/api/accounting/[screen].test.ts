@@ -286,6 +286,15 @@ describe('comptabilité — un compte sans relevé', () => {
   });
 });
 
+describe('comptabilité — le plan comptable', () => {
+  it("lit les comptes du club avec les catégories et les classes", async () => {
+    const d = await donnees(await lire('config', '', ['accounting:config:read']));
+    expect(appels.some((a) => a.url.endsWith('/accounting/accounts'))).toBe(true);
+    expect(Array.isArray(d.accounts)).toBe(true);
+    expect(Array.isArray(d.accountClasses)).toBe(true);
+  });
+});
+
 describe('comptabilité — les chèques', () => {
   it("ne propose au rapprochement que les lignes en attente et au crédit", async () => {
     // Une remise de chèques ne s'adosse pas à un débit.
