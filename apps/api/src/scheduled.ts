@@ -58,21 +58,23 @@ export type ScheduledBindings = {
  * dépouiller les commentaires, un `//` y casse donc toute la suite de tests. D'où cette note ici.
  *
  * Le plan gratuit plafonne le compte à 5 Cron Triggers. La production en consomme 3 ; **staging
- * n'a que `DISPATCH_CRON`**, et c'est délibéré :
- *
- * - sans lui, une notification était écrite dans `push_deliveries` puis n'était jamais envoyée.
- *   Rien ne le signalait, et le déclenchement métier passait pour cassé alors que seul le
- *   drainage manquait ;
- * - les deux autres n'y ont pas leur place : les envois programmés de staging sont de toute façon
- *   coupés par les `PUSH_*_ENABLED` à `false`, et ils consommeraient les deux derniers
- *   emplacements du compte.
+ * n'en a aucun** (`crons: []`, le tableau vide est obligatoire : sans bloc `triggers` l'env hérite
+ * des crons top-level). Le drain y a été rendu un temps (2026-08-27) puis retiré le 2026-09-06
+ * pour libérer les emplacements. Conséquence à garder en tête : en staging, une notification
+ * écrite dans `push_deliveries` n'est jamais envoyée toute seule ; rien ne le signale, et le
+ * déclenchement métier passe pour cassé alors que seul le drainage manque.
  *
  * `handleScheduled` draine la file quel que soit le déclencheur : le cron quotidien et
  * l'hebdomadaire vident aussi ce qu'ils viennent d'y écrire.
  */
 export const DISPATCH_CRON = '*/5 * * * *';
 export const DAILY_CRON = '0 7 * * *';
-export const WEEKLY_CRON = '0 8 * * 1';
+/*
+ * `MON` et non `1` : chez Cloudflare le jour de la semaine va de 1 = dimanche à 7 = samedi,
+ * à rebours du cron Unix. Écrit `1`, ce rappel est parti le dimanche 30/08/2026 à 8 h UTC
+ * alors que le registre annonce le lundi.
+ */
+export const WEEKLY_CRON = '0 8 * * MON';
 
 /** Rétention de l'historique des notifications, en jours. */
 const HISTORY_RETENTION_DAYS = 90;
@@ -348,6 +350,13 @@ export async function handleScheduled(
 
   const db = createDb(env.DB);
   const now = new Date(event.scheduledTime || Date.now());
+
+  // Le déclencheur est reconnu à sa chaîne exacte. Un cron modifié à la main dans le
+  // dashboard (« */30 * * * * » à la place du quotidien, 09/2026) n'entre dans aucune
+  // branche et tout se tait sans rien dire : le drain tourne, les envois programmés non.
+  if (![DISPATCH_CRON, DAILY_CRON, WEEKLY_CRON].includes(event.cron)) {
+    console.warn(`[push] cron inconnu « ${event.cron} » : aucune branche programmée, file drainée seulement`);
+  }
 
   if (event.cron === DAILY_CRON) {
     if (env.PUSH_BIRTHDAYS_ENABLED === 'true') {

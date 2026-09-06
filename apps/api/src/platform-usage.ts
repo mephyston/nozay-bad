@@ -89,7 +89,7 @@ export const FREE_PLAN_LIMITS = {
  */
 export const CRON_TRIGGERS: readonly { worker: string; schedules: number }[] = [
   { worker: 'nba-api', schedules: 3 },
-  { worker: 'nba-api-staging', schedules: 1 }
+  { worker: 'nba-api-staging', schedules: 0 }
 ];
 
 export interface WorkerUsage {

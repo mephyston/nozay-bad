@@ -232,7 +232,7 @@ describe('aggregateUsage', () => {
     expect(usage.totals.workerRequests).toBe(505);
     expect(usage.totals.d1RowsRead).toBe(436940);
     expect(usage.totals.d1RowsWritten).toBe(151);
-    expect(usage.totals.cronTriggers).toBe(4);
+    expect(usage.totals.cronTriggers).toBe(3);
   });
 
   it('garde leur place aux jours sans activité', () => {
