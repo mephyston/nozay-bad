@@ -30,6 +30,28 @@ describe('CreateLedgerEntry Route', () => {
     expect(body.error).toContain('Validation failed');
   });
 
+  it("accepte le code d'un compte ajouté après le seed, la résolution revenant au handler", async () => {
+    const { mockD1 } = await setupMockDb();
+    vi.mocked(createLedgerEntry).mockResolvedValue({ id: 2 } as any);
+
+    const res = await createTransactionRoute.request('http://localhost/ledger-entries', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        seasonId: '25-26',
+        type: 'depense',
+        accountId: 'badnet',
+        amount: 2500,
+        date: '2026-09-06',
+        paymentMethod: 'virement',
+        description: 'Inscription tournoi'
+      })
+    }, { DB: mockD1 as any });
+
+    expect(res.status).toBe(200);
+    expect(vi.mocked(createLedgerEntry)).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ accountId: 'badnet' }));
+  });
+
   it('should return 200 on valid body', async () => {
     const { mockD1 } = await setupMockDb();
     vi.mocked(createLedgerEntry).mockResolvedValue({ id: 1 } as any);

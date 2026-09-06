@@ -1,9 +1,64 @@
 import { type DbOrTx, AppError } from '@nba/db';
 import { eq } from 'drizzle-orm';
-import { accountsTable, paymentMethodsTable } from '../shared/schema';
+import { accountsTable, accountClassesTable, bankStatementBalancesTable, bankStatementLinesTable, paymentMethodsTable } from '../shared/schema';
 
 export async function getAccountByCode(db: DbOrTx, code: string): Promise<typeof accountsTable.$inferSelect | undefined> {
   return db.select().from(accountsTable).where(eq(accountsTable.code, code)).get();
+}
+
+export interface AccountSummary {
+  id: number;
+  code: string;
+  label: string;
+  classCode: string;
+  classType: 'recette' | 'depense' | 'tresorerie';
+}
+
+/** Tous les comptes du club, avec la classe qui les porte, dans l'ordre du seed. */
+export async function listAccounts(db: DbOrTx): Promise<AccountSummary[]> {
+  const rows = await db
+    .select({
+      id: accountsTable.id,
+      code: accountsTable.code,
+      label: accountsTable.label,
+      classCode: accountClassesTable.code,
+      classType: accountClassesTable.type
+    })
+    .from(accountsTable)
+    .innerJoin(accountClassesTable, eq(accountClassesTable.id, accountsTable.accountClassId))
+    .orderBy(accountsTable.id)
+    .all();
+  return rows as AccountSummary[];
+}
+
+/**
+ * Les comptes dont on a importé un relevé — des lignes ou un solde annoncé.
+ *
+ * Les DEUX tables comptent, et c'est le point : n'exiger qu'un solde rendait l'état invisible
+ * sur toute base alimentée avant que le `<LEDGERBAL>` ne soit capté. Les comptes déjà chargés
+ * de centaines de lignes n'avaient aucun solde, donc aucun état — et l'écran, qui savait
+ * pourtant dire « aucun solde de relevé importé », ne s'affichait tout simplement pas.
+ *
+ * Partagée entre l'état de rapprochement et la clôture : un compte sans relevé (la caisse, le
+ * porte-monnaie Badnet) ne peut pointer aucune jambe de virement, et ne doit donc pas faire
+ * signaler ses virements comme « à moitié pointés ».
+ */
+export async function listAccountsWithStatements(db: DbOrTx): Promise<{ id: number; code: string; label: string }[]> {
+  const columns = { id: accountsTable.id, code: accountsTable.code, label: accountsTable.label };
+
+  const withBalances = await db.selectDistinct(columns)
+    .from(accountsTable)
+    .innerJoin(bankStatementBalancesTable, eq(bankStatementBalancesTable.accountId, accountsTable.id))
+    .all();
+
+  const withLines = await db.selectDistinct(columns)
+    .from(accountsTable)
+    .innerJoin(bankStatementLinesTable, eq(bankStatementLinesTable.accountId, accountsTable.id))
+    .all();
+
+  const byId = new Map<number, { id: number; code: string; label: string }>();
+  for (const account of [...withBalances, ...withLines]) byId.set(account.id, account);
+  return [...byId.values()].sort((a, b) => a.id - b.id);
 }
 
 export async function getPaymentMethodById(db: DbOrTx, id: number): Promise<typeof paymentMethodsTable.$inferSelect | undefined> {

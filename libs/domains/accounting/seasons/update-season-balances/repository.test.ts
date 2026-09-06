@@ -78,4 +78,29 @@ describe('UpdateSeasonBalancesRepository (Integration)', () => {
       .all();
     expect(allForSeason).toHaveLength(2);
   });
+
+  it("écrit un solde sur un compte désigné par son code, et refuse un code inconnu", async () => {
+    const { db } = await setupMockDb();
+    const repo = new UpdateSeasonBalancesRepository();
+    const season = await db.insert(seasonsTable).values({
+      code: '26-27', name: 'Saison 2026-2027', startDate: '2026-09-01', endDate: '2027-08-31', active: true, createdAt: new Date()
+    }).returning().get();
+    const badnet = await db.select().from(accountsTable).where(eq(accountsTable.code, 'badnet')).get();
+    expect(badnet).toBeDefined();
+
+    await repo.updateBalances(db, season.id, [{ accountId: 'badnet', initialBalanceCents: 100000 }]);
+
+    const row = await db.select().from(seasonBalancesTable)
+      .where(and(eq(seasonBalancesTable.seasonId, season.id), eq(seasonBalancesTable.accountId, badnet!.id)))
+      .get();
+    expect(row?.initialBalanceCents).toBe(100000);
+
+    // La table figée d'autrefois aurait écrit ce solde sur le compte courant, en silence.
+    await expect(repo.updateBalances(db, season.id, [{ accountId: 'paypal', initialBalanceCents: 1 }]))
+      .rejects.toThrow(/introuvable/);
+    const onCurrent = await db.select().from(seasonBalancesTable)
+      .where(and(eq(seasonBalancesTable.seasonId, season.id), eq(seasonBalancesTable.accountId, 1)))
+      .get();
+    expect(onCurrent).toBeUndefined();
+  });
 });

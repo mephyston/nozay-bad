@@ -128,9 +128,9 @@ describe('données de référence', () => {
   });
 
   it.each([
-    ['account_classes', 'code', ['60', '512', '530']],
+    ['account_classes', 'code', ['60', '512', '530', '4091']],
     ['payment_methods', 'code', ['virement', 'cheque', 'especes']],
-    ['accounts', 'code', ['current', 'savings', 'cash']]
+    ['accounts', 'code', ['current', 'savings', 'cash', 'badnet']]
   ])('sème %s', (table, column, codes) => {
     const rows = db.prepare(`SELECT ${column} AS code FROM ${table}`).all() as { code: string }[];
     const present = rows.map((r) => r.code);
@@ -165,6 +165,20 @@ describe('données de référence', () => {
       .get() as { default_entry_status: string } | undefined;
 
     expect(row?.default_entry_status).toBe('cleared');
+  });
+
+  it('rattache le porte-monnaie Badnet à une classe de trésorerie', () => {
+    /*
+     * `getTreasuryAccounts` ne retient que les comptes dont la classe est typée `tresorerie` :
+     * un compte semé sous un autre type disparaîtrait du bilan et des soldes sans erreur.
+     */
+    const row = db
+      .prepare(
+        "SELECT ac.code AS class_code, ac.type FROM accounts a JOIN account_classes ac ON ac.id = a.account_class_id WHERE a.code = 'badnet'"
+      )
+      .get() as { class_code: string; type: string } | undefined;
+
+    expect(row).toEqual({ class_code: '4091', type: 'tresorerie' });
   });
 
   it("garantit qu'un virement se tient en deux jambes, et pas une de plus", () => {

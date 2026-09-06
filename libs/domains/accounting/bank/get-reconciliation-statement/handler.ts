@@ -71,16 +71,20 @@ export async function getReconciliationStatement(
   const bankLines = await repo.getUnreconciledBankLines(db, account.id, season.startDate, asOfDate);
   const statement = (await repo.getLatestBankStatementBalance(db, account.id, asOfDate)) ?? null;
   const lastBankLineDate = (await repo.getLatestBankLineDate(db, account.id)) ?? null;
+  const pointableAccountIds = new Set((await repo.getAccountsWithStatements(db)).map((a) => a.id));
 
   return buildStatement({
     account, season, asOfDate, initialBalanceCents, entries, bankLines, statement, lastBankLineDate,
-    openingBalanceProvisional: ouverture.provisional
+    pointableAccountIds,
+      openingBalanceProvisional: ouverture.provisional
   });
 }
 
 interface StatementInputs {
   account: AccountRef;
-  season: { id: number; code: string; startDate: string; endDate: string };
+  season: { id: number; code: string; startDate: string; endDate: string   /** Identifiants des comptes ayant un relevé, les seuls dont une jambe puisse être pointée. */
+  pointableAccountIds: Set<number>;
+};
   asOfDate: string;
   initialBalanceCents: number;
   /** Toutes les écritures de la période — le tri par compte est l'affaire du calcul. */
@@ -104,7 +108,7 @@ interface StatementInputs {
 function buildStatement(inputs: StatementInputs): GetReconciliationStatementOutput {
   const {
     account, season, asOfDate, initialBalanceCents, entries, bankLines, statement, lastBankLineDate,
-    openingBalanceProvisional
+    openingBalanceProvisional, pointableAccountIds
   } = inputs;
 
   const balance = computeAccountBalance(account, initialBalanceCents, entries);
@@ -148,7 +152,14 @@ function buildStatement(inputs: StatementInputs): GetReconciliationStatementOutp
    * relevé — et c'est désormais la seule chose qui puisse encore faire mentir l'écart ci-dessous.
    */
   const transitCents = computeTransitCents(entries, asOfDate);
-  const halfPointedTransferIds = findHalfPointedTransferIds(entries);
+  /*
+   * Seules les jambes portées par un compte à relevé entrent dans ce contrôle : une jambe sur la
+   * caisse ou sur le porte-monnaie Badnet ne peut être pointée sur rien, elle n'est donc pas un
+   * oubli. Sans ce filtre, tout virement vers un tel compte serait signalé à jamais.
+   */
+  const halfPointedTransferIds = findHalfPointedTransferIds(
+    entries.filter((e: any) => pointableAccountIds.has(e.accountId))
+  );
 
   const expectedBankBalanceCents =
     balance.grossCents - unpointedEntriesTotalCents + unrecordedBankLinesTotalCents;
@@ -246,6 +257,8 @@ export async function getReconciliationStatements(
     repo.getLatestBankLineDates(db, accountIds)
   ]);
 
+  const pointableAccountIds = new Set(accounts.map((a) => a.id));
+
   return accounts.map((accountRow) => {
     const account: AccountRef = { id: accountRow.id, code: accountRow.code, label: accountRow.label };
     const asOfDate = asOfDates.get(account.id)!;
@@ -270,6 +283,7 @@ export async function getReconciliationStatements(
       bankLines,
       statement,
       lastBankLineDate: lastLineDates.get(account.id) ?? null,
+      pointableAccountIds,
       openingBalanceProvisional: ouverture.provisional
     });
   });

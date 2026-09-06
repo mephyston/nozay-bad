@@ -13,23 +13,22 @@ describe('getSeasonBalances', () => {
     db = {};
   });
 
-  it('should execute successfully (nominal case)', async () => {
-    // Arrange
-    const payload = { seasonId: '23-24', items: [] } as any;
-    
-    
+  it('rend un solde par compte, identifié par son code et son libellé lus de la base', async () => {
     const mockRepoInstance = {
-      getBalances: vi.fn().mockResolvedValue(true)
+      getBalances: vi.fn().mockResolvedValue([
+        { id: 1, seasonId: 7, accountId: 1, accountCode: 'current', accountLabel: 'Compte Courant', initialBalanceCents: 100000, createdAt: new Date() },
+        { id: 2, seasonId: 7, accountId: 4, accountCode: 'badnet', accountLabel: 'Porte-monnaie Badnet', initialBalanceCents: 100000, createdAt: new Date() }
+      ])
     };
     (vi.mocked(GetSeasonBalancesRepository) as any).mockImplementation(function() { return mockRepoInstance; });
 
-    // Act
-    const args = [db, '23-24'];
-    await (getSeasonBalances as any)(...args);
+    const result = await getSeasonBalances(db, '23-24');
 
-    // Assert
-    
-    expect(mockRepoInstance.getBalances).toHaveBeenCalled();
+    expect(mockRepoInstance.getBalances).toHaveBeenCalledWith(db, '23-24');
+    expect(result).toEqual([
+      { seasonId: 7, accountId: 'current', accountNumericId: 1, label: 'Compte Courant', initialBalanceCents: 100000, initialBalance: 100000 },
+      { seasonId: 7, accountId: 'badnet', accountNumericId: 4, label: 'Porte-monnaie Badnet', initialBalanceCents: 100000, initialBalance: 100000 }
+    ]);
   });
 
   it('should throw a business error', async () => {

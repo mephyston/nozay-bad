@@ -139,6 +139,9 @@ export async function getSeasonReports(db: Db, input: GetSeasonReportsInput): Pr
     const statement = statementBalances.get(b.accountId);
     return {
       accountId: b.accountCode,
+      /** Identifiant numérique et libellé, lus de `accounts` : les écrans n'ont plus de table à eux. */
+      id: typeof b.accountId === 'number' ? b.accountId : undefined,
+      label: b.accountLabel ?? b.accountCode,
       initialBalance: b.initialBalanceCents,
       /** Solde COMPTABLE de fin de période : à-nouveau + écritures, sans correction. */
       finalBalance: b.grossCents,

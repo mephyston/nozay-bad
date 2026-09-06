@@ -246,6 +246,10 @@ describe('getReconciliationStatement', () => {
      * reste « non comptabilisée », ce qui creuse un écart que rien n'explique à l'écran.
      */
     mockRepo({
+      getAccountsWithStatements: vi.fn().mockResolvedValue([
+        { id: 1, code: 'current', label: 'Compte Courant' },
+        { id: 2, code: 'savings', label: 'Livret A' }
+      ]),
       getEntriesForPeriod: vi.fn().mockResolvedValue([
         entry({ id: 9, type: 'transfert', accountId: 1, transferId: 4, transferLeg: 'source', amountCents: 30_000, bankStatementLineId: 77 }),
         entry({ id: 10, type: 'transfert', accountId: 2, transferId: 4, transferLeg: 'destination', amountCents: 30_000 })
@@ -255,6 +259,25 @@ describe('getReconciliationStatement', () => {
     const result = await getReconciliationStatement(db, { accountCode: 'current', seasonId: '25-26', date: '2025-10-31' });
 
     expect(result.halfPointedTransferIds).toEqual([4]);
+  });
+
+  it("ne signale pas un virement vers un compte sans relevé, dont la jambe ne peut être pointée", async () => {
+    /*
+     * Le porte-monnaie Badnet (comme la caisse) n'a pas de relevé : sa jambe restera toujours
+     * sans ligne. Ce n'est pas un oubli de pointage, et le dire à chaque arrêté et à chaque
+     * clôture aurait noyé les vrais.
+     */
+    mockRepo({
+      getAccountsWithStatements: vi.fn().mockResolvedValue([{ id: 1, code: 'current', label: 'Compte Courant' }]),
+      getEntriesForPeriod: vi.fn().mockResolvedValue([
+        entry({ id: 11, type: 'transfert', accountId: 1, transferId: 5, transferLeg: 'source', amountCents: 10_000, bankStatementLineId: 78 }),
+        entry({ id: 12, type: 'transfert', accountId: 4, transferId: 5, transferLeg: 'destination', amountCents: 10_000 })
+      ])
+    });
+
+    const result = await getReconciliationStatement(db, { accountCode: 'current', seasonId: '25-26', date: '2025-10-31' });
+
+    expect(result.halfPointedTransferIds).toEqual([]);
   });
 
   it("rend un écart nul et non trompeur tant qu'aucun relevé n'a été importé", async () => {
