@@ -15,12 +15,15 @@
    */
   let {
     confirmation = $bindable(null),
-    onAcknowledge
+    onAcknowledge,
+    historyHref = null
   }: {
     /** Commande à confirmer ; `null` ferme la boîte. */
     confirmation: OrderConfirmation | null;
     /** Appelé une fois la boîte fermée, quel qu'en soit le geste. */
     onAcknowledge: () => void;
+    /** Adresse de l'historique des commandes, proposée en sortie de boîte ; `null` la tait. */
+    historyHref?: string | null;
   } = $props();
 
   const open = $derived(confirmation !== null);
@@ -145,7 +148,11 @@
       {/if}
     {/if}
 
-    <Dialog.Footer>
+    <Dialog.Footer class="gap-2">
+      {#if historyHref}
+        <!-- La commande vient d'être enregistrée : c'est là qu'on voudra la suivre. -->
+        <Button variant="outline" class="w-full sm:w-auto" href={historyHref}>Voir mes commandes</Button>
+      {/if}
       <Button class="w-full sm:w-auto" onclick={() => handleOpenChange(false)}>OK</Button>
     </Dialog.Footer>
   </Dialog.Content>

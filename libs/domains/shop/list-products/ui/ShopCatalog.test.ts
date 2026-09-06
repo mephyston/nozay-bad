@@ -78,6 +78,28 @@ describe('ShopCatalog Component', () => {
    * la place de l'adhérent — l'ordre du catalogue décidait de ce qu'on s'apprêtait à
    * commander.
    */
+  it("affiche le lien vers l'historique des commandes quand on lui en donne l'adresse", () => {
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+    mount(ShopCatalog, {
+      target,
+      props: { members, products, activeSeasonId: '25-26', lockToMembers: true, initialMemberId: '1', historyHref: '/mon-compte#commandes' }
+    });
+    flushSync();
+
+    const lien = target.querySelector('[data-testid="orders-history-link"]');
+    expect(lien?.textContent).toContain('Mes commandes');
+    expect(lien?.getAttribute('href')).toBe('/mon-compte#commandes');
+  });
+
+  it("n'affiche aucun lien d'historique sans adresse", () => {
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+    mountCatalog(target);
+    flushSync();
+    expect(target.querySelector('[data-testid="orders-history-link"]')).toBeNull();
+  });
+
   it('ouvre le formulaire sans article choisi', () => {
     const target = document.createElement('div');
     document.body.appendChild(target);
@@ -195,10 +217,10 @@ describe('ShopCatalog Component', () => {
    */
   describe('confirmation de commande', () => {
     /** Monte le catalogue prêt à commander : adhérent verrouillé, article choisi. */
-    const mountOrderable = async (target: HTMLElement) => {
+    const mountOrderable = async (target: HTMLElement, extra: Record<string, unknown> = {}) => {
       mount(ShopCatalog, {
         target,
-        props: { members, products, activeSeasonId: '25-26', lockToMembers: true, initialMemberId: '1' }
+        props: { members, products, activeSeasonId: '25-26', lockToMembers: true, initialMemberId: '1', ...extra }
       });
       flushSync();
       // Adhérent verrouillé : produit (0) puis mode de paiement (1).
@@ -220,6 +242,27 @@ describe('ShopCatalog Component', () => {
 
     const okButton = (dialog: HTMLElement) =>
       Array.from(dialog.querySelectorAll('button')).find((b) => b.textContent?.trim() === 'OK') as HTMLButtonElement;
+
+    it("mène à l'historique des commandes depuis la confirmation, quand on en a un", async () => {
+      const target = document.createElement('div');
+      document.body.appendChild(target);
+
+      await mountOrderable(target, { historyHref: '/mon-compte#commandes' });
+      const dialog = await submit(target);
+
+      const lien = Array.from(dialog.querySelectorAll('a')).find((a) => a.textContent?.includes('Voir mes commandes'));
+      expect(lien?.getAttribute('href')).toBe('/mon-compte#commandes');
+    });
+
+    it("ne propose pas l'historique quand l'écran commande pour autrui", async () => {
+      const target = document.createElement('div');
+      document.body.appendChild(target);
+
+      await mountOrderable(target);
+      const dialog = await submit(target);
+
+      expect(dialog.textContent).not.toContain('Voir mes commandes');
+    });
 
     it("récapitule la commande dans une boîte modale plutôt qu'un encart", async () => {
       const target = document.createElement('div');

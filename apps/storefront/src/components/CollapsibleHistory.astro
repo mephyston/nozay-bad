@@ -12,14 +12,19 @@ interface Props {
    * familles de blocs se lisent de la même façon.
    */
   description?: string;
+  /**
+   * Ancre de la section. Une adresse qui la vise (`/mon-compte#commandes`) l'ouvre à
+   * l'arrivée : replié, un `<details>` ne montre rien de ce qu'on venait voir.
+   */
+  id?: string;
 }
 
-const { title, count, open = false, description } = Astro.props;
+const { title, count, open = false, description, id } = Astro.props;
 ---
 
 <!-- `<details>` natif plutôt qu'une île hydratée : cette page est rendue côté
      serveur, un simple repli n'a pas à embarquer de JavaScript pour fonctionner. -->
-<details class="rounded-xl border border-border bg-card overflow-hidden" open={open}>
+<details class="rounded-xl border border-border bg-card overflow-hidden" open={open} id={id}>
   <summary
     class="flex items-center justify-between gap-3 px-5 py-4 cursor-pointer hover:bg-accent/50 transition-colors"
   >
@@ -62,6 +67,19 @@ const { title, count, open = false, description } = Astro.props;
     <slot />
   </div>
 </details>
+
+<script>
+  // Seule exception au « sans JavaScript » : aucun CSS n'ouvre un <details> visé par
+  // l'ancre de l'adresse. Le script est hoisté par Astro, une fois par page.
+  const ouvrirLaCible = () => {
+    const ancre = window.location.hash.slice(1);
+    if (!ancre) return;
+    const cible = document.getElementById(ancre);
+    if (cible instanceof HTMLDetailsElement) cible.open = true;
+  };
+  ouvrirLaCible();
+  window.addEventListener('hashchange', ouvrirLaCible);
+</script>
 
 <style>
   /* Le marqueur natif casserait l'alignement de l'en-tête. */

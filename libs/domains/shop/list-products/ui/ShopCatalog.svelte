@@ -1,7 +1,7 @@
 <script module>
 </script>
 <script lang="ts">
-  import { ShoppingBag, Info, AlertCircle } from "@lucide/svelte";
+  import { ShoppingBag, Info, AlertCircle, History } from "@lucide/svelte";
   import { Card, Button, Alert } from '@nba/ui';
   import type { Member, OrderConfirmation, Product } from './catalog-types';
   import { isOutOfStock, maxOrderableQuantity } from './catalog-types';
@@ -12,7 +12,25 @@
   import ShopCatalogSummary from './ShopCatalogSummary.svelte';
   import ShopCatalogConfirmation from './ShopCatalogConfirmation.svelte';
 
-  let { products = [], members = [], activeSeasonId = '', lockToMembers = false, initialMemberId = '' }: { products: Product[]; members: Member[]; activeSeasonId: string; lockToMembers?: boolean; initialMemberId?: string } = $props();
+  let {
+    products = [],
+    members = [],
+    activeSeasonId = '',
+    lockToMembers = false,
+    initialMemberId = '',
+    historyHref = null
+  }: {
+    products: Product[];
+    members: Member[];
+    activeSeasonId: string;
+    lockToMembers?: boolean;
+    initialMemberId?: string;
+    /**
+     * Adresse de l'historique des commandes de qui commande, ou `null` : la boutique de
+     * l'espace adhérent l'a — c'est son compte —, un écran qui commande pour autrui non.
+     */
+    historyHref?: string | null;
+  } = $props();
 
   // Les articles en rupture ne sont pas proposés à la commande : inutile de les
   // laisser sélectionner pour bloquer ensuite le bouton. Les articles dont le stock
@@ -185,10 +203,21 @@
 <Card.Root class="max-w-2xl mx-auto shadow-sm">
   <Card.Header class="px-5 py-4 border-b border-border flex flex-row items-center gap-3">
     <ShoppingBag class="w-5 h-5 text-primary shrink-0" />
-    <div>
+    <div class="min-w-0">
       <Card.Title class="text-base font-semibold text-foreground">Boutique du club</Card.Title>
       <p class="text-xs text-muted-foreground mt-0.5">Commandez vos volants, cordages et équipements du club.</p>
     </div>
+    {#if historyHref}
+      <!-- Ce qu'on a déjà commandé, et où ça en est : la question se pose avant de commander de nouveau. -->
+      <a
+        href={historyHref}
+        class="ml-auto shrink-0 inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline"
+        data-testid="orders-history-link"
+      >
+        <History class="w-3.5 h-3.5" />
+        Mes commandes
+      </a>
+    {/if}
   </Card.Header>
 
   <Card.Content class="p-3 sm:p-6 space-y-3 sm:space-y-6">
@@ -256,7 +285,7 @@
       les espèces, notamment. Seul l'échec reste annoncé sur place, à côté du bouton
       qu'il faudra presser de nouveau.
     -->
-    <ShopCatalogConfirmation bind:confirmation onAcknowledge={resetOrderForm} />
+    <ShopCatalogConfirmation bind:confirmation onAcknowledge={resetOrderForm} {historyHref} />
 
     {#if errorMessage}
       <Alert.Root variant="destructive">
