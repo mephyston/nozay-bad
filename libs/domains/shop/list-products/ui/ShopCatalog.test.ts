@@ -258,6 +258,30 @@ describe('ShopCatalog Component', () => {
       expect(dialog.textContent).toContain('SOGEFRPP');
     });
 
+    it("copie l'IBAN sans espaces d'un clic sur l'icône", async () => {
+      const writeText = vi.fn().mockResolvedValue(undefined);
+      Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+
+      const target = document.createElement('div');
+      document.body.appendChild(target);
+
+      await mountOrderable(target);
+      const dialog = await submit(target);
+
+      const copyIban = dialog.querySelector('button[aria-label="Copier : IBAN"]') as HTMLButtonElement;
+      expect(copyIban).not.toBeNull();
+      copyIban.click();
+      await vi.waitFor(() => {
+        expect(writeText).toHaveBeenCalledWith('FR7630003008460005000784720');
+      });
+
+      const copyHolder = dialog.querySelector('button[aria-label="Copier : Titulaire"]') as HTMLButtonElement;
+      copyHolder.click();
+      await vi.waitFor(() => {
+        expect(writeText).toHaveBeenCalledWith('NOZAY BADMINTON');
+      });
+    });
+
     it("ne donne l'IBAN que pour un virement", async () => {
       const target = document.createElement('div');
       document.body.appendChild(target);

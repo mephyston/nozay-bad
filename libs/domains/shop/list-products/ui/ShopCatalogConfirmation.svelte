@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Check, Banknote, Landmark } from '@lucide/svelte';
+  import { Check, Banknote, Landmark, Copy } from '@lucide/svelte';
   import { Dialog, Button, Amount } from '@nba/ui';
   import type { OrderConfirmation } from './catalog-types';
   import { CLUB_BANK_DETAILS, paymentMethodLabel, requiresBankTransfer, requiresCashHandover } from './catalog-utils';
@@ -26,6 +26,25 @@
   const open = $derived(confirmation !== null);
   const cash = $derived(confirmation !== null && requiresCashHandover(confirmation.paymentMethod));
   const transfer = $derived(confirmation !== null && requiresBankTransfer(confirmation.paymentMethod));
+
+  /** Champ bancaire copié à l'instant, pour faire clignoter la coche deux secondes. */
+  let copiedField = $state<string | null>(null);
+
+  /**
+   * Copie une coordonnée bancaire. L'IBAN part sans ses espaces : les applications
+   * bancaires les acceptent rarement dans le champ de saisie.
+   */
+  async function copyBankField(field: string, value: string) {
+    try {
+      await navigator.clipboard.writeText(field === 'iban' ? value.replace(/\s+/g, '') : value);
+      copiedField = field;
+      setTimeout(() => {
+        if (copiedField === field) copiedField = null;
+      }, 2000);
+    } catch (err) {
+      console.error('Copie impossible', err);
+    }
+  }
 
   function handleOpenChange(next: boolean) {
     if (next) return;
@@ -97,12 +116,29 @@
               sur le compte du club.
             </p>
             <dl class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-xs">
-              <dt class="text-muted-foreground">Titulaire</dt>
-              <dd class="font-semibold">{CLUB_BANK_DETAILS.holder}</dd>
-              <dt class="text-muted-foreground">IBAN</dt>
-              <dd class="font-mono font-semibold tabular-nums break-all">{CLUB_BANK_DETAILS.iban}</dd>
-              <dt class="text-muted-foreground">BIC</dt>
-              <dd class="font-mono font-semibold">{CLUB_BANK_DETAILS.bic}</dd>
+              {#each [
+                { field: 'holder', label: 'Titulaire', value: CLUB_BANK_DETAILS.holder, mono: false },
+                { field: 'iban', label: 'IBAN', value: CLUB_BANK_DETAILS.iban, mono: true },
+                { field: 'bic', label: 'BIC', value: CLUB_BANK_DETAILS.bic, mono: true }
+              ] as item (item.field)}
+                <dt class="self-center text-muted-foreground">{item.label}</dt>
+                <dd class="flex min-w-0 items-center gap-1.5">
+                  <span class="font-semibold break-all {item.mono ? 'font-mono tabular-nums' : ''}">{item.value}</span>
+                  <button
+                    type="button"
+                    class="shrink-0 rounded p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                    onclick={() => copyBankField(item.field, item.value)}
+                    title="Copier : {item.label}"
+                    aria-label="Copier : {item.label}"
+                  >
+                    {#if copiedField === item.field}
+                      <Check class="h-3.5 w-3.5 text-success" />
+                    {:else}
+                      <Copy class="h-3.5 w-3.5" />
+                    {/if}
+                  </button>
+                </dd>
+              {/each}
             </dl>
           </div>
         </div>
