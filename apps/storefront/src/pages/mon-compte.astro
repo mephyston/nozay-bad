@@ -2,7 +2,6 @@
 import Layout from '../layouts/Layout.astro';
 import Header from '../components/Header.astro';
 import MobileNav from '../components/MobileNav.svelte';
-import PushOptIn from '../components/PushOptIn.svelte';
 import CollapsibleHistory from '../components/CollapsibleHistory.astro';
 import { env } from 'cloudflare:workers';
 import { createApiClient } from '@nba/api-client';
@@ -145,11 +144,12 @@ const isPaid = Boolean(cotisation?.paid);
         </a>
       )}
 
-      <!-- Notifications : ne s'affiche que si l'appareil peut en recevoir. -->
-      <PushOptIn client:idle />
-
-      <!-- Réglage des catégories reçues. L'accès vit ici, avec le reste de ce qui
-           relève du compte : l'accueil est réservé à ce qui change tous les jours. -->
+      <!-- Notifications : un seul cadre, qui mène à l'écran où l'on les active ou les
+           coupe pour l'appareil et où l'on choisit les catégories reçues. L'encart
+           d'activation figurait aussi ici, juste au-dessus : deux cadres « Notifications »
+           à la suite, dont le premier disait la même chose que la page d'arrivée du
+           second. L'accès vit ici, avec le reste de ce qui relève du compte : l'accueil
+           est réservé à ce qui change tous les jours. -->
       <a
         href="/notifications"
         class="flex flex-col gap-2 rounded-xl border border-border bg-card px-5 py-4 shadow-sm hover:border-ring hover:shadow transition-all no-underline group min-h-[44px]"
@@ -161,7 +161,7 @@ const isPaid = Boolean(cotisation?.paid);
           </div>
           <span class="text-primary text-sm font-semibold opacity-0 group-hover:opacity-100 transition-opacity">Ouvrir &rarr;</span>
         </div>
-        <p class="text-sm text-muted-foreground">Choisissez les actualités du club que vous souhaitez recevoir.</p>
+        <p class="text-sm text-muted-foreground">Activez ou coupez les alertes sur cet appareil, et choisissez les actualités du club que vous souhaitez recevoir.</p>
       </a>
 
       <!-- Démarches personnelles. Elles vivent ici et non dans la barre de navigation :
