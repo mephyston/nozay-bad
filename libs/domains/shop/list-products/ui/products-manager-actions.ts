@@ -1,4 +1,4 @@
-import { uiConfirm } from '@nba/ui';
+import { uiConfirm, readApiError } from '@nba/ui';
 import type { Product } from './products-manager-types';
 
 /**
@@ -60,7 +60,7 @@ export async function submitProduct(params: ProductFormValues): Promise<void> {
   });
 
   if (!res.ok) {
-    throw new Error((await res.text()) || "Erreur lors de l'enregistrement.");
+    throw new Error(await readApiError(res, "Erreur lors de l'enregistrement."));
   }
 }
 

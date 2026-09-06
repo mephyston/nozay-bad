@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Save, Loader2 } from '@lucide/svelte';
-  import { Button, Input, Textarea, Card, FormField, ErrorAlert, submitForm } from '@nba/ui';
+  import { Button, Input, Textarea, Card, FormField, ErrorAlert, submitForm, readApiError } from '@nba/ui';
 
   /**
    * Réglages du pied de page du site public.
@@ -66,7 +66,7 @@
             facebookUrl: facebook
           })
         });
-        if (!res.ok) throw new Error((await res.text()) || "L'enregistrement a échoué.");
+        if (!res.ok) throw new Error(await readApiError(res, "L'enregistrement a échoué."));
       },
       success: 'Pied de page enregistré. Le site est à jour.',
       onError: (message) => {

@@ -1,4 +1,4 @@
-import { submitForm } from '@nba/ui';
+import { submitForm, readApiError } from '@nba/ui';
 
 /**
  * Destination des écritures : le relais de la comptabilité.
@@ -43,7 +43,7 @@ export function runSettingsAction(
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(options.body)
       });
-      if (!res.ok) throw new Error((await res.text()) || 'Une erreur est survenue.');
+      if (!res.ok) throw new Error(await readApiError(res, 'Une erreur est survenue.'));
     },
     success: options.success,
     onError: (message) => { state.errorMsg = message; }

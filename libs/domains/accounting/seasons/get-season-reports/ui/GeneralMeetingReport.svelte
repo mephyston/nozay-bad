@@ -1,7 +1,7 @@
 <script lang="ts">
   import { tick } from 'svelte';
   import { ChevronDown } from '@lucide/svelte';
-  import { Tabs, Button, DropdownMenu, submitForm, uiConfirm } from '@nba/ui';
+  import { Tabs, Button, DropdownMenu, submitForm, uiConfirm, readApiError } from '@nba/ui';
   import type { ReportData, Season, DbCategory, AccountClass, BudgetRecord } from './report-types';
   import { generatePieSlices } from './report-utils';
   import { defaultChargeClasses, defaultProduitClasses } from './report-constants';
@@ -167,7 +167,7 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ action: 'save_budget', seasonId: selectedSeason, budget: payload })
         });
-        if (!res.ok) throw new Error((await res.text()) || "Impossible d'enregistrer le budget.");
+        if (!res.ok) throw new Error(await readApiError(res, "Impossible d'enregistrer le budget."));
       },
       // Le réaffichage recalcule la comparaison réalisé / prévisionnel.
       success: 'Budget prévisionnel enregistré.',

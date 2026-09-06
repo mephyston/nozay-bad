@@ -1,4 +1,4 @@
-import { toast, uiConfirm, flashAndReload, submitForm } from '@nba/ui';
+import { toast, uiConfirm, flashAndReload, submitForm, readApiError } from '@nba/ui';
 
 /**
  * Destinations des écritures : les relais du domaine, et non la page hôte.
@@ -13,21 +13,6 @@ import { toast, uiConfirm, flashAndReload, submitForm } from '@nba/ui';
  */
 const RELAIS = '/admin/api/accounting/cheques';
 const DEPOT_ANALYSE = '/admin/api/accounting/upload?doc=check-analyze';
-
-/**
- * Extrait le message d'erreur d'une réponse, qu'elle soit JSON ou texte brut : les
- * pages admin relaient tantôt le corps JSON de l'API, tantôt un simple message.
- */
-async function readError(res: Response): Promise<string> {
-  const raw = await res.text();
-  if (!raw) return '';
-  try {
-    const parsed = JSON.parse(raw);
-    return parsed?.error || raw;
-  } catch {
-    return raw;
-  }
-}
 
 export async function handleAnalyzeScan(file: File, seasonId: string, state: any) {
   if (!file) return;
@@ -105,7 +90,7 @@ export async function handleAddCheck(e: SubmitEvent, seasonId: string, state: an
           memberId: state.checkMemberId ? parseInt(state.checkMemberId) : undefined
         })
       });
-      if (!res.ok) throw new Error((await readError(res)) || 'Erreur lors de la création du chèque.');
+      if (!res.ok) throw new Error(await readApiError(res, 'Erreur lors de la création du chèque.'));
     },
     success: 'Chèque enregistré.',
     close: () => { state.showAddCheckModal = false; },
@@ -128,7 +113,7 @@ export async function handleDeleteCheck(id: number, seasonId: string) {
     if (res.ok) {
       flashAndReload('Chèque supprimé.');
     } else {
-      toast.error((await readError(res)) || 'Erreur lors de la suppression du chèque.');
+      toast.error(await readApiError(res, 'Erreur lors de la suppression du chèque.'));
     }
   } catch (err) {
     console.error(err);
@@ -165,7 +150,7 @@ export async function handleCreateDeposit(e: SubmitEvent, seasonId: string, stat
           checkIds
         })
       });
-      if (!res.ok) throw new Error((await readError(res)) || 'Erreur lors de la création du bordereau.');
+      if (!res.ok) throw new Error(await readApiError(res, 'Erreur lors de la création du bordereau.'));
     },
     success: 'Bordereau de remise de chèques créé.',
     close: () => { state.showCreateDepositModal = false; state.selectedCheckIds = {}; }
@@ -187,7 +172,7 @@ export async function handleDeleteDeposit(id: number, seasonId: string) {
     if (res.ok) {
       flashAndReload('Bordereau supprimé.');
     } else {
-      toast.error((await readError(res)) || 'Erreur lors de la suppression du bordereau.');
+      toast.error(await readApiError(res, 'Erreur lors de la suppression du bordereau.'));
     }
   } catch (err) {
     console.error(err);
@@ -217,7 +202,7 @@ export async function handleClearDeposit(e: SubmitEvent, seasonId: string, state
       state.selectedBankTransactionId = '';
       flashAndReload('Bordereau encaissé.');
     } else {
-      toast.error((await readError(res)) || 'Erreur lors du rapprochement.');
+      toast.error(await readApiError(res, 'Erreur lors du rapprochement.'));
     }
   } catch (err) {
     console.error(err);

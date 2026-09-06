@@ -1,3 +1,4 @@
+import { readApiError } from '@nba/ui';
 import type { BankStatementLine, GLTransaction, Invoice, SplitRow } from './reconciliation-types';
 
 /**
@@ -29,7 +30,7 @@ async function postAction<T>(body: unknown, fallbackError: string): Promise<T> {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body)
   });
-  if (!res.ok) throw new Error((await res.text()) || fallbackError);
+  if (!res.ok) throw new Error(await readApiError(res, fallbackError));
   return (await res.json()) as T;
 }
 
@@ -76,7 +77,7 @@ export async function apiImportOfx(file: File, selectedAccount: string): Promise
   formData.append('file', file);
   formData.append('accountId', selectedAccount);
   const res = await fetch(DEPOT_RELEVE, { method: 'POST', body: formData });
-  if (!res.ok) throw new Error((await res.text()) || 'Erreur importation.');
+  if (!res.ok) throw new Error(await readApiError(res, 'Erreur importation.'));
   try {
     const json = await res.json();
     return (json && typeof json === 'object' ? json : {}) as ImportSummary;

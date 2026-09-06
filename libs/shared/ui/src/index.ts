@@ -38,6 +38,7 @@ export { flash, flashAndReload, consumeFlash, type FlashType } from './lib/flash
 export { softNavigate, hasClientRouter } from './lib/navigation';
 export { formatAppVersion } from './lib/app-version';
 export { submitForm, type SubmitFormOptions } from './lib/form-submit';
+export { readApiError } from './lib/api-error';
 export { Combobox, type ComboboxItem } from './components/ui/combobox';
 export * as DropdownMenu from './components/ui/dropdown-menu';
 export { uiConfirm } from './components/ui/alert-dialog/confirm';

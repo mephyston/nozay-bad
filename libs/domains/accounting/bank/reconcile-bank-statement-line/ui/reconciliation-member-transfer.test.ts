@@ -101,6 +101,22 @@ describe('handleMemberTransfer', () => {
     expect(s.isSubmitting).toBe(false);
   });
 
+  it("montre le message de l'API, et non l'enveloppe JSON, quand la création est refusée", async () => {
+    const refus = "La date de l'écriture sort des bornes de l'exercice sélectionné.";
+    repond((body) => {
+      if (body.action === 'create-transfer') return { ok: false, json: { success: false, error: refus } };
+      return { json: [] };
+    });
+    const s = etat();
+
+    await s.handleMemberTransfer(line, 'Reçu de Mme Dupont');
+
+    // Le toast recevait `{"success":false,"error":"…"}` tel quel, accolades comprises.
+    expect(toastError).toHaveBeenCalledWith(refus);
+    expect(appels.map((a) => a.action)).toEqual(['create-transfer']);
+    expect(s.isSubmitting).toBe(false);
+  });
+
   it("refuse une ligne au débit sans rien appeler", async () => {
     repond(() => ({ json: [] }));
     const s = etat();
