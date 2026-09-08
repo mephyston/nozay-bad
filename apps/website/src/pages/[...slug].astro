@@ -19,12 +19,23 @@ import {
   listClubEvents,
   ANNOUNCEMENT_LOOKUP_LIMIT,
   getSiteSettings,
+  listVenues,
   mediaPath,
   type PostRow
 } from '../lib/cms';
 import { resolveEnv } from '../lib/request-context';
-import { pageTitle, pageDescription, absoluteUrl } from '../lib/seo';
-import { sportsClub, webSite, webPage, breadcrumbList, article, openingHours, clubEvent } from '../lib/jsonld';
+import { pageTitle, homeTitle, pageDescription, absoluteUrl, SITE_NAME, SITE_LOCALITY } from '../lib/seo';
+import {
+  sportsClub,
+  webSite,
+  webPage,
+  breadcrumbList,
+  article,
+  openingHours,
+  clubOpeningHours,
+  clubEvent,
+  matchVenue
+} from '../lib/jsonld';
 import { socialLinks } from '../lib/social';
 import { HTML_CACHE_CONTROL } from '../lib/cache';
 
@@ -103,6 +114,21 @@ const needsEvents = allBlocks.some((block) => block.type === 'events');
 const clubEvents = needsEvents ? await listClubEvents(env) : [];
 
 /*
+ * Les gymnases, pour situer le club et ses rendez-vous.
+ *
+ * Deux lecteurs : la fiche `SportsClub` de l'accueil, qui liste les lieux du club, et
+ * le balisage des événements, qui rattache un rendez-vous « Arthur Rimbaud » à une
+ * adresse en Essonne. L'accueil lit aussi ses réglages ici, en parallèle et non plus
+ * au moment d'émettre la fiche : deux lectures indépendantes n'ont pas à se suivre.
+ */
+const isHome = page?.path === '/';
+const needsVenues = isHome || needsEvents;
+const [venues, homeSettings] = await Promise.all([
+  needsVenues ? listVenues(env) : Promise.resolve([]),
+  isHome ? getSiteSettings(env) : Promise.resolve(null)
+]);
+
+/*
  * Le chemin de l'agenda vers l'actualité qui annonce un rendez-vous.
  *
  * Le rattachement est porté par l'article (`eventId`) : il se lit donc à l'envers, en
@@ -166,7 +192,7 @@ const dateFormatter = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'long' });
 // --- Vue « actualité » --------------------------------------------------------
 const postPublished = post?.publishedAt ? new Date(post.publishedAt).toISOString() : null;
 const postDescription = post
-  ? (post.seoDescription ?? post.excerpt ?? `${post.title} — Nozay Badminton Association`)
+  ? (post.seoDescription ?? post.excerpt ?? `${post.title} — ${SITE_NAME}, ${SITE_LOCALITY}`)
   : '';
 const postJsonLd = post
   ? [
@@ -212,9 +238,17 @@ if (page) {
   // Le club d'abord, le site ensuite : `webSite.publisher` renvoie à la fiche du club
   // par son `@id`, et la lire décrite avant d'être citée épargne un aller-retour à qui
   // relit la source. L'ordre n'a pas de sens pour un analyseur — il en a pour nous.
-  if (page.path === '/') {
+  if (isHome && homeSettings) {
     pageJsonLd.unshift(webSite(siteUrl));
-    pageJsonLd.unshift(sportsClub(siteUrl, socialLinks(await getSiteSettings(env)).map((l) => l.href)));
+    pageJsonLd.unshift(
+      sportsClub(
+        siteUrl,
+        socialLinks(homeSettings).map((l) => l.href),
+        // Les horaires entrent dans la fiche elle-même quand l'accueil affiche la
+        // grille : un second nœud pour le même club serait un club de trop.
+        { venues, openingHours: slots.length > 0 ? openingHours(slots) : undefined }
+      )
+    );
   }
   /*
     Balisage des événements, repris de la page `/agenda/` supprimée.
@@ -251,21 +285,17 @@ if (page) {
           venueLabel: event.venueLabel,
           status: event.status,
           url: announcement?.path ?? page.path,
-          image: announcement?.cover ? absoluteUrl(siteUrl, mediaPath(announcement.cover.key)) : null
+          image: announcement?.cover ? absoluteUrl(siteUrl, mediaPath(announcement.cover.key)) : null,
+          venue: matchVenue(venues, event.venueLabel)
         })
       );
     }
   }
 
-  // Les horaires rendent la page « Créneaux » exploitable par une machine.
-  if (slots.length > 0) {
-    pageJsonLd.push({
-      '@context': 'https://schema.org',
-      '@type': 'SportsClub',
-      name: 'Nozay Badminton Association',
-      openingHoursSpecification: openingHours(slots)
-    });
-  }
+  // Les horaires rendent la page « Créneaux » exploitable par une machine. Sur
+  // l'accueil, ils sont déjà dans la fiche du club ; ailleurs, le nœud porte le même
+  // `@id` qu'elle pour que ce soit le même club.
+  if (slots.length > 0 && !isHome) pageJsonLd.push(clubOpeningHours(siteUrl, slots));
 }
 ---
 
@@ -331,7 +361,7 @@ if (page) {
 
 {page && (
   <BaseLayout
-    title={pageTitle(page.seoTitle, page.title)}
+    title={isHome ? homeTitle(page.seoTitle) : pageTitle(page.seoTitle, page.title)}
     description={pageDescriptionText}
     canonical={absoluteUrl(siteUrl, page.path)}
     noindex={page.noindex || isPreview}
