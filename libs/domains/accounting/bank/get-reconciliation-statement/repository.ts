@@ -1,6 +1,6 @@
 import { listAccountsWithStatements } from '../../config/queries';
 import { type DbOrTx } from '@nba/db';
-import { and, desc, eq, gte, inArray, lte, ne, sql } from 'drizzle-orm';
+import { and, desc, eq, gte, inArray, isNull, lt, lte, ne, sql } from 'drizzle-orm';
 import { resolveOpeningBalances, type OpeningBalances } from '../../shared/opening-balances';
 import {
   accountsTable,
@@ -53,6 +53,30 @@ export class GetReconciliationStatementRepository {
       .from(ledgerEntriesTable)
       .where(and(gte(ledgerEntriesTable.date, startDate), lte(ledgerEntriesTable.date, asOfDate)))
       .all();
+  }
+
+  /**
+   * Les écritures non pointées des comptes demandés, datées avant l'ouverture de l'exercice
+   * mais comprises dans l'à-nouveau reconstitué : depuis le point figé (`from`, ou l'origine
+   * quand il n'y en a jamais eu) et strictement avant `before`.
+   *
+   * Les mêmes bornes que `resolveOpeningBalances` : ce que l'à-nouveau a cumulé sans que la
+   * banque l'ait vu doit se retrancher, sinon l'écart le porte sans le nommer.
+   */
+  async getUnpointedEntriesBefore(
+    db: DbOrTx,
+    accountIds: number[],
+    from: string | null,
+    before: string
+  ): Promise<any[]> {
+    if (accountIds.length === 0) return [];
+    const bornes = [
+      inArray(ledgerEntriesTable.accountId, accountIds),
+      isNull(ledgerEntriesTable.bankStatementLineId),
+      lt(ledgerEntriesTable.date, before)
+    ];
+    if (from !== null) bornes.push(gte(ledgerEntriesTable.date, from));
+    return db.select().from(ledgerEntriesTable).where(and(...bornes)).all();
   }
 
   /**

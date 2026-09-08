@@ -34,17 +34,25 @@
     </div>
   </div>
 
-    <FormField id="bank-tx-select" label="Sélectionner la ligne bancaire correspondante">
+  <!--
+    Seules les lignes du montant exact : une remise est une seule opération bancaire, et le
+    serveur refuse tout autre montant. Une ligne différente est une autre opération — ou une
+    remise dont la banque a rejeté un chèque, ce qui se corrige sur le bordereau.
+  -->
+  <FormField id="bank-tx-select" label="Ligne du relevé portant la remise">
     <SearchableCombobox
       id="bank-tx-select"
       placeholder="-- Choisir une ligne de relevé bancaire --"
       bind:value={selectedBankTransactionId}
-      items={[
-        ...matchingBankTxs.map((bt) => ({ label: `${bt.date} • ${bt.name} • ${(bt.amount / 100).toFixed(2)} €`, value: String(bt.id) })),
-        ...pendingBankTransactions.filter((bt) => bt.amount !== selectedDepositToClear?.amount).map((bt) => ({ label: `${bt.date} • ${bt.name} • ${(bt.amount / 100).toFixed(2)} € (Montant différent)`, value: String(bt.id) }))
-      ]}
+      items={matchingBankTxs.map((bt) => ({ label: `${bt.date} • ${bt.name} • ${(bt.amount / 100).toFixed(2)} €`, value: String(bt.id) }))}
     />
   </FormField>
+  {#if matchingBankTxs.length === 0}
+    <p class="text-xs text-muted-foreground">
+      Aucune ligne en attente ne porte ce montant : le relevé n'est peut-être pas encore importé,
+      ou la banque a rejeté un chèque de la remise.
+    </p>
+  {/if}
 
   <Button
     onclick={onClearDeposit}

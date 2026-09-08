@@ -130,7 +130,9 @@ export function createCheckDepositState(props: () => {
   let selectedBankTransactionId = $state<string>('');
   let isSubmittingClear = $state(false);
 
-  const selectedChecksList = $derived.by(() => p.checks.filter(c => c.status === 'received' && selectedCheckIds[c.id]));
+  // Un chèque reçu mais déjà inscrit sur une remise à déposer n'est plus disponible.
+  const isDepositable = (c: Check) => c.status === 'received' && !c.checkDepositId;
+  const selectedChecksList = $derived.by(() => p.checks.filter(c => isDepositable(c) && selectedCheckIds[c.id]));
   const totalSelectedAmount = $derived.by(() => selectedChecksList.reduce((sum, c) => sum + c.amount, 0));
 
   const filteredChecks = $derived.by(() => {
@@ -184,6 +186,7 @@ export function createCheckDepositState(props: () => {
     get selectedBankTransactionId() { return selectedBankTransactionId; }, set selectedBankTransactionId(v) { selectedBankTransactionId = v; },
     get isSubmittingClear() { return isSubmittingClear; }, set isSubmittingClear(v) { isSubmittingClear = v; },
     get selectedChecksList() { return selectedChecksList; },
+    get depositableChecks() { return filteredChecks.filter(isDepositable); },
     get totalSelectedAmount() { return totalSelectedAmount; },
     get filteredChecks() { return filteredChecks; }
   };

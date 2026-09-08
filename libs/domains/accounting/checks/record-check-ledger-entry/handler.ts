@@ -2,7 +2,7 @@ import { RecordCheckTransactionRepository } from './repository';
 import { AppError, type Db, type Tx } from '@nba/db';
 import { cleanName } from '../../shared/helpers';
 import type { CreateCheckInput, UpdateCheckInput, AnalyzeCheckOutput } from './dto';
-import { assertMembershipMatchesSeason } from '../../shared/member-season';
+import { validateAccrualAndFiscalPhase } from '../../shared/accruals';
 
 /** Liaison Workers AI : seule `run` est utilisée. */
 export interface VisionAi {
@@ -229,14 +229,25 @@ export async function createCheck(db: Db, body: CreateCheckInput) {
   const categoryVal = body.category ? Number(body.category) : 1;
 
   const seasonIdInt = await repo.resolveSeasonId(db, body.seasonId);
+  const date = body.date || new Date().toISOString().split('T')[0];
 
   /*
-   * Ce chemin écrit lui aussi un `member_id` sur une écriture, sans passer par
-   * `validateAccrualAndFiscalPhase` — le contrôle d'exercice s'y appelle donc en propre.
-   * Un chèque de la rentrée déposé au nom de l'adhésion de l'année écoulée ferait disparaître
-   * le règlement des deux dossiers, exactement comme un virement.
+   * La même porte que la saisie du grand livre : exercice clôturé, adhésion d'un autre
+   * exercice, et surtout date hors des bornes de l'exercice.
+   *
+   * Ce chemin ne contrôlait que l'adhésion. Or la date d'un chèque vient d'une lecture IA de
+   * la photo (`check-deposit-api.ts`), qui écrase la date du jour : un « 05/09/26 » manuscrit
+   * lu « 2025-09-05 » a produit, le 05/09/2026, une recette de 26-27 datée de 25-26. Rien ne
+   * la refusait, et l'état de rapprochement de 26-27 a porté un écart de 110,00 € que rien à
+   * l'écran ne nommait : l'écriture entrait dans l'à-nouveau reconstitué (par sa date) sans
+   * figurer parmi les non-pointées de l'exercice (bornées à son ouverture).
    */
-  await assertMembershipMatchesSeason(db, body.memberId || null, seasonIdInt);
+  await validateAccrualAndFiscalPhase(db, {
+    seasonId: seasonIdInt,
+    type: 'recette',
+    date,
+    memberId: body.memberId || null
+  });
 
   // Phase 2 : Décision (en mémoire)
   const descStr = body.description || autoDescription(body.number, body.emitter);
@@ -247,11 +258,20 @@ export async function createCheck(db: Db, body: CreateCheckInput) {
     accountId: 1,
     category: categoryVal,
     amount: body.amount,
-    date: body.date || new Date().toISOString().split('T')[0],
+    date,
     paymentMethodId: 2,
     description: descStr,
     reference: `Chèque n°${body.number}`,
     memberId: body.memberId || null,
+    /*
+     * Un chèque naît en coffre, comme le dit `payment_methods.default_entry_status` pour le
+     * mode « chèque » et comme le fait la saisie du grand livre. Ce chemin laissait le statut
+     * au défaut de la table (`cleared`) : les dix chèques de la rentrée 2026 sont nés
+     * « encaissés », et le solde bancaire théorique — qui retranche précisément les `in_vault`
+     * — comptait comme en banque quatre chèques encore dans le tiroir. Le pointage remet
+     * `cleared` (`reconcile-bank-statement-line/repository.ts`).
+     */
+    status: 'in_vault',
     createdAt: new Date()
   });
 
@@ -289,6 +309,9 @@ export async function deleteCheck(db: Db, id: number) {
   if (!check) {
     throw new AppError('Chèque non trouvé.', 404);
   }
+  if (check.status === 'deposited' || check.checkDepositId) {
+    throw new AppError("Un chèque inscrit sur une remise ne se supprime pas : supprimez d'abord le bordereau.", 400);
+  }
 
   // Phase 2 : Décision (en mémoire)
   const statements: any[] = [repo.buildDeleteCheckStatement(db, id)];
@@ -311,8 +334,8 @@ export async function deleteCheck(db: Db, id: number) {
  * - une écriture déjà pointée non plus, la banque l'a confrontée à une ligne de relevé.
  * La saison n'est pas modifiable : elle est reprise du chèque existant.
  *
- * Pas de garde « saison clôturée » côté serveur, par cohérence avec la création et la
- * suppression qui ne l'ont pas ; l'écran masque les actions d'un exercice clos.
+ * La date et l'adhésion passent par `validateAccrualAndFiscalPhase`, comme à la création :
+ * une date hors des bornes de l'exercice du chèque est refusée, et un exercice clôturé aussi.
  */
 export async function updateCheck(db: Db, id: number, body: UpdateCheckInput) {
   if (!body.number || !body.amount || !body.emitter || !body.date) {
@@ -326,12 +349,18 @@ export async function updateCheck(db: Db, id: number, body: UpdateCheckInput) {
   if (!existing) {
     throw new AppError('Chèque non trouvé.', 404);
   }
-  if (existing.status === 'deposited') {
-    throw new AppError("Un chèque déjà remis en banque ne se modifie plus : supprimez d'abord le bordereau.", 400);
+  // Déposé, ou seulement inscrit sur un bordereau à déposer : son montant est figé dedans.
+  if (existing.status === 'deposited' || existing.checkDepositId) {
+    throw new AppError("Un chèque déjà inscrit sur une remise ne se modifie plus : supprimez d'abord le bordereau.", 400);
   }
 
   const memberId = body.memberId ?? null;
-  await assertMembershipMatchesSeason(db, memberId, existing.seasonId);
+  await validateAccrualAndFiscalPhase(db, {
+    seasonId: existing.seasonId,
+    type: 'recette',
+    date: body.date,
+    memberId
+  });
 
   const ledger = existing.ledgerEntryId ? await repo.getTransactionById(db, existing.ledgerEntryId) : undefined;
   if (ledger && ledger.bankStatementLineId !== null && ledger.bankStatementLineId !== undefined) {

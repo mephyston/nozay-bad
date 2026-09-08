@@ -36,6 +36,15 @@ export interface OpeningBalances {
    * arrêté.
    */
   provisional: boolean;
+  /**
+   * La borne basse du calcul quand l'à-nouveau a été reconstitué : la date du dernier point
+   * figé, ou `null` si le cumul est parti de l'origine (ou si rien n'a été calculé).
+   *
+   * L'état de rapprochement en a besoin : une écriture non pointée datée entre ce point et
+   * l'ouverture est comptée dans l'à-nouveau sans figurer parmi les non-pointées de
+   * l'exercice. Sans cette borne, il ne peut ni la retrouver ni expliquer l'écart qu'elle crée.
+   */
+  computedFrom: string | null;
 }
 
 /*
@@ -84,7 +93,7 @@ export async function resolveOpeningBalances(
 
   const aCalculer = accountIds.filter((id) => !figes.has(id));
   if (aCalculer.length === 0) {
-    return { byAccountId: new Map(figes), provisional: false };
+    return { byAccountId: new Map(figes), provisional: false, computedFrom: null };
   }
 
   /*
@@ -150,5 +159,5 @@ export async function resolveOpeningBalances(
     byAccountId.set(id, (socle.get(id) ?? 0) + (parCompte.get(id) ?? 0));
   }
 
-  return { byAccountId, provisional: true };
+  return { byAccountId, provisional: true, computedFrom: depuis };
 }

@@ -62,6 +62,7 @@ describe('resolveOpeningBalances', () => {
 
     expect(res.byAccountId.get(COURANT)).toBe(150_000);
     expect(res.provisional).toBe(false);
+    expect(res.computedFrom).toBeNull();
   });
 
   /*
@@ -81,6 +82,9 @@ describe('resolveOpeningBalances', () => {
 
     expect(res.byAccountId.get(COURANT)).toBe(150_000);
     expect(res.provisional).toBe(true);
+    // La borne basse du cumul, dont l'état de rapprochement a besoin pour retrouver ce
+    // que l'à-nouveau a compté sans que la banque l'ait vu.
+    expect(res.computedFrom).toBe('2025-09-01');
   });
 
   /*
@@ -136,6 +140,8 @@ describe('resolveOpeningBalances', () => {
     const res = await ouverture(3, '2026-09-01', [COURANT]);
 
     expect(res.byAccountId.get(COURANT)).toBe(5_000);
+    // Parti de l'origine : pas de point figé à rendre.
+    expect(res.computedFrom).toBeNull();
     expect(res.provisional).toBe(true);
   });
 

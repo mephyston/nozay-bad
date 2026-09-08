@@ -2262,6 +2262,8 @@ VERSION:102
     const txId = getBody.data[0].ledgerEntryId;
     const checkTx = (await db.select().from(ledgerEntriesTable).where(eq(ledgerEntriesTable.id, txId)).get())!;
     expect(checkTx.date).toBe('2026-07-10');
+    // Un chèque naît en coffre : c'est de ce statut que le solde bancaire théorique se déduit.
+    expect(checkTx.status).toBe('in_vault');
     // La liste porte la date et la catégorie de la recette : le formulaire de
     // modification les prérenseigne sans second appel.
     expect(getBody.data[0].date).toBe('2026-07-10');
@@ -2313,10 +2315,32 @@ VERSION:102
 
     const depositId = depositBody.data.id;
 
-    // 6. Vérifier que le chèque est marqué comme 'deposited'
+    // 6. La remise naît « à déposer » ; le chèque, rattaché au bordereau, reste au coffre.
+    expect(depositBody.data.status).toBe('pending');
+    const checkAfterSlip = (await db.select().from(checksTable).where(eq(checksTable.id, checkId)).get())!;
+    expect(checkAfterSlip.status).toBe('received');
+    expect(checkAfterSlip.checkDepositId).toBe(depositId);
+
+    // 6a. Encaisser avant d'avoir déposé n'a pas de sens : refusé.
+    const tooEarly = await app.request(`http://localhost/accounting/check-deposits/${depositId}/clear`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ bankStatementLineId: 999 })
+    }, { DB: mockD1 as any });
+    expect(tooEarly.status).toBe(400);
+
+    // Le bordereau est remis au guichet : remise et chèque passent « déposés ».
+    const depositConfirm = await app.request(`http://localhost/accounting/check-deposits/${depositId}/deposit`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ date: '2026-07-14' })
+    }, { DB: mockD1 as any });
+    expect(depositConfirm.status).toBe(200);
     const checkAfterDeposit = (await db.select().from(checksTable).where(eq(checksTable.id, checkId)).get())!;
     expect(checkAfterDeposit.status).toBe('deposited');
-    expect(checkAfterDeposit.checkDepositId).toBe(depositId);
+    const slipAfterDeposit = (await db.select().from(checkDepositsTable).where(eq(checkDepositsTable.id, depositId)).get())!;
+    expect(slipAfterDeposit.status).toBe('deposited');
+    expect(slipAfterDeposit.date).toBe('2026-07-14');
 
     // 6b. Un chèque remis ne se modifie plus : son montant est figé dans le bordereau.
     const putAfterDeposit = await app.request(`http://localhost/accounting/checks/${checkId}`, {
@@ -2365,6 +2389,24 @@ VERSION:102
     const finalDeposit = (await db.select().from(checkDepositsTable).where(eq(checkDepositsTable.id, depositId)).get())!;
     expect(finalDeposit.status).toBe('cleared');
     expect(finalDeposit.bankStatementLineId).toBe(999);
+
+    // La recette du chèque est pointée sur la ligne et sort du coffre : sans cela, l'état de
+    // rapprochement portait un écart du montant de la remise que rien ne nommait.
+    const clearedTx = (await db.select().from(ledgerEntriesTable).where(eq(ledgerEntriesTable.id, txId)).get())!;
+    expect(clearedTx.bankStatementLineId).toBe(999);
+    expect(clearedTx.status).toBe('cleared');
+    const clearedLine = (await db.select().from(bankStatementLinesTable).where(eq(bankStatementLinesTable.id, 999)).get())!;
+    expect(clearedLine.status).toBe('reconciled');
+
+    // Défaire la remise encaissée rend tout : ligne en attente, recette au coffre, chèque libéré.
+    const undoRes = await app.request(`http://localhost/accounting/check-deposits/${depositId}/delete`, { method: 'POST' }, { DB: mockD1 as any });
+    expect(undoRes.status).toBe(200);
+    const undoneTx = (await db.select().from(ledgerEntriesTable).where(eq(ledgerEntriesTable.id, txId)).get())!;
+    expect(undoneTx.bankStatementLineId).toBeNull();
+    expect(undoneTx.status).toBe('in_vault');
+    const undoneCheck = (await db.select().from(checksTable).where(eq(checksTable.id, checkId)).get())!;
+    expect(undoneCheck.status).toBe('received');
+    expect(undoneCheck.checkDepositId).toBeNull();
 
     // 8. Supprimer le chèque
     const delCheckRes = await app.request(`http://localhost/accounting/checks/${checkId}`, {

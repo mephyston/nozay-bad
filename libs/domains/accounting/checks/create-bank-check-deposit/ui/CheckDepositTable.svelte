@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Link, MoreHorizontal, Pencil, Trash2, FileText, Camera } from '@lucide/svelte';
-  import { Button, Input, Checkbox, Amount, DropdownMenu, DataTable, Table, DataTableToolbar, FormField, SearchableCombobox, softNavigate, toSeasonOptions } from '@nba/ui';
+  import { Badge, Button, Input, Checkbox, Amount, DropdownMenu, DataTable, Table, DataTableToolbar, FormField, SearchableCombobox, softNavigate, toSeasonOptions } from '@nba/ui';
   import type { CheckDepositState } from './check-deposit-state.svelte';
   import type { Check } from './check-deposit-types';
 
@@ -73,10 +73,10 @@
   {#snippet header()}
     <Table.Head class="w-10">
       <Checkbox
-        checked={depositState.filteredChecks.length > 0 && depositState.filteredChecks.every(c => depositState.selectedCheckIds[c.id])}
+        checked={depositState.depositableChecks.length > 0 && depositState.depositableChecks.every(c => depositState.selectedCheckIds[c.id])}
         onCheckedChange={(val) => {
           const checked = !!val;
-          depositState.filteredChecks.forEach(c => depositState.selectedCheckIds[c.id] = checked);
+          depositState.depositableChecks.forEach(c => depositState.selectedCheckIds[c.id] = checked);
         }}
         disabled={depositState.isClosed}
       />
@@ -98,13 +98,19 @@
           onCheckedChange={(val) => {
             depositState.selectedCheckIds[check.id] = !!val;
           }}
-          disabled={depositState.isClosed}
+          disabled={depositState.isClosed || !!check.checkDepositId}
         />
       </Table.Cell>
       <Table.Cell class="hidden md:table-cell text-muted-foreground">
         {new Date(check.createdAt).toLocaleDateString('fr-FR')}
       </Table.Cell>
-      <Table.Cell class="font-medium">{check.number}</Table.Cell>
+      <Table.Cell class="font-medium">
+        {check.number}
+        {#if check.checkDepositId}
+          <!-- Toujours au coffre, mais déjà inscrit sur un bordereau qui attend d'être déposé. -->
+          <Badge variant="warning" size="xs" class="ml-2">Remise à déposer</Badge>
+        {/if}
+      </Table.Cell>
       <Table.Cell class="hidden md:table-cell">{check.bank || '—'}</Table.Cell>
       <Table.Cell class="font-medium">{check.emitter}</Table.Cell>
       <Table.Cell class="hidden lg:table-cell">
@@ -124,7 +130,7 @@
         <Amount cents={(check as any).amountCents ?? check.amount} />
       </Table.Cell>
       <Table.Cell class="text-right">
-        {#if !depositState.isClosed}
+        {#if !depositState.isClosed && !check.checkDepositId}
           <DropdownMenu.Root>
             <DropdownMenu.Trigger asChild>
               {#snippet child({ props })}
@@ -155,6 +161,8 @@
               </DropdownMenu.Item>
             </DropdownMenu.Content>
           </DropdownMenu.Root>
+        {:else if check.checkDepositId}
+          <span class="text-xs text-muted-foreground italic">Via le bordereau</span>
         {:else}
           <span class="text-xs text-muted-foreground italic">Aucune</span>
         {/if}

@@ -14,6 +14,17 @@ export type UnpointedEntry = {
   signedAmountCents: number;
   status: string;
   paymentMethodId: number | null;
+  /**
+   * Datée avant l'ouverture de l'exercice, mais comprise dans l'à-nouveau reconstitué.
+   *
+   * Tant que l'exercice précédent n'est pas clôturé, l'à-nouveau cumule les mouvements par
+   * date depuis le dernier report figé — pointés ou non. Une écriture de cette période que
+   * rien ne rapproche est donc dans les livres sans être en banque, exactement comme une
+   * non-pointée de l'exercice : elle se retranche de la même façon. Le cas typique est le
+   * chèque encaissé fin août et déposé en septembre ; le cas qui l'a révélé, une recette de
+   * 26-27 datée par erreur de 25-26 (110,00 € d'écart le 08/09/2026, qu'aucune ligne ne nommait).
+   */
+  beforeSeason: boolean;
 };
 
 /** Une ligne de relevé qu'aucune écriture ne porte. */

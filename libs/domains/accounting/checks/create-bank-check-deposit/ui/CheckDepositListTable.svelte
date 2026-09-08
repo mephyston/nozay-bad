@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { CheckCircle, MoreVertical, FileText, Trash2 } from '@lucide/svelte';
+  import { CheckCircle, Landmark, MoreVertical, FileText, Trash2 } from '@lucide/svelte';
   import { Button, Badge, Amount, DropdownMenu, DataTable, Table, DataTableToolbar, FormField, SearchableCombobox, softNavigate, toSeasonOptions } from '@nba/ui';
   import type { CheckDepositState } from './check-deposit-state.svelte';
   import type { CheckDeposit } from './check-deposit-types';
@@ -12,10 +12,11 @@
     seasons: any[];
     checkDeposits: CheckDeposit[];
     onDeleteDeposit: (id: number) => Promise<void>;
+    onConfirmDeposit: (id: number) => Promise<void>;
     tabsNav?: Snippet;
   }
 
-  let { depositState, seasonId, seasons, checkDeposits, onDeleteDeposit, tabsNav }: Props = $props();
+  let { depositState, seasonId, seasons, checkDeposits, onDeleteDeposit, onConfirmDeposit, tabsNav }: Props = $props();
 
   let depositSearchQuery = $state('');
 
@@ -71,13 +72,18 @@
     </Table.Cell>
     <Table.Cell class="font-medium">{dep.reference}</Table.Cell>
     <Table.Cell>
+      <!-- à déposer → déposée → encaissée : la remise naît sur le bureau, pas au guichet. -->
       {#if dep.status === 'cleared'}
         <Badge variant="success">
-          <CheckCircle class="h-3 w-3" /> Rapproché
+          <CheckCircle class="h-3 w-3" /> Encaissée
+        </Badge>
+      {:else if dep.status === 'deposited'}
+        <Badge variant="info">
+          Déposée
         </Badge>
       {:else}
-        <Badge variant="info">
-          Déposé
+        <Badge variant="warning">
+          À déposer
         </Badge>
       {/if}
     </Table.Cell>
@@ -120,7 +126,17 @@
             Consulter / Imprimer
           </DropdownMenu.Item>
           
-          {#if dep.status !== 'cleared' && !depositState.isClosed}
+          {#if dep.status === 'pending' && !depositState.isClosed}
+            <DropdownMenu.Item
+              onclick={() => onConfirmDeposit(dep.id)}
+              class="text-primary focus:text-primary cursor-pointer"
+            >
+              <Landmark class="w-3.5 h-3.5 mr-2" />
+              Confirmer le dépôt en banque
+            </DropdownMenu.Item>
+          {/if}
+
+          {#if dep.status === 'deposited' && !depositState.isClosed}
             <DropdownMenu.Item
               onclick={() => {
                 depositState.selectedDepositToClear = dep;
@@ -129,7 +145,7 @@
               class="text-primary focus:text-primary cursor-pointer"
             >
               <CheckCircle class="w-3.5 h-3.5 mr-2" />
-              Rapprocher (SG)
+              Encaisser (ligne du relevé)
             </DropdownMenu.Item>
           {/if}
 

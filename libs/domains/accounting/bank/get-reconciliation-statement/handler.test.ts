@@ -38,6 +38,7 @@ function mockRepo(over: Record<string, any> = {}) {
     getAccountByCode: vi.fn().mockResolvedValue(ACCOUNT),
     getOpeningBalances: vi.fn().mockResolvedValue({ byAccountId: new Map(), provisional: false }),
     getEntriesForPeriod: vi.fn().mockResolvedValue([]),
+    getUnpointedEntriesBefore: vi.fn().mockResolvedValue([]),
     getUnreconciledBankLines: vi.fn().mockResolvedValue([]),
     getLatestBankStatementBalance: vi.fn().mockResolvedValue(undefined),
     getLatestBankStatementDate: vi.fn().mockResolvedValue(undefined),
@@ -117,6 +118,53 @@ describe('getReconciliationStatement', () => {
     expect(result.unpointedEntries[0]).toMatchObject({ id: 5, signedAmountCents: 8_000, status: 'in_vault' });
     expect(result.expectedBankBalanceCents).toBe(100_000);
     expect(result.gapCents).toBe(0);
+  });
+
+  /*
+   * Cas réel du 08/09/2026, 110,00 €. L'exercice précédent n'étant pas clôturé, l'à-nouveau
+   * de 26-27 cumule par date depuis le dernier report figé — pointées ou non. Une recette
+   * datée du 05/09/2025 (au lieu de 2026) y entrait, sans figurer parmi les non-pointées de
+   * l'exercice, bornées à son ouverture. L'écran déclarait l'écart inexplicable. Le chèque de
+   * fin août déposé en septembre produit la même chose, sans erreur de personne.
+   */
+  it("retranche une écriture non pointée d'avant l'ouverture comprise dans l'à-nouveau reconstitué", async () => {
+    const repo = mockRepo({
+      // 100 000 de report figé au 01/09/2025 + 11 000 non pointés datés d'avant l'ouverture.
+      getOpeningBalances: vi.fn().mockResolvedValue({
+        byAccountId: new Map([[1, 111_000]]), provisional: true, computedFrom: '2025-09-01'
+      }),
+      getUnpointedEntriesBefore: vi.fn().mockResolvedValue([
+        entry({ id: 789, type: 'recette', amountCents: 11_000, date: '2025-09-05', description: 'Règlement par chèque n°1426684', status: 'in_vault' })
+      ]),
+      getLatestBankStatementBalance: vi.fn().mockResolvedValue({ date: '2026-09-07', balanceCents: 100_000 })
+    });
+    vi.mocked(getSeasonFromDb).mockResolvedValue({ id: 2, code: '26-27', startDate: '2026-09-01', endDate: '2027-08-31' } as any);
+
+    const result = await getReconciliationStatement(db, { accountCode: 'current', seasonId: '26-27', date: '2026-09-07' });
+
+    // Les mêmes bornes que l'à-nouveau : du point figé à l'ouverture, exclue.
+    expect(repo.getUnpointedEntriesBefore).toHaveBeenCalledWith(db, [1], '2025-09-01', '2026-09-01');
+    expect(result.book.grossCents).toBe(111_000);
+    expect(result.unpointedEntriesTotalCents).toBe(11_000);
+    expect(result.unpointedEntries).toEqual([
+      expect.objectContaining({ id: 789, signedAmountCents: 11_000, beforeSeason: true })
+    ]);
+    expect(result.expectedBankBalanceCents).toBe(100_000);
+    expect(result.gapCents).toBe(0);
+  });
+
+  it("ne cherche rien avant l'ouverture quand l'à-nouveau est figé : le report d'une clôture fait foi", async () => {
+    const repo = mockRepo({
+      getOpeningBalances: vi.fn().mockResolvedValue({ byAccountId: new Map([[1, 100_000]]), provisional: false, computedFrom: null }),
+      getEntriesForPeriod: vi.fn().mockResolvedValue([
+        entry({ id: 5, type: 'recette', amountCents: 8_000, bankStatementLineId: null })
+      ])
+    });
+
+    const result = await getReconciliationStatement(db, { accountCode: 'current', seasonId: '25-26', date: '2025-10-31' });
+
+    expect(repo.getUnpointedEntriesBefore).not.toHaveBeenCalled();
+    expect(result.unpointedEntries).toEqual([expect.objectContaining({ id: 5, beforeSeason: false })]);
   });
 
   it("explique par une ligne de relevé non comptabilisée l'écart inverse", async () => {

@@ -316,6 +316,14 @@ export const ECRANS: Record<string, Ecran> = {
           method: 'POST'
         })
       },
+      'confirm-deposit': {
+        permission: 'accounting:checks:write',
+        route: (data) => ({
+          chemin: `/accounting/check-deposits/${identifiant(data.id, 'de bordereau')}/deposit`,
+          method: 'POST',
+          body: data.date ? { date: data.date } : {}
+        })
+      },
       'clear-deposit': {
         permission: 'accounting:checks:write',
         route: (data) => ({
