@@ -67,6 +67,9 @@ export async function getReconciliationStatement(
 
   const ouverture = await repo.getOpeningBalances(db, season, [account.id]);
   const initialBalanceCents = ouverture.byAccountId.get(account.id) ?? 0;
+  const priorUnpointedEntries = ouverture.provisional
+    ? await repo.getUnpointedEntriesBefore(db, [account.id], ouverture.computedFrom, season.startDate)
+    : [];
   const entries = await repo.getEntriesForPeriod(db, season.startDate, asOfDate);
   const bankLines = await repo.getUnreconciledBankLines(db, account.id, season.startDate, asOfDate);
   const statement = (await repo.getLatestBankStatementBalance(db, account.id, asOfDate)) ?? null;
@@ -74,9 +77,9 @@ export async function getReconciliationStatement(
   const pointableAccountIds = new Set((await repo.getAccountsWithStatements(db)).map((a) => a.id));
 
   return buildStatement({
-    account, season, asOfDate, initialBalanceCents, entries, bankLines, statement, lastBankLineDate,
-    pointableAccountIds,
-      openingBalanceProvisional: ouverture.provisional
+    account, season, asOfDate, initialBalanceCents, entries, priorUnpointedEntries, bankLines, statement,
+    lastBankLineDate, pointableAccountIds,
+    openingBalanceProvisional: ouverture.provisional
   });
 }
 
@@ -87,6 +90,11 @@ interface StatementInputs {
   initialBalanceCents: number;
   /** Toutes les écritures de la période — le tri par compte est l'affaire du calcul. */
   entries: any[];
+  /**
+   * Les écritures non pointées antérieures à l'ouverture mais comprises dans l'à-nouveau
+   * reconstitué. Vide quand l'à-nouveau est figé : le report d'une clôture fait foi tel quel.
+   */
+  priorUnpointedEntries: any[];
   bankLines: any[];
   statement: { date: string; balanceCents: number } | null;
   /** La dernière opération détaillée par les relevés du compte, toutes dates confondues. */
@@ -107,29 +115,43 @@ interface StatementInputs {
  */
 function buildStatement(inputs: StatementInputs): GetReconciliationStatementOutput {
   const {
-    account, season, asOfDate, initialBalanceCents, entries, bankLines, statement, lastBankLineDate,
-    openingBalanceProvisional, pointableAccountIds
+    account, season, asOfDate, initialBalanceCents, entries, priorUnpointedEntries, bankLines, statement,
+    lastBankLineDate, openingBalanceProvisional, pointableAccountIds
   } = inputs;
 
   const balance = computeAccountBalance(account, initialBalanceCents, entries);
 
+  /*
+   * Deux gisements de non-pointées, un seul total.
+   *
+   * Celles de la période, et celles que l'à-nouveau reconstitué a cumulées avant l'ouverture
+   * sans que la banque les ait vues. Les secondes manquaient : le 08/09/2026, une recette de
+   * 26-27 datée par erreur du 05/09/2025 entrait dans l'à-nouveau et nulle part ailleurs —
+   * 110,00 € d'écart que l'écran déclarait inexplicable. Le chèque de fin août déposé en
+   * septembre fait exactement la même chose, sans erreur de personne.
+   */
   const unpointedEntries: UnpointedEntry[] = [];
   let unpointedEntriesTotalCents = 0;
-  for (const entry of entries) {
-    if (entry.bankStatementLineId !== null && entry.bankStatementLineId !== undefined) continue;
-    const signedAmountCents = signedEntryAmountCents(entry, account);
-    if (signedAmountCents === 0) continue;
+  const collecte = (source: any[], beforeSeason: boolean) => {
+    for (const entry of source) {
+      if (entry.bankStatementLineId !== null && entry.bankStatementLineId !== undefined) continue;
+      const signedAmountCents = signedEntryAmountCents(entry, account);
+      if (signedAmountCents === 0) continue;
 
-    unpointedEntriesTotalCents += signedAmountCents;
-    unpointedEntries.push({
-      id: entry.id,
-      date: entry.date,
-      description: entry.description,
-      signedAmountCents,
-      status: entry.status ?? 'cleared',
-      paymentMethodId: entry.paymentMethodId ?? null
-    });
-  }
+      unpointedEntriesTotalCents += signedAmountCents;
+      unpointedEntries.push({
+        id: entry.id,
+        date: entry.date,
+        description: entry.description,
+        signedAmountCents,
+        status: entry.status ?? 'cleared',
+        paymentMethodId: entry.paymentMethodId ?? null,
+        beforeSeason
+      });
+    }
+  };
+  collecte(priorUnpointedEntries, true);
+  collecte(entries, false);
 
   const unrecordedBankLines: UnrecordedBankLine[] = bankLines.map((line: any) => ({
     id: line.id,
@@ -256,6 +278,10 @@ export async function getReconciliationStatements(
     repo.getBankStatementBalancesForAccounts(db, accountIds),
     repo.getLatestBankLineDates(db, accountIds)
   ]);
+  // Une seule lecture pour tous les comptes ; le calcul retient celles du sien.
+  const priorUnpointedEntries = ouverture.provisional
+    ? await repo.getUnpointedEntriesBefore(db, accountIds, ouverture.computedFrom, season.startDate)
+    : [];
 
   const pointableAccountIds = new Set(accounts.map((a) => a.id));
 
@@ -280,6 +306,7 @@ export async function getReconciliationStatements(
       asOfDate,
       initialBalanceCents: ouverture.byAccountId.get(account.id) ?? 0,
       entries,
+      priorUnpointedEntries,
       bankLines,
       statement,
       lastBankLineDate: lastLineDates.get(account.id) ?? null,

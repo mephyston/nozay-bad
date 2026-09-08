@@ -35,12 +35,17 @@ vi.mock('../../shared/helpers', () => ({
   cleanName: vi.fn((s) => s)
 }));
 
+/* La porte commune à toutes les écritures : ici on vérifie qu'elle est franchie, pas ce qu'elle juge. */
+const validateAccrualAndFiscalPhase = vi.hoisted(() => vi.fn());
+vi.mock('../../shared/accruals', () => ({ validateAccrualAndFiscalPhase }));
+
 const mockDb = {
   batch: vi.fn()
 };
 
 beforeEach(() => {
   vi.clearAllMocks();
+  validateAccrualAndFiscalPhase.mockResolvedValue(undefined);
   repo.resolveSeasonId.mockResolvedValue(1);
   repo.getCheckById.mockResolvedValue({ id: 1, seasonId: 1, number: '123', emitter: 'TEST', status: 'received', ledgerEntryId: 10 });
   repo.getTransactionById.mockResolvedValue({ id: 10, amountCents: 100, memberId: null, categoryId: 1, bankStatementLineId: null, description: 'Règlement par chèque n°123 de TEST' });
@@ -67,6 +72,48 @@ describe('record-check-ledger-entry handler', () => {
 
   it('should throw when creating check without required fields', async () => {
     await expect(createCheck(mockDb as any, { seasonId: '2023' } as any)).rejects.toThrow(AppError);
+  });
+
+  /*
+   * Cas réel du 05/09/2026 : la lecture IA de la photo a daté un chèque de 26-27 au
+   * 2025-09-05. Rien ne le refusait, et l'état de rapprochement a porté 110,00 € d'écart
+   * qu'aucune ligne n'expliquait. La date passe désormais par la même porte que le grand livre.
+   */
+  it("refuse un chèque daté hors des bornes de l'exercice", async () => {
+    validateAccrualAndFiscalPhase.mockRejectedValue(
+      new AppError("La date de l'écriture sort des bornes de l'exercice sélectionné.", 400)
+    );
+
+    await expect(createCheck(mockDb as any, {
+      seasonId: '26-27', number: '1426684', amount: 11000, emitter: 'QUERE', date: '2025-09-05', memberId: 1352
+    })).rejects.toMatchObject({ status: 400, message: expect.stringContaining('bornes') });
+
+    expect(validateAccrualAndFiscalPhase).toHaveBeenCalledWith(mockDb, {
+      seasonId: 1, type: 'recette', date: '2025-09-05', memberId: 1352
+    });
+    expect(mockDb.batch).not.toHaveBeenCalled();
+  });
+
+  it("date la recette du jour quand le corps ne donne pas de date, et la soumet au contrôle", async () => {
+    const aujourdHui = new Date().toISOString().split('T')[0];
+
+    await createCheck(mockDb as any, { seasonId: '26-27', number: '1', amount: 100, emitter: 'X' });
+
+    expect(validateAccrualAndFiscalPhase).toHaveBeenCalledWith(mockDb, expect.objectContaining({ date: aujourdHui, memberId: null }));
+    expect(repo.buildCreateLedgerEntryStatement.mock.calls[0][1].date).toBe(aujourdHui);
+  });
+
+  /*
+   * Un chèque naît en coffre : c'est ce que `payment_methods.default_entry_status` dit du mode
+   * « chèque », et c'est de ce statut que le solde bancaire théorique déduit ce qui n'est pas
+   * encore en banque. Ce chemin laissait le défaut de la table, `cleared`.
+   */
+  it('crée la recette en coffre (`in_vault`), pas encaissée', async () => {
+    await createCheck(mockDb as any, { seasonId: '26-27', number: '1', amount: 100, emitter: 'X' });
+
+    expect(repo.buildCreateLedgerEntryStatement.mock.calls[0][1]).toMatchObject({
+      status: 'in_vault', paymentMethodId: 2, type: 'recette'
+    });
   });
 
   it('should delete check successfully', async () => {
@@ -116,10 +163,30 @@ describe('updateCheck', () => {
     expect(mockDb.batch).not.toHaveBeenCalled();
   });
 
+  it("refuse un chèque inscrit sur une remise encore à déposer : son montant est figé dans le bordereau", async () => {
+    repo.getCheckById.mockResolvedValue({ id: 1, seasonId: 1, status: 'received', checkDepositId: 5, ledgerEntryId: 10 });
+
+    await expect(updateCheck(mockDb as any, 1, corps)).rejects.toMatchObject({ status: 400, message: expect.stringContaining('remise') });
+    await expect(deleteCheck(mockDb as any, 1)).rejects.toMatchObject({ status: 400 });
+    expect(mockDb.batch).not.toHaveBeenCalled();
+  });
+
   it('refuse une recette déjà pointée sur le relevé', async () => {
     repo.getTransactionById.mockResolvedValue({ id: 10, categoryId: 1, bankStatementLineId: 42, description: '' });
 
     await expect(updateCheck(mockDb as any, 1, corps)).rejects.toMatchObject({ status: 400, message: expect.stringContaining('pointée') });
+    expect(mockDb.batch).not.toHaveBeenCalled();
+  });
+
+  it("refuse une date hors des bornes de l'exercice du chèque", async () => {
+    validateAccrualAndFiscalPhase.mockRejectedValue(new AppError('hors des bornes', 400));
+
+    await expect(updateCheck(mockDb as any, 1, { ...corps, date: '2025-09-02' })).rejects.toMatchObject({ status: 400 });
+
+    // L'exercice est celui du chèque existant, jamais celui que le corps pourrait prétendre.
+    expect(validateAccrualAndFiscalPhase).toHaveBeenCalledWith(mockDb, {
+      seasonId: 1, type: 'recette', date: '2025-09-02', memberId: null
+    });
     expect(mockDb.batch).not.toHaveBeenCalled();
   });
 

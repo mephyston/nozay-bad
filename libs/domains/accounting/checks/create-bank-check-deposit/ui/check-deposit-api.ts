@@ -170,6 +170,28 @@ export async function handleCreateDeposit(e: SubmitEvent, seasonId: string, stat
   state.isSubmittingDeposit = false;
 }
 
+/** Le bordereau a été remis au guichet : la remise et ses chèques passent « déposés ». */
+export async function handleConfirmDeposit(id: number) {
+  if (!(await uiConfirm('Confirmer que cette remise a été déposée en banque ? Les chèques qu\'elle contient passeront au statut "Déposés".'))) return;
+
+  try {
+    const res = await fetch(RELAIS, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'confirm-deposit', id })
+    });
+
+    if (res.ok) {
+      flashAndReload('Dépôt en banque confirmé.');
+    } else {
+      toast.error(await readApiError(res, 'Erreur lors de la confirmation du dépôt.'));
+    }
+  } catch (err) {
+    console.error(err);
+    toast.error('Erreur lors de la confirmation du dépôt.');
+  }
+}
+
 export async function handleDeleteDeposit(id: number, seasonId: string) {
   if (!(await uiConfirm('Êtes-vous sûr de vouloir supprimer ce bordereau ? Les chèques associés repasseront au statut "Reçus" et le rapprochement bancaire sera annulé.'))) return;
 
@@ -211,7 +233,7 @@ export async function handleClearDeposit(e: SubmitEvent, seasonId: string, state
       state.showClearModal = false;
       state.selectedDepositToClear = null;
       state.selectedBankTransactionId = '';
-      flashAndReload('Bordereau encaissé.');
+      flashAndReload('Remise encaissée : la ligne du relevé et les recettes des chèques sont pointées.');
     } else {
       toast.error(await readApiError(res, 'Erreur lors du rapprochement.'));
     }

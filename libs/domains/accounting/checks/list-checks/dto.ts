@@ -24,7 +24,8 @@ export interface ListCheckDepositsOutput {
   reference: string;
   date: string;
   amount: number;
-  status: 'deposited' | 'cleared';
+  /** à déposer → déposée → encaissée */
+  status: 'pending' | 'deposited' | 'cleared';
   bankStatementLineId: number | null;
   createdAt: Date;
 }

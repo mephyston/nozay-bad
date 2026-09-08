@@ -87,6 +87,18 @@
               <Amount cents={-statement.unpointedEntriesTotalCents} showSign />
             </div>
 
+            <!--
+              Celles d'avant l'ouverture sont dans l'à-nouveau reconstitué sans être en banque :
+              elles se retranchent comme les autres, mais le trésorier ne les cherchera pas dans
+              l'exercice affiché. Il faut le dire.
+            -->
+            {#if statement.unpointedEntries.some((e) => e.beforeSeason)}
+              <p class="text-xs text-muted-foreground">
+                Dont {statement.unpointedEntries.filter((e) => e.beforeSeason).length} antérieure(s) au
+                {formatDate(statement.seasonStartDate)}, comprise(s) dans l'à-nouveau reconstitué.
+              </p>
+            {/if}
+
             <div class="flex items-baseline justify-between gap-4 text-muted-foreground">
               <span>Lignes de relevé non comptabilisées <span class="text-xs">({statement.unrecordedBankLines.length})</span></span>
               <Amount cents={statement.unrecordedBankLinesTotalCents} showSign />
@@ -182,6 +194,9 @@
                     <span class="min-w-0 flex items-baseline gap-2">
                       <span class="text-muted-foreground tabular-nums shrink-0">{formatDate(entry.date)}</span>
                       <span class="truncate">{entry.description}</span>
+                      {#if entry.beforeSeason}
+                        <Badge variant="secondary" size="xs" class="shrink-0">à-nouveau</Badge>
+                      {/if}
                     </span>
                     <Amount cents={entry.signedAmountCents} showSign class="shrink-0" />
                   </div>

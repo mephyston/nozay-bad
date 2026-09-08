@@ -13,6 +13,7 @@
     handleDeleteCheck,
     handleCreateDeposit,
     handleDeleteDeposit,
+    handleConfirmDeposit,
     handleClearDeposit
   } from './check-deposit-api';
   import type { Check, CheckDeposit, Member, BankStatementLine, SeasonOption } from './check-deposit-types';
@@ -64,6 +65,7 @@
   const onDeleteCheck = (id: number) => handleDeleteCheck(id, props.seasonId);
   const onCreateDeposit = (e: SubmitEvent) => handleCreateDeposit(e, props.seasonId, depositState);
   const onDeleteDeposit = (id: number) => handleDeleteDeposit(id, props.seasonId);
+  const onConfirmDeposit = (id: number) => handleConfirmDeposit(id);
   const onClearDeposit = (e: SubmitEvent) => handleClearDeposit(e, props.seasonId, depositState);
 </script>
 
@@ -97,6 +99,7 @@
         seasons={props.seasons}
         checkDeposits={props.checkDeposits}
         {onDeleteDeposit}
+        {onConfirmDeposit}
         {tabsNav}
       />
     </Tabs.Content>
@@ -135,7 +138,7 @@
 <Dialog.Root bind:open={depositState.showClearModal}>
   <Dialog.Content class="w-full max-w-md p-0 bg-card border-border overflow-hidden">
     <Dialog.Header class="p-6 border-b border-border">
-      <Dialog.Title>Rapprocher la Remise de Chèques</Dialog.Title>
+      <Dialog.Title>Encaisser la remise de chèques</Dialog.Title>
       <Dialog.Description class="hidden">Rapprochement bancaire pour la remise de chèques.</Dialog.Description>
     </Dialog.Header>
 

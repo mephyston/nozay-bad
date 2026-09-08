@@ -148,6 +148,7 @@ export const ROUTE_PERMISSIONS: RouteRule[] = [
   { method: 'DELETE', path: '/accounting/checks/:id', permission: 'accounting:checks:delete' },
   { method: 'GET', path: '/accounting/check-deposits', permission: 'accounting:checks:read' },
   { method: 'POST', path: '/accounting/check-deposits', permission: 'accounting:checks:write' },
+  { method: 'POST', path: '/accounting/check-deposits/:id/deposit', permission: 'accounting:checks:write' },
   { method: 'POST', path: '/accounting/check-deposits/:id/clear', permission: 'accounting:checks:write' },
   { method: 'POST', path: '/accounting/check-deposits/:id/delete', permission: 'accounting:checks:delete' },
   { method: 'GET', path: '/accounting/check-deposits/:id/deposit-slip.pdf', permission: 'accounting:checks:read' },

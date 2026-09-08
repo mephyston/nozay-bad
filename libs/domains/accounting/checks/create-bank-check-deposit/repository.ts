@@ -1,7 +1,7 @@
 import { seasonsTable } from '@nba/accounting/schema';
 import { type DbOrTx } from '@nba/db';
-import { eq, inArray } from 'drizzle-orm';
-import { checksTable, checkDepositsTable, bankStatementLinesTable } from '../../shared/schema';
+import { and, eq, inArray, isNull } from 'drizzle-orm';
+import { checksTable, checkDepositsTable, bankStatementLinesTable, ledgerEntriesTable } from '../../shared/schema';
 
 export class CreateBankCheckDepositRepository {
   async resolveSeasonId(db: DbOrTx, seasonIdOrCode: string | number): Promise<number> {
@@ -22,7 +22,7 @@ export class CreateBankCheckDepositRepository {
       reference: values.reference,
       date: values.date,
       amountCents: values.amountCents ?? (values.amount !== undefined ? Math.round(values.amount) : 0),
-      status: values.status || 'deposited',
+      status: values.status || 'pending',
       createdAt: values.createdAt || new Date()
     });
   }
@@ -31,6 +31,39 @@ export class CreateBankCheckDepositRepository {
     return db.update(checksTable)
       .set({ checkDepositId: depositId, status: status as any })
       .where(inArray(checksTable.id, checkIds));
+  }
+
+  async getChecksByDepositId(db: DbOrTx, depositId: number): Promise<any[]> {
+    return db.select().from(checksTable).where(eq(checksTable.checkDepositId, depositId)).all();
+  }
+
+  async getBankStatementLineById(db: DbOrTx, id: number): Promise<any | undefined> {
+    return db.select().from(bankStatementLinesTable).where(eq(bankStatementLinesTable.id, id)).get();
+  }
+
+  /** Tous les chèques d'une remise changent d'état d'un coup : ils partent à la banque ensemble. */
+  buildUpdateChecksStatusForDepositStatement(db: DbOrTx, depositId: number, status: string): any {
+    return db.update(checksTable)
+      .set({ status: status as any })
+      .where(eq(checksTable.checkDepositId, depositId));
+  }
+
+  /**
+   * Pointe les recettes des chèques sur la ligne de relevé de la remise.
+   *
+   * Une recette déjà pointée ailleurs est laissée telle quelle : le pointage n'écrase jamais.
+   */
+  buildPointLedgerEntriesStatement(db: DbOrTx, entryIds: number[], bankStatementLineId: number): any {
+    return db.update(ledgerEntriesTable)
+      .set({ bankStatementLineId, status: 'cleared' })
+      .where(and(inArray(ledgerEntriesTable.id, entryIds), isNull(ledgerEntriesTable.bankStatementLineId)));
+  }
+
+  /** L'inverse exact, pour défaire une remise encaissée : les chèques retournent au coffre. */
+  buildUnpointLedgerEntriesStatement(db: DbOrTx, entryIds: number[], bankStatementLineId: number): any {
+    return db.update(ledgerEntriesTable)
+      .set({ bankStatementLineId: null, status: 'in_vault' })
+      .where(and(inArray(ledgerEntriesTable.id, entryIds), eq(ledgerEntriesTable.bankStatementLineId, bankStatementLineId)));
   }
 
   buildUpdateCheckDepositStatement(db: DbOrTx, id: number, values: any): any {
@@ -57,7 +90,7 @@ export class CreateBankCheckDepositRepository {
       reference: values.reference,
       date: values.date,
       amountCents: values.amountCents ?? (values.amount !== undefined ? Math.round(values.amount) : 0),
-      status: values.status || 'deposited',
+      status: values.status || 'pending',
       createdAt: values.createdAt || new Date()
     }).returning().get();
   }

@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { createDb } from '@nba/db';
 import { tbValidator } from '@hono/typebox-validator';
-import { createCheckDeposit, clearCheckDeposit, deleteCheckDeposit } from './handler';
+import { createCheckDeposit, depositCheckDeposit, clearCheckDeposit, deleteCheckDeposit } from './handler';
 import { createCheckDepositSchema, clearCheckDepositSchema } from './validator';
 
 export type Bindings = {
@@ -27,6 +27,24 @@ createBankCheckDepositRoute.post(
     return c.json({ success: true, data });
   }
 );
+
+/*
+ * Confirmation du dépôt en banque. Le corps est facultatif (`{ date? }`), d'où l'absence de
+ * validateur JSON : un corps vide doit passer.
+ */
+createBankCheckDepositRoute.post('/check-deposits/:id/deposit', async (c) => {
+  if (!c.env || !c.env.DB) {
+    return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
+  }
+  const id = parseInt(c.req.param('id'));
+  const body = (await c.req.json().catch(() => ({}))) as { date?: unknown };
+  if (body.date !== undefined && (typeof body.date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(body.date))) {
+    return c.json({ success: false, error: 'Validation failed: date: format AAAA-MM-JJ attendu' }, 400);
+  }
+  const db = createDb(c.env.DB);
+  const data = await depositCheckDeposit(db, id, body.date ? { date: body.date } : {});
+  return c.json({ success: true, data });
+});
 
 createBankCheckDepositRoute.post(
   '/check-deposits/:id/clear',

@@ -30,6 +30,8 @@ export class RecordCheckTransactionRepository {
       description: values.description,
       reference: values.reference || null,
       memberId: values.memberId || null,
+      // Absent, le statut reste au défaut de la table ; le handler passe `in_vault`.
+      ...(values.status !== undefined ? { status: values.status } : {}),
       createdAt: values.createdAt || new Date()
     });
   }

@@ -316,6 +316,14 @@ describe('comptabilité — les chèques', () => {
     expect(appels).toHaveLength(0);
   });
 
+  it("relaie la confirmation du dépôt d'une remise, avec ou sans date", async () => {
+    const res = await ecrire('cheques', { action: 'confirm-deposit', id: 4, date: '2026-09-09' });
+    expect(res.status).toBe(200);
+    const appel = appels.find((a) => a.url.endsWith('/accounting/check-deposits/4/deposit'));
+    expect(appel?.init?.method).toBe('POST');
+    expect(JSON.parse(String(appel?.init?.body))).toEqual({ date: '2026-09-09' });
+  });
+
   it("relaie la modification d'un chèque en PUT sur son identifiant", async () => {
     const res = await ecrire('cheques', {
       action: 'update-check', id: 7, number: '1234567', amount: 1500, emitter: 'Durand', date: '2026-09-01'
