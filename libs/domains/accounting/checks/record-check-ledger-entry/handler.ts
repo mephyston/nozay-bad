@@ -3,25 +3,124 @@ import { AppError, type Db, type Tx } from '@nba/db';
 import { cleanName } from '../../shared/helpers';
 import type { CreateCheckInput, UpdateCheckInput, AnalyzeCheckOutput } from './dto';
 import { validateAccrualAndFiscalPhase } from '../../shared/accruals';
+import { normaliseCheckNumber, chooseAmountCents, normaliseIssueDate, pickEmitter } from './extraction';
 
 /** Liaison Workers AI : seule `run` est utilisée. */
 export interface VisionAi {
   run(model: string, input: Record<string, unknown>): Promise<unknown>;
 }
 
-/** Champs qu'un modèle de vision peut extraire d'un chèque — tous incertains. */
-interface ExtractedCheckFields {
-  number?: string;
-  amount?: number;
-  emitter?: string;
-  bank?: string;
-  date?: string;
+/**
+ * Le modèle de lecture, et la forme de sa réponse.
+ *
+ * Llama 4 Scout et non Llama 3.2 Vision : il accepte une image en `data:` URL dans un
+ * message et une **sortie contrainte par schéma JSON** (`response_format`), là où
+ * l'ancien modèle recevait l'image en tableau d'octets — plusieurs millions de nombres
+ * pour une photo de téléphone — et rendait du texte libre qu'on fouillait à coups
+ * d'expressions régulières.
+ */
+const VISION_MODEL = '@cf/meta/llama-4-scout-17b-16e-instruct';
+
+/**
+ * Ce qu'on demande au modèle : une **transcription**, champ par champ, de ce qu'il voit.
+ *
+ * Chaque champ est une chaîne « telle qu'écrite ». Décoder — « 05/09/26 » en date,
+ * « cent cinquante » en centimes — est le travail d'`extraction.ts`, pas du modèle :
+ * un nombre que le modèle aurait converti lui-même ne se relit plus, et c'est
+ * précisément la virgule mal placée qu'on lui reprochait. Titulaire et bénéficiaire
+ * sont deux champs : demandés ensemble, le modèle ne les confond plus, et c'est le
+ * bénéficiaire — le club — qui revenait en « émetteur ».
+ */
+const CHECK_SCHEMA = {
+  type: 'object',
+  properties: {
+    numero_cheque: {
+      type: 'string',
+      description:
+        "Le numéro du chèque : 7 chiffres, premier groupe de la ligne magnétique imprimée tout en bas à gauche du chèque (avant le code banque et le numéro de compte, qui sont plus longs). Il est parfois répété en petit en haut. Chiffres seulement, sans espace."
+    },
+    montant_chiffres: {
+      type: 'string',
+      description: "Le montant écrit en chiffres dans la case à droite, tel qu'écrit (exemple : « 150,00 » ou « 42 € 50 »)."
+    },
+    montant_lettres: {
+      type: 'string',
+      description: "Le montant écrit en toutes lettres sur la ligne « payez contre ce chèque », tel qu'écrit (exemple : « cent cinquante euros »)."
+    },
+    beneficiaire: {
+      type: 'string',
+      description: "Le nom écrit à la main après « à l'ordre de » ou « à » : la personne ou l'association qui reçoit le chèque."
+    },
+    titulaire: {
+      type: 'string',
+      description:
+        "Le nom du titulaire du compte, IMPRIMÉ par la banque (jamais manuscrit), généralement en bas à gauche au-dessus de la ligne magnétique, parfois avec son adresse (exemple : « M OU MME JEAN DUPONT »). Ce n'est pas le bénéficiaire."
+    },
+    banque: { type: 'string', description: 'Le nom de la banque, imprimé en haut du chèque (exemple : LCL, Société Générale, Crédit Agricole, La Banque Postale).' },
+    date_emission: {
+      type: 'string',
+      description: "La date écrite à la main après « le » (souvent « à …, le … »), en bas à droite au-dessus de la signature, telle qu'écrite (exemple : « 05/09/26 »)."
+    }
+  },
+  required: ['numero_cheque', 'montant_chiffres', 'montant_lettres', 'beneficiaire', 'titulaire', 'banque', 'date_emission']
+} as const;
+
+/** La transcription rendue par le modèle ; chaque champ peut être vide. */
+interface CheckTranscript {
+  numero_cheque?: string;
+  montant_chiffres?: string;
+  montant_lettres?: string;
+  beneficiaire?: string;
+  titulaire?: string;
+  banque?: string;
+  date_emission?: string;
+}
+
+const PROMPT = `Tu lis la photo d'un chèque bancaire français, rempli à la main et remis à une association sportive.
+Transcris chaque champ exactement comme il est écrit sur le chèque, sans le convertir ni l'interpréter. Si un champ est illisible ou absent, laisse une chaîne vide.
+Repères : la banque est imprimée en haut ; le bénéficiaire est manuscrit après « à l'ordre de » ; le montant en chiffres est dans la case à droite, le montant en lettres sur la première ligne ; la date manuscrite suit « le » en bas à droite, près de la signature ; le titulaire du compte est imprimé en bas à gauche ; la ligne magnétique tout en bas commence par le numéro du chèque (7 chiffres).`;
+
+/** Le type MIME d'après les premiers octets : la `data:` URL doit dire vrai. */
+function sniffMime(bytes: Uint8Array): string {
+  if (bytes[0] === 0x89 && bytes[1] === 0x50) return 'image/png';
+  if (bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[8] === 0x57) return 'image/webp';
+  return 'image/jpeg';
+}
+
+function toDataUrl(bytes: Uint8Array): string {
+  let binary = '';
+  const chunk = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
+  }
+  return `data:${sniffMime(bytes)};base64,${btoa(binary)}`;
+}
+
+/** La réponse du modèle, en objet : soit déjà un objet, soit du texte JSON à extraire. */
+function readTranscript(aiRes: unknown): CheckTranscript {
+  let text = '';
+  if (typeof aiRes === 'string') {
+    text = aiRes;
+  } else if (aiRes && typeof aiRes === 'object') {
+    const { response } = aiRes as { response?: unknown };
+    if (response && typeof response === 'object') return response as CheckTranscript;
+    if (typeof response === 'string') text = response;
+    else return {};
+  }
+  const match = text.match(/\{[\s\S]*\}/);
+  if (!match) return {};
+  try {
+    return JSON.parse(match[0]) as CheckTranscript;
+  } catch {
+    return {};
+  }
 }
 
 export async function analyzeCheckImage(
   db: Db,
   ai: VisionAi,
-  file: unknown
+  file: unknown,
+  today: Date = new Date()
 ): Promise<AnalyzeCheckOutput> {
   if (!file) {
     throw new AppError('Fichier image manquant.', 400);
@@ -47,144 +146,33 @@ export async function analyzeCheckImage(
 
   let aiRes: unknown;
   try {
-    const model = '@cf/meta/llama-3.2-11b-vision-instruct';
-    const systemPrompt = `Analyze this check image. Extract the following fields as a JSON object:
-{
-  "number": "string (the 7-digit check number, usually printed at the bottom-left corner, e.g. '2512612'. Do NOT use the longer bank routing or account numbers)",
-  "amount": number (the check amount in EUR, e.g. 150.00)",
-  "emitter": "string (the pre-printed account holder / owner name, usually printed in black text in the left or upper section, e.g. 'ANTENNE REUNION TELEVISION'. Do NOT use the handwritten beneficiary/payee name written after 'à', e.g. 'Association Sourice de l'enfant')",
-  "bank": "string (the bank name, e.g. LCL, SG, Credit Agricole)",
-  "date": "string (the handwritten issue date, usually in format DD/MM/YY or DD/MM/YYYY. Look in the bottom-right section, under the numerical amount box and next to the signature, following the pre-printed word 'le' or 'fait le', e.g. '10/09/20' should be extracted as '2020-09-10')"
-}
-Return ONLY the raw JSON object. Do not wrap it in markdown or other text.`;
-
-    aiRes = await ai.run(model, {
-      prompt: systemPrompt,
-      image: [...new Uint8Array(bytes)]
+    aiRes = await ai.run(VISION_MODEL, {
+      messages: [
+        {
+          role: 'user',
+          content: [
+            { type: 'text', text: PROMPT },
+            { type: 'image_url', image_url: { url: toDataUrl(new Uint8Array(bytes)) } }
+          ]
+        }
+      ],
+      response_format: { type: 'json_schema', json_schema: CHECK_SCHEMA },
+      max_tokens: 512,
+      temperature: 0
     });
-  } catch (llamaErr: unknown) {
-    let agreed = false;
-    const llamaMessage = llamaErr instanceof Error ? llamaErr.message : '';
-    if (llamaMessage.includes("submit the prompt 'agree'") || llamaMessage.includes('5016')) {
-      try {
-        await ai.run('@cf/meta/llama-3.2-11b-vision-instruct', {
-          prompt: 'agree',
-          image: [...new Uint8Array(bytes)]
-        });
-        agreed = true;
-        
-        aiRes = await ai.run('@cf/meta/llama-3.2-11b-vision-instruct', {
-          prompt: `Analyze this check image. Extract the following fields as a JSON object:
-{
-  "number": "string (the 7-digit check number, usually printed at the bottom-left corner, e.g. '2512612'. Do NOT use the longer bank routing or account numbers)",
-  "amount": number (the check amount in EUR, e.g. 150.00)",
-  "emitter": "string (the pre-printed account holder / owner name, usually printed in black text in the left or upper section, e.g. 'ANTENNE REUNION TELEVISION'. Do NOT use the handwritten beneficiary/payee name written after 'à', e.g. 'Association Sourice de l'enfant')",
-  "bank": "string (the bank name, e.g. LCL, SG, Credit Agricole)",
-  "date": "string (the handwritten issue date, usually in format DD/MM/YY or DD/MM/YYYY. Look in the bottom-right section, under the numerical amount box and next to the signature, following the pre-printed word 'le' or 'fait le', e.g. '10/09/20' should be extracted as '2020-09-10')"
-}`,
-          image: [...new Uint8Array(bytes)]
-        });
-      } catch (agreeErr) {
-        // ignore
-      }
-    }
-
-    if (!agreed || !aiRes) {
-      const modelLlava = '@cf/llava-hf/llava-1.5-7b-hf';
-      const systemPrompt = `Identify check details in this image. The check number (number) is always a 7-digit number, usually printed at the bottom-left corner (e.g. '2512612'). Do NOT use the longer account numbers. Look in the bottom-right section below the numerical amount box and next to the signature, following 'le' or 'fait le' for the handwritten issue date (e.g. '10/09/20' should be extracted as '2020-09-10'). Extract the pre-printed account holder name as emitter (e.g. 'ANTENNE REUNION TELEVISION', NOT the payee 'Association Sourice de l'enfant'). Output JSON format: {"number":"1234567", "amount":150.0, "emitter":"JEAN DUPONT", "bank":"LCL", "date":"2026-07-10"}`;
-
-      aiRes = await ai.run(modelLlava, {
-        prompt: systemPrompt,
-        image: [...new Uint8Array(bytes)]
-      });
-    }
+  } catch (err: unknown) {
+    const detail = err instanceof Error ? err.message : '';
+    throw new AppError(`Le modèle de lecture n'a pas répondu${detail ? ` (${detail})` : ''}.`, 502);
   }
 
-  let extracted: ExtractedCheckFields = {};
-  let textResult = '';
-  if (typeof aiRes === 'string') {
-    textResult = aiRes;
-  } else if (aiRes && typeof aiRes === 'object') {
-    const { response } = aiRes as { response?: unknown };
-    if (typeof response === 'string') {
-      textResult = response;
-    } else if (response !== undefined && response !== null) {
-      textResult = JSON.stringify(response);
-    } else {
-      textResult = JSON.stringify(aiRes);
-    }
-  }
-  
-  try {
-    const jsonMatch = textResult.match(/\{[\s\S]*?\}/);
-    if (jsonMatch) {
-      extracted = JSON.parse(jsonMatch[0]);
-    } else {
-      extracted = JSON.parse(textResult);
-    }
-  } catch (e) {
-    extracted = {};
-  }
-
-  // fallback extraction regex
-  if (!extracted.number) {
-    const numMatch = textResult.match(/\b\d{7}\b/);
-    if (numMatch) {
-      extracted.number = numMatch[0];
-    } else {
-      const numMatchAny = textResult.match(/n°\s*(\d+)/i) || textResult.match(/numero\s*(\d+)/i);
-      if (numMatchAny) extracted.number = numMatchAny[1];
-    }
-  }
-
-  if (!extracted.amount) {
-    const amtMatch = textResult.match(/(\d+[\.,]\d{2})\s*€/) || textResult.match(/(\d+[\.,]\d{2})\s*eur/i) || textResult.match(/(\d+)\s*€/) || textResult.match(/montant\s*(?:de\s*)?(\d+)/i);
-    if (amtMatch) {
-      extracted.amount = parseFloat(amtMatch[1].replace(',', '.'));
-    }
-  }
-
-  if (!extracted.emitter) {
-    const emitMatch = textResult.match(/émetteur\s*:\s*([A-Za-z\s\-]+)/i) || textResult.match(/de\s*([A-Z][a-z\-]+\s+[A-Z][a-z\-]+)/);
-    if (emitMatch) {
-      const val = emitMatch[1].trim();
-      if (!/nozay/i.test(val) && !/bad/i.test(val) && !/association/i.test(val)) {
-        extracted.emitter = val;
-      }
-    }
-  }
-
-  if (!extracted.bank) {
-    const bankMatch = textResult.match(/banque\s*:\s*([A-Za-z\s]+)/i) || textResult.match(/(Société Générale|Crédit Agricole|LCL|Bred|BNP|La Banque Postale|CIC|Crédit Mutuel)/i);
-    if (bankMatch) {
-      extracted.bank = bankMatch[1].trim();
-    }
-  }
-
-  if (!extracted.date) {
-    const dateMatch = textResult.match(/(\d{2})[\/\-\s](\d{2})[\/\-\s](\d{2,4})/);
-    if (dateMatch) {
-      const day = dateMatch[1];
-      const month = dateMatch[2];
-      let year = dateMatch[3];
-      if (year.length === 2) {
-        year = `20${year}`;
-      }
-      extracted.date = `${year}-${month}-${day}`;
-    } else {
-      const dateMatchISO = textResult.match(/(\d{4})[\/\-](\d{2})[\/\-](\d{2})/);
-      if (dateMatchISO) {
-        extracted.date = dateMatchISO[0];
-      }
-    }
-  }
+  const transcript = readTranscript(aiRes);
+  const emitter = pickEmitter(transcript.titulaire, transcript.beneficiaire);
 
   const repo = new RecordCheckTransactionRepository();
   let matchedMember = null;
-  const members = await repo.getAllMembers(db);
-
-  if (extracted.emitter) {
-    const cleanEmitter = cleanName(extracted.emitter);
+  if (emitter) {
+    const members = await repo.getAllMembers(db);
+    const cleanEmitter = cleanName(emitter);
     for (const m of members) {
       const cleanLast = cleanName(m.lastName);
       const cleanFirst = cleanName(m.firstName);
@@ -203,13 +191,13 @@ Return ONLY the raw JSON object. Do not wrap it in markdown or other text.`;
   }
 
   return {
-    number: extracted.number || '',
-    amount: extracted.amount || 0,
-    emitter: extracted.emitter || '',
-    bank: extracted.bank || '',
+    number: normaliseCheckNumber(transcript.numero_cheque),
+    amount: chooseAmountCents(transcript.montant_chiffres, transcript.montant_lettres),
+    emitter,
+    bank: (transcript.banque ?? '').trim(),
     memberId: matchedMember ? matchedMember.id : null,
     memberName: matchedMember ? `${matchedMember.lastName} ${matchedMember.firstName}` : null,
-    date: extracted.date || null
+    date: normaliseIssueDate(transcript.date_emission, today)
   };
 }
 

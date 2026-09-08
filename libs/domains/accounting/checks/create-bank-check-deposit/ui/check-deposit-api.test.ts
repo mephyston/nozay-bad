@@ -14,7 +14,7 @@ vi.mock('@nba/ui', async (importOriginal) => {
   };
 });
 
-const { handleSaveCheck } = await import('./check-deposit-api');
+const { handleSaveCheck, handleAnalyzeScan } = await import('./check-deposit-api');
 
 /** Message que `flashAndReload` mémorise pour le rejouer après le réaffichage. */
 function pendingFlash(): { type: string; message: string } | null {
@@ -131,5 +131,73 @@ describe('handleSaveCheck', () => {
     await handleSaveCheck({ preventDefault() {} } as any, '25-26', s);
 
     expect(JSON.parse(fetchMock.mock.calls[0][1].body).memberId).toBe(12);
+  });
+});
+
+describe('handleAnalyzeScan', () => {
+  const state = () => ({
+    checkNumber: '',
+    checkAmount: '',
+    checkEmitter: '',
+    checkBank: '',
+    checkDate: '2026-09-08',
+    checkMemberId: '',
+    matchedMemberName: '',
+    isAnalyzing: false,
+    formError: ''
+  });
+  const photo = new File([new Uint8Array([1, 2, 3])], 'cheque.jpg', { type: 'image/jpeg' });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("remplit le formulaire avec les champs que l'API renvoie vraiment", async () => {
+    /*
+      La régression : l'écran lisait `checkNumber` là où l'API a toujours renvoyé
+      `number`, et divisait par cent un montant reçu en euros. Le numéro n'arrivait
+      jamais, et 150 € s'affichait « 1.5 » — ce que les trésoriers appelaient « la
+      virgule mal placée ». Le montant est désormais en centimes, comme partout.
+    */
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        success: true,
+        data: { number: '2512612', amount: 15000, emitter: 'M OU MME JEAN DUPONT', bank: 'LCL', memberId: 7, memberName: 'DUPONT Jean', date: '2026-09-05' }
+      })
+    }));
+    const s = state();
+    await handleAnalyzeScan(photo, '26-27', s);
+    expect(s.checkNumber).toBe('2512612');
+    expect(s.checkAmount).toBe('150');
+    expect(s.checkEmitter).toBe('M OU MME JEAN DUPONT');
+    expect(s.checkBank).toBe('LCL');
+    expect(s.checkMemberId).toBe('7');
+    expect(s.checkDate).toBe('2026-09-05');
+    expect(s.isAnalyzing).toBe(false);
+  });
+
+  it("laisse la date du jour et le champ vide quand un champ n'a pas été lu", async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ success: true, data: { number: '', amount: 0, emitter: '', bank: '', memberId: null, memberName: null, date: null } })
+    }));
+    const s = state();
+    await handleAnalyzeScan(photo, '26-27', s);
+    expect(s.checkNumber).toBe('');
+    expect(s.checkAmount).toBe('');
+    expect(s.checkDate).toBe('2026-09-08');
+    expect(s.formError).toBe('');
+  });
+
+  it("garde le formulaire utilisable quand le modèle ne répond pas", async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: false,
+      json: async () => ({ success: false, error: "Le modèle de lecture n'a pas répondu." })
+    }));
+    const s = state();
+    await handleAnalyzeScan(photo, '26-27', s);
+    expect(s.formError).toContain('saisir les informations manuellement');
+    expect(s.isAnalyzing).toBe(false);
   });
 });
