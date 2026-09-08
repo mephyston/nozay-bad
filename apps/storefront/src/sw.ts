@@ -1,4 +1,5 @@
 /// <reference lib="webworker" />
+import { clientsClaim } from 'workbox-core';
 import { cleanupOutdatedCaches, precacheAndRoute } from 'workbox-precaching';
 
 declare const self: ServiceWorkerGlobalScope;
@@ -24,6 +25,18 @@ self.addEventListener('message', (event) => {
     self.skipWaiting();
   }
 });
+
+/**
+ * Prendre la main sur les pages déjà ouvertes dès l'activation.
+ *
+ * Le bouton « Recharger » de la bannière ne recharge la page qu'à l'événement
+ * `controlling`, c'est-à-dire quand le nouveau SW contrôle la page courante. Sans
+ * cet appel, il s'active mais laisse la page à l'ancien : l'événement ne vient
+ * jamais, et le bouton restait sur « Un instant… » jusqu'à la fermeture de l'app
+ * (constaté sur staging le 2026-09-08). vite-plugin-pwa ne le pose que pour un SW
+ * qu'il génère lui-même ; en `injectManifest`, c'est à nous.
+ */
+clientsClaim();
 
 interface PushPayload {
   title?: string;
