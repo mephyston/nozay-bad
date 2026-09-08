@@ -35,8 +35,12 @@ const pdfHref = `/api/attestation.pdf?memberId=${member.id}`;
 <Layout title="Aperçu de l'attestation CSE - Nozay Bad">
   <Header currentPath="/attestation" />
 
-  <main class="flex-1 flex flex-col p-3 sm:p-6 w-full pb-24 md:pb-6">
-    <div class="max-w-2xl mx-auto w-full flex-1 flex flex-col gap-3">
+  <!-- Page verrouillée à la hauteur de l'écran : seul le cadre du PDF défile. Un document
+       à peine plus haut que l'écran fait rebondir toute la page au moindre glissement,
+       et pendant ce rebond iOS déplace aussi l'en-tête et la barre du bas, qui semblent
+       alors décrochés. Voir le style global en bas de page. -->
+  <main class="flex-1 min-h-0 flex flex-col p-3 sm:p-6 w-full pb-[calc(3.5rem+env(safe-area-inset-bottom,0px)+0.75rem)] md:pb-6">
+    <div class="max-w-2xl mx-auto w-full flex-1 min-h-0 flex flex-col gap-3">
       <div class="flex flex-wrap items-center justify-between gap-3">
         <a
           href="/attestation"
@@ -75,11 +79,11 @@ const pdfHref = `/api/attestation.pdf?memberId=${member.id}`;
             </button>
           </div>
 
-          <iframe
-            src={pdfHref}
-            title="Attestation CSE"
-            class="w-full flex-1 min-h-[70vh] rounded-xl border border-border bg-card"
-          ></iframe>
+          <!-- Le cadre porte le défilement, pas le document : iOS dimensionne un iframe à
+               son contenu, d'où l'enveloppe défilante autour. -->
+          <div class="flex-1 min-h-0 overflow-auto rounded-xl border border-border bg-card [-webkit-overflow-scrolling:touch]">
+            <iframe src={pdfHref} title="Attestation CSE" class="block h-full w-full"></iframe>
+          </div>
           <p class="text-xs text-muted-foreground">
             Si l'aperçu reste vide sur cet appareil, utilisez « Télécharger ».
           </p>
@@ -95,6 +99,17 @@ const pdfHref = `/api/attestation.pdf?memberId=${member.id}`;
   </main>
 
   <MobileNav currentPath="/attestation" />
+
+  <style is:global>
+    /* Hauteur de l'écran, sans défilement du document ni rebond élastique. `dvh` suit la
+       barre d'adresse de Safari ; `overscroll-behavior` coupe le rebond sur iOS 16+. */
+    html,
+    body {
+      height: 100dvh;
+      overflow: hidden;
+      overscroll-behavior: none;
+    }
+  </style>
 
   <!-- Partage natif : le fichier est récupéré à l'avance, parce que Safari n'accepte
        navigator.share() que dans le geste de l'utilisateur, sans attendre un réseau. -->
