@@ -449,6 +449,24 @@ describe('/members/:id/cse-data', () => {
     }
     const seasonId = season.id;
 
+    // Un adhérent qui n'a encore rien réglé : pas d'attestation.
+    await insertMemberFixture(db, {
+      id: 30,
+      licence: '1234530',
+      seasonId,
+      lastName: 'Bernard',
+      firstName: 'Zoé',
+      gender: 'F',
+      birthDate: '1995-03-03',
+      status: 'valide',
+      type: 'Loisir',
+      amountDueCents: 25000,
+      amountReceivedCents: 0,
+      amountRemainingCents: 25000,
+      paid: false,
+      importedAt: new Date()
+    });
+
     // Create a member who has NOT paid fully
     await insertMemberFixture(db, {
       id: 10,
@@ -489,11 +507,18 @@ describe('/members/:id/cse-data', () => {
     const notFoundRes = await app.request('http://localhost/members/999/cse-data', undefined, { DB: mockD1 as any });
     expect(notFoundRes.status).toBe(404);
 
-    // GET /members/:id/cse-data for unpaid member (should return 400)
-    const unpaidRes = await app.request('http://localhost/members/10/cse-data', undefined, { DB: mockD1 as any });
+    // Rien reçu : 400.
+    const unpaidRes = await app.request('http://localhost/members/30/cse-data', undefined, { DB: mockD1 as any });
     expect(unpaidRes.status).toBe(400);
     const unpaidData = await unpaidRes.json() as any;
-    expect(unpaidData.error).toBe("L'adhérent n'a pas entièrement réglé sa cotisation.");
+    expect(unpaidData.error).toBe("L'adhérent n'a encore rien réglé sur sa cotisation.");
+
+    // Un premier règlement suffit : l'attestation dit le montant dû et le montant reçu.
+    const partialRes = await app.request('http://localhost/members/10/cse-data', undefined, { DB: mockD1 as any });
+    expect(partialRes.status).toBe(200);
+    const partialData = await partialRes.json() as any;
+    expect(partialData.data.amount).toBe(25000);
+    expect(partialData.data.amountReceived).toBe(10000);
 
     // GET /members/:id/cse-data for paid member but NO transaction yet
     const paidNoTxRes = await app.request('http://localhost/members/20/cse-data', undefined, { DB: mockD1 as any });

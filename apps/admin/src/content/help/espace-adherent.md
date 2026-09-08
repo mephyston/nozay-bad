@@ -47,7 +47,7 @@ Les écrans personnels (compte, fiche, cotisation, attestation, notifications, n
 - **Mon compte** — l'état de sa cotisation (montant dû, reçu, restant), l'historique de ses commandes et de ses notes de frais avec leur statut, et l'activation des notifications.
 - **Boutique** — passer une commande sur le catalogue actif. Elle arrive en attente dans [Boutique → Commandes](/admin/help/boutique-commandes).
 - **Notes de frais** — déposer une demande de remboursement avec un justificatif, **uniquement s'il y a été autorisé** depuis sa fiche. Elle arrive en attente dans [Notes de frais](/admin/help/notes-de-frais).
-- **Attestation** — télécharger son [attestation CSE](/admin/help/attestation-cse), si sa cotisation est soldée.
+- **Attestation** — télécharger son [attestation CSE](/admin/help/attestation-cse), dès qu'un premier règlement a été enregistré ; en cas de règlement partiel, elle mentionne le montant réglé à ce jour.
 - **Notifications** — activer les notifications sur son appareil et choisir les catégories qu'il souhaite recevoir. Voir [Notifications](/admin/help/notifications).
 
 Le site comporte également les pages *Politique de confidentialité* et *Mentions légales*.

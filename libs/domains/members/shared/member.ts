@@ -43,8 +43,18 @@ export class Member {
     return this.data.birthDate;
   }
 
+  /**
+   * Un premier règlement suffit : l'attestation certifie ce qui a été payé, et un comité
+   * d'entreprise rembourse sur cette base sans attendre le solde. Elle dit alors le
+   * montant réglé à ce jour à côté du montant dû (cf. attestation/format.ts).
+   */
   canReceiveAttestation(): boolean {
-    return this.data.paid;
+    return this.data.paid || this.data.amountReceivedCents > 0;
+  }
+
+  /** Le solde est-il encore ouvert, quelque chose ayant déjà été versé ? */
+  get partiallyPaid(): boolean {
+    return !this.data.paid && this.data.amountReceivedCents > 0;
   }
 
 }

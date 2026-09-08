@@ -16,6 +16,12 @@ const session = Astro.locals.session;
 // que l'id demandé appartient bien à la session.
 const members = await getSessionMembersStatus(env, session);
 const solo = members.length <= 1;
+
+// Un premier règlement suffit : l'attestation dit alors le montant réglé à ce jour, et
+// le comité d'entreprise rembourse sur cette base. L'API applique la même règle.
+const attestable = (m: { paid: boolean; partiallyPaid: boolean }) => m.paid || m.partiallyPaid;
+const statusLabel = (m: { paid: boolean; partiallyPaid: boolean }) =>
+  m.paid ? 'Cotisation réglée' : m.partiallyPaid ? 'Cotisation réglée en partie' : 'Cotisation en attente de règlement';
 ---
 
 <Layout title="Attestation CSE - Nozay Bad">
@@ -39,11 +45,11 @@ const solo = members.length <= 1;
               <div>
                 <p class="text-sm font-semibold text-foreground">{m.firstName} {m.lastName}</p>
                 <p class="text-xs text-muted-foreground mt-0.5">
-                  {m.paid ? 'Cotisation réglée' : 'Cotisation en cours de règlement'}
+                  {statusLabel(m)}
                 </p>
               </div>
 
-              {m.paid && (
+              {attestable(m) && (
                 <div class="flex gap-2">
                   <a
                     href={`/api/attestation.pdf?memberId=${m.id}`}
@@ -65,10 +71,10 @@ const solo = members.length <= 1;
               )}
             </div>
 
-            {!m.paid && (
+            {!attestable(m) && (
               <p class="text-sm text-muted-foreground mt-3">
-                L'attestation sera consultable ici dès que la cotisation aura été
-                entièrement réglée et validée par le trésorier.
+                L'attestation sera consultable ici dès qu'un premier règlement aura été
+                enregistré par le trésorier.
               </p>
             )}
           </div>
@@ -77,7 +83,7 @@ const solo = members.length <= 1;
 
       {/* L'aperçu intégré n'a de sens que sur un seul document : au-delà, la liste
           ci-dessus reste le point d'entrée et l'aperçu s'ouvre dans un onglet. */}
-      {solo && members[0]?.paid && (
+      {solo && members[0] && attestable(members[0]) && (
         <div class="hidden md:block rounded-xl border border-border overflow-hidden bg-card mt-4">
           <iframe
             src={`/api/attestation.pdf?memberId=${members[0].id}`}

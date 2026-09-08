@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { numberToFrenchWords, formatFrenchDate, formatSeason, paymentMethodLabel, seasonIssueDate } from './format';
+import { numberToFrenchWords, formatFrenchDate, formatSeason, paymentMethodLabel, seasonIssueDate, cotisationSentence } from './format';
 
 describe('numberToFrenchWords', () => {
   it.each([
@@ -58,5 +58,29 @@ describe('paymentMethodLabel', () => {
   });
   it('renvoie la clé brute si inconnue', () => {
     expect(paymentMethodLabel('bitcoin')).toBe('bitcoin');
+  });
+});
+
+describe('cotisationSentence', () => {
+  it('dit que la cotisation a été réglée quand elle est soldée', () => {
+    expect(cotisationSentence({ amount: 15000, amountReceived: 15000, season: '25-26', paymentMethod: 'virement' })).toBe(
+      "est adhérent(e) à notre association pour la pratique du badminton. Sa cotisation pour la saison sportive 2025-2026 s'élève à 150€ (cent cinquante euros) et a été réglée par virement bancaire."
+    );
+  });
+
+  /*
+    L'attestation certifie ce qui a été payé : un règlement partiel dit les deux montants,
+    pour qu'un comité d'entreprise rembourse sur le bon.
+  */
+  it('dit le montant réglé à ce jour quand le solde reste ouvert', () => {
+    expect(cotisationSentence({ amount: 15000, amountReceived: 10000, season: '25-26', paymentMethod: 'cheque' })).toBe(
+      "est adhérent(e) à notre association pour la pratique du badminton. Sa cotisation pour la saison sportive 2025-2026 s'élève à 150€ (cent cinquante euros), dont 100€ (cent euros) ont été réglés à ce jour par chèque."
+    );
+  });
+
+  it('ne parle pas de solde pour un trop-perçu', () => {
+    expect(cotisationSentence({ amount: 15000, amountReceived: 16000, season: '25-26', paymentMethod: 'especes' })).toContain(
+      'et a été réglée par espèces.'
+    );
   });
 });

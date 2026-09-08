@@ -105,3 +105,31 @@ const PAYMENT_METHOD_LABELS: Record<string, string> = {
 export function paymentMethodLabel(method: string): string {
   return PAYMENT_METHOD_LABELS[method] || method;
 }
+
+/** `15000` (centimes) → `150€ (cent cinquante euros)`. Les centimes sont tronqués. */
+function eurosInWords(cents: number): string {
+  const euros = Math.floor(cents / 100);
+  return `${euros}€ (${numberToFrenchWords(euros)} euros)`;
+}
+
+/**
+ * Le corps de l'attestation.
+ *
+ * Elle certifie ce qui a été payé, pas ce qui est dû : un règlement partiel donne une
+ * attestation qui dit les deux montants, celui de la cotisation et celui réglé à ce
+ * jour. Un comité d'entreprise rembourse sur le second. Soldée, la cotisation « a été
+ * réglée », sans autre précision — la phrase d'origine.
+ */
+export function cotisationSentence(data: {
+  amount: number;
+  amountReceived: number;
+  season: string;
+  paymentMethod: string;
+}): string {
+  const head = `est adhérent(e) à notre association pour la pratique du badminton. Sa cotisation pour la saison sportive ${formatSeason(data.season)} s'élève à ${eurosInWords(data.amount)}`;
+  const by = paymentMethodLabel(data.paymentMethod);
+  if (data.amountReceived < data.amount) {
+    return `${head}, dont ${eurosInWords(data.amountReceived)} ont été réglés à ce jour par ${by}.`;
+  }
+  return `${head} et a été réglée par ${by}.`;
+}

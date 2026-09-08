@@ -7,10 +7,10 @@ export class MemberNotFoundError extends AppError {
   }
 }
 
-export class MemberNotFullyPaidError extends AppError {
-  constructor(message = "L'adhérent n'a pas entièrement réglé sa cotisation.") {
+export class MemberNothingPaidError extends AppError {
+  constructor(message = "L'adhérent n'a encore rien réglé sur sa cotisation.") {
     super(message, 400);
-    this.name = 'MemberNotFullyPaidError';
+    this.name = 'MemberNothingPaidError';
   }
 }
 

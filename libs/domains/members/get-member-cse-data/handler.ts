@@ -1,7 +1,7 @@
 import { type Db } from '@nba/db';
 import { MemberCseDataRepository } from './repository';
 import { Member } from '../shared/member';
-import { MemberNotFoundError, MemberNotFullyPaidError } from '../shared/errors';
+import { MemberNotFoundError, MemberNothingPaidError } from '../shared/errors';
 import { GetMemberCseDataInput, GetMemberCseDataOutput } from "./dto";
 
 export async function getMemberCseData(db: Db, id: GetMemberCseDataInput): Promise<GetMemberCseDataOutput> {
@@ -13,7 +13,7 @@ export async function getMemberCseData(db: Db, id: GetMemberCseDataInput): Promi
 
   const member = new Member(memberData as any);
   if (!member.canReceiveAttestation()) {
-    throw new MemberNotFullyPaidError();
+    throw new MemberNothingPaidError();
   }
 
   const tx = await repo.getLastPaymentTransaction(db, id);
@@ -25,6 +25,7 @@ export async function getMemberCseData(db: Db, id: GetMemberCseDataInput): Promi
     firstName: member.firstName,
     birthDate: member.birthDate,
     amount: member.amountDue,
+    amountReceived: member.amountReceived,
     paymentMethod: tx ? tx.paymentMethod : 'virement',
     // Date de règlement Poona uniquement : la date de l'écriture comptable (`tx.date`)
     // est celle de la saisie du trésorier, pas celle du paiement de l'adhérent.

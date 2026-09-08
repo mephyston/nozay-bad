@@ -6,7 +6,7 @@ import { resolveEnv, json } from '../../lib/request-context';
 // récupérer celle de ses enfants sans changer de profil, mais l'id n'est jamais repris tel
 // quel : il doit figurer dans `session.members`, sinon on retombe sur le profil actif.
 // Sans paramètre, c'est le profil actif. L'API re-valide le paiement
-// (MemberNotFullyPaidError) : double garde.
+// (MemberNothingPaidError) : double garde.
 export const GET: APIRoute = async ({ locals, url }) => {
   const session = (locals as any).session;
   if (!session?.activeMemberId) {

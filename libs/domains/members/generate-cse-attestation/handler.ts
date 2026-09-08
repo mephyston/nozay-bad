@@ -21,7 +21,7 @@ function safeFilename(firstName: string, lastName: string, season: string): stri
 }
 
 export async function generateCseAttestation(db: Db, id: number): Promise<GenerateCseAttestationOutput> {
-  // Réutilise la logique existante : lève MemberNotFoundError / MemberNotFullyPaidError.
+  // Réutilise la logique existante : lève MemberNotFoundError / MemberNothingPaidError.
   const data = await getMemberCseData(db, id);
   const config = await getEffectiveConfig(db);
   const pdf = await generateCseAttestationPdf(data, config);

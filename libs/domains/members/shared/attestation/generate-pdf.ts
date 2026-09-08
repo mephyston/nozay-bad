@@ -16,7 +16,7 @@ import {
 } from '@nba/pdf';
 import type { AttestationConfig } from './config';
 import { signatureKind } from './config';
-import { formatFrenchDate, formatSeason, numberToFrenchWords, paymentMethodLabel, seasonIssueDate } from './format';
+import { cotisationSentence, formatFrenchDate, formatSeason, seasonIssueDate } from './format';
 
 // Données dynamiques issues de la fiche adhérent (cf. get-member-cse-data).
 export type AttestationData = {
@@ -24,6 +24,7 @@ export type AttestationData = {
   firstName: string;
   birthDate: string;
   amount: number; // centimes
+  amountReceived: number; // centimes, réglés à ce jour
   paymentMethod: string;
   paymentDate: string; // ISO `YYYY-MM-DD`, ou '' si Poona ne l'a pas exportée
   season: string;
@@ -92,12 +93,14 @@ export async function generateCseAttestationPdf(data: AttestationData, config: A
   page.drawText(formatFrenchDate(data.birthDate), { x: MARGIN + 54, y, size: 11, font: bold, color: INK });
   y -= 26;
 
-  const euros = Math.floor(data.amount / 100);
-  y = drawParagraph(
-    page,
-    `est adhérent(e) à notre association pour la pratique du badminton. Sa cotisation pour la saison sportive ${formatSeason(data.season)} s'élève à ${euros}€ (${numberToFrenchWords(euros)} euros) et a été réglée par ${paymentMethodLabel(data.paymentMethod)}.`,
-    { x: MARGIN, y, maxWidth: CONTENT_W, font, size: bodySize, lineHeight: lineH }
-  );
+  y = drawParagraph(page, cotisationSentence(data), {
+    x: MARGIN,
+    y,
+    maxWidth: CONTENT_W,
+    font,
+    size: bodySize,
+    lineHeight: lineH
+  });
 
   y -= 8;
   y = drawParagraph(page, "Fait à la demande de l'intéressé(e) pour faire valoir ce que de droit.", {

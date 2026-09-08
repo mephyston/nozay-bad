@@ -72,6 +72,8 @@ export interface SessionMemberStatus {
   lastName: string;
   licence: string;
   paid: boolean;
+  /** Solde ouvert mais un règlement déjà reçu : l'attestation est disponible. */
+  partiallyPaid: boolean;
   isActive: boolean;
 }
 
@@ -94,13 +96,19 @@ export async function getSessionMembersStatus(env: any, session: any): Promise<S
   return Promise.all(
     members.map(async (m) => {
       let paid = Boolean(m.paid);
+      // Le snapshot de session ne connaît pas le montant reçu : hors API, un solde
+      // ouvert vaut « rien reçu ».
+      let receivedCents = 0;
       try {
         const res = await api.fetch(
           `http://localhost/members/${encodeURIComponent(m.licence)}${seasonCode ? `?season=${encodeURIComponent(seasonCode)}` : ''}`
         );
         if (res.ok) {
           const fresh = ((await res.json()) as any).data;
-          if (fresh) paid = Boolean(fresh.paid);
+          if (fresh) {
+            paid = Boolean(fresh.paid);
+            receivedCents = Number(fresh.amountReceivedCents ?? 0);
+          }
         }
       } catch {}
       return {
@@ -109,6 +117,7 @@ export async function getSessionMembersStatus(env: any, session: any): Promise<S
         lastName: m.lastName,
         licence: m.licence,
         paid,
+        partiallyPaid: !paid && receivedCents > 0,
         isActive: m.id === session?.activeMemberId
       };
     })
