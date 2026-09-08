@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { mount, flushSync, unmount } from 'svelte';
 import UserMenu from './UserMenu.svelte';
 
@@ -21,10 +21,24 @@ function render(props: Partial<{ members: typeof members; activeMemberId: number
 const labels = (target: HTMLElement) =>
   Array.from(target.querySelectorAll('[data-testid="account-menu"] a')).map((a) => a.textContent?.trim());
 
+/** jsdom n'a pas matchMedia : on le pose, en simulant une largeur donnée. */
+function viewport(mobile: boolean) {
+  Object.defineProperty(window, 'matchMedia', {
+    configurable: true,
+    writable: true,
+    value: (query: string) => ({
+      matches: mobile && query === '(max-width: 639px)',
+      addEventListener: () => {},
+      removeEventListener: () => {}
+    })
+  });
+}
+
 describe('UserMenu', () => {
   beforeEach(() => {
     localStorage.clear();
     document.body.innerHTML = '';
+    viewport(false);
   });
 
   it('montre le portrait avec les initiales en repli, et le prénom', () => {
@@ -90,5 +104,31 @@ describe('UserMenu', () => {
     flushSync();
     expect(target.querySelector('[data-testid="account-hint"]')).toBeNull();
     expect(localStorage.getItem('nba:account-hint:v1')).toBe('1');
+  });
+
+  /*
+    Au doigt, le déroulant de 64 px de large ne se manipule pas : sous 640 px le menu
+    s'ouvre en panneau plein écran, aux lignes hautes, avec la même liste.
+  */
+  it('ouvre un panneau plein écran sur mobile, avec la même liste', async () => {
+    viewport(true);
+    const { target } = render({ activeMemberId: 2 });
+    (target.querySelector('[data-testid="account-button"]') as HTMLButtonElement).click();
+    flushSync();
+    await vi.waitFor(() => {
+      expect(document.querySelector('[data-testid="account-sheet"]')).not.toBeNull();
+    });
+    expect(target.querySelector('[data-testid="account-menu"]')).toBeNull();
+    const sheet = document.querySelector('[data-testid="account-sheet"]')!;
+    expect(sheet.textContent).toContain('Tom Martin');
+    expect(Array.from(sheet.querySelectorAll('a')).map((a) => a.textContent?.trim())).toEqual([
+      'Mon compte',
+      'Ma fiche',
+      'Ma cotisation',
+      'Mon attestation CSE',
+      'Notifications',
+      'Notes de frais'
+    ]);
+    expect(sheet.querySelector('a')?.className).toContain('min-h-[52px]');
   });
 });

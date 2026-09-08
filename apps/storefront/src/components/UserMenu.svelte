@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { User, IdCard, Wallet, FileText, Bell, Receipt, LogOut, Check, ChevronDown } from '@lucide/svelte';
+  import { User, IdCard, Wallet, FileText, Bell, Receipt, LogOut, Check, ChevronDown, ChevronRight } from '@lucide/svelte';
+  import { Sheet } from '@nba/ui';
 
   interface Member {
     id: number;
@@ -19,6 +20,11 @@
     de profil descend dans sa propre section, en bas. Un lien placé au-dessus du
     sélecteur, sous le nom de qui est connecté, ne peut plus sembler suivre le profil
     qu'on vient de choisir.
+
+    Deux habillages pour une seule liste : un menu déroulant à la souris, un panneau
+    latéral plein écran au doigt — celui du menu de l'administration —, aux lignes assez
+    hautes pour être visées sans précision. Un déroulant de 64 px de large à lignes de
+    32 px ne se manipule pas au pouce.
   */
   let {
     members = [],
@@ -28,6 +34,8 @@
 
   let open = $state(false);
   let busy = $state(false);
+  /** Sous 640 px (le point de rupture `sm`) : panneau plein écran plutôt que déroulant. */
+  let mobile = $state(false);
   /** Le portrait a répondu 404 : on reste sur les initiales. */
   let photoMissing = $state(false);
   /** Bulle de première visite, montrée une fois par appareil. */
@@ -69,6 +77,15 @@
     } catch {
       hint = false;
     }
+  });
+
+  $effect(() => {
+    if (typeof window.matchMedia !== 'function') return;
+    const query = window.matchMedia('(max-width: 639px)');
+    const apply = () => (mobile = query.matches);
+    apply();
+    query.addEventListener('change', apply);
+    return () => query.removeEventListener('change', apply);
   });
 
   function dismissHint() {
@@ -136,6 +153,69 @@
   </span>
 {/snippet}
 
+<!-- La liste, dans ses deux tailles : `large` au doigt (lignes de 52 px, texte courant),
+     compacte à la souris. -->
+{#snippet items(large: boolean)}
+  {@const row = large
+    ? 'flex items-center gap-3 px-4 min-h-[52px] text-sm'
+    : 'flex items-center gap-2.5 rounded px-2 py-2 text-xs'}
+  {@const icon = large ? 'h-5 w-5 shrink-0 opacity-70' : 'h-4 w-4 shrink-0 opacity-70'}
+  {@const rule = large ? 'my-2 border-t border-border' : 'my-1 border-t border-border'}
+  {@const caption = large
+    ? 'px-4 pb-1 pt-2 text-[11px] uppercase tracking-wide text-muted-foreground'
+    : 'px-2 py-1 text-[10px] uppercase tracking-wide text-muted-foreground'}
+
+  {#each entries as entry (entry.href)}
+    {@const Icon = entry.icon}
+    <a
+      href={entry.href}
+      role="menuitem"
+      aria-current={isCurrent(entry.href) ? 'page' : undefined}
+      class={`${row} decoration-transparent hover:bg-accent ${
+        isCurrent(entry.href) ? 'font-semibold text-primary' : 'text-foreground'
+      }`}
+    >
+      <Icon class={icon} />
+      <span class="flex-1">{entry.label}</span>
+      {#if large}
+        <ChevronRight class="h-4 w-4 opacity-40" />
+      {/if}
+    </a>
+  {/each}
+
+  {#if members.length > 1}
+    <div class={rule}></div>
+    <p class={caption}>Changer de profil</p>
+    {#each members as m (m.id)}
+      <button
+        type="button"
+        role="menuitemradio"
+        aria-checked={m.id === activeMemberId}
+        disabled={busy}
+        onclick={() => switchProfile(m.id)}
+        class={`${row} w-full justify-between text-left hover:bg-accent disabled:opacity-50 ${m.id === activeMemberId ? 'font-semibold text-foreground' : 'text-muted-foreground'}`}
+      >
+        <span>{m.firstName} {m.lastName}</span>
+        {#if m.id === activeMemberId}
+          <Check class={large ? 'h-4 w-4' : 'h-3.5 w-3.5'} />
+        {/if}
+      </button>
+    {/each}
+  {/if}
+
+  <div class={rule}></div>
+  <button
+    type="button"
+    role="menuitem"
+    disabled={busy}
+    onclick={logout}
+    class={`${row} w-full text-left text-destructive hover:bg-destructive/10 disabled:opacity-50`}
+  >
+    <LogOut class={icon} />
+    Se déconnecter
+  </button>
+{/snippet}
+
 <div class="relative">
   <!-- Un portrait rond, le code universel de « mon compte » ; le prénom ne l'accompagne
        qu'à partir de la largeur tablette. -->
@@ -176,7 +256,24 @@
     </div>
   {/if}
 
-  {#if open}
+  {#if open && mobile}
+    <Sheet.Root bind:open>
+      <Sheet.Content side="right" class="w-full gap-0 p-0 sm:max-w-sm" data-testid="account-sheet">
+        <Sheet.Header class="flex-row items-center gap-3 border-b border-border p-4 pr-14">
+          {@render avatar('size-11')}
+          <div class="min-w-0">
+            <Sheet.Title class="truncate text-base font-semibold">{active?.firstName} {active?.lastName}</Sheet.Title>
+            {#if active?.licence}
+              <Sheet.Description class="text-xs text-muted-foreground">Licence {active.licence}</Sheet.Description>
+            {/if}
+          </div>
+        </Sheet.Header>
+        <nav class="flex-1 overflow-y-auto py-2" aria-label="Mon compte">
+          {@render items(true)}
+        </nav>
+      </Sheet.Content>
+    </Sheet.Root>
+  {:else if open}
     <button type="button" class="fixed inset-0 z-40 cursor-default" aria-label="Fermer" onclick={() => (open = false)}></button>
     <div role="menu" data-testid="account-menu" class="absolute right-0 z-50 mt-1 w-64 rounded-md border border-border bg-popover p-1 shadow-lg">
       <!-- L'identité d'abord : tout ce qui suit est à elle. -->
@@ -190,53 +287,7 @@
         </div>
       </div>
       <div class="my-1 border-t border-border"></div>
-
-      {#each entries as entry (entry.href)}
-        {@const Icon = entry.icon}
-        <a
-          href={entry.href}
-          role="menuitem"
-          aria-current={isCurrent(entry.href) ? 'page' : undefined}
-          class={`flex items-center gap-2.5 rounded px-2 py-2 text-xs decoration-transparent hover:bg-accent ${
-            isCurrent(entry.href) ? 'font-semibold text-primary' : 'text-foreground'
-          }`}
-        >
-          <Icon class="h-4 w-4 shrink-0 opacity-70" />
-          {entry.label}
-        </a>
-      {/each}
-
-      {#if members.length > 1}
-        <div class="my-1 border-t border-border"></div>
-        <p class="px-2 py-1 text-[10px] uppercase tracking-wide text-muted-foreground">Changer de profil</p>
-        {#each members as m (m.id)}
-          <button
-            type="button"
-            role="menuitemradio"
-            aria-checked={m.id === activeMemberId}
-            disabled={busy}
-            onclick={() => switchProfile(m.id)}
-            class={`flex w-full items-center justify-between rounded px-2 py-2 text-left text-xs hover:bg-accent disabled:opacity-50 ${m.id === activeMemberId ? 'font-semibold text-foreground' : 'text-muted-foreground'}`}
-          >
-            <span>{m.firstName} {m.lastName}</span>
-            {#if m.id === activeMemberId}
-              <Check class="h-3.5 w-3.5" />
-            {/if}
-          </button>
-        {/each}
-      {/if}
-
-      <div class="my-1 border-t border-border"></div>
-      <button
-        type="button"
-        role="menuitem"
-        disabled={busy}
-        onclick={logout}
-        class="flex w-full items-center gap-2.5 rounded px-2 py-2 text-left text-xs text-destructive hover:bg-destructive/10 disabled:opacity-50"
-      >
-        <LogOut class="h-4 w-4 shrink-0 opacity-70" />
-        Se déconnecter
-      </button>
+      {@render items(false)}
     </div>
   {/if}
 </div>
