@@ -308,13 +308,14 @@ describe('clubEvent', () => {
   });
 
   it('situe un rendez-vous dans un gymnase du club, et seulement là', () => {
+    // `location` est conditionnel dans le type de retour : on interroge l'objet entier.
     const home = clubEvent('https://x.fr', { ...base, venueLabel: 'Pierre Dupuis', venue: DUPUIS });
-    expect(home.location).toMatchObject({ name: 'Gymnase Pierre Dupuis', address: { addressRegion: 'Essonne' } });
-    expect(home.location).toHaveProperty('geo');
+    expect(home).toMatchObject({ location: { name: 'Gymnase Pierre Dupuis', address: { addressRegion: 'Essonne' } } });
+    expect(home).toHaveProperty('location.geo');
     // Sans gymnase reconnu, le lieu reste un nom et un pays : c'est peut-être la salle
     // d'un club adverse, et une adresse à Nozay serait fausse.
     const away = clubEvent('https://x.fr', { ...base, venueLabel: 'Gymnase de Marcoussis' });
-    expect(away.location).toEqual({
+    expect(away).toHaveProperty('location', {
       '@type': 'Place',
       name: 'Gymnase de Marcoussis',
       address: { '@type': 'PostalAddress', addressCountry: 'FR' }
