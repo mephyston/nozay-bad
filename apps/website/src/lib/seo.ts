@@ -13,6 +13,21 @@ import type { BlockPayload } from '@nba/cms/public';
 export const SITE_NAME = 'Nozay Badminton Association';
 export const SITE_TAGLINE = "Plus qu'une Tribu !";
 
+/**
+ * Où est le club, en toutes lettres.
+ *
+ * Deux communes s'appellent Nozay, et l'autre — en Loire-Atlantique — a aussi son club
+ * de badminton. Le site sort en tête sur « nozay badminton » quel que soit le lieu de
+ * la recherche, et des habitants du 44 nous écrivent en croyant s'adresser à leur club.
+ * Le mot « Essonne » n'apparaissait nulle part : « 91620 » et « (91) » ne parlent
+ * qu'à qui connaît déjà la réponse.
+ *
+ * Constantes et non réglages : c'est l'identité du club, comme `SITE_NAME`, et elle
+ * ne doit pas disparaître d'un champ vidé dans l'administration.
+ */
+export const SITE_REGION = 'Essonne';
+export const SITE_LOCALITY = 'Nozay, Essonne (91)';
+
 /** Google tronque au-delà ; couper nous-mêmes évite une ellipse au milieu d'un mot. */
 const TITLE_MAX = 60;
 const DESCRIPTION_MAX = 155;
@@ -34,6 +49,19 @@ export function pageTitle(seoTitle: string | null, title: string): string {
 }
 
 /**
+ * Titre de la page d'accueil, à défaut d'un titre de référencement saisi.
+ *
+ * Le titre éditorial de l'accueil est « Bienvenue » : suffixé du nom du club, il ne dit
+ * ni ce que fait le club ni où. C'est pourtant le titre le plus lu du site — celui du
+ * résultat de recherche sur « nozay badminton ». La forme fixe tient sous `TITLE_MAX`
+ * avec le nom complet, le sport et le département.
+ */
+export function homeTitle(seoTitle: string | null): string {
+  if (seoTitle) return truncate(seoTitle, TITLE_MAX);
+  return `${SITE_NAME} — Badminton à Nozay (${SITE_REGION})`;
+}
+
+/**
  * Description, en cascade : la saisie du rédacteur, sinon le premier texte de la page.
  *
  * Se rabattre sur le contenu vaut mieux que de ne rien émettre — Google fabrique
@@ -49,7 +77,9 @@ export function pageDescription(seoDescription: string | null, blocks: BlockPayl
     }
     if (block.type === 'hero' && block.subtitle) return truncate(block.subtitle, DESCRIPTION_MAX);
   }
-  return `${SITE_NAME} — ${SITE_TAGLINE}`;
+  // Le repli situe le club avant de le nommer : la description est le second texte du
+  // résultat de recherche, et c'est là qu'un lecteur du 44 voit qu'il n'est pas chez lui.
+  return `Club de badminton à ${SITE_LOCALITY}. ${SITE_TAGLINE}`;
 }
 
 /** URL absolue, seule forme acceptée en canonique et en Open Graph. */

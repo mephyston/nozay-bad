@@ -28,7 +28,7 @@ export const GET: APIRoute = async ({ locals, url }) => {
   <channel>
     <title>Nozay Badminton Association</title>
     <link>${siteUrl}</link>
-    <description>Les actualités du club de badminton de Nozay.</description>
+    <description>Les actualités du club de badminton de Nozay (Essonne).</description>
     <language>fr-FR</language>
     <atom:link href="${new URL('/rss.xml', siteUrl)}" rel="self" type="application/rss+xml" />
 ${items}

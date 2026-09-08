@@ -1,7 +1,7 @@
 ---
 import { resolveEnv } from '../lib/request-context';
 import { listNavItems, getSiteSettings, type NavItemView } from '../lib/cms';
-import { SITE_NAME } from '../lib/seo';
+import { SITE_NAME, SITE_LOCALITY } from '../lib/seo';
 import { socialLinks } from '../lib/social';
 
 /**
@@ -100,6 +100,13 @@ const legalLinks = composedLegal.length > 0 ? composedLegal : withoutExternal(FA
         */}
         <img src="/logo-large-dark.webp" alt="" width="144" height="144" class="h-12 w-12" />
         <p class="font-semibold">{SITE_NAME}</p>
+        {/*
+          Le département, en dur et sous le nom : l'autre Nozay (Loire-Atlantique) a
+          aussi son club, et l'adresse éditoriale ci-dessous peut être vidée ou ne
+          porter qu'un code postal. Cette ligne est la seule du site qui situe le club
+          sur chaque page.
+        */}
+        <p class="text-footer-muted text-sm">{SITE_LOCALITY}</p>
         {settings.footerDescription && (
           <p class="text-footer-muted text-sm">{settings.footerDescription}</p>
         )}

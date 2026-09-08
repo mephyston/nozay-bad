@@ -33,6 +33,7 @@
     "0029_supprimer_lignes_masquees.sql": "9d5254ff2a5a7ea3",
     "0030_compte_badnet.sql": "712bf039b5a3498e",
     "0031_fonds_adherents.sql": "940a013754c6a414",
-    "0032_members_export.sql": "2606dd093e5ae09d"
+    "0032_members_export.sql": "2606dd093e5ae09d",
+    "0033_venues_localisation.sql": "700da8b913872103"
   }
 }

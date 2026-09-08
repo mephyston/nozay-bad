@@ -340,7 +340,36 @@ export interface ScheduleSlotView {
   audience: string;
   label: string | null;
   coachName: string | null;
-  venue: { name: string; streetAddress: string | null; postalCode: string | null; city: string | null } | null;
+  venue: VenueView | null;
+}
+
+/**
+ * Un gymnase, tel que l'API le renvoie — la ligne `venues` entière.
+ *
+ * Les coordonnées sont des chaînes, comme en base : elles ne servent qu'aux données
+ * structurées, qui les veulent ainsi, et personne ne calcule de distance ici.
+ */
+export interface VenueView {
+  id: number;
+  code: string;
+  name: string;
+  streetAddress: string | null;
+  postalCode: string | null;
+  city: string | null;
+  latitude: string | null;
+  longitude: string | null;
+}
+
+/**
+ * Les gymnases du club, pour la fiche `SportsClub` de l'accueil.
+ *
+ * Lecture à part des créneaux : l'accueil n'affiche pas forcément de grille, et la
+ * fiche du club doit situer ses lieux même sans elle. La route est dans le cache de
+ * lecture partagé de l'API, comme `/schedules` — le coût est celui d'un aller-retour,
+ * pas d'une requête.
+ */
+export async function listVenues(env: WebsiteEnv): Promise<VenueView[]> {
+  return (await getJson<VenueView[]>(env, '/schedules/venues')) ?? [];
 }
 
 export interface ClubEventView {

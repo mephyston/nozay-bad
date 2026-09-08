@@ -1,4 +1,4 @@
-import { SITE_NAME } from './seo';
+import { SITE_NAME, SITE_REGION } from './seo';
 
 /**
  * Données structurées.
@@ -14,6 +14,80 @@ export function clubId(siteUrl: string): string {
   return new URL('/#club', siteUrl).toString();
 }
 
+/** Commune et code postal du siège : l'identité du club, pas un réglage. */
+const CLUB_CITY = 'Nozay';
+const CLUB_POSTAL_CODE = '91620';
+
+/** Un gymnase, avec ce qu'il faut pour le situer. */
+export interface VenueLike {
+  name: string;
+  streetAddress: string | null;
+  postalCode: string | null;
+  city: string | null;
+  latitude: string | null;
+  longitude: string | null;
+}
+
+/**
+ * Un gymnase en `Place`, avec adresse complète et coordonnées.
+ *
+ * C'est le lieu, plus que le nom, qui distingue ce club de son homonyme de
+ * Loire-Atlantique : deux clubs « Nozay Badminton », mais un seul dont les gymnases
+ * sont en Essonne. Ville et code postal retombent sur ceux du siège — les gymnases du
+ * club sont tous à Nozay, et une fiche sans commune situerait moins bien qu'un défaut
+ * juste.
+ *
+ * `geo` seulement si les deux coordonnées sont renseignées : un `GeoCoordinates` à
+ * moitié vide est une erreur de validation, pas une information partielle.
+ */
+export function place(venue: VenueLike) {
+  const geo =
+    venue.latitude && venue.longitude
+      ? { geo: { '@type': 'GeoCoordinates', latitude: venue.latitude, longitude: venue.longitude } }
+      : {};
+  return {
+    '@type': 'Place',
+    name: venue.name,
+    address: {
+      '@type': 'PostalAddress',
+      ...(venue.streetAddress ? { streetAddress: venue.streetAddress } : {}),
+      addressLocality: venue.city ?? CLUB_CITY,
+      postalCode: venue.postalCode ?? CLUB_POSTAL_CODE,
+      addressRegion: SITE_REGION,
+      addressCountry: 'FR'
+    },
+    ...geo
+  };
+}
+
+const normalise = (text: string) => text.toLowerCase().replace(/\s+/g, ' ').trim();
+
+/**
+ * Le libellé sans la commune du club : « Halle des Sports, Nozay » désigne la Halle.
+ *
+ * Seule la commune du siège est retirée, et seulement en fin de libellé : « Halle des
+ * Sports de Marcoussis » garde sa ville, et ne sera reconnu par rien.
+ */
+const withoutClubCity = (label: string) => label.replace(/[\s,(-]*nozay\)?$/, '').trim();
+
+/**
+ * Le gymnase du club que désigne un libellé de lieu d'agenda, s'il y en a un.
+ *
+ * L'agenda ne porte qu'un texte libre — « Arthur Rimbaud », « Gymnase Pierre Dupuis,
+ * Nozay », ou l'adresse d'un club adverse. Un libellé égal au nom d'un gymnase, ou
+ * contenu dedans, désigne ce gymnase. Rien d'autre n'est deviné : un match à
+ * l'extérieur ne doit surtout pas hériter de l'adresse de Nozay.
+ */
+export function matchVenue<T extends VenueLike>(venues: readonly T[], label: string | null): T | null {
+  if (!label) return null;
+  const wanted = withoutClubCity(normalise(label));
+  if (wanted.length < 3) return null;
+  return venues.find((venue) => {
+    const name = normalise(venue.name);
+    return name === wanted || name.includes(wanted);
+  }) ?? null;
+}
+
 /**
  * @param sameAs Comptes officiels du club, tels que réglés dans l'administration.
  *   Rattache ces comptes à cette fiche : sans `sameAs`, la page Facebook et le site
@@ -21,13 +95,30 @@ export function clubId(siteUrl: string): string {
  *   l'emporte dans les résultats sur le nom du club. Le paramètre est **requis** — un
  *   défaut à `[]` aurait rendu l'oubli silencieux, et l'oubli est ici invisible à la
  *   relecture comme au rendu.
+ * @param details Ce qui situe le club : ses gymnases (`location`) et, si la page
+ *   affiche les créneaux, ses horaires — dans **ce** nœud plutôt qu'un second, pour
+ *   qu'un moteur ne voie qu'un club.
+ *
+ * `addressRegion` et `areaServed` disent « Essonne » en toutes lettres : le code
+ * postal seul ne suffit pas à un moteur pour séparer ce club de celui de l'autre
+ * Nozay, en Loire-Atlantique, et c'est cette confusion que la fiche doit lever.
+ *
+ * `alternateName` ne retient que des formes réellement employées : le sigle « NBA 91 »
+ * (README, espace adhérent, domaine Access) et « Nozay Bad » (nom des applications).
+ * « NBA » seul est noyé par la ligue de basket.
  */
-export function sportsClub(siteUrl: string, sameAs: readonly string[]) {
+export function sportsClub(
+  siteUrl: string,
+  sameAs: readonly string[],
+  details: { venues?: readonly VenueLike[]; openingHours?: readonly unknown[] } = {}
+) {
+  const venues = details.venues ?? [];
   return {
     '@context': 'https://schema.org',
     '@type': 'SportsClub',
     '@id': clubId(siteUrl),
     name: SITE_NAME,
+    alternateName: ['NBA 91', 'Nozay Bad'],
     sport: 'Badminton',
     url: siteUrl,
     // `logo-large.webp` et non `logo.webp` : Google écarte un logo sous 112 px, et le
@@ -36,10 +127,31 @@ export function sportsClub(siteUrl: string, sameAs: readonly string[]) {
     sameAs: [...sameAs],
     address: {
       '@type': 'PostalAddress',
-      addressLocality: 'Nozay',
-      postalCode: '91620',
+      addressLocality: CLUB_CITY,
+      postalCode: CLUB_POSTAL_CODE,
+      addressRegion: SITE_REGION,
       addressCountry: 'FR'
-    }
+    },
+    areaServed: { '@type': 'AdministrativeArea', name: SITE_REGION },
+    ...(venues.length > 0 ? { location: venues.map(place) } : {}),
+    ...(details.openingHours?.length ? { openingHoursSpecification: [...details.openingHours] } : {})
+  };
+}
+
+/**
+ * Les horaires du club, sur une page qui n'émet pas sa fiche complète.
+ *
+ * Même `@id` que la fiche de l'accueil : c'est ce qui dit à un moteur que ces horaires
+ * sont ceux du même club. Sans lui, la page « Créneaux » décrivait un second
+ * `SportsClub` anonyme, sans adresse — un club de plus à confondre avec l'homonyme.
+ */
+export function clubOpeningHours(siteUrl: string, slots: { weekday: number; startTime: string; endTime: string }[]) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'SportsClub',
+    '@id': clubId(siteUrl),
+    name: SITE_NAME,
+    openingHoursSpecification: openingHours(slots)
   };
 }
 
@@ -222,6 +334,9 @@ export function eventDate(local: string, allDay: boolean): string {
  * @param image Visuel du rendez-vous, en absolu — la couverture de cette actualité.
  *   Absent tant qu'aucun article n'annonce le rendez-vous : une image de repli
  *   identique sur tous ne dirait rien de celui qu'elle illustre.
+ * @param venue Le gymnase du club que désigne le lieu, résolu par `matchVenue`. Avec
+ *   lui, le rendez-vous est situé en Essonne — adresse et coordonnées — et non plus
+ *   au seul pays, dont un moteur déduisait jusque-là fuseau et localisation.
  *
  * Pas de `description` ici, et c'est délibéré : celle que porte l'agenda n'est
  * affichée nulle part sur le site public. Google demande de ne baliser que ce qu'un
@@ -244,6 +359,8 @@ export function clubEvent(
     status: string;
     url: string;
     image?: string | null;
+    /** Le gymnase du club que désigne `venueLabel`, s'il y en a un (`matchVenue`). */
+    venue?: VenueLike | null;
   }
 ) {
   return {
@@ -258,9 +375,13 @@ export function clubEvent(
     eventStatus:
       event.status === 'cancelled' ? 'https://schema.org/EventCancelled' : 'https://schema.org/EventScheduled',
     eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
-    ...(event.venueLabel
-      ? { location: { '@type': 'Place', name: event.venueLabel, address: { '@type': 'PostalAddress', addressCountry: 'FR' } } }
-      : {}),
+    // Un gymnase du club sort avec son adresse et ses coordonnées ; tout autre lieu
+    // reste un nom et un pays — c'est peut-être la salle d'un club adverse.
+    ...(event.venue
+      ? { location: place(event.venue) }
+      : event.venueLabel
+        ? { location: { '@type': 'Place', name: event.venueLabel, address: { '@type': 'PostalAddress', addressCountry: 'FR' } } }
+        : {}),
     ...(event.image ? { image: event.image } : {}),
     organizer: { '@id': clubId(siteUrl) },
     url: new URL(event.url, siteUrl).toString()

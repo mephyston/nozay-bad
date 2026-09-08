@@ -1,7 +1,17 @@
 import { describe, it, expect } from 'vitest';
-import { pageTitle, pageDescription, absoluteUrl, SITE_NAME } from './seo';
+import { pageTitle, homeTitle, pageDescription, absoluteUrl, SITE_NAME, SITE_REGION } from './seo';
 import { readFile } from 'node:fs/promises';
-import { serialiseJsonLd, sportsClub, webSite, breadcrumbList, clubEvent, eventDate } from './jsonld';
+import {
+  serialiseJsonLd,
+  sportsClub,
+  clubOpeningHours,
+  webSite,
+  breadcrumbList,
+  clubEvent,
+  eventDate,
+  matchVenue,
+  place
+} from './jsonld';
 import { socialLinks } from './social';
 import { SITE_SETTINGS_FALLBACK } from './cms';
 import { applySecurityHeaders } from './security-headers';
@@ -21,6 +31,24 @@ describe('pageTitle', () => {
 
   it('respecte un titre de référencement saisi', () => {
     expect(pageTitle('Créneaux 2026', 'Créneaux')).toBe('Créneaux 2026');
+  });
+});
+
+describe('homeTitle', () => {
+  /*
+    Deux communes s'appellent Nozay, chacune avec son club de badminton. Le titre de
+    l'accueil est la ligne que lit un habitant de Loire-Atlantique dans ses résultats :
+    c'est là que le département doit apparaître, et en toutes lettres — pas « 91 ».
+  */
+  it('situe le club en Essonne, en toutes lettres et sous la limite de Google', () => {
+    const out = homeTitle(null);
+    expect(out).toContain(SITE_NAME);
+    expect(out).toContain(SITE_REGION);
+    expect(out.length).toBeLessThanOrEqual(60);
+  });
+
+  it('respecte un titre de référencement saisi', () => {
+    expect(homeTitle('Accueil du club')).toBe('Accueil du club');
   });
 });
 
@@ -45,8 +73,8 @@ describe('pageDescription', () => {
     expect(out.endsWith('…')).toBe(true);
   });
 
-  it('a toujours un repli, même sans contenu', () => {
-    expect(pageDescription(null, [])).toContain(SITE_NAME);
+  it('a toujours un repli, même sans contenu, et ce repli situe le club', () => {
+    expect(pageDescription(null, [])).toContain(SITE_REGION);
   });
 });
 
@@ -99,6 +127,46 @@ describe('JSON-LD', () => {
     // sans rien mesurer.
     expect(bytes.subarray(12, 16).toString('latin1')).toBe('VP8X');
     expect(1 + bytes.readUIntLE(24, 3)).toBeGreaterThanOrEqual(112);
+  });
+
+  it('situe le club en Essonne, ce que le code postal seul ne dit pas à un moteur', () => {
+    const club = sportsClub('https://nozaybad.fr', []);
+    expect(club.address.addressRegion).toBe('Essonne');
+    expect(club.address.postalCode).toBe('91620');
+    expect(club.areaServed.name).toBe('Essonne');
+  });
+
+  it('ne retient en alternateName que des formes réellement employées', () => {
+    // « NBA » seul serait noyé par la ligue de basket, et ne distinguerait pas plus
+    // les deux Nozay.
+    expect(sportsClub('https://nozaybad.fr', []).alternateName).not.toContain('NBA');
+  });
+
+  it('liste les gymnases avec leur adresse, et leurs coordonnées quand elles existent', () => {
+    const club = sportsClub('https://nozaybad.fr', [], { venues: [DUPUIS, HALLE] });
+    expect(club.location).toHaveLength(2);
+    expect(club.location?.[0]).toMatchObject({
+      '@type': 'Place',
+      name: 'Gymnase Pierre Dupuis',
+      address: { streetAddress: '1 rue du Petit Gobert', postalCode: '91620', addressLocality: 'Nozay', addressRegion: 'Essonne' },
+      geo: { '@type': 'GeoCoordinates', latitude: '48.66', longitude: '2.24' }
+    });
+    // Coordonnées manquantes : pas de `geo` du tout, plutôt qu'un point à moitié vide
+    // que le validateur refuserait.
+    expect(club.location?.[1]).not.toHaveProperty('geo');
+  });
+
+  it('tait la liste des lieux quand il n’y en a pas, plutôt que d’émettre un tableau vide', () => {
+    expect(sportsClub('https://nozaybad.fr', [])).not.toHaveProperty('location');
+    expect(sportsClub('https://nozaybad.fr', [])).not.toHaveProperty('openingHoursSpecification');
+  });
+
+  it('rattache les horaires au même club, par le même identifiant', () => {
+    // La page « Créneaux » émettait un second `SportsClub` sans `@id` ni adresse : un
+    // club de plus, anonyme, à confondre avec l'homonyme de Loire-Atlantique.
+    const hours = clubOpeningHours('https://nozaybad.fr', [{ weekday: 1, startTime: '20:00', endTime: '22:00' }]);
+    expect(hours['@id']).toBe(sportsClub('https://nozaybad.fr', [])['@id']);
+    expect(hours.openingHoursSpecification[0].dayOfWeek).toBe('https://schema.org/Monday');
   });
 
   it('numérote le fil d’Ariane à partir de 1', () => {
@@ -156,6 +224,42 @@ describe('en-têtes de sécurité', () => {
   });
 });
 
+const DUPUIS = {
+  name: 'Gymnase Pierre Dupuis',
+  streetAddress: '1 rue du Petit Gobert',
+  postalCode: '91620',
+  city: 'Nozay',
+  latitude: '48.66',
+  longitude: '2.24'
+};
+const HALLE = { name: 'Halle des Sports', streetAddress: null, postalCode: null, city: null, latitude: null, longitude: null };
+
+describe('matchVenue', () => {
+  it('reconnaît un gymnase par son nom, en entier ou en partie', () => {
+    expect(matchVenue([DUPUIS, HALLE], 'Gymnase Pierre Dupuis')).toBe(DUPUIS);
+    expect(matchVenue([DUPUIS, HALLE], '  pierre DUPUIS ')).toBe(DUPUIS);
+    expect(matchVenue([DUPUIS, HALLE], 'Halle des sports')).toBe(HALLE);
+    // La forme que porte l'agenda : le nom suivi de la commune.
+    expect(matchVenue([DUPUIS, HALLE], 'Gymnase Pierre Dupuis, Nozay')).toBe(DUPUIS);
+    expect(matchVenue([DUPUIS, HALLE], 'Halle des Sports (Nozay)')).toBe(HALLE);
+  });
+
+  it('ne devine rien pour un lieu qui n’est pas un gymnase du club', () => {
+    // Un match à l'extérieur ne doit pas hériter d'une adresse à Nozay.
+    expect(matchVenue([DUPUIS, HALLE], 'Gymnase de Marcoussis')).toBeNull();
+    expect(matchVenue([DUPUIS, HALLE], 'Halle des Sports de Marcoussis')).toBeNull();
+    expect(matchVenue([DUPUIS, HALLE], null)).toBeNull();
+    expect(matchVenue([DUPUIS, HALLE], 'de')).toBeNull();
+  });
+});
+
+describe('place', () => {
+  it('retombe sur la commune du siège quand le gymnase n’en porte pas', () => {
+    expect(place(HALLE).address).toMatchObject({ addressLocality: 'Nozay', postalCode: '91620', addressRegion: 'Essonne' });
+    expect(place(HALLE).address).not.toHaveProperty('streetAddress');
+  });
+});
+
 describe('clubEvent', () => {
   const base = {
     title: 'Raclette party',
@@ -201,6 +305,20 @@ describe('clubEvent', () => {
     expect(json).not.toHaveProperty('image');
     expect(json).not.toHaveProperty('endDate');
     expect(json).not.toHaveProperty('performer');
+  });
+
+  it('situe un rendez-vous dans un gymnase du club, et seulement là', () => {
+    const home = clubEvent('https://x.fr', { ...base, venueLabel: 'Pierre Dupuis', venue: DUPUIS });
+    expect(home.location).toMatchObject({ name: 'Gymnase Pierre Dupuis', address: { addressRegion: 'Essonne' } });
+    expect(home.location).toHaveProperty('geo');
+    // Sans gymnase reconnu, le lieu reste un nom et un pays : c'est peut-être la salle
+    // d'un club adverse, et une adresse à Nozay serait fausse.
+    const away = clubEvent('https://x.fr', { ...base, venueLabel: 'Gymnase de Marcoussis' });
+    expect(away.location).toEqual({
+      '@type': 'Place',
+      name: 'Gymnase de Marcoussis',
+      address: { '@type': 'PostalAddress', addressCountry: 'FR' }
+    });
   });
 
   it('rend l’adresse de la page qui décrit, en absolu', () => {
