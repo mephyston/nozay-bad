@@ -3,7 +3,7 @@
 
 <script lang="ts">
   import { ArrowLeft, FileText } from '@lucide/svelte';
-  import { Button, Badge, Tabs, Card } from '@nba/ui';
+  import { Button, Badge, Tabs, Card, openDocument } from '@nba/ui';
   import type { Member, GLTransaction } from './member-profile-types';
   import type { ClubFunction } from '../../shared/club-functions';
   import MemberPhotoField from '../../upload-member-photo/ui/MemberPhotoField.svelte';
@@ -77,11 +77,16 @@
     </div>
     <div class="flex flex-wrap items-center justify-center sm:justify-end gap-3 w-full sm:w-auto">
       {#if member.paid}
+        <!-- Nouvel onglet dans un navigateur, même fenêtre en application installée :
+             une fenêtre neuve y est sans retour possible (cf. openDocument). -->
         <Button
           href={`/admin/accounting/attestations/${member.id}`}
-          target="_blank"
           size="sm"
           class="no-underline shrink-0"
+          onclick={(e: MouseEvent) => {
+            e.preventDefault();
+            openDocument(`/admin/accounting/attestations/${member.id}`);
+          }}
         >
           <FileText class="w-3.5 h-3.5" />
           Attestation CSE

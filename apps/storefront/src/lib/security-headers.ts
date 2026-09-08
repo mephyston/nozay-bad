@@ -38,7 +38,10 @@ export function buildCsp(mediaOrigin: string): string {
     "font-src 'self' data:",
     "style-src 'self' 'unsafe-inline'",
     "script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com",
-    "frame-src https://challenges.cloudflare.com",
+    // 'self' : l'aperçu de l'attestation CSE encadre le PDF servi par la boutique
+    // elle-même. La réponse PDF, de son côté, s'y prête (frame-ancestors 'self', cf.
+    // @nba/security-headers) ; sans les deux, le cadre reste « bloqué ».
+    "frame-src 'self' https://challenges.cloudflare.com",
     "connect-src 'self' https://challenges.cloudflare.com"
   ].join('; ');
 }

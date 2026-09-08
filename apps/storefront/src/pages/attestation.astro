@@ -49,6 +49,7 @@ const solo = members.length <= 1;
                     href={`/api/attestation.pdf?memberId=${m.id}`}
                     target="_blank"
                     rel="noopener"
+                    data-document
                     class="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 min-h-[44px]"
                   >
                     Ouvrir
@@ -89,6 +90,20 @@ const solo = members.length <= 1;
   </main>
 
   <MobileNav currentPath="/attestation" />
+
+  <!-- En application installée, « Ouvrir » ne doit pas ouvrir de nouvelle fenêtre : elle
+       n'aurait ni onglets ni historique, et « Précédent » n'y ramènerait nulle part — il
+       ne resterait qu'à tuer l'application. Le PDF remplace alors l'écran, que le geste
+       de retour ramène. Dans un navigateur, le nouvel onglet reste préférable : la page
+       reste sous la main. Même détection que le splash (PwaSplash.astro). -->
+  <script is:inline>
+    if (
+      window.matchMedia('(display-mode: standalone)').matches ||
+      window.navigator.standalone === true
+    ) {
+      document.querySelectorAll('a[data-document]').forEach((a) => a.removeAttribute('target'));
+    }
+  </script>
 
   <footer class="hidden md:block border-t border-border mt-12 py-8 bg-card/20 text-center text-xs text-muted-foreground md:pb-8">
     <p>© {new Date().getFullYear()} Nozay Badminton Association. Tous droits réservés.</p>

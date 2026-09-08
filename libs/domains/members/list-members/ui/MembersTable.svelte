@@ -2,7 +2,7 @@
 </script>
 <script lang="ts">
   import { Eye, ChevronRight, Receipt } from '@lucide/svelte';
-  import { Button, Badge, DropdownMenu, DataTable, Table, DataTableColumnHeader, DataTableRowActions, MemberAvatar, uiConfirm, toast, flashAndReload, softNavigate } from '@nba/ui';
+  import { Button, Badge, DropdownMenu, DataTable, Table, DataTableColumnHeader, DataTableRowActions, MemberAvatar, uiConfirm, toast, flashAndReload, softNavigate, openDocument } from '@nba/ui';
   import type { Member, Pagination, Filters, Season } from './members-table-types';
   import { membershipStatusLabel, membershipStatusVariant } from '../../shared/membership-status';
   import MembersTableFiltersPopover from './MembersTableFiltersPopover.svelte';
@@ -202,10 +202,9 @@
                 <DropdownMenu.Item asChild>
                   <a
                     href={`/admin/accounting/attestations/${member.id}`}
-                    target="_blank"
                     onclick={(e) => {
                       e.preventDefault();
-                      window.open(`/admin/accounting/attestations/${member.id}`, '_blank');
+                      openDocument(`/admin/accounting/attestations/${member.id}`);
                     }}
                     class="cursor-pointer flex items-center w-full"
                   >
@@ -274,10 +273,9 @@
                 <DropdownMenu.Item asChild>
                   <a
                     href={`/admin/accounting/attestations/${member.id}`}
-                    target="_blank"
                     onclick={(e) => {
                       e.preventDefault();
-                      window.open(`/admin/accounting/attestations/${member.id}`, '_blank');
+                      openDocument(`/admin/accounting/attestations/${member.id}`);
                     }}
                     class="cursor-pointer flex items-center w-full"
                   >

@@ -54,15 +54,37 @@ export function withMutableHeaders(response: Response): Response {
   }
 }
 
+/**
+ * Un document (PDF) peut être encadré par l'application qui le sert, et par elle seule.
+ *
+ * Les pages interdisent tout encadrement (`frame-ancestors 'none'`, `X-Frame-Options:
+ * DENY`) : c'est la parade au clickjacking. Posée aussi sur un PDF, l'interdiction
+ * frappe l'aperçu intégré de l'attestation CSE, un `<iframe>` de même origine — Chrome y
+ * affiche « Ce contenu est bloqué » à la place du document. Un PDF n'a ni formulaire ni
+ * bouton à détourner : l'encadrer depuis sa propre origine ne présente aucun risque, et
+ * c'est ce que fait l'aperçu.
+ */
+function frameAncestorsForDocument(csp: string): string {
+  return csp.replace(/frame-ancestors [^;]+/, "frame-ancestors 'self'");
+}
+
+function isDocument(response: Response): boolean {
+  return (response.headers.get('Content-Type') ?? '').split(';', 1)[0].trim() === 'application/pdf';
+}
+
 /** Applique la politique sur une réponse (idempotent). */
 export function applySecurityHeaders(input: Response, policy: SecurityPolicy): Response {
   const response = withMutableHeaders(input);
   const h = response.headers;
+  const document = isDocument(response);
 
-  h.set(policy.reportOnly ? 'Content-Security-Policy-Report-Only' : 'Content-Security-Policy', policy.csp);
+  h.set(
+    policy.reportOnly ? 'Content-Security-Policy-Report-Only' : 'Content-Security-Policy',
+    document ? frameAncestorsForDocument(policy.csp) : policy.csp
+  );
   h.set('Strict-Transport-Security', `max-age=${policy.hstsMaxAge}; includeSubDomains; preload`);
   h.set('X-Content-Type-Options', 'nosniff');
-  h.set('X-Frame-Options', 'DENY');
+  h.set('X-Frame-Options', document ? 'SAMEORIGIN' : 'DENY');
   h.set('Referrer-Policy', 'strict-origin-when-cross-origin');
   h.set('Permissions-Policy', policy.permissionsPolicy);
 

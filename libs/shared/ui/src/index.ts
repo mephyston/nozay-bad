@@ -36,6 +36,7 @@ export { AmountInput } from './components/ui/amount-input';
 export { Toaster, toast } from './components/ui/sonner';
 export { flash, flashAndReload, consumeFlash, type FlashType } from './lib/flash';
 export { softNavigate, hasClientRouter } from './lib/navigation';
+export { openDocument, isStandaloneApp } from './lib/document-link';
 export { formatAppVersion } from './lib/app-version';
 export { submitForm, type SubmitFormOptions } from './lib/form-submit';
 export { readApiError } from './lib/api-error';
