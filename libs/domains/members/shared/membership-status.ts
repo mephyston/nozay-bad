@@ -43,6 +43,16 @@ export function membershipGrantsAccess(status: string): boolean {
   return status === 'valide' || status === 'incomplet';
 }
 
+/**
+ * Les statuts qui font un adhérent de la saison, quel que soit l'état de son règlement.
+ *
+ * C'est le périmètre de ce que le club montre et annonce à ses membres — les
+ * anniversaires en premier lieu : un dossier en attente de paiement est un adhérent,
+ * un dossier annulé n'en est plus un. Distinct de `membershipGrantsAccess`, qui décide
+ * de l'entrée dans l'espace adhérent et exige un premier versement.
+ */
+export const ENROLLED_MEMBERSHIP_STATUSES: readonly MembershipStatus[] = ['valide', 'incomplet', 'en_attente'];
+
 export interface MembershipStatusInput {
   /** Colonne « Statut » ou « Adhérent validé » de l'export, brute. */
   rawStatus: string;

@@ -44,7 +44,7 @@ Deux sections l'organisent.
 
 | Message | Quand |
 |---|---|
-| **Anniversaire(s) du jour** | Tous les jours vers 8-9h, si au moins un adhérent est concerné |
+| **Anniversaire(s) du jour** | Tous les jours vers 8-9h, si au moins un adhérent de la saison en cours est concerné, quel que soit l'état de son règlement ; un dossier annulé ou de la saison passée n'est pas fêté |
 | **Cotisation en attente** | Le lundi vers 9-10h, aux foyers dont la cotisation reste due |
 | **Commande à régler** | Le lundi vers 9-10h, pour les commandes validées depuis plus de 7 jours |
 | **Classements à mettre à jour** | Le jeudi précédant chaque journée d'interclubs régionale, **aux dirigeants du club** |

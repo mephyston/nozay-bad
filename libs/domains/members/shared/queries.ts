@@ -3,6 +3,7 @@ import { getActiveSeasonId, getSeasonId, isSeasonClosed } from '@nba/accounting-
 import { and, desc, eq, inArray, or, sql } from 'drizzle-orm';
 import { type DbOrTx } from '@nba/db';
 import type { ClubFunction } from './club-functions';
+import { ENROLLED_MEMBERSHIP_STATUSES } from './membership-status';
 
 
 /**
@@ -364,6 +365,10 @@ export interface MemberBirthday {
 /**
  * Adhérents de la saison active dont c'est l'anniversaire à la date donnée.
  *
+ * Adhérents de la saison, et d'elle seule : un dossier de la saison passée non repris
+ * n'est plus fêté, un dossier annulé non plus, quel que soit le règlement des autres
+ * (règle actée le 2026-09-08, cf. ENROLLED_MEMBERSHIP_STATUSES).
+ *
  * `birth_date` est stocké au format ISO `YYYY-MM-DD` : on compare le suffixe
  * `MM-DD`. Un 29 février ne remonte donc que les années bissextiles — comportement
  * assumé, plutôt que de fêter l'anniversaire un jour arbitraire.
@@ -382,7 +387,11 @@ export async function getBirthdaysForActiveSeason(db: DbOrTx, date: Date): Promi
     .from(membershipsTable)
     .innerJoin(personsTable, eq(personsTable.id, membershipsTable.personId))
     .where(
-      and(eq(membershipsTable.seasonId, seasonId), sql`substr(${personsTable.birthDate}, 6) = ${monthDay}`)
+      and(
+        eq(membershipsTable.seasonId, seasonId),
+        inArray(membershipsTable.status, [...ENROLLED_MEMBERSHIP_STATUSES]),
+        sql`substr(${personsTable.birthDate}, 6) = ${monthDay}`
+      )
     )
     .all();
 
