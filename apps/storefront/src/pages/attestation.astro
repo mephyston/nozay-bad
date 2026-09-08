@@ -97,17 +97,25 @@ const statusLabel = (m: { paid: boolean; partiallyPaid: boolean }) =>
 
   <MobileNav currentPath="/attestation" />
 
-  <!-- En application installée, « Ouvrir » ne doit pas ouvrir de nouvelle fenêtre : elle
-       n'aurait ni onglets ni historique, et « Précédent » n'y ramènerait nulle part — il
-       ne resterait qu'à tuer l'application. Le PDF remplace alors l'écran, que le geste
-       de retour ramène. Dans un navigateur, le nouvel onglet reste préférable : la page
-       reste sous la main. Même détection que le splash (PwaSplash.astro). -->
+  <!-- Sur mobile, « Ouvrir » ne doit pas ouvrir le PDF lui-même : en application
+       installée, une nouvelle fenêtre n'aurait ni onglets ni historique, et le document
+       dans la fenêtre courante n'a ni en-tête, ni barre du bas, ni croix — sur iPhone,
+       seul le geste de retour en sort, ce que tout le monde ne connaît pas. Il mène donc
+       à notre page d'aperçu (/attestation/apercu), qui encadre le document de la
+       navigation habituelle et d'un bouton Retour. Vaut pour tout écran mobile (le seuil
+       est celui de la barre du bas), navigateur compris, et pour toute application
+       installée quelle que soit sa taille. Sur bureau, le nouvel onglet reste préférable :
+       la page reste sous la main. Même détection que le splash (PwaSplash.astro). -->
   <script is:inline>
     if (
+      window.matchMedia('(max-width: 767px)').matches ||
       window.matchMedia('(display-mode: standalone)').matches ||
       window.navigator.standalone === true
     ) {
-      document.querySelectorAll('a[data-document]').forEach((a) => a.removeAttribute('target'));
+      document.querySelectorAll('a[data-document]').forEach((a) => {
+        a.removeAttribute('target');
+        a.setAttribute('href', a.getAttribute('href').replace('/api/attestation.pdf', '/attestation/apercu'));
+      });
     }
   </script>
 

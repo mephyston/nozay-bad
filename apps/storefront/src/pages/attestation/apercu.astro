@@ -1,0 +1,124 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Header from '../../components/Header.astro';
+import MobileNav from '../../components/MobileNav.svelte';
+import { env } from 'cloudflare:workers';
+import { getSessionMembersStatus } from '../../lib/member-status';
+
+/*
+  L'aperçu de l'attestation, dans une page à nous.
+
+  En application installée, ouvrir le PDF lui-même remplaçait l'écran par un document
+  sans en-tête, sans barre du bas, sans croix : sur iPhone, seul le geste de retour en
+  sortait, et « tuer l'app » était la solution trouvée par la plupart. Ici, le document
+  est encadré par la navigation habituelle et un bouton « Retour » explicite, avec
+  Télécharger et Partager à portée. Le PDF est incorporé par `<iframe>` — pas `<object>`,
+  que la CSP interdit (`object-src 'none'`) ; là où l'appareil ne l'affiche pas en ligne,
+  le cadre reste vide mais la page demeure un écran normal, jamais un cul-de-sac, et le
+  téléchargement est juste au-dessus.
+
+  Aucun effet de bord : l'id demandé doit appartenir au foyer de la session, et la
+  route /api/attestation.pdf revalide de son côté le règlement.
+*/
+const session = Astro.locals.session;
+const requested = Number(Astro.url.searchParams.get('memberId'));
+const members = await getSessionMembersStatus(env, session);
+const member =
+  members.find((m) => m.id === requested) ?? members.find((m) => m.isActive) ?? members[0];
+
+if (!member) return Astro.redirect('/attestation');
+
+const attestable = member.paid || member.partiallyPaid;
+const pdfHref = `/api/attestation.pdf?memberId=${member.id}`;
+---
+
+<Layout title="Aperçu de l'attestation CSE - Nozay Bad">
+  <Header currentPath="/attestation" />
+
+  <main class="flex-1 flex flex-col p-3 sm:p-6 w-full pb-24 md:pb-6">
+    <div class="max-w-2xl mx-auto w-full flex-1 flex flex-col gap-3">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <a
+          href="/attestation"
+          class="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-2 text-sm font-semibold text-foreground hover:bg-accent min-h-[44px] no-underline"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4" aria-hidden="true"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+          Retour
+        </a>
+        <div class="min-w-0 text-right">
+          <p class="text-sm font-semibold text-foreground truncate">{member.firstName} {member.lastName}</p>
+          <p class="text-xs text-muted-foreground">Attestation CSE</p>
+        </div>
+      </div>
+
+      {attestable ? (
+        <>
+          <div class="flex flex-wrap gap-2">
+            <a
+              href={pdfHref}
+              download
+              class="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 min-h-[44px] no-underline"
+            >
+              Télécharger
+            </a>
+            <!-- Ne s'affiche que si l'appareil sait partager un fichier (feuille de
+                 partage iOS / Android) : c'est le geste naturel pour l'envoyer au CSE. -->
+            <button
+              type="button"
+              id="share-attestation"
+              hidden
+              data-href={pdfHref}
+              data-filename={`Attestation CSE ${member.lastName} ${member.firstName}.pdf`}
+              class="inline-flex items-center justify-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-sm font-semibold text-foreground hover:bg-accent min-h-[44px]"
+            >
+              Partager…
+            </button>
+          </div>
+
+          <iframe
+            src={pdfHref}
+            title="Attestation CSE"
+            class="w-full flex-1 min-h-[70vh] rounded-xl border border-border bg-card"
+          ></iframe>
+          <p class="text-xs text-muted-foreground">
+            Si l'aperçu reste vide sur cet appareil, utilisez « Télécharger ».
+          </p>
+        </>
+      ) : (
+        <div class="rounded-xl border border-border bg-card p-4">
+          <p class="text-sm text-muted-foreground">
+            L'attestation sera consultable ici dès qu'un premier règlement aura été enregistré par le trésorier.
+          </p>
+        </div>
+      )}
+    </div>
+  </main>
+
+  <MobileNav currentPath="/attestation" />
+
+  <!-- Partage natif : le fichier est récupéré à l'avance, parce que Safari n'accepte
+       navigator.share() que dans le geste de l'utilisateur, sans attendre un réseau. -->
+  <script is:inline>
+    (function () {
+      var button = document.getElementById('share-attestation');
+      if (!button || !navigator.share || !navigator.canShare) return;
+      var probe = new File([''], 'x.pdf', { type: 'application/pdf' });
+      if (!navigator.canShare({ files: [probe] })) return;
+
+      var file = null;
+      fetch(button.dataset.href)
+        .then(function (res) { return res.ok ? res.blob() : null; })
+        .then(function (blob) {
+          if (!blob) return;
+          file = new File([blob], button.dataset.filename, { type: 'application/pdf' });
+          button.hidden = false;
+        })
+        .catch(function () {});
+
+      button.addEventListener('click', function () {
+        if (!file) return;
+        navigator.share({ files: [file], title: 'Attestation CSE' }).catch(function () {});
+      });
+    })();
+  </script>
+</Layout>
