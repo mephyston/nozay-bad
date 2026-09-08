@@ -22,8 +22,10 @@ export const SITE_TAGLINE = "Plus qu'une Tribu !";
  * Le mot « Essonne » n'apparaissait nulle part : « 91620 » et « (91) » ne parlent
  * qu'à qui connaît déjà la réponse.
  *
- * Constantes et non réglages : c'est l'identité du club, comme `SITE_NAME`, et elle
- * ne doit pas disparaître d'un champ vidé dans l'administration.
+ * Constantes pour ce que le rédacteur ne voit pas — titre d'accueil par défaut, replis
+ * de description, données structurées. Le pied de page, lui, se règle depuis
+ * l'administration (phrase de présentation et adresse) : c'est le choix de David, ces
+ * champs existent pour ça.
  */
 export const SITE_REGION = 'Essonne';
 export const SITE_LOCALITY = 'Nozay, Essonne (91)';
