@@ -201,7 +201,9 @@
 </script>
 
 <Card.Root class="max-w-2xl mx-auto shadow-sm">
-  <Card.Header class="px-5 py-4 border-b border-border flex flex-row items-center gap-3">
+  <!-- flex-wrap : sur mobile, le lien d'historique passe sous le titre au lieu de
+       l'écraser sur la gauche avec la description. -->
+  <Card.Header class="px-5 py-4 border-b border-border flex flex-row flex-wrap items-center gap-3">
     <ShoppingBag class="w-5 h-5 text-primary shrink-0" />
     <div class="min-w-0">
       <Card.Title class="text-base font-semibold text-foreground">Boutique du club</Card.Title>
@@ -211,7 +213,7 @@
       <!-- Ce qu'on a déjà commandé, et où ça en est : la question se pose avant de commander de nouveau. -->
       <a
         href={historyHref}
-        class="ml-auto shrink-0 inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline"
+        class="basis-full pl-8 min-h-[44px] sm:basis-auto sm:pl-0 sm:min-h-0 sm:ml-auto shrink-0 inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline"
         data-testid="orders-history-link"
       >
         <History class="w-3.5 h-3.5" />
