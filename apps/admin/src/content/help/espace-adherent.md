@@ -42,6 +42,8 @@ Si l'API est injoignable, personne n'est déconnecté : la licence est revérifi
 
 ## Ce qu'il peut faire
 
+Les écrans personnels (compte, fiche, cotisation, attestation, notifications, notes de frais) se trouvent derrière le **portrait en haut à droite** de l'espace adhérent ; une bulle le lui indique à sa première visite. Les rubriques du club (accueil, actualités, calendrier, boutique, mon club) sont dans la barre de navigation.
+
 - **Mon compte** — l'état de sa cotisation (montant dû, reçu, restant), l'historique de ses commandes et de ses notes de frais avec leur statut, et l'activation des notifications.
 - **Boutique** — passer une commande sur le catalogue actif. Elle arrive en attente dans [Boutique → Commandes](/admin/help/boutique-commandes).
 - **Notes de frais** — déposer une demande de remboursement avec un justificatif, **uniquement s'il y a été autorisé** depuis sa fiche. Elle arrive en attente dans [Notes de frais](/admin/help/notes-de-frais).

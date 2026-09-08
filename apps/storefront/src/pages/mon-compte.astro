@@ -207,6 +207,7 @@ const isPaid = Boolean(cotisation?.paid);
            « suis-je à jour ? » — la pastille de statut le dit dans l'en-tête, section
            fermée ; le détail des montants ne s'ouvre que si on le demande. -->
       <CollapsibleHistory
+        id="cotisation"
         title={`Ma cotisation${seasonName ? ` — ${seasonName}` : ''}`}
         description="Montant dû, déjà réglé et restant à payer pour la saison."
       >
