@@ -11,6 +11,13 @@ export interface CreateCheckInput {
   photoUrl?: string;
 }
 
+/**
+ * Ce qu'une photo de chèque a livré, prêt à préremplir le formulaire.
+ *
+ * `amount` est en **centimes**, comme partout dans le domaine : l'écran divisait déjà par
+ * cent, et recevait des euros — un chèque de 150 € s'affichait « 1.5 ». Un champ vide
+ * (`''`, `0`, `null`) veut dire « non lu » : l'écran le laisse à la main.
+ */
 export interface AnalyzeCheckOutput {
   number: string;
   amount: number;

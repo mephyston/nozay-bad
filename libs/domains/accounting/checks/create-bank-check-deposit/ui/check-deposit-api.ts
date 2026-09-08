@@ -1,4 +1,6 @@
 import { toast, uiConfirm, flashAndReload, submitForm, readApiError } from '@nba/ui';
+import type { AnalyzeCheckOutput } from '../../record-check-ledger-entry/dto';
+import { shrinkPhoto } from './shrink-photo';
 
 /**
  * Destinations des écritures : les relais du domaine, et non la page hôte.
@@ -14,6 +16,16 @@ import { toast, uiConfirm, flashAndReload, submitForm, readApiError } from '@nba
 const RELAIS = '/admin/api/accounting/cheques';
 const DEPOT_ANALYSE = '/admin/api/accounting/upload?doc=check-analyze';
 
+/**
+ * Lecture d'une photo de chèque, champ par champ, dans le formulaire.
+ *
+ * La réponse est typée par le DTO de l'API : ce module lisait `checkNumber` là où l'API
+ * a toujours renvoyé `number`, et le numéro n'arrivait jamais à l'écran — sans erreur,
+ * puisque `any` acceptait tout. Le montant arrive en centimes, comme le reste du domaine.
+ *
+ * La photo est réduite avant l'envoi (`shrinkPhoto`) : le modèle n'a pas besoin des
+ * douze mégapixels d'un téléphone, et les recevait jusqu'ici tels quels.
+ */
 export async function handleAnalyzeScan(file: File, seasonId: string, state: any) {
   if (!file) return;
 
@@ -21,7 +33,7 @@ export async function handleAnalyzeScan(file: File, seasonId: string, state: any
   state.formError = '';
 
   const formData = new FormData();
-  formData.append('file', file);
+  formData.append('file', await shrinkPhoto(file));
   formData.append('seasonId', seasonId);
 
   try {
@@ -30,19 +42,29 @@ export async function handleAnalyzeScan(file: File, seasonId: string, state: any
       body: formData
     });
 
-    const json = await res.json() as any;
+    const json = (await res.json()) as { success: boolean; data?: AnalyzeCheckOutput; error?: string };
 
-    if (res.ok && json.success) {
-      toast.success('Chèque analysé par IA !');
-      state.checkNumber = json.data.checkNumber || '';
-      state.checkAmount = json.data.amount ? (json.data.amount / 100).toString() : '';
-      state.checkEmitter = json.data.emitter || '';
-      state.checkBank = json.data.bank || '';
-      state.checkMemberId = json.data.memberId ? json.data.memberId.toString() : '';
-      state.matchedMemberName = json.data.memberName || '';
-      if (json.data.date) {
-        state.checkDate = json.data.date;
+    if (res.ok && json.success && json.data) {
+      const lu = json.data;
+      state.checkNumber = lu.number || '';
+      state.checkAmount = lu.amount ? (lu.amount / 100).toString() : '';
+      state.checkEmitter = lu.emitter || '';
+      state.checkBank = lu.bank || '';
+      state.checkMemberId = lu.memberId ? lu.memberId.toString() : '';
+      state.matchedMemberName = lu.memberName || '';
+      if (lu.date) {
+        state.checkDate = lu.date;
       }
+      const manquants = [
+        !lu.number && 'le numéro',
+        !lu.amount && 'le montant',
+        !lu.emitter && "l'émetteur",
+        !lu.date && 'la date'
+      ].filter(Boolean);
+      // Dire ce qui n'a pas été lu vaut mieux qu'un « analysé ! » qui laisse croire que
+      // tout l'est : le trésorier relit alors les bons champs.
+      if (manquants.length === 0) toast.success('Chèque lu : relisez les champs avant d\'enregistrer.');
+      else toast.success(`Chèque lu, sauf ${manquants.join(', ')} : à compléter à la main.`);
     } else {
       throw new Error(json.error || 'Erreur lors de la lecture des données.');
     }

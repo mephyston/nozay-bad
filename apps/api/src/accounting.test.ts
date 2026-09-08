@@ -2453,15 +2453,25 @@ VERSION:102
       importedAt: new Date()
     });
 
+    /*
+      Le modèle transcrit, il ne décode pas : sept champs texte « tels qu'écrits », rendus
+      en objet par la sortie contrainte. C'est le handler qui fait des centimes, du
+      numéro à sept chiffres et de la date ISO — et qui écarte le bénéficiaire (le club).
+    */
     const mockAI = {
-      run: async (model: string, input: any) => {
-        return JSON.stringify({
-          number: '8877665',
-          amount: 260,
-          emitter: 'JEAN DUPONT',
-          bank: 'Société Générale',
-          date: '2026-07-10'
-        });
+      run: async (_model: string, input: any) => {
+        expect(input.response_format?.type).toBe('json_schema');
+        return {
+          response: {
+            numero_cheque: '8877665 30003 00412',
+            montant_chiffres: '260,00',
+            montant_lettres: 'deux cent soixante euros',
+            beneficiaire: 'Nozay Badminton',
+            titulaire: 'JEAN DUPONT',
+            banque: 'Société Générale',
+            date_emission: '10/07/26'
+          }
+        };
       }
     };
 
@@ -2479,7 +2489,9 @@ VERSION:102
     const body = await res.json() as any;
     expect(body.success).toBe(true);
     expect(body.data.number).toBe('8877665');
+    expect(body.data.amount).toBe(26000);
     expect(body.data.emitter).toBe('JEAN DUPONT');
+    expect(body.data.bank).toBe('Société Générale');
     expect(body.data.memberName).toBe('DUPONT Jean');
     expect(body.data.date).toBe('2026-07-10');
   });

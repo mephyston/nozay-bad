@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { createCheck, deleteCheck, updateCheck } from './handler';
+import { analyzeCheckImage, createCheck, deleteCheck, updateCheck } from './handler';
 import { AppError } from '@nba/db';
 
 /** Un statement drizzle factice, accepté par `db.batch`. */
@@ -208,5 +208,69 @@ describe('updateCheck', () => {
   it('exige numéro, montant, émetteur et date', async () => {
     await expect(updateCheck(mockDb as any, 1, { ...corps, date: '' })).rejects.toThrow(AppError);
     expect(repo.getCheckById).not.toHaveBeenCalled();
+  });
+});
+
+describe('analyzeCheckImage', () => {
+  const today = new Date('2026-09-08T12:00:00Z');
+  const image = { arrayBuffer: async () => new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 1, 2, 3]).buffer };
+
+  /** Un modèle qui rend la transcription attendue, en objet — la forme de la sortie contrainte. */
+  const aiWith = (response: Record<string, string>) => ({ run: vi.fn().mockResolvedValue({ response }) });
+
+  it("envoie la photo en data URL et contraint la réponse par le schéma", async () => {
+    const ai = aiWith({});
+    await analyzeCheckImage({} as any, ai, image, today);
+    const [model, input] = ai.run.mock.calls[0];
+    expect(model).toBe('@cf/meta/llama-4-scout-17b-16e-instruct');
+    expect(input.response_format).toMatchObject({ type: 'json_schema' });
+    const content = (input.messages as any[])[0].content;
+    expect(content[1].image_url.url).toMatch(/^data:image\/jpeg;base64,/);
+    // L'ancien appel passait l'image en tableau d'octets : des millions de nombres en JSON.
+    expect(input).not.toHaveProperty('image');
+  });
+
+  it('rend le montant en centimes, le numéro à sept chiffres et la date en ISO', async () => {
+    const ai = aiWith({
+      numero_cheque: '2512612 30004 00812',
+      montant_chiffres: '1500,0',
+      montant_lettres: 'cent cinquante euros',
+      beneficiaire: 'Nozay Badminton',
+      titulaire: 'M OU MME JEAN DUPONT',
+      banque: 'LCL',
+      date_emission: '05/09/26'
+    });
+    const out = await analyzeCheckImage({} as any, ai, image, today);
+    expect(out).toMatchObject({ number: '2512612', amount: 15000, emitter: 'M OU MME JEAN DUPONT', bank: 'LCL', date: '2026-09-05' });
+  });
+
+  it("n'accepte jamais le club comme émetteur, et laisse vide ce qui n'a pas été lu", async () => {
+    const ai = aiWith({ titulaire: 'Nozay Badminton Association', beneficiaire: 'Nozay Badminton', date_emission: 'le' });
+    const out = await analyzeCheckImage({} as any, ai, image, today);
+    expect(out).toMatchObject({ number: '', amount: 0, emitter: '', date: null, memberId: null });
+    // Sans émetteur, pas de recherche d'adhérent : rien à comparer.
+    expect(repo.getAllMembers).not.toHaveBeenCalled();
+  });
+
+  it("propose l'adhérent dont le nom figure dans le titulaire", async () => {
+    repo.getAllMembers.mockResolvedValue([
+      { id: 7, lastName: 'DUPONT', firstName: 'Jean', parent1Name: null, parent2Name: null }
+    ]);
+    const ai = aiWith({ titulaire: 'M OU MME Jean DUPONT', beneficiaire: 'NBA' });
+    const out = await analyzeCheckImage({} as any, ai, image, today);
+    expect(out.memberId).toBe(7);
+    expect(out.memberName).toBe('DUPONT Jean');
+  });
+
+  it('lit aussi une réponse rendue en texte JSON', async () => {
+    const ai = { run: vi.fn().mockResolvedValue({ response: '{"numero_cheque":"0012345","montant_chiffres":"42,50"}' }) };
+    const out = await analyzeCheckImage({} as any, ai, image, today);
+    expect(out.number).toBe('0012345');
+    expect(out.amount).toBe(4250);
+  });
+
+  it('signale un modèle qui ne répond pas, plutôt que de rendre un formulaire vide en silence', async () => {
+    const ai = { run: vi.fn().mockRejectedValue(new Error('timeout')) };
+    await expect(analyzeCheckImage({} as any, ai, image, today)).rejects.toMatchObject({ status: 502 });
   });
 });

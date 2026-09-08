@@ -15,7 +15,9 @@ Une remise passe elle aussi par trois états : *à déposer* (le bordereau est p
 
 Depuis **Gestion des chèques**, le bouton **Enregistrer un chèque** ouvre un formulaire en deux parties.
 
-**Scanner** — prenez le chèque en photo. L'analyse remplit le numéro, le montant, l'émetteur, la banque et la date d'émission, et propose l'adhérent dont le nom correspond à celui de l'émetteur ou d'un représentant légal. Relisez toujours les champs remplis ainsi.
+**Scanner** — prenez le chèque en photo. L'analyse remplit le numéro, le montant, l'émetteur, la banque et la date d'émission, et propose l'adhérent dont le nom correspond à celui de l'émetteur ou d'un représentant légal. Relisez toujours les champs remplis ainsi ; le message qui suit la lecture nomme les champs restés vides, à compléter à la main.
+
+Pour une bonne lecture : le chèque entier dans le cadre, à plat, bien éclairé et sans reflet, la ligne de chiffres du bas bien visible — c'est là que se lit le numéro. Le montant retenu est celui écrit en lettres, qui fait foi ; la case en chiffres ne sert qu'à défaut. L'émetteur est le titulaire du compte imprimé en bas à gauche, jamais le nom du club écrit à la main. La photo est réduite avant l'envoi, inutile de la retoucher.
 
 **Saisir manuellement** — les mêmes champs, à renseigner vous-même :
 
