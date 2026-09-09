@@ -25,6 +25,8 @@ import { listIndivSessionsRoute } from './indiv/list-indiv-sessions/route';
 import { createIndivSessionRoute } from './indiv/create-indiv-session/route';
 import { generateIndivSessionsRoute } from './indiv/generate-indiv-sessions/route';
 import { updateIndivSessionRoute } from './indiv/update-indiv-session/route';
+import { requestIndivRoute } from './indiv/request-indiv/route';
+import { withdrawIndivRoute } from './indiv/withdraw-indiv/route';
 
 export type Bindings = { DB: D1Database };
 
@@ -60,6 +62,8 @@ schedulesRouter.route('/', updateOpenPlaySessionRoute);
 schedulesRouter.route('/', listIndivSessionsRoute);
 schedulesRouter.route('/', createIndivSessionRoute);
 schedulesRouter.route('/', generateIndivSessionsRoute);
+schedulesRouter.route('/', requestIndivRoute);
+schedulesRouter.route('/', withdrawIndivRoute);
 schedulesRouter.route('/', updateIndivSessionRoute);
 
 schedulesRouter.route('/', updateScheduleSlotRoute);

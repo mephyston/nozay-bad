@@ -21,3 +21,6 @@ export { default as OpenPlayOpenersCard } from '../open-play/list-open-play-open
 
 /** « Qui vient ? » : la liste des inscrits d'une séance, dépliée à la demande. */
 export { default as OpenPlayAttendees } from '../open-play/list-open-play-attendees/ui/OpenPlayAttendees.svelte';
+
+/** Îlot de candidature à une soirée d'indiv, posé par l'espace adhérent. */
+export { default as IndivRequest } from '../indiv/request-indiv/ui/IndivRequest.svelte';

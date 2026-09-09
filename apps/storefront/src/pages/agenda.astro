@@ -4,10 +4,12 @@ import Header from '../components/Header.astro';
 import MobileNav from '../components/MobileNav.svelte';
 import EventRow from '../components/EventRow.astro';
 import OpenPlayRow from '../components/OpenPlayRow.astro';
+import IndivCard from '../components/IndivCard.astro';
 import { EventSignup } from '@nba/events-ui';
 import { OpenPlaySignup, OpenPlayOpenerButton, OpenPlayAttendees } from '@nba/schedules-ui';
 import { resolveEnv } from '../lib/request-context';
 import { fetchOpenPlaySessions, OPEN_PLAY_HORIZON_DAYS } from '../lib/open-play';
+import { fetchNextIndivSession } from '../lib/indiv';
 import { env } from 'cloudflare:workers';
 import { createApiClient } from '@nba/api-client';
 import { getActiveMemberStatus } from '../lib/member-status';
@@ -55,9 +57,58 @@ if (Astro.request.method === 'POST') {
       sessionId?: number;
       guests?: number;
       commitToOpen?: boolean;
+      indivId?: number;
+      preferredSlot?: number | null;
+      note?: string | null;
     };
 
     const api = createApiClient(env);
+
+    /*
+     * Candidature à une soirée d'indiv, depuis l'accueil comme d'ici.
+     *
+     * Même garde que le reste de la page : l'identité vient de la session. Le groupe
+     * d'adhésion, lui, vient de la fiche lue à l'instant — c'est lui qui ouvre la porte,
+     * et le handler de l'API le revérifie de son côté.
+     */
+    if (body.indivId !== undefined) {
+      const indivId = Number(body.indivId);
+      if (!Number.isSafeInteger(indivId) || indivId < 1) {
+        return new Response(JSON.stringify({ success: false, error: 'Séance inconnue.' }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+      const base = `http://localhost/schedules/indiv/${indivId}`;
+
+      if (body.action === 'request') {
+        const memberStatus = await getActiveMemberStatus(env, postSession);
+        const preferredSlot = Number(body.preferredSlot);
+        return api.fetch(`${base}/requests`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            memberId: postSession.activeMemberId,
+            licence: normalizeLicence(member.licence) ?? member.licence,
+            firstName: member.firstName,
+            lastName: member.lastName,
+            email: postSession.email,
+            memberGroup: memberStatus.membershipType ?? '',
+            preferredSlot: Number.isSafeInteger(preferredSlot) && preferredSlot > 0 ? preferredSlot : null,
+            note: typeof body.note === 'string' ? body.note.slice(0, 200) : null
+          })
+        });
+      }
+
+      if (body.action === 'withdraw') {
+        return api.fetch(`${base}/requests?memberId=${postSession.activeMemberId}`, { method: 'DELETE' });
+      }
+
+      return new Response(JSON.stringify({ success: false, error: 'Action inconnue.' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
 
     /*
      * Actions des séances de jeu libre, qui partagent désormais cette page.
@@ -181,10 +232,11 @@ const active = session?.members.find((m) => m.id === session.activeMemberId);
  * catégorie « interclubs » : c'est le même rendez-vous, il n'a pas à s'afficher deux
  * fois de deux façons.
  */
-const runtimeEnv = resolveEnv<{ OPEN_PLAY_ENABLED?: string }>(Astro.locals);
+const runtimeEnv = resolveEnv<{ OPEN_PLAY_ENABLED?: string; INDIV_ENABLED?: string }>(Astro.locals);
 const openPlayEnabled = runtimeEnv.OPEN_PLAY_ENABLED === 'true';
+const indivEnabled = runtimeEnv.INDIV_ENABLED === 'true';
 
-const [events, myFixtures, annonces, openPlay] = await Promise.all([
+const [events, myFixtures, annonces, openPlay, indiv] = await Promise.all([
   fetchUpcomingEvents(env, 50, session?.activeMemberId),
   fetchMyFixtures(env, status.seasonCode ?? null, normalizeLicence(active?.licence)),
   fetchAnnouncements(env, ANNOUNCEMENT_LOOKUP_LIMIT),
@@ -196,7 +248,11 @@ const [events, myFixtures, annonces, openPlay] = await Promise.all([
         licence: normalizeLicence(active?.licence) ?? undefined,
         withinDays: OPEN_PLAY_HORIZON_DAYS
       })
-    : Promise.resolve({ sessions: [], canOpen: false })
+    : Promise.resolve({ sessions: [], canOpen: false }),
+  // Une seule soirée d'indiv, en tête de frise, pour les groupes compétiteurs seulement.
+  indivEnabled
+    ? fetchNextIndivSession(env, { memberId: session?.activeMemberId, group: status.membershipType })
+    : Promise.resolve({ session: null, eligible: false })
 ]);
 
 /*
@@ -280,6 +336,12 @@ const today = new Date().toISOString().slice(0, 10);
             </a>
           ))}
         </nav>
+      )}
+
+      {indiv.eligible && indiv.session && view === 'tout' && (
+        <div class="mb-4">
+          <IndivCard session={indiv.session} endpoint="/agenda" />
+        </div>
       )}
 
       {rows.length === 0 ? (

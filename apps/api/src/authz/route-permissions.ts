@@ -311,6 +311,9 @@ export const ROUTE_PERMISSIONS: RouteRule[] = [
   { method: 'POST', path: '/schedules/indiv', permission: 'schedules:indiv:write' },
   { method: 'POST', path: '/schedules/indiv/generate', permission: 'schedules:indiv:write' },
   { method: 'PUT', path: '/schedules/indiv/:id', permission: 'schedules:indiv:write' },
+  // Candidater et se retirer : le storefront force l'identité depuis la session.
+  { method: 'POST', path: '/schedules/indiv/:id/requests', permission: 'schedules:indiv:read', service: true },
+  { method: 'DELETE', path: '/schedules/indiv/:id/requests', permission: 'schedules:indiv:read', service: true },
 
   // Agenda. Remplace l'iframe Google Calendar : chaque événement devient indexable.
   { method: 'GET', path: '/events', permission: 'events:events:read', service: true },

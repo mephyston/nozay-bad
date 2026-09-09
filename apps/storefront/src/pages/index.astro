@@ -5,6 +5,7 @@ import MobileNav from '../components/MobileNav.svelte';
 import PushOptIn from '../components/PushOptIn.svelte';
 import PostSummaryCard from '../components/PostSummaryCard.astro';
 import AgendaCard from '../components/AgendaCard.astro';
+import IndivCard from '../components/IndivCard.astro';
 import NextFixtureCard from '../components/NextFixtureCard.astro';
 import BirthdayCard from '../components/BirthdayCard.astro';
 import { env } from 'cloudflare:workers';
@@ -13,6 +14,7 @@ import { fetchPosts, fetchAnnouncements, ANNOUNCEMENT_LOOKUP_LIMIT, postAnchor }
 import { announcementsByEvent } from '@nba/cms/public';
 import { fetchUpcomingEvents } from '../lib/agenda';
 import { fetchOpenPlaySessions, OPEN_PLAY_HORIZON_DAYS } from '../lib/open-play';
+import { fetchNextIndivSession } from '../lib/indiv';
 import { resolveEnv } from '../lib/request-context';
 import { fetchTodayBirthdays } from '../lib/birthdays';
 import { fetchMyFixtures, normalizeLicence } from '../lib/my-fixtures';
@@ -37,14 +39,14 @@ const status = await getActiveMemberStatus(env, session);
 // la prochaine — l'agenda porte les suivantes.
 const licence = normalizeLicence(active?.licence);
 
-const runtimeEnv = resolveEnv<{ OPEN_PLAY_ENABLED?: string }>(Astro.locals);
+const runtimeEnv = resolveEnv<{ OPEN_PLAY_ENABLED?: string; INDIV_ENABLED?: string }>(Astro.locals);
 
 /*
  * Deux lectures d'actualités, et non plus une : trois articles à afficher, et l'index des
  * annonces. La lecture unique de cinquante articles complets servait surtout à en jeter
  * quarante-sept.
  */
-const [{ posts: latestPosts }, annonces, events, birthdays, fixtures, openPlay] = await Promise.all([
+const [{ posts: latestPosts }, annonces, events, birthdays, fixtures, openPlay, indiv] = await Promise.all([
   fetchPosts(env, 3),
   fetchAnnouncements(env, ANNOUNCEMENT_LOOKUP_LIMIT),
   fetchUpcomingEvents(env, 1, session?.activeMemberId),
@@ -56,7 +58,12 @@ const [{ posts: latestPosts }, annonces, events, birthdays, fixtures, openPlay] 
         licence: licence ?? undefined,
         withinDays: OPEN_PLAY_HORIZON_DAYS
       })
-    : Promise.resolve({ sessions: [], canOpen: false })
+    : Promise.resolve({ sessions: [], canOpen: false }),
+  // La prochaine soirée d'indiv, une seule, et seulement pour un groupe compétiteur :
+  // l'API répond `eligible` d'après le type d'adhésion lu à l'instant.
+  runtimeEnv.INDIV_ENABLED === 'true'
+    ? fetchNextIndivSession(env, { memberId: session?.activeMemberId, group: status.membershipType })
+    : Promise.resolve({ session: null, eligible: false })
 ]);
 
 /*
@@ -121,6 +128,16 @@ const nextSession = sessionComesFirst ? firstSession : null;
       <div class="mb-6 empty:mb-0">
         <NextFixtureCard fixture={fixtures[0] ?? null} />
       </div>
+
+      <!--
+        Avant l'agenda, après les interclubs : la séance d'indiv est la mienne, et elle
+        se demande — l'agenda, lui, s'annonce.
+      -->
+      {indiv.eligible && indiv.session && (
+        <div class="mb-6">
+          <IndivCard session={indiv.session} endpoint="/agenda" />
+        </div>
+      )}
 
       <div class="mb-6 empty:mb-0">
         <AgendaCard
