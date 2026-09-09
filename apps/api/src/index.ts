@@ -12,6 +12,7 @@ import { teamsRouter } from '@nba/teams-api';
 import { dashboardRouter } from './dashboard';
 import { handleScheduled, type ScheduledBindings } from './scheduled';
 import { notificationsSendRouter } from './notifications';
+import { indivRouter } from './indiv';
 import { openPlayFeatureFlag } from './open-play';
 import { indivFeatureFlag } from './feature-flags';
 import { invalidatePublicContent } from './content-version';
@@ -111,6 +112,8 @@ app.route('/iam', iamRouter);
 app.route('/notifications', notificationsRouter);
 app.route('/notifications', notificationsSendRouter);
 app.route('/cms', cmsRouter);
+// L'annonce des indiv, composée avec les notifications, avant le routeur du domaine.
+app.route('/schedules', indivRouter);
 app.route('/schedules', schedulesRouter);
 app.route('/events', eventsRouter);
 app.route('/teams', teamsRouter);

@@ -40,6 +40,11 @@ export const NOTIFICATION_CATEGORIES = [
     description: 'Créneaux de jeu libre qui cherchent un bénévole pour ouvrir.'
   },
   {
+    id: 'indiv',
+    label: 'Séances individuelles',
+    description: "Réponse de l'entraîneur à vos candidatures aux séances individuelles."
+  },
+  {
     id: 'interclubs',
     label: 'Mes équipes interclubs',
     description: 'Convocations, rappels de composition et anomalies de valeur de vos équipes.'

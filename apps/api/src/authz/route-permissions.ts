@@ -317,6 +317,8 @@ export const ROUTE_PERMISSIONS: RouteRule[] = [
   // La liste nominative des candidats est l'outil même du choix : lecture, sans `service`.
   { method: 'GET', path: '/schedules/indiv/:id/candidates', permission: 'schedules:indiv:read' },
   { method: 'PUT', path: '/schedules/indiv/:id/selection', permission: 'schedules:indiv:write' },
+  // Composite d'apps/api : annonce + notifications aux retenus et non retenus.
+  { method: 'POST', path: '/schedules/indiv/:id/announce', permission: 'schedules:indiv:write' },
 
   // Agenda. Remplace l'iframe Google Calendar : chaque événement devient indexable.
   { method: 'GET', path: '/events', permission: 'events:events:read', service: true },
