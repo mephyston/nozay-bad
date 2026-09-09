@@ -72,6 +72,13 @@ export interface OrderConfirmation {
   totalCents: number;
   /** Valeur brute (`especes`, `virement`, …), traduite à l'affichage. */
   paymentMethod: string;
+  /**
+   * Motif à recopier dans le libellé du virement, ex. « Cordage Yonex BG65 Jean Dupont ».
+   *
+   * Nom complet, et non le nom masqué affiché à l'écran : c'est le trésorier qui le
+   * lit sur le relevé, et « D. Jean » ne lui dit pas qui a payé.
+   */
+  transferReference: string;
 }
 
 /** Modes de paiement qui laissent de l'argent à remettre en main propre. */

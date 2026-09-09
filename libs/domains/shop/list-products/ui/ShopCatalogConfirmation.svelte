@@ -118,11 +118,20 @@
               <Amount cents={confirmation.totalCents} class="font-bold" />
               sur le compte du club.
             </p>
+            <!--
+              Le libellé est la seule trace de l'achat sur le relevé : sans lui, le
+              trésorier rapproche à l'aveugle. On le propose tout fait, prêt à copier.
+            -->
+            <p data-testid="bank-transfer-reference-hint">
+              Merci d'indiquer le motif de l'achat en référence du virement (article, nom et
+              prénom) : le trésorier retrouve ainsi votre paiement sur le relevé.
+            </p>
             <dl class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-xs">
               {#each [
                 { field: 'holder', label: 'Titulaire', value: CLUB_BANK_DETAILS.holder, mono: false },
                 { field: 'iban', label: 'IBAN', value: CLUB_BANK_DETAILS.iban, mono: true },
-                { field: 'bic', label: 'BIC', value: CLUB_BANK_DETAILS.bic, mono: true }
+                { field: 'bic', label: 'BIC', value: CLUB_BANK_DETAILS.bic, mono: true },
+                { field: 'reference', label: 'Motif', value: confirmation.transferReference, mono: false }
               ] as item (item.field)}
                 <dt class="self-center text-muted-foreground">{item.label}</dt>
                 <dd class="flex min-w-0 items-center gap-1.5">

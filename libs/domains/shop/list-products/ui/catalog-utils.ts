@@ -32,6 +32,21 @@ export function requiresCashHandover(paymentMethod: string): boolean {
   return CASH_PAYMENT_METHODS.includes(paymentMethod);
 }
 
+/**
+ * Motif suggéré pour le libellé d'un virement : l'article puis le nom complet.
+ *
+ * Un virement arrive sur le relevé sans autre indice que son libellé ; quand il est
+ * vide ou vaut « virement », le trésorier doit deviner à qui et à quoi l'attribuer.
+ * Le nom n'est pas masqué ici, contrairement à l'affichage : le libellé est destiné au
+ * relevé du club, pas à l'écran.
+ */
+export function transferReference(productName: string, member: Member | null): string {
+  return [productName, member?.firstName, member?.lastName]
+    .map((part) => part?.trim() ?? '')
+    .filter(Boolean)
+    .join(' ');
+}
+
 /** Le paiement se fait-il par virement, auquel cas il faut donner les coordonnées du club ? */
 export function requiresBankTransfer(paymentMethod: string): boolean {
   return paymentMethod === 'virement';

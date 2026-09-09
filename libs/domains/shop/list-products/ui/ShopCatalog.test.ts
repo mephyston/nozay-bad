@@ -345,6 +345,38 @@ describe('ShopCatalog Component', () => {
       });
     });
 
+    it("suggère un motif de virement : l'article puis le nom complet de l'adhérent", async () => {
+      const target = document.createElement('div');
+      document.body.appendChild(target);
+
+      await mountOrderable(target);
+
+      const dialog = await submit(target);
+      expect(dialog.querySelector('[data-testid="bank-transfer-reference-hint"]')?.textContent).toContain(
+        'motif de l\'achat en référence du virement'
+      );
+      // Nom complet, pas le nom masqué de l'écran : c'est le trésorier qui le lit sur le relevé.
+      expect(dialog.textContent).toContain('Volant RSL Grade 1 Jean Dupont');
+    });
+
+    it("copie le motif suggéré d'un clic, pour le coller dans le libellé du virement", async () => {
+      const writeText = vi.fn().mockResolvedValue(undefined);
+      Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+
+      const target = document.createElement('div');
+      document.body.appendChild(target);
+
+      await mountOrderable(target);
+      const dialog = await submit(target);
+
+      const copyReference = dialog.querySelector('button[aria-label="Copier : Motif"]') as HTMLButtonElement;
+      expect(copyReference).not.toBeNull();
+      copyReference.click();
+      await vi.waitFor(() => {
+        expect(writeText).toHaveBeenCalledWith('Volant RSL Grade 1 Jean Dupont');
+      });
+    });
+
     it("ne donne l'IBAN que pour un virement", async () => {
       const target = document.createElement('div');
       document.body.appendChild(target);
@@ -355,6 +387,7 @@ describe('ShopCatalog Component', () => {
 
       const dialog = await submit(target);
       expect(dialog.textContent).not.toContain('FR76');
+      expect(dialog.querySelector('[data-testid="bank-transfer-reference-hint"]')).toBeNull();
     });
 
     it("ne parle d'espèces que pour un paiement en espèces", async () => {

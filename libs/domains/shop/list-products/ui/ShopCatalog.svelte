@@ -5,7 +5,7 @@
   import { Card, Button, Alert } from '@nba/ui';
   import type { Member, OrderConfirmation, Product } from './catalog-types';
   import { isOutOfStock, maxOrderableQuantity, STOREFRONT_PAYMENT_METHODS } from './catalog-types';
-  import { formatMemberName } from './catalog-utils';
+  import { formatMemberName, transferReference } from './catalog-utils';
   import { handleMemberKeyDown, submitOrder } from './catalog-order-action';
   import ShopCatalogMemberSelect from './ShopCatalogMemberSelect.svelte';
   import ShopCatalogProductSelect from './ShopCatalogProductSelect.svelte';
@@ -175,7 +175,8 @@
       productName: selectedProduct?.name ?? '',
       quantity: selectedQuantity,
       totalCents: totalPriceCents,
-      paymentMethod: selectedPaymentMethod
+      paymentMethod: selectedPaymentMethod,
+      transferReference: transferReference(selectedProduct?.name ?? '', selectedMember)
     };
     const res = await submitOrder({ selectedMemberId, selectedProduct, selectedQuantity, selectedPaymentMethod, activeSeasonId });
     submitting = false;
