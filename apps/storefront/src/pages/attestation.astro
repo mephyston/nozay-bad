@@ -5,31 +5,51 @@ import MobileNav from '../components/MobileNav.svelte';
 import { env } from 'cloudflare:workers';
 import { getSessionMembersStatus } from '../lib/member-status';
 
-const session = Astro.locals.session;
+/*
+  L'attestation CSE, affichée d'emblée.
 
-// Écran de portée FOYER : on liste tous les profils de la session, chacun avec son
-// attestation. Un parent qui gère les licences de ses enfants les récupère d'une traite,
-// là où l'écran mono-profil l'obligeait à basculer de profil entre chaque — un aller-
-// retour par enfant, pour un document qu'on télécharge une fois l'an.
-//
-// Aucun effet de bord : le profil actif ne change pas, et /api/attestation.pdf revalide
-// que l'id demandé appartient bien à la session.
+  Il fallait d'abord cliquer « Ouvrir » : sur mobile vers une page d'aperçu, sur bureau
+  vers un nouvel onglet — un clic de trop pour un document qu'on vient précisément
+  regarder. Le PDF est désormais incorporé ici même, par `<iframe>` — pas `<object>`, que
+  la CSP interdit (`object-src 'none'`). Là où l'appareil ne l'affiche pas en ligne, le
+  cadre reste vide mais la page demeure un écran normal, et Télécharger est juste
+  au-dessus.
+
+  Écran de portée FOYER : un parent qui gère les licences de ses enfants passe de l'un à
+  l'autre par les onglets (`?memberId=`), sans changer de profil actif — un aller-retour
+  par enfant, pour un document qu'on télécharge une fois l'an. Aucun effet de bord : le
+  profil actif ne change pas, l'id demandé doit appartenir au foyer de la session, et
+  /api/attestation.pdf le revalide de son côté, règlement compris.
+*/
+const session = Astro.locals.session;
 const members = await getSessionMembersStatus(env, session);
 const solo = members.length <= 1;
+
+const requested = Number(Astro.url.searchParams.get('memberId'));
+const selected =
+  members.find((m) => m.id === requested) ?? members.find((m) => m.isActive) ?? members[0];
 
 // Un premier règlement suffit : l'attestation dit alors le montant réglé à ce jour, et
 // le comité d'entreprise rembourse sur cette base. L'API applique la même règle.
 const attestable = (m: { paid: boolean; partiallyPaid: boolean }) => m.paid || m.partiallyPaid;
 const statusLabel = (m: { paid: boolean; partiallyPaid: boolean }) =>
   m.paid ? 'Cotisation réglée' : m.partiallyPaid ? 'Cotisation réglée en partie' : 'Cotisation en attente de règlement';
+
+const pdfHref = selected ? `/api/attestation.pdf?memberId=${selected.id}` : '';
+const showPdf = Boolean(selected && attestable(selected));
 ---
 
 <Layout title="Attestation CSE - Nozay Bad">
   <Header currentPath="/attestation" />
 
-  <main class="flex-1 p-6 w-full pb-24 md:pb-6">
-    <div class="max-w-2xl mx-auto">
-      <div class="mb-6">
+  <!-- Sur mobile, la page est verrouillée à la hauteur de l'écran et seul le cadre du PDF
+       défile (style global en bas de page) : un document à peine plus haut que l'écran
+       fait rebondir toute la page au moindre glissement, et pendant ce rebond iOS déplace
+       aussi l'en-tête et la barre du bas, qui semblent décrochés. Sur bureau, la page
+       défile normalement et le cadre a une hauteur fixe. -->
+  <main class="flex-1 min-h-0 flex flex-col p-3 sm:p-6 w-full pb-[calc(3.5rem+env(safe-area-inset-bottom,0px)+0.75rem)] md:pb-6">
+    <div class="max-w-2xl mx-auto w-full flex-1 min-h-0 flex flex-col gap-3">
+      <div>
         <h1 class="text-xl font-bold text-foreground">Attestation CSE</h1>
         <p class="text-sm text-muted-foreground mt-1">
           {solo
@@ -38,85 +58,124 @@ const statusLabel = (m: { paid: boolean; partiallyPaid: boolean }) =>
         </p>
       </div>
 
-      <div class="space-y-3">
-        {members.map((m) => (
-          <div class="rounded-xl border border-border bg-card p-4">
-            <div class="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <p class="text-sm font-semibold text-foreground">{m.firstName} {m.lastName}</p>
-                <p class="text-xs text-muted-foreground mt-0.5">
-                  {statusLabel(m)}
-                </p>
-              </div>
+      <!-- Un onglet par profil du foyer ; le lien reste dans la même fenêtre, ce qui
+           convient aussi à l'application installée. -->
+      {!solo && (
+        <nav aria-label="Adhérent" class="flex flex-wrap gap-2">
+          {members.map((m) => (
+            <a
+              href={`/attestation?memberId=${m.id}`}
+              aria-current={selected && m.id === selected.id ? 'page' : undefined}
+              class:list={[
+                'inline-flex items-center rounded-full border px-3 py-1.5 text-sm font-semibold no-underline min-h-[36px]',
+                selected && m.id === selected.id
+                  ? 'border-primary bg-primary text-primary-foreground'
+                  : 'border-border bg-background text-foreground hover:bg-accent'
+              ]}
+            >
+              {m.firstName} {m.lastName}
+            </a>
+          ))}
+        </nav>
+      )}
 
-              {attestable(m) && (
-                <div class="flex gap-2">
-                  <a
-                    href={`/api/attestation.pdf?memberId=${m.id}`}
-                    target="_blank"
-                    rel="noopener"
-                    data-document
-                    class="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 min-h-[44px]"
-                  >
-                    Ouvrir
-                  </a>
-                  <a
-                    href={`/api/attestation.pdf?memberId=${m.id}`}
-                    download
-                    class="inline-flex items-center justify-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-sm font-semibold text-foreground hover:bg-accent min-h-[44px]"
-                  >
-                    Télécharger
-                  </a>
-                </div>
-              )}
+      {selected && (
+        <div class="rounded-xl border border-border bg-card p-4">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <div class="min-w-0">
+              <p class="text-sm font-semibold text-foreground truncate">{selected.firstName} {selected.lastName}</p>
+              <p class="text-xs text-muted-foreground mt-0.5">{statusLabel(selected)}</p>
             </div>
 
-            {!attestable(m) && (
-              <p class="text-sm text-muted-foreground mt-3">
-                L'attestation sera consultable ici dès qu'un premier règlement aura été
-                enregistré par le trésorier.
-              </p>
+            {showPdf && (
+              <div class="flex flex-wrap gap-2">
+                <a
+                  href={pdfHref}
+                  download
+                  class="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 min-h-[44px] no-underline"
+                >
+                  Télécharger
+                </a>
+                <!-- Ne s'affiche que si l'appareil sait partager un fichier (feuille de
+                     partage iOS / Android) : c'est le geste naturel pour l'envoyer au CSE. -->
+                <button
+                  type="button"
+                  id="share-attestation"
+                  hidden
+                  data-href={pdfHref}
+                  data-filename={`Attestation CSE ${selected.lastName} ${selected.firstName}.pdf`}
+                  class="inline-flex items-center justify-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-sm font-semibold text-foreground hover:bg-accent min-h-[44px]"
+                >
+                  Partager…
+                </button>
+              </div>
             )}
           </div>
-        ))}
-      </div>
 
-      {/* L'aperçu intégré n'a de sens que sur un seul document : au-delà, la liste
-          ci-dessus reste le point d'entrée et l'aperçu s'ouvre dans un onglet. */}
-      {solo && members[0] && attestable(members[0]) && (
-        <div class="hidden md:block rounded-xl border border-border overflow-hidden bg-card mt-4">
-          <iframe
-            src={`/api/attestation.pdf?memberId=${members[0].id}`}
-            title="Attestation CSE"
-            class="w-full h-[75vh]"
-          ></iframe>
+          {!showPdf && (
+            <p class="text-sm text-muted-foreground mt-3">
+              L'attestation sera consultable ici dès qu'un premier règlement aura été
+              enregistré par le trésorier.
+            </p>
+          )}
         </div>
+      )}
+
+      {showPdf && (
+        <>
+          <!-- Le cadre porte le défilement, pas le document : iOS dimensionne un iframe à
+               son contenu, d'où l'enveloppe défilante autour. -->
+          <div class="flex-1 min-h-0 overflow-auto rounded-xl border border-border bg-card [-webkit-overflow-scrolling:touch] md:flex-none md:h-[75vh]">
+            <iframe src={pdfHref} title="Attestation CSE" class="block h-full w-full"></iframe>
+          </div>
+          <p class="text-xs text-muted-foreground">
+            Si l'aperçu reste vide sur cet appareil, utilisez « Télécharger ».
+          </p>
+        </>
       )}
     </div>
   </main>
 
   <MobileNav currentPath="/attestation" />
 
-  <!-- Sur mobile, « Ouvrir » ne doit pas ouvrir le PDF lui-même : en application
-       installée, une nouvelle fenêtre n'aurait ni onglets ni historique, et le document
-       dans la fenêtre courante n'a ni en-tête, ni barre du bas, ni croix — sur iPhone,
-       seul le geste de retour en sort, ce que tout le monde ne connaît pas. Il mène donc
-       à notre page d'aperçu (/attestation/apercu), qui encadre le document de la
-       navigation habituelle et d'un bouton Retour. Vaut pour tout écran mobile (le seuil
-       est celui de la barre du bas), navigateur compris, et pour toute application
-       installée quelle que soit sa taille. Sur bureau, le nouvel onglet reste préférable :
-       la page reste sous la main. Même détection que le splash (PwaSplash.astro). -->
-  <script is:inline>
-    if (
-      window.matchMedia('(max-width: 767px)').matches ||
-      window.matchMedia('(display-mode: standalone)').matches ||
-      window.navigator.standalone === true
-    ) {
-      document.querySelectorAll('a[data-document]').forEach((a) => {
-        a.removeAttribute('target');
-        a.setAttribute('href', a.getAttribute('href').replace('/api/attestation.pdf', '/attestation/apercu'));
-      });
+  <style is:global>
+    /* Mobile seulement : hauteur de l'écran, sans défilement du document ni rebond
+       élastique. `dvh` suit la barre d'adresse de Safari ; `overscroll-behavior` coupe le
+       rebond sur iOS 16+. Sur bureau, la page garde son défilement et son pied de page. */
+    @media (max-width: 767px) {
+      html,
+      body {
+        height: 100dvh;
+        overflow: hidden;
+        overscroll-behavior: none;
+      }
     }
+  </style>
+
+  <!-- Partage natif : le fichier est récupéré à l'avance, parce que Safari n'accepte
+       navigator.share() que dans le geste de l'utilisateur, sans attendre un réseau. -->
+  <script is:inline>
+    (function () {
+      var button = document.getElementById('share-attestation');
+      if (!button || !navigator.share || !navigator.canShare) return;
+      var probe = new File([''], 'x.pdf', { type: 'application/pdf' });
+      if (!navigator.canShare({ files: [probe] })) return;
+
+      var file = null;
+      fetch(button.dataset.href)
+        .then(function (res) { return res.ok ? res.blob() : null; })
+        .then(function (blob) {
+          if (!blob) return;
+          file = new File([blob], button.dataset.filename, { type: 'application/pdf' });
+          button.hidden = false;
+        })
+        .catch(function () {});
+
+      button.addEventListener('click', function () {
+        if (!file) return;
+        navigator.share({ files: [file], title: 'Attestation CSE' }).catch(function () {});
+      });
+    })();
   </script>
 
   <footer class="hidden md:block border-t border-border mt-12 py-8 bg-card/20 text-center text-xs text-muted-foreground md:pb-8">
