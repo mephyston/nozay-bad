@@ -100,3 +100,25 @@ export async function cancelOrder(orderId: number): Promise<OrderActionResult> {
     flash: 'Commande annulée.'
   });
 }
+
+/**
+ * Payée → en attente de paiement. Retire la recette du grand livre.
+ *
+ * Le cas d'usage est l'erreur de ligne : on a encaissé la commande du voisin. Avant,
+ * aucun retour n'existait, et supprimer la recette à la main laissait la commande
+ * « payée » avec une écriture fantôme.
+ */
+export async function unpayOrder(orderId: number): Promise<OrderActionResult> {
+  if (
+    !(await uiConfirm(
+      "Annuler l'encaissement de cette commande ? La recette sera retirée du grand livre et la commande repassera en attente de paiement."
+    ))
+  ) {
+    return { success: false };
+  }
+
+  return postOrderAction('unpay', orderId, {
+    error: "Erreur lors de l'annulation de l'encaissement",
+    flash: 'Encaissement annulé : la commande est de nouveau en attente de paiement.'
+  });
+}

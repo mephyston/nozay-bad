@@ -347,6 +347,33 @@ describe('OrdersManager Component', () => {
     expect(target.innerHTML).not.toContain('Renard');
   });
 
+  it("annule l'encaissement d'une commande payée depuis l'historique, après confirmation", async () => {
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+
+    mount(OrdersManager, {
+      target,
+      props: { seasons, orders, seasonId: '25-26', activeTab: 'history' }
+    });
+    flushSync();
+
+    // Seule la commande payée porte un menu : refusée et annulée sont des issues fermées.
+    expect(target.querySelectorAll('button[aria-haspopup="true"]').length).toBe(1);
+
+    openActions(target);
+    actionButton(target, "Annuler l'encaissement").click();
+    flushSync();
+
+    const { uiConfirm } = await import('@nba/ui');
+    await new Promise(resolve => setTimeout(resolve, 0));
+    expect(uiConfirm).toHaveBeenCalledWith(expect.stringContaining("retirée du grand livre"));
+    expect(globalThis.fetch).toHaveBeenCalledWith('/admin/api/shop/orders', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'unpay', id: 2 })
+    });
+  });
+
   it('triggers the validate transition when Valider is clicked', async () => {
     const target = document.createElement('div');
     document.body.appendChild(target);

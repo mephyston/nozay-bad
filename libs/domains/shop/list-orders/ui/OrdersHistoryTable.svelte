@@ -1,22 +1,34 @@
 <script lang="ts">
-  import { SearchableCombobox, Badge, Amount, DataTable, DataTableToolbar, Table, FormField, Card } from '@nba/ui';
-  import { Check, X, Ban, History } from "@lucide/svelte";
+  import { SearchableCombobox, Badge, Amount, DataTable, DataTableToolbar, Table, FormField, Card, Button, DropdownMenu } from '@nba/ui';
+  import { Check, X, Ban, History, MoreHorizontal, Undo2 } from "@lucide/svelte";
   
   import type { OrderItem, Season } from './orders-manager-types';
   import type { Snippet } from 'svelte';
   import { paymentMethodLabels } from './orders-manager-types';
 
+  /**
+   * Une seule action ici, et sur les seules commandes payées : annuler l'encaissement.
+   * Refusées et annulées sont des issues fermées, elles n'ont plus de menu.
+   */
   let { 
     historyOrders = [],
+    processingId = null,
+    isClosed = false,
     toolbarFilters,
     toolbarActions,
-    searchTerm = $bindable('')
+    searchTerm = $bindable(''),
+    onUnpay
   }: { 
     historyOrders?: OrderItem[];
+    processingId?: number | null;
+    isClosed?: boolean;
     toolbarFilters?: Snippet;
     toolbarActions?: Snippet;
     searchTerm?: string;
+    onUnpay?: (id: number) => void;
   } = $props();
+
+  const UNPAY_LABEL = "Annuler l'encaissement";
 </script>
 
 <DataTable
@@ -52,6 +64,7 @@
               <Table.Head>Paiement</Table.Head>
               <Table.Head class="text-right">Total</Table.Head>
               <Table.Head class="text-center">Statut</Table.Head>
+              <Table.Head class="w-12"><span class="sr-only">Actions</span></Table.Head>
             {/snippet}
 
             {#snippet row(item)}
@@ -112,6 +125,31 @@
                     </Badge>
                   {/if}
                 </Table.Cell>
+                <Table.Cell class="text-right relative">
+                  {#if item.order.status === 'paid' && onUnpay}
+                    <DropdownMenu.Root>
+                      <DropdownMenu.Trigger asChild>
+                        {#snippet child({ props })}
+                          <Button {...props} aria-haspopup="true" size="icon" variant="ghost">
+                            <MoreHorizontal class="h-4 w-4" />
+                            <span class="sr-only">Toggle menu</span>
+                          </Button>
+                        {/snippet}
+                      </DropdownMenu.Trigger>
+                      <DropdownMenu.Content align="end">
+                        <DropdownMenu.Label>Actions</DropdownMenu.Label>
+                        <DropdownMenu.Item
+                          onclick={() => onUnpay(item.order.id)}
+                          disabled={processingId !== null || isClosed}
+                          class="text-destructive focus:text-destructive font-semibold cursor-pointer"
+                        >
+                          <Undo2 class="w-3.5 h-3.5 mr-2" />
+                          {UNPAY_LABEL}
+                        </DropdownMenu.Item>
+                      </DropdownMenu.Content>
+                    </DropdownMenu.Root>
+                  {/if}
+                </Table.Cell>
               </Table.Row>
             {/snippet}
   {#snippet mobileView()}
@@ -170,6 +208,18 @@
               {/if}
             </div>
           </div>
+          {#if item.order.status === 'paid' && onUnpay}
+            <Button
+              variant="outline"
+              size="sm"
+              class="w-full gap-2 text-destructive"
+              disabled={processingId !== null || isClosed}
+              onclick={() => onUnpay(item.order.id)}
+            >
+              <Undo2 class="w-3.5 h-3.5" />
+              {UNPAY_LABEL}
+            </Button>
+          {/if}
         </Card.Content>
         </Card.Root>
       {/each}

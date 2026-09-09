@@ -178,6 +178,8 @@ export const ROUTE_PERMISSIONS: RouteRule[] = [
   { method: 'POST', path: '/shop/orders/:id/pay', permission: 'shop:orders:approve' },
   { method: 'POST', path: '/shop/orders/:id/reject', permission: 'shop:orders:approve' },
   { method: 'POST', path: '/shop/orders/:id/cancel', permission: 'shop:orders:approve' },
+  // Défaire un encaissement, c'est retirer une recette : le même droit que l'écrire.
+  { method: 'POST', path: '/shop/orders/:id/unpay', permission: 'shop:orders:approve' },
 
   // ── Notifications ──────────────────────────────────────────────────────────
   // Abonnement et préférences : gestes personnels d'un utilisateur sur son propre
