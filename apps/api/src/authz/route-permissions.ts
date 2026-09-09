@@ -305,6 +305,12 @@ export const ROUTE_PERMISSIONS: RouteRule[] = [
   { method: 'DELETE', path: '/schedules/open-play/openers/:id', permission: 'schedules:open-play:write' },
   { method: 'POST', path: '/schedules/open-play/:id/opener', permission: 'schedules:open-play:read', service: true },
   { method: 'DELETE', path: '/schedules/open-play/:id/opener', permission: 'schedules:open-play:read', service: true },
+  // Séances individuelles. La liste est ouverte au storefront, qui y lit la prochaine
+  // soirée au nom du profil actif ; l'entraîneur tient les soirées depuis l'admin.
+  { method: 'GET', path: '/schedules/indiv', permission: 'schedules:indiv:read', service: true },
+  { method: 'POST', path: '/schedules/indiv', permission: 'schedules:indiv:write' },
+  { method: 'POST', path: '/schedules/indiv/generate', permission: 'schedules:indiv:write' },
+  { method: 'PUT', path: '/schedules/indiv/:id', permission: 'schedules:indiv:write' },
 
   // Agenda. Remplace l'iframe Google Calendar : chaque événement devient indexable.
   { method: 'GET', path: '/events', permission: 'events:events:read', service: true },

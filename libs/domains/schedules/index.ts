@@ -21,6 +21,11 @@ import { deleteOpenPlayOpenerRoute } from './open-play/delete-open-play-opener/r
 import { claimOpenPlaySessionRoute } from './open-play/claim-open-play-session/route';
 import { releaseOpenPlaySessionRoute } from './open-play/release-open-play-session/route';
 
+import { listIndivSessionsRoute } from './indiv/list-indiv-sessions/route';
+import { createIndivSessionRoute } from './indiv/create-indiv-session/route';
+import { generateIndivSessionsRoute } from './indiv/generate-indiv-sessions/route';
+import { updateIndivSessionRoute } from './indiv/update-indiv-session/route';
+
 export type Bindings = { DB: D1Database };
 
 export const schedulesRouter = new Hono<{ Bindings: Bindings }>();
@@ -50,6 +55,13 @@ schedulesRouter.route('/', registerToOpenPlayRoute);
 schedulesRouter.route('/', unregisterFromOpenPlayRoute);
 schedulesRouter.route('/', updateOpenPlaySessionRoute);
 
+// Séances individuelles, avant les motifs à paramètre pour la même raison que le jeu
+// libre. `/indiv/generate` avant `/indiv/:id` : littéral d'abord.
+schedulesRouter.route('/', listIndivSessionsRoute);
+schedulesRouter.route('/', createIndivSessionRoute);
+schedulesRouter.route('/', generateIndivSessionsRoute);
+schedulesRouter.route('/', updateIndivSessionRoute);
+
 schedulesRouter.route('/', updateScheduleSlotRoute);
 schedulesRouter.route('/', deleteScheduleSlotRoute);
 
@@ -67,6 +79,12 @@ export {
 } from './shared/open-play';
 export { OPEN_PLAY_STATUS_LABELS } from './shared/open-play-schema';
 export type { OpenPlaySessionRow, OpenPlayStatus } from './shared/open-play-schema';
+
+export { listIndivSessions } from './indiv/list-indiv-sessions/handler';
+export type { IndivSessionListItem, ListIndivSessionsInput, MyIndivRequest } from './indiv/list-indiv-sessions/dto';
+export { INDIV_STATUS_LABELS } from './shared/indiv-schema';
+export type { IndivSessionRow, IndivRequestRow, IndivStatus } from './shared/indiv-schema';
+export * from './shared/indiv';
 
 export { listScheduleSlots } from './list-schedule-slots/handler';
 export { listVenues } from './list-venues/handler';
