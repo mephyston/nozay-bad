@@ -1561,6 +1561,10 @@
                 "type": "string"
               },
               {
+                "const": "indiv",
+                "type": "string"
+              },
+              {
                 "const": "interclubs",
                 "type": "string"
               }

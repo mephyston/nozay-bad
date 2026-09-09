@@ -58,3 +58,6 @@ Le domaine est **feuille** : il ne dépend d'aucun autre. Il ne connaît donc pa
 | [RF-SCH-003](./rules/RF-SCH-003-invites-nommes.md) | Invités nommés |
 | [RF-SCH-004](./rules/RF-SCH-004-benevole-ouvreur.md) | Ouvreurs désignés et confirmation d'une séance |
 | [RF-SCH-005](./rules/RF-SCH-005-alerte-des-ouvreurs.md) | Alerte « créneau à pourvoir » |
+| [RF-SCH-006](./rules/RF-SCH-006-seances-individuelles.md) | Soirées d'indiv : créneaux dérivés, génération, annulation |
+| [RF-SCH-007](./rules/RF-SCH-007-candidature-indiv.md) | Candidature d'un compétiteur, une soirée à la fois |
+| [RF-SCH-008](./rules/RF-SCH-008-selection-et-annonce.md) | Équité, sélection, annonce et notifications |

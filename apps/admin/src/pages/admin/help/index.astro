@@ -22,6 +22,7 @@ Object.keys(groupedHelp).forEach(cat => {
 
 const categoryNames: Record<string, string> = {
   'adherents': 'Gestion des Adhérents',
+  'entrainement': 'Entraînement',
   'interclubs': 'Interclubs',
   'comptabilite': 'Comptabilité et Trésorerie',
   'boutique': 'Boutique',
@@ -32,7 +33,7 @@ const categoryNames: Record<string, string> = {
 
 // Ordre d'affichage des rubriques, calqué sur le menu d'administration. Sans lui,
 // l'ordre dépendait de la première occurrence rencontrée dans la collection.
-const categoryOrder = ['admin', 'adherents', 'interclubs', 'comptabilite', 'boutique', 'communication', 'site'];
+const categoryOrder = ['admin', 'adherents', 'entrainement', 'interclubs', 'comptabilite', 'boutique', 'communication', 'site'];
 const sortedCategories = Object.entries(groupedHelp).sort(
   ([a], [b]) => categoryOrder.indexOf(a) - categoryOrder.indexOf(b)
 );
