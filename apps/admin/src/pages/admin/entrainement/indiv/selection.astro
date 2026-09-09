@@ -1,0 +1,14 @@
+---
+import Layout from '../../../../layouts/Layout.astro';
+import AdminLayout from '../../../../components/AdminLayout.svelte';
+import IndivSelectionScreen from '../../../../components/IndivSelectionScreen.svelte';
+
+/** Le choix des retenus d'une soirée. Page figée, `?id=` lu dans le navigateur. */
+export const prerender = true;
+---
+
+<Layout title="Sélection indiv - NBA 91">
+  <AdminLayout client:idle breadcrumb="Entraînement / Indiv / Sélection">
+    <IndivSelectionScreen client:load />
+  </AdminLayout>
+</Layout>
