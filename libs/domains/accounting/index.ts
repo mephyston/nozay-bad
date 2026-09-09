@@ -126,6 +126,28 @@ export { getSeasonReports } from './seasons/get-season-reports/handler';
 import { CreateLedgerEntryRepository } from './ledger/create-ledger-entry/repository';
 export { CreateLedgerEntryRepository };
 
+import { DeleteTransactionRepository } from './ledger/delete-ledger-entry/repository';
+
+/**
+ * Une écriture, lue par un autre domaine qui l'a créée et veut la défaire.
+ *
+ * La boutique retire la recette d'une commande dont on annule l'encaissement. Elle ne
+ * connaît de l'écriture que ce qu'il lui faut pour refuser à bon escient : l'exercice
+ * et la ligne de relevé éventuellement pointée. Le schéma reste ici. La suppression,
+ * elle, passe par `buildDeleteLedgerEntryStatement` (ledger/expenses), déjà exposé.
+ */
+export interface LedgerEntryRef {
+  id: number;
+  seasonId: number;
+  bankStatementLineId: number | null;
+}
+
+export async function getLedgerEntryById(db: any, id: number): Promise<LedgerEntryRef | undefined> {
+  const entry = await new DeleteTransactionRepository().getById(db, id);
+  if (!entry) return undefined;
+  return { id: entry.id, seasonId: entry.seasonId, bankStatementLineId: entry.bankStatementLineId ?? null };
+}
+
 import { sql, eq } from 'drizzle-orm';
 
 
