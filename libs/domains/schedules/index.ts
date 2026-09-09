@@ -27,6 +27,8 @@ import { generateIndivSessionsRoute } from './indiv/generate-indiv-sessions/rout
 import { updateIndivSessionRoute } from './indiv/update-indiv-session/route';
 import { requestIndivRoute } from './indiv/request-indiv/route';
 import { withdrawIndivRoute } from './indiv/withdraw-indiv/route';
+import { listIndivCandidatesRoute } from './indiv/list-indiv-candidates/route';
+import { selectIndivRoute } from './indiv/select-indiv/route';
 
 export type Bindings = { DB: D1Database };
 
@@ -64,6 +66,8 @@ schedulesRouter.route('/', createIndivSessionRoute);
 schedulesRouter.route('/', generateIndivSessionsRoute);
 schedulesRouter.route('/', requestIndivRoute);
 schedulesRouter.route('/', withdrawIndivRoute);
+schedulesRouter.route('/', listIndivCandidatesRoute);
+schedulesRouter.route('/', selectIndivRoute);
 schedulesRouter.route('/', updateIndivSessionRoute);
 
 schedulesRouter.route('/', updateScheduleSlotRoute);
@@ -85,6 +89,13 @@ export { OPEN_PLAY_STATUS_LABELS } from './shared/open-play-schema';
 export type { OpenPlaySessionRow, OpenPlayStatus } from './shared/open-play-schema';
 
 export { listIndivSessions } from './indiv/list-indiv-sessions/handler';
+export { listIndivCandidates } from './indiv/list-indiv-candidates/handler';
+export type { IndivCandidate, ListIndivCandidatesOutput } from './indiv/list-indiv-candidates/dto';
+// Sans route dans le domaine : l'annonce n'existe que composée avec les notifications,
+// dans apps/api.
+export { announceIndiv } from './indiv/announce-indiv/handler';
+export type { AnnounceIndivOutput } from './indiv/announce-indiv/dto';
+export * from './shared/indiv-selection';
 export type { IndivSessionListItem, ListIndivSessionsInput, MyIndivRequest } from './indiv/list-indiv-sessions/dto';
 export { INDIV_STATUS_LABELS } from './shared/indiv-schema';
 export type { IndivSessionRow, IndivRequestRow, IndivStatus } from './shared/indiv-schema';

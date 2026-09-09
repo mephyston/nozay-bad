@@ -314,6 +314,9 @@ export const ROUTE_PERMISSIONS: RouteRule[] = [
   // Candidater et se retirer : le storefront force l'identité depuis la session.
   { method: 'POST', path: '/schedules/indiv/:id/requests', permission: 'schedules:indiv:read', service: true },
   { method: 'DELETE', path: '/schedules/indiv/:id/requests', permission: 'schedules:indiv:read', service: true },
+  // La liste nominative des candidats est l'outil même du choix : lecture, sans `service`.
+  { method: 'GET', path: '/schedules/indiv/:id/candidates', permission: 'schedules:indiv:read' },
+  { method: 'PUT', path: '/schedules/indiv/:id/selection', permission: 'schedules:indiv:write' },
 
   // Agenda. Remplace l'iframe Google Calendar : chaque événement devient indexable.
   { method: 'GET', path: '/events', permission: 'events:events:read', service: true },
