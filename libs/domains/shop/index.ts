@@ -8,6 +8,7 @@ import { validateOrderRoute } from './validate-order/route';
 import { payOrderRoute } from './pay-order/route';
 import { rejectOrderRoute } from './reject-order/route';
 import { cancelOrderRoute } from './cancel-order/route';
+import { unpayOrderRoute } from './unpay-order/route';
 import { manageProductCategoriesRoute } from './manage-product-categories/route';
 
 export { getUnvalidatedPaidOrders, getOrdersAwaitingPaymentSince, type OrderAwaitingPayment } from './queries';
@@ -29,6 +30,7 @@ shopRouter.route('/', validateOrderRoute);
 shopRouter.route('/', payOrderRoute);
 shopRouter.route('/', rejectOrderRoute);
 shopRouter.route('/', cancelOrderRoute);
+shopRouter.route('/', unpayOrderRoute);
 shopRouter.route('/', manageProductCategoriesRoute);
 
 export * from './shared/dashboard';

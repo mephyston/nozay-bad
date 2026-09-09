@@ -5,6 +5,10 @@
  * comptabilité : tant qu'une commande n'est pas réglée, elle n'existe pas pour
  * l'exercice. Les deux issues fermées sont `rejected` (le bureau refuse une
  * demande) et `cancelled` (une commande validée que le règlement n'a jamais suivie).
+ *
+ * Un seul retour en arrière : `paid` → `awaiting_payment`, quand on a encaissé la
+ * mauvaise commande. Il retire la recette du grand livre, tant qu'elle n'y est pas
+ * pointée sur le relevé.
  */
 export type OrderStatus = 'created' | 'awaiting_payment' | 'paid' | 'rejected' | 'cancelled';
 
@@ -85,5 +89,10 @@ export class Order {
   /** Une commande validée puis jamais réglée : le stock réservé est rendu. */
   canBeCancelled(): boolean {
     return this.data.status === 'awaiting_payment';
+  }
+
+  /** L'encaissement d'une commande réglée se défait : la recette repart du grand livre. */
+  canBeUnpaid(): boolean {
+    return this.data.status === 'paid';
   }
 }

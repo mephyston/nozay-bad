@@ -6,7 +6,7 @@
   import { Alert, Button, Sheet, flashAndReload, toSeasonOptions } from "@nba/ui";
   import type { OrderItem, OrdersTab, Season } from './orders-manager-types';
   import { paymentMethodLabels } from './orders-manager-types';
-  import { validateOrder, payOrder, rejectOrder, cancelOrder } from './orders-manager-actions';
+  import { validateOrder, payOrder, rejectOrder, cancelOrder, unpayOrder } from './orders-manager-actions';
   import OrdersOpenTable from './OrdersOpenTable.svelte';
   import OrdersHistoryTable from './OrdersHistoryTable.svelte';
   import AdminOrderForm from './AdminOrderForm.svelte';
@@ -125,6 +125,7 @@
   const handlePay = (orderId: number) => runTransition(orderId, (id) => payOrder(id));
   const handleReject = (orderId: number) => runTransition(orderId, rejectOrder);
   const handleCancel = (orderId: number) => runTransition(orderId, cancelOrder);
+  const handleUnpay = (orderId: number) => runTransition(orderId, unpayOrder);
 
   // Dans la vue réunie, chaque ligne suit les transitions de sa propre étape.
   const isAwaitingPayment = (orderId: number) =>
@@ -208,9 +209,12 @@
   {:else}
     <OrdersHistoryTable 
       {historyOrders}
+      {processingId}
+      {isClosed}
       {toolbarFilters}
       {toolbarActions}
       bind:searchTerm
+      onUnpay={handleUnpay}
     />
   {/if}
 </div>

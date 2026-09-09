@@ -42,6 +42,14 @@ L'exercice de rattachement est déduit de la **date de paiement**, et non de la 
 
 Une commande déjà traitée ne peut pas l'être une seconde fois : si deux personnes encaissent en même temps, la seconde reçoit un message de conflit.
 
+## Annuler un encaissement
+
+On a encaissé la mauvaise ligne : depuis l'**historique**, le menu d'une commande **payée** propose **Annuler l'encaissement**. La recette est retirée du grand livre et la commande repasse **en attente de paiement**, prête à être encaissée à nouveau ou annulée. L'adhérent en est notifié. Le stock, réservé à la validation, ne bouge pas.
+
+Deux cas refusent l'annulation, pour les mêmes raisons qu'au grand livre : une recette **déjà pointée** sur un relevé bancaire (dissociez-la d'abord depuis le rapprochement), et un **exercice clôturé**.
+
+Si la recette avait déjà été supprimée à la main au grand livre, l'annulation remet simplement la commande d'aplomb.
+
 ## Les relances
 
 Les commandes en attente de paiement depuis **plus de sept jours** déclenchent une relance hebdomadaire à l'adhérent, dans la catégorie **Relances** de ses notifications. La liste affiche l'ancienneté de chaque attente, pour repérer d'un coup d'œil celles qui traînent.
