@@ -139,6 +139,7 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'events:events:delete',
     'events:registrations:read',
     'schedules:registrations:read',
+    'schedules:indiv:read',
     // Interclubs : le président suit les engagements du club sans les tenir.
     'teams:teams:read',
     'teams:rankings:read',
@@ -211,6 +212,7 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'events:events:write',
     'events:registrations:read',
     'schedules:registrations:read',
+    'schedules:indiv:read',
     // Interclubs : le secrétariat consulte, l'entraîneur tient.
     'teams:teams:read',
     'teams:rankings:read',
@@ -245,6 +247,10 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'schedules:open-play:read',
     'schedules:slots:write',
     'schedules:open-play:write',
+    // Les séances individuelles sont les siennes : il les ouvre, départage les
+    // candidats et annonce les retenus.
+    'schedules:indiv:read',
+    'schedules:indiv:write',
     'events:events:read',
     // Les interclubs sont le métier de l'entraîneur : il engage les équipes, désigne
     // les capitaines, tient les classements et contrôle les valeurs d'équipe avant

@@ -1,6 +1,6 @@
 # Domaine Métier : Créneaux et Jeu libre (Schedules)
 
-Le domaine **Créneaux** porte les **faits d'occupation des gymnases** : la grille hebdomadaire de la saison, les gymnases eux-mêmes, et — depuis août 2026 — les **séances de jeu libre** auxquelles les adhérents s'inscrivent.
+Le domaine **Créneaux** porte les **faits d'occupation des gymnases** : la grille hebdomadaire de la saison, les gymnases eux-mêmes, — depuis août 2026 — les **séances de jeu libre** auxquelles les adhérents s'inscrivent, et — depuis septembre 2026 — les **séances individuelles** que l'entraîneur ouvre aux compétiteurs.
 
 Sa raison d'être est écrite dans son schéma : *un créneau change quand la mairie réattribue un gymnase, pas quand quelqu'un modifie une page*. Ce sont des faits du club, que le site et l'espace adhérent se contentent d'afficher.
 
@@ -30,6 +30,13 @@ Le domaine est **feuille** : il ne dépend d'aucun autre. Il ne connaît donc pa
 | **Inscription** | Engagement d'un adhérent à venir, avec les personnes qu'il amène. | `Entity` (`open_play_registrations`) |
 | **Invité** | Personne **nommée** qu'un adhérent amène. N'existe que rattachée à son hôte, et compte dans le seuil. | `Entity` (`open_play_guests`) |
 | **Liste d'appel** | La liste nominative des inscrits et de leurs invités. Lecture réservée à l'administration. | `schedules:registrations:read` |
+| **Séance individuelle** | **Soirée datée** où l'entraîneur prend, au début de l'entraînement compétiteurs, une ou deux personnes par créneau de trente minutes. Créée à la main ou générée depuis un créneau `adultes_competition`. | `Aggregate` (`indiv_sessions`) |
+| **Créneau d'indiv** | Le k-ième tiers d'heure de la soirée. **Dérivé** de `start_time`, `slot_count` et `slot_minutes`, jamais stocké. | `slotWindows()` |
+| **Candidature** | Demande d'un compétiteur pour la soirée, avec sa **préférence** de créneau (ou « indifférent ») et un mot pour l'entraîneur. Une par adhérent et par soirée. | `Entity` (`indiv_requests`) |
+| **Groupe compétiteur** | Type d'adhésion dont le libellé contient « compétiteur ». C'est lui qui ouvre la candidature ; le domaine reçoit le libellé et applique la règle, il ne connaît pas les adhérents. | `isIndivEligibleGroup()` |
+| **Sélection** | Le créneau que l'entraîneur attribue à un candidat, dans la limite des places du créneau. Nulle tant qu'il n'a pas retenu. | `selected_slot` |
+| **Annonce** | La décision rendue publique : les candidatures se ferment, les candidats sont prévenus. Peut être refaite après un retrait. | `status = 'announced'` |
+| **Équité** | Nombre de fois qu'une licence a été retenue sur les soirées **annoncées** de la saison. Base du classement des candidats, avec l'âge. | `selectedCount` |
 
 ---
 
@@ -37,7 +44,8 @@ Le domaine est **feuille** : il ne dépend d'aucun autre. Il ne connaît donc pa
 
 - **Il ne connaît pas les adhérents.** `member_id` désigne une *adhésion* (`memberships.id`), sans clé étrangère, conformément à l'[ADR-0006](../../architecture/ADR-0006-personne-et-adhesion.md) ; l'ouvreur est désigné par sa **licence**, clé naturelle stable. Prénom et nom sont **recopiés** là où ils constituent une trace (qui s'était inscrit, qui a ouvert), et **jamais** dans la liste courante des ouvreurs, où ils divergeraient.
 - **Il ne notifie personne.** Le domaine est feuille : la composition avec `members` et `notifications` se fait dans `apps/api`.
-- **Il ne plafonne pas les places.** Il n'y a qu'un seuil bas. Une jauge imposerait une course à l'inscription, une liste d'attente et un repêchage, pour un problème que le club n'a pas.
+- **Il ne plafonne pas les places** du jeu libre. Il n'y a qu'un seuil bas. Une jauge imposerait une course à l'inscription, une liste d'attente et un repêchage, pour un problème que le club n'a pas. Les séances individuelles, elles, ont des places — mais c'est l'entraîneur qui les attribue, personne ne court.
+- **Il ne sait pas qui est compétiteur.** L'appelant lui présente le libellé du groupe d'adhésion, et le handler applique la règle du mot « compétiteur ». L'âge et le classement, qui aident l'entraîneur à choisir, sont joints par l'administration à partir des domaines `members` et `teams`.
 
 ---
 

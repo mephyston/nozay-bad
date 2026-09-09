@@ -13,6 +13,7 @@ import { dashboardRouter } from './dashboard';
 import { handleScheduled, type ScheduledBindings } from './scheduled';
 import { notificationsSendRouter } from './notifications';
 import { openPlayFeatureFlag } from './open-play';
+import { indivFeatureFlag } from './feature-flags';
 import { invalidatePublicContent } from './content-version';
 import { AppError } from '@nba/db';
 import { authorize } from './authz/middleware';
@@ -26,6 +27,8 @@ type Bindings = {
   RBAC_ENFORCE?: string;
   /** Drapeau de la fonctionnalité « jeu libre » (voir `./open-play`). */
   OPEN_PLAY_ENABLED?: string;
+  /** Drapeau des séances individuelles (voir `./feature-flags`). */
+  INDIV_ENABLED?: string;
 };
 
 const app = new Hono<{ Bindings: Bindings }>();
@@ -80,6 +83,7 @@ app.use('*', async (c, next) => {
 // Drapeau de fonctionnalité, avant l'autorisation : une route éteinte n'existe pas,
 // et la question des droits n'a donc pas à se poser sur elle.
 app.use('*', openPlayFeatureFlag());
+app.use('*', indivFeatureFlag());
 
 // Autorisation par route, fermée par défaut. Elle vient APRÈS le contrôle de clé :
 // la clé prouve que l'appelant est un Worker de confiance, ce qui est la condition

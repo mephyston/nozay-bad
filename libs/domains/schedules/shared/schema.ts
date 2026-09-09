@@ -98,3 +98,6 @@ export const WEEKDAY_LABELS = ['', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendr
  */
 export * from './open-play-schema';
 
+
+/** Séances individuelles, ré-exportées depuis `indiv-schema.ts`, pour la même raison. */
+export * from './indiv-schema';
