@@ -25,7 +25,7 @@
     }
   ],
   "vars": {
-    "EMAIL_FROM": "Nozay Badminton Association <contact@nozaybad.fr>",
+    "EMAIL_FROM": "Nozay Badminton Association <tresorier@nozaybad.fr>",
     "EMAIL_MODE": "live",
     "EMAIL_ALLOWLIST": "",
     "OPEN_PLAY_ENABLED": "true",
@@ -41,7 +41,7 @@
     "staging": {
       "name": "nba-storefront-staging",
       "vars": {
-        "EMAIL_FROM": "Nozay Badminton Association <contact@nozaybad.fr>",
+        "EMAIL_FROM": "Nozay Badminton Association <tresorier@nozaybad.fr>",
         "EMAIL_MODE": "allowlist",
         "EMAIL_ALLOWLIST": "david.pagnacco@gmail.com,meyharts@gmail.com,rouxjuliee@gmail.com,justine.couvidat@gmail.com,bienf007@gmail.com,r_thai2001@hotmail.com,cyril.tetevuide@orange.fr,meunieralexandre051@gmail.com,fofix@hotmail.fr,t.s.madrange@orange.fr,banssejoel@gmail.com",
         "OPEN_PLAY_ENABLED": "true",

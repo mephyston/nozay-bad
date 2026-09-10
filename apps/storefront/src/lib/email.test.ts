@@ -209,7 +209,7 @@ describe('plafonds d’envoi Resend', () => {
   });
 });
 
-describe('sendPaymentPendingEmail — l’adresse de contact', () => {
+describe('l’adresse de contact des mails d’adhésion', () => {
   let fetchMock: any;
 
   beforeEach(() => {
@@ -221,18 +221,23 @@ describe('sendPaymentPendingEmail — l’adresse de contact', () => {
     vi.restoreAllMocks();
   });
 
-  it('renvoie vers le trésorier, pas vers le contact général : c’est lui qui sait où en est le règlement', async () => {
+  // `contact@nozaybad.fr` n'existe pas : une réponse d'adhérent y serait perdue.
+  it('renvoie vers le trésorier, et jamais vers contact@ qui n’existe pas', async () => {
     await sendPaymentPendingEmail({ RESEND_API_KEY: KEY, EMAIL_MODE: 'live' }, 'adherent@reel.fr', 'Saison 2026-2027');
-    const body = JSON.parse((fetchMock.mock.calls[0][1] as any).body);
-    expect(body.text).toContain('tresorier@nozaybad.fr');
-    expect(body.html).toContain('mailto:tresorier@nozaybad.fr');
-    expect(body.text).not.toContain('contact@nozaybad.fr');
-    expect(body.html).not.toContain('contact@nozaybad.fr');
+    await sendUpcomingAccessEmail({ RESEND_API_KEY: KEY, EMAIL_MODE: 'live' }, 'adherent@reel.fr', 'Saison 2026-2027', '2026-09-01');
+    await sendRenewalEmail({ RESEND_API_KEY: KEY, EMAIL_MODE: 'live' }, 'ancien@reel.fr', 'Saison 2026-2027');
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    for (const call of fetchMock.mock.calls) {
+      const body = JSON.parse((call[1] as any).body);
+      expect(body.text).toContain('tresorier@nozaybad.fr');
+      expect(body.html).toContain('mailto:tresorier@nozaybad.fr');
+      expect(JSON.stringify(body)).not.toContain('contact@nozaybad.fr');
+    }
   });
 
-  it('les autres mails d’adhésion gardent le contact général', async () => {
-    await sendUpcomingAccessEmail({ RESEND_API_KEY: KEY, EMAIL_MODE: 'live' }, 'adherent@reel.fr', 'Saison 2026-2027', '2026-09-01');
+  it('part de la boîte du trésorier quand EMAIL_FROM n’est pas réglé', async () => {
+    await sendOtpEmail({ RESEND_API_KEY: KEY, EMAIL_MODE: 'live' }, 'adherent@reel.fr', '123456');
     const body = JSON.parse((fetchMock.mock.calls[0][1] as any).body);
-    expect(body.text).toContain('contact@nozaybad.fr');
+    expect(body.from).toBe('Nozay Badminton Association <tresorier@nozaybad.fr>');
   });
 });
