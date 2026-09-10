@@ -1,8 +1,18 @@
 ---
+import { resolveEnv } from '../lib/request-context';
+
 /*
   La prochaine séance d'indiv vit sur l'accueil et en tête du calendrier.
 
   Cette adresse ne sert qu'aux notifications de l'entraîneur — « vous êtes retenu·e » —
   qui ont besoin d'une destination stable : elle renvoie vers la carte du calendrier.
+  Drapeau baissé, elle n'existe pas : 404, comme le reste de la fonctionnalité.
+
+  Le `---` fermant est obligatoire même sans gabarit : sans lui, le compilateur d'Astro
+  lit tout le fichier comme du balisage et casse le build sur la première accolade.
 */
-return Astro.redirect('/agenda#indiv', 302);
+const flags = resolveEnv<{ INDIV_ENABLED?: string }>(Astro.locals);
+const enabled = flags.INDIV_ENABLED === 'true';
+
+return enabled ? Astro.redirect('/agenda#indiv', 302) : new Response(null, { status: 404 });
+---

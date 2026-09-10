@@ -72,6 +72,14 @@ if (Astro.request.method === 'POST') {
      * et le handler de l'API le revérifie de son côté.
      */
     if (body.indivId !== undefined) {
+      // Drapeau baissé : la fonctionnalité n'existe pas, y compris pour qui forgerait la
+      // requête. 404 et non 403, comme l'API — une fonctionnalité en bêta ne s'annonce pas.
+      if (resolveEnv<{ INDIV_ENABLED?: string }>(Astro.locals).INDIV_ENABLED !== 'true') {
+        return new Response(JSON.stringify({ success: false, error: 'Ressource introuvable.' }), {
+          status: 404,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
       const indivId = Number(body.indivId);
       if (!Number.isSafeInteger(indivId) || indivId < 1) {
         return new Response(JSON.stringify({ success: false, error: 'Séance inconnue.' }), {
