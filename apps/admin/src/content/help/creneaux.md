@@ -32,6 +32,7 @@ L'adresse du gymnase sert aussi aux données structurées du site — c'est ce q
 | **Groupe** | Minibad (U9), Poussins (U11), Jeunes, Élite Jeunes, Adultes loisirs, Adultes compétition, Jeu libre |
 | **Gymnase** | Parmi ceux enregistrés |
 | **Intitulé** | Facultatif. Remplace le nom du groupe sur le site : « Jeunes — groupe compétition » |
+| **Séances individuelles** | À cocher sur les créneaux où l'entraîneur prend des candidats en indiv — le mardi de 19 h 30 à 20 h 30 et le mercredi de 19 h 30 à 21 h. La programmation des soirées d'indiv ne propose que ceux-là ; le site n'en montre rien |
 
 Un créneau est **affiché sur le site dès son ajout** : il n'y a pas d'étape de publication. C'est volontaire — un horaire est un fait du club, pas une publication à préparer.
 

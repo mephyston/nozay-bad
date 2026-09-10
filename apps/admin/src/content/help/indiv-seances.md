@@ -5,16 +5,18 @@ category: entrainement
 order: 1
 ---
 
-Au début de l'entraînement compétiteurs du mardi et du jeudi, l'entraîneur prend deux fois
+Au début de l'entraînement compétiteurs du mardi et du mercredi, l'entraîneur prend deux fois
 trente minutes pour travailler avec une ou deux personnes. Cet écran remplace les demandes
 sur WhatsApp et le choix de mémoire : les compétiteurs candidatent depuis leur espace, et
 vous choisissez avec l'historique de chacun sous les yeux.
 
 ## Programmer les soirées
 
-**Programmer les soirées** déroule les créneaux compétiteurs de la grille sur une période :
-une soirée par mardi et par jeudi, à l'heure du créneau, avec deux créneaux de trente
-minutes et deux places chacun. Vous pouvez décaler l'heure de début ou changer ces réglages
+**Programmer les soirées** déroule sur une période les créneaux cochés « Séances
+individuelles » dans les horaires — le mardi de 19 h 30 à 20 h 30 et le mercredi de 19 h 30
+à 21 h : une soirée par occurrence, à l'heure du créneau, avec deux créneaux de trente
+minutes et deux places chacun. Un créneau compétiteurs qui n'est pas coché ne produit rien :
+c'est dans l'écran des horaires qu'on l'ajoute ou le retire. Vous pouvez décaler l'heure de début ou changer ces réglages
 pour toute la période. Relancer la programmation sur une période déjà couverte ne crée rien
 en double et ne touche pas aux soirées existantes.
 

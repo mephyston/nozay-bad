@@ -22,7 +22,7 @@ Cette règle décrit **ce qu'est une soirée d'indiv**, comment elle naît, et c
 
 **La soirée tient dans la journée.** Une heure de début valide dont la fin dépasserait minuit est refusée.
 
-**Une soirée naît à la main ou par génération.** La génération déroule les créneaux `adultes_competition` **actifs** de la grille sur une période bornée à un an ; l'heure de début est celle du créneau, sauf indication. Elle est **idempotente** : la clé naturelle (date, gymnase, heure) fait que rejouer une période n'insère rien de nouveau et **ne touche pas** aux soirées existantes — en particulier, elle ne rouvre jamais une soirée annoncée. Générer zéro soirée faute de créneau est un refus, pas un silence.
+**Une soirée naît à la main ou par génération.** La génération déroule les créneaux **marqués « séances individuelles »** (`indiv`) et **actifs** de la grille sur une période bornée à un an — le public ne suffit pas : sur quatre créneaux compétiteurs, deux seulement en portent ; l'heure de début est celle du créneau, sauf indication. Elle est **idempotente** : la clé naturelle (date, gymnase, heure) fait que rejouer une période n'insère rien de nouveau et **ne touche pas** aux soirées existantes — en particulier, elle ne rouvre jamais une soirée annoncée. Générer zéro soirée faute de créneau est un refus, pas un silence.
 
 **Trois états.** `open` : les candidatures sont ouvertes. `announced` : l'entraîneur a rendu sa décision publique — les candidatures se ferment, et les retenus comptent dans l'équité de la saison. `cancelled` : retirée, **avec son motif**, obligatoire, que le candidat doit pouvoir lire. Rouvrir efface le motif et rend la parole aux candidats ; les retenus restent marqués, à l'entraîneur de ré-annoncer.
 
@@ -44,10 +44,15 @@ Fonctionnalité: Soirées d'indiv
     Alors elle compte deux créneaux de trente minutes, deux places chacun
     Et elle est ouverte aux candidatures
 
-  Scénario: La génération déroule les créneaux compétiteurs
-    Étant donné un créneau compétiteurs actif le mardi à 19 h 30 et un autre le jeudi
+  Scénario: La génération déroule les créneaux d'indiv
+    Étant donné un créneau marqué « séances individuelles » actif le mardi à 19 h 30 et un autre le jeudi
     Quand l'entraîneur génère les soirées du 16 au 29 mars
     Alors quatre soirées existent, deux mardis et deux jeudis, à 19 h 30
+
+  Scénario: Un créneau compétiteurs sans le marqueur ne produit rien
+    Étant donné un créneau compétiteurs actif le mardi à 20 h 30, non marqué
+    Quand l'entraîneur génère les soirées du 16 au 29 mars
+    Alors l'opération est refusée faute de créneau
 
   Scénario: Rejouer une période ne défait rien
     Étant donné une soirée générée puis annoncée

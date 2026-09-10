@@ -9,7 +9,7 @@ import {
 import {
   InvalidIndivLayoutError,
   InvalidSessionDateError,
-  NoCompetitionSlotError,
+  NoIndivSlotError,
   RangeTooWideError
 } from '../../shared/errors';
 import { GenerateIndivSessionsRepository } from './repository';
@@ -36,8 +36,8 @@ export async function generateIndivSessions(
   }
   if (daysBetween(input.from, input.to) > MAX_GENERATION_DAYS) throw new RangeTooWideError();
 
-  const slots = await repo.competitionSlots(db, input.slotIds);
-  if (slots.length === 0) throw new NoCompetitionSlotError();
+  const slots = await repo.indivSlots(db, input.slotIds);
+  if (slots.length === 0) throw new NoIndivSlotError();
 
   const slotCount = input.slotCount ?? DEFAULT_SLOT_COUNT;
   const slotMinutes = input.slotMinutes ?? DEFAULT_SLOT_MINUTES;

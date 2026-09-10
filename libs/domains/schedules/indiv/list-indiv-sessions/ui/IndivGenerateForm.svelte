@@ -4,7 +4,7 @@
   import { DEFAULT_CAPACITY_PER_SLOT, DEFAULT_SLOT_COUNT, DEFAULT_SLOT_MINUTES, MAX_CAPACITY_PER_SLOT, MAX_SLOT_COUNT, MAX_SLOT_MINUTES } from '../../../shared/indiv';
 
   /**
-   * Dérouler les créneaux compétiteurs en soirées d'indiv, sur une période.
+   * Dérouler les créneaux marqués « séances individuelles » en soirées d'indiv, sur une période.
    *
    * Rejouable : ce qui existe déjà est ignoré, et le décompte le dit.
    */
@@ -26,7 +26,7 @@
 
   $effect(() => {
     if (!open) return;
-    // Par défaut, tous les créneaux compétiteurs : le cas courant est « déroule-moi la période ».
+    // Par défaut, tous les créneaux d'indiv : le cas courant est « déroule-moi la période ».
     slotIds = slots.map((slot: SlotRow) => slot.id);
     from = '';
     to = '';
@@ -79,13 +79,13 @@
   }
 </script>
 
-<FormSheet bind:open title="Programmer les soirées d’indiv" description="Une soirée par occurrence des créneaux compétiteurs choisis. Rejouer une période ne crée rien en double." icon={CalendarPlus} {error} isSubmitting={submitting} submitLabel="Programmer" onSubmit={generate}>
+<FormSheet bind:open title="Programmer les soirées d’indiv" description="Une soirée par occurrence des créneaux choisis, parmi ceux marqués « séances individuelles » dans les horaires. Rejouer une période ne crée rien en double." icon={CalendarPlus} {error} isSubmitting={submitting} submitLabel="Programmer" onSubmit={generate}>
   <div class="grid grid-cols-2 gap-3">
     <FormField label="Du" id="gen-from"><Input id="gen-from" type="date" bind:value={from} /></FormField>
     <FormField label="Au" id="gen-to"><Input id="gen-to" type="date" bind:value={to} /></FormField>
   </div>
   <div class="space-y-2">
-    <Label class="text-sm font-medium">Créneaux compétiteurs</Label>
+    <Label class="text-sm font-medium">Créneaux d’indiv</Label>
     {#each slots as slot (slot.id)}
       <label class="flex items-center gap-2 text-sm">
         <Checkbox checked={slotIds.includes(slot.id)} onCheckedChange={() => toggle(slot.id)} aria-label={`${WEEKDAYS[slot.weekday]} ${slot.startTime}`} />

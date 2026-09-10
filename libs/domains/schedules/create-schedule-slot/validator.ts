@@ -12,5 +12,6 @@ export const createScheduleSlotSchema = Type.Object({
   endTime: Type.String({ pattern: '^([01][0-9]|2[0-3]):[0-5][0-9]$' }),
   audience: Type.Union(AUDIENCES.map((a) => Type.Literal(a))),
   label: Type.Optional(Type.String({ maxLength: 120 })),
-  coachName: Type.Optional(Type.String({ maxLength: 120 }))
+  coachName: Type.Optional(Type.String({ maxLength: 120 })),
+  indiv: Type.Optional(Type.Boolean())
 });

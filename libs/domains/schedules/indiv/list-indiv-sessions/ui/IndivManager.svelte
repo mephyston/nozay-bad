@@ -107,7 +107,7 @@
   data={filtered}
   mobileSpacing="spaced"
   emptyTitle="Aucune soirée"
-  emptyDescription={searchTerm.trim() || onlyToAnnounce ? 'Aucune soirée ne correspond à votre recherche.' : 'Programmez les soirées d’indiv depuis le créneau compétiteurs.'}
+  emptyDescription={searchTerm.trim() || onlyToAnnounce ? 'Aucune soirée ne correspond à votre recherche.' : 'Programmez les soirées d’indiv depuis les créneaux marqués « séances individuelles » dans les horaires.'}
 >
   {#snippet toolbar()}
     <DataTableToolbar bind:searchValue={searchTerm} searchPlaceholder="Rechercher une soirée..." hasFilters={false}>

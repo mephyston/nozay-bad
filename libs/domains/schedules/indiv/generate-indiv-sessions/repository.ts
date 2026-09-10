@@ -5,12 +5,15 @@ import { indivSessionsTable } from '../../shared/indiv-schema';
 
 export class GenerateIndivSessionsRepository {
   /**
-   * Les créneaux compétiteurs **actifs** — c'est au début de ceux-là que l'indiv se tient.
-   * Un créneau masqué de la grille ne produit pas de soirée.
+   * Les créneaux marqués « séances individuelles » et **actifs**.
+   *
+   * Le public ne suffisait pas : sur les quatre créneaux compétiteurs de la grille, deux
+   * seulement ouvrent des indiv (mardi 19 h 30, mercredi 19 h 30), et la génération
+   * proposait les quatre. Un créneau masqué de la grille ne produit pas de soirée.
    */
-  async competitionSlots(db: DbOrTx, slotIds?: number[]): Promise<ScheduleSlotRow[]> {
+  async indivSlots(db: DbOrTx, slotIds?: number[]): Promise<ScheduleSlotRow[]> {
     const where = [
-      eq(scheduleSlotsTable.audience, 'adultes_competition'),
+      eq(scheduleSlotsTable.indiv, true),
       eq(scheduleSlotsTable.active, true),
       slotIds?.length ? inArray(scheduleSlotsTable.id, slotIds) : undefined
     ].filter(Boolean);

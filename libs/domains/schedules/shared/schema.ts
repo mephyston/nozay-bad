@@ -64,6 +64,12 @@ export const scheduleSlotsTable = sqliteTable(
     coachName: text('coach_name'),
     /** Retire le créneau du site sans effacer son historique. */
     active: integer('active', { mode: 'boolean' }).notNull().default(true),
+    /**
+     * Le créneau ouvre-t-il des séances individuelles ? Le public ne le dit pas : sur
+     * quatre créneaux compétiteurs, deux seulement en portent. Ne parle qu'à la
+     * programmation des soirées d'indiv, jamais à l'affichage public.
+     */
+    indiv: integer('indiv', { mode: 'boolean' }).notNull().default(false),
     createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
   },
   (table) => ({

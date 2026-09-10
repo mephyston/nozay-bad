@@ -2,7 +2,7 @@ export interface GenerateIndivSessionsInput {
   /** Bornes comprises, dates locales « AAAA-MM-JJ ». */
   from: string;
   to: string;
-  /** Absent = tous les créneaux compétiteurs actifs de la grille. */
+  /** Absent = tous les créneaux d'indiv actifs de la grille. */
   slotIds?: number[];
   /** Absent = l'heure de début du créneau. Le mardi, l'indiv ouvre à 19 h 30 avec lui. */
   startTime?: string;

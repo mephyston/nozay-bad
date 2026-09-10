@@ -11,5 +11,6 @@ export const updateScheduleSlotSchema = Type.Object({
   endTime: Type.Optional(Type.String({ pattern: '^([01][0-9]|2[0-3]):[0-5][0-9]$' })),
   label: Type.Optional(Type.Union([Type.String({ maxLength: 120 }), Type.Null()])),
   coachName: Type.Optional(Type.Union([Type.String({ maxLength: 120 }), Type.Null()])),
-  active: Type.Optional(Type.Boolean())
+  active: Type.Optional(Type.Boolean()),
+  indiv: Type.Optional(Type.Boolean())
 });

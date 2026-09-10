@@ -214,9 +214,9 @@ export class IndivRequestNotFoundError extends AppError {
   }
 }
 
-export class NoCompetitionSlotError extends AppError {
-  constructor(message = 'Aucun créneau compétiteurs actif dans la grille.') {
+export class NoIndivSlotError extends AppError {
+  constructor(message = 'Aucun créneau de séances individuelles actif dans la grille des horaires.') {
     super(message, 409);
-    this.name = 'NoCompetitionSlotError';
+    this.name = 'NoIndivSlotError';
   }
 }

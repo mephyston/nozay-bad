@@ -30,7 +30,7 @@ Le domaine est **feuille** : il ne dépend d'aucun autre. Il ne connaît donc pa
 | **Inscription** | Engagement d'un adhérent à venir, avec les personnes qu'il amène. | `Entity` (`open_play_registrations`) |
 | **Invité** | Personne **nommée** qu'un adhérent amène. N'existe que rattachée à son hôte, et compte dans le seuil. | `Entity` (`open_play_guests`) |
 | **Liste d'appel** | La liste nominative des inscrits et de leurs invités. Lecture réservée à l'administration. | `schedules:registrations:read` |
-| **Séance individuelle** | **Soirée datée** où l'entraîneur prend, au début de l'entraînement compétiteurs, une ou deux personnes par créneau de trente minutes. Créée à la main ou générée depuis un créneau `adultes_competition`. | `Aggregate` (`indiv_sessions`) |
+| **Séance individuelle** | **Soirée datée** où l'entraîneur prend, au début de l'entraînement compétiteurs, une ou deux personnes par créneau de trente minutes. Créée à la main ou générée depuis un créneau marqué `indiv` dans la grille. | `Aggregate` (`indiv_sessions`) |
 | **Créneau d'indiv** | Le k-ième tiers d'heure de la soirée. **Dérivé** de `start_time`, `slot_count` et `slot_minutes`, jamais stocké. | `slotWindows()` |
 | **Candidature** | Demande d'un compétiteur pour la soirée, avec sa **préférence** de créneau (ou « indifférent ») et un mot pour l'entraîneur. Une par adhérent et par soirée. | `Entity` (`indiv_requests`) |
 | **Groupe compétiteur** | Type d'adhésion dont le libellé contient « compétiteur ». C'est lui qui ouvre la candidature ; le domaine reçoit le libellé et applique la règle, il ne connaît pas les adhérents. | `isIndivEligibleGroup()` |

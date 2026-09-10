@@ -8,5 +8,7 @@ export interface CreateScheduleSlotInput {
   audience: ScheduleSlotRow['audience'];
   label?: string;
   coachName?: string;
+  /** Ouvre des séances individuelles ; faux par défaut. */
+  indiv?: boolean;
 }
 export type CreateScheduleSlotOutput = ScheduleSlotRow;

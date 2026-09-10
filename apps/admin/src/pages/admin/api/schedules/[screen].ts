@@ -57,7 +57,7 @@ export const ECRANS: Record<string, Ecran> = {
           chemin: `/schedules/${identifiant(data.id, 'de créneau')}`,
           method: 'PUT',
           body: presents(data, [
-            'venueId', 'audience', 'weekday', 'startTime', 'endTime', 'label', 'active'
+            'venueId', 'audience', 'weekday', 'startTime', 'endTime', 'label', 'active', 'indiv'
           ] as const)
         })
       },
@@ -187,8 +187,10 @@ export const ECRANS: Record<string, Ecran> = {
       return {
         sessions: soirees.data?.sessions ?? [],
         venues: venues ?? [],
-        // Seuls les créneaux compétiteurs se déroulent en soirées d'indiv.
-        slots: (slots ?? []).filter((slot: any) => slot.audience === 'adultes_competition'),
+        // Seuls les créneaux marqués « séances individuelles » dans la grille se déroulent
+        // en soirées : le public compétiteurs ne suffit pas, deux de ses quatre créneaux
+        // seulement en portent.
+        slots: (slots ?? []).filter((slot: any) => slot.indiv === true),
         errorMsg,
         canWrite: can(locals, 'schedules:indiv:write')
       };

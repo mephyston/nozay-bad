@@ -4,7 +4,7 @@ import { setupMockDb } from '@nba/db/test-utils';
 import type { Db } from '@nba/db';
 import { scheduleSlotsTable, venuesTable } from '../../shared/schema';
 import { indivSessionsTable } from '../../shared/indiv-schema';
-import { InvalidSessionDateError, NoCompetitionSlotError, RangeTooWideError } from '../../shared/errors';
+import { InvalidSessionDateError, NoIndivSlotError, RangeTooWideError } from '../../shared/errors';
 import { generateIndivSessions } from './handler';
 
 const NOW = new Date('2026-03-14T10:00:00Z');
@@ -22,6 +22,7 @@ async function seedSlot(weekday: number, over: Record<string, unknown> = {}) {
       startTime: '19:30',
       endTime: '20:30',
       audience: 'adultes_competition',
+      indiv: true,
       label: 'Indiv (compétiteurs Adultes)',
       createdAt: NOW,
       ...over
@@ -84,12 +85,14 @@ describe('génération des soirées d’indiv', () => {
     expect(row).toMatchObject({ startTime: '20:00', slotCount: 3, capacityPerSlot: 1 });
   });
 
-  it('ignore les créneaux d’autres publics et les créneaux masqués', async () => {
-    await seedSlot(2, { audience: 'adultes_loisir' });
+  it('ignore les créneaux non marqués « indiv » — même compétiteurs — et les créneaux masqués', async () => {
+    // L'entraînement compétiteurs du mardi 20 h 30 n'ouvre pas d'indiv : le public ne suffit pas.
+    await seedSlot(2, { startTime: '20:30', endTime: '22:30', indiv: false });
+    await seedSlot(3, { audience: 'adultes_loisir', indiv: false });
     await seedSlot(4, { active: false });
     await expect(
       generateIndivSessions(db, { from: '2026-03-16', to: '2026-03-22' }, NOW)
-    ).rejects.toThrow(NoCompetitionSlotError);
+    ).rejects.toThrow(NoIndivSlotError);
   });
 
   it('refuse une période à l’envers ou trop large', async () => {
