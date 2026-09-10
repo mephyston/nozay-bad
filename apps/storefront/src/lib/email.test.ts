@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { sendOtpEmail, sendRenewalEmail, sendUpcomingAccessEmail, FFBAD_MEMBERSHIP_URL } from './email';
+import { sendOtpEmail, sendRenewalEmail, sendUpcomingAccessEmail, sendPaymentPendingEmail, FFBAD_MEMBERSHIP_URL } from './email';
 
 const KEY = 're_test_key';
 
@@ -206,5 +206,33 @@ describe('plafonds d’envoi Resend', () => {
     expect(res.ok).toBe(false);
     expect(res.quotaReached).toBeUndefined();
     expect(res.error).toBe("Échec de l'envoi de l'email.");
+  });
+});
+
+describe('sendPaymentPendingEmail — l’adresse de contact', () => {
+  let fetchMock: any;
+
+  beforeEach(() => {
+    fetchMock = vi.fn(async () => new Response('{}', { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it('renvoie vers le trésorier, pas vers le contact général : c’est lui qui sait où en est le règlement', async () => {
+    await sendPaymentPendingEmail({ RESEND_API_KEY: KEY, EMAIL_MODE: 'live' }, 'adherent@reel.fr', 'Saison 2026-2027');
+    const body = JSON.parse((fetchMock.mock.calls[0][1] as any).body);
+    expect(body.text).toContain('tresorier@nozaybad.fr');
+    expect(body.html).toContain('mailto:tresorier@nozaybad.fr');
+    expect(body.text).not.toContain('contact@nozaybad.fr');
+    expect(body.html).not.toContain('contact@nozaybad.fr');
+  });
+
+  it('les autres mails d’adhésion gardent le contact général', async () => {
+    await sendUpcomingAccessEmail({ RESEND_API_KEY: KEY, EMAIL_MODE: 'live' }, 'adherent@reel.fr', 'Saison 2026-2027', '2026-09-01');
+    const body = JSON.parse((fetchMock.mock.calls[0][1] as any).body);
+    expect(body.text).toContain('contact@nozaybad.fr');
   });
 });

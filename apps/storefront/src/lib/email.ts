@@ -28,6 +28,8 @@ const DEFAULT_FROM = 'Nozay Badminton Association <contact@nozaybad.fr>';
 export const FFBAD_MEMBERSHIP_URL = 'https://www.myffbad.fr/adherer/NBA91';
 
 const CONTACT_EMAIL = 'contact@nozaybad.fr';
+/** Une cotisation en attente est une question de trésorerie : c'est le trésorier qui sait où en est le règlement. */
+const TREASURER_EMAIL = 'tresorier@nozaybad.fr';
 
 interface Mail {
   subject: string;
@@ -243,7 +245,7 @@ export async function sendPaymentPendingEmail(
         `Bonjour,\n\n` +
         `Votre licence pour ${season} est bien enregistrée — merci !\n\n` +
         `Votre espace adhérent s'ouvrira dès que le club aura reçu un premier règlement de votre cotisation, même partiel. Si vous avez déjà réglé, il n'y a rien à faire : l'accès s'ouvrira dans les prochains jours, le temps que le club enregistre votre paiement.\n\n` +
-        `Une question ? Écrivez-nous à ${CONTACT_EMAIL}.\n\n` +
+        `Une question ? Écrivez-nous à ${TREASURER_EMAIL}.\n\n` +
         `Nozay Badminton Association`
     },
     (mode) => console.info(`[auth][${mode}] Cotisation en attente pour ${to} (email NON envoyé)`)
@@ -298,7 +300,7 @@ function paymentPendingHtml(seasonName: string): string {
     <p style="color: #444;">Votre licence pour ${seasonName} est bien enregistrée — merci !</p>
     <p style="color: #444;">Votre espace adhérent s'ouvrira dès que le club aura reçu un premier règlement de votre cotisation, même partiel.</p>
     <p style="color: #666; font-size: 14px;">Si vous avez déjà réglé, il n'y a rien à faire : l'accès s'ouvrira dans les prochains jours, le temps que le club enregistre votre paiement.</p>
-    <p style="color: #666; font-size: 14px;">Une question ? Écrivez-nous à <a href="mailto:${CONTACT_EMAIL}" style="color:#111;">${CONTACT_EMAIL}</a>.</p>`);
+    <p style="color: #666; font-size: 14px;">Une question ? Écrivez-nous à <a href="mailto:${TREASURER_EMAIL}" style="color:#111;">${TREASURER_EMAIL}</a>.</p>`);
 }
 
 function renewalHtml(seasonName: string): string {
