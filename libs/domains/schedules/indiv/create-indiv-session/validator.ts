@@ -19,6 +19,8 @@ export const createIndivSessionSchema = Type.Object({
   date: Type.String({ pattern: DATE_PATTERN }),
   startTime: Type.String({ pattern: TIME_PATTERN }),
   ...indivLayoutFields,
-  label: Type.Optional(Type.String({ maxLength: 120 })),
-  notes: Type.Optional(Type.String({ maxLength: 500 }))
+  // `null` vaut absence : le formulaire envoie un champ facultatif vidé sous cette forme,
+  // et la mise à jour l'acceptait déjà — la création le refusait, « Expected string ».
+  label: Type.Optional(Type.Union([Type.String({ maxLength: 120 }), Type.Null()])),
+  notes: Type.Optional(Type.Union([Type.String({ maxLength: 500 }), Type.Null()]))
 });

@@ -9,8 +9,8 @@ export interface CreateIndivSessionInput {
   slotCount?: number;
   slotMinutes?: number;
   capacityPerSlot?: number;
-  label?: string;
-  notes?: string;
+  label?: string | null;
+  notes?: string | null;
 }
 
 export type CreateIndivSessionOutput = IndivSessionRow;

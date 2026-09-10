@@ -47,6 +47,11 @@ describe('création d’une soirée d’indiv', () => {
     expect(session).toMatchObject({ slotCount: 3, slotMinutes: 20, capacityPerSlot: 1, notes: 'Terrain 4' });
   });
 
+  it('range un libellé et une consigne à null comme absents', async () => {
+    const session = await createIndivSession(db, { venueId, ...TUESDAY, label: null, notes: null }, NOW);
+    expect(session).toMatchObject({ label: null, notes: null });
+  });
+
   it('refuse un doublon plutôt que de rendre la soirée en place', async () => {
     await createIndivSession(db, { venueId, ...TUESDAY }, NOW);
     await expect(createIndivSession(db, { venueId, ...TUESDAY }, NOW)).rejects.toThrow(
