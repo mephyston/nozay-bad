@@ -22,6 +22,7 @@ export async function createScheduleSlot(
     audience: input.audience,
     label: input.label ?? null,
     coachName: input.coachName ?? null,
+    indiv: input.indiv ?? false,
     active: true,
     createdAt: now
   });

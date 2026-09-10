@@ -127,3 +127,96 @@ export class RangeTooWideError extends AppError {
     this.name = 'RangeTooWideError';
   }
 }
+
+/**
+ * Refus des séances individuelles.
+ *
+ * Même grammaire que le jeu libre : 404 quand la chose n'existe pas, 409 quand c'est
+ * l'état qui s'oppose à la demande, 400 quand la demande est mal formée, et un seul 403
+ * — le demandeur n'est pas d'un groupe compétiteur.
+ */
+
+export class IndivSessionNotFoundError extends AppError {
+  constructor(message = 'Séance individuelle introuvable') {
+    super(message, 404);
+    this.name = 'IndivSessionNotFoundError';
+  }
+}
+
+export class IndivSessionAlreadyExistsError extends AppError {
+  constructor(message = 'Une soirée d’indiv existe déjà à cette date, dans ce gymnase, à cette heure.') {
+    super(message, 409);
+    this.name = 'IndivSessionAlreadyExistsError';
+  }
+}
+
+export class IndivSessionCancelledError extends AppError {
+  constructor(message = 'Cette soirée a été annulée.') {
+    super(message, 409);
+    this.name = 'IndivSessionCancelledError';
+  }
+}
+
+export class IndivSessionAnnouncedError extends AppError {
+  constructor(message = 'Les retenus ont déjà été annoncés : les candidatures sont closes.') {
+    super(message, 409);
+    this.name = 'IndivSessionAnnouncedError';
+  }
+}
+
+export class IndivSessionPassedError extends AppError {
+  constructor(message = 'Cette soirée est passée.') {
+    super(message, 409);
+    this.name = 'IndivSessionPassedError';
+  }
+}
+
+/** Le seul 403 des indiv : le demandeur n'est pas d'un groupe compétiteur. */
+export class NotIndivEligibleError extends AppError {
+  constructor(message = 'Les séances individuelles sont réservées aux groupes compétiteurs.') {
+    super(message, 403);
+    this.name = 'NotIndivEligibleError';
+  }
+}
+
+export class InvalidIndivSlotError extends AppError {
+  constructor(message = 'Ce créneau n’existe pas sur cette soirée.') {
+    super(message, 400);
+    this.name = 'InvalidIndivSlotError';
+  }
+}
+
+export class InvalidIndivLayoutError extends AppError {
+  constructor(message = 'Les créneaux doivent tenir dans la soirée.') {
+    super(message, 400);
+    this.name = 'InvalidIndivLayoutError';
+  }
+}
+
+export class IndivSlotFullError extends AppError {
+  constructor(message = 'Ce créneau a déjà toutes ses places.') {
+    super(message, 409);
+    this.name = 'IndivSlotFullError';
+  }
+}
+
+export class NoIndivSelectionError extends AppError {
+  constructor(message = 'Retenez au moins une personne avant d’annoncer.') {
+    super(message, 409);
+    this.name = 'NoIndivSelectionError';
+  }
+}
+
+export class IndivRequestNotFoundError extends AppError {
+  constructor(message = 'Cette candidature ne relève pas de cette soirée.') {
+    super(message, 400);
+    this.name = 'IndivRequestNotFoundError';
+  }
+}
+
+export class NoIndivSlotError extends AppError {
+  constructor(message = 'Aucun créneau de séances individuelles actif dans la grille des horaires.') {
+    super(message, 409);
+    this.name = 'NoIndivSlotError';
+  }
+}

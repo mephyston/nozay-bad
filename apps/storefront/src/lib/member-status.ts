@@ -9,6 +9,11 @@ export interface ActiveMemberStatus {
   amountRemainingCents: number;
   seasonCode: string;
   seasonName: string;
+  /**
+   * Libellé du type d'adhésion, brut de l'import Poona (« Compétiteurs adultes »).
+   * C'est lui qui ouvre les séances individuelles ; `null` quand l'API n'a pas répondu.
+   */
+  membershipType: string | null;
 }
 
 /**
@@ -31,7 +36,8 @@ export async function getActiveMemberStatus(env: any, session: any): Promise<Act
     amountReceivedCents: 0,
     amountRemainingCents: 0,
     seasonCode: '',
-    seasonName: ''
+    seasonName: '',
+    membershipType: null
   };
   if (!active) return fallback;
 
@@ -57,7 +63,8 @@ export async function getActiveMemberStatus(env: any, session: any): Promise<Act
           amountReceivedCents: recvCents,
           amountRemainingCents: m.amountRemainingCents ?? Math.max(0, dueCents - recvCents),
           seasonCode,
-          seasonName
+          seasonName,
+          membershipType: typeof m.type === 'string' && m.type ? m.type : null
         };
       }
     }

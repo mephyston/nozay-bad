@@ -121,6 +121,26 @@ export function listScheduledNotifications(env: RegistryEnv): ScheduledNotificat
       flag: null
     },
     {
+      id: 'indiv:announce:selected',
+      title: 'Indiv du … : vous êtes retenu·e',
+      body: 'Créneau et horaire attribués par l’entraîneur. Envoyée aux candidats retenus, un message par créneau.',
+      schedule: "À l'annonce des retenus d'une soirée d'indiv par l'entraîneur (ou à sa mise à jour)",
+      trigger: 'event',
+      category: 'indiv',
+      enabled: true,
+      flag: null
+    },
+    {
+      id: 'indiv:announce:declined',
+      title: 'Indiv du … : pas cette fois',
+      body: 'Les places sont allées à ceux qui en ont eu moins, ou aux plus jeunes. Envoyée aux candidats non retenus.',
+      schedule: "À l'annonce des retenus d'une soirée d'indiv par l'entraîneur (ou à sa mise à jour)",
+      trigger: 'event',
+      category: 'indiv',
+      enabled: true,
+      flag: null
+    },
+    {
       id: 'expense:approved',
       title: 'Note de frais validée',
       body: 'Votre note de frais de … € a été validée.',

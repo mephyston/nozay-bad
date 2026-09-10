@@ -99,6 +99,11 @@ export const ALL_PERMISSIONS = [
   // est une information de club, la liste de ses inscrits une donnée personnelle — et
   // un invité non licencié n'a jamais rien signé au club.
   'schedules:registrations:read',
+  // Séances individuelles : les soirées d'indiv, les candidatures des compétiteurs et le
+  // choix de l'entraîneur. La liste nominative des candidats est l'outil même du choix,
+  // elle relève donc de la lecture — à la différence des inscrits au jeu libre.
+  'schedules:indiv:read',
+  'schedules:indiv:write',
   'events:events:read',
   'events:events:write',
   'events:events:delete',

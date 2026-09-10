@@ -32,6 +32,7 @@ export async function updateScheduleSlot(
     endTime,
     label: input.label === undefined ? slot.label : input.label,
     coachName: input.coachName === undefined ? slot.coachName : input.coachName,
-    active: input.active ?? slot.active
+    active: input.active ?? slot.active,
+    indiv: input.indiv ?? slot.indiv
   });
 }

@@ -22,10 +22,18 @@ vi.mock('../../../../lib/api', () => ({
         code qui casse en production.
       */
       const chemin = url.replace('http://localhost', '');
-      if (reponse404 && chemin.startsWith('/schedules/open-play')) {
+      if (reponse404 && (chemin.startsWith('/schedules/open-play') || chemin.startsWith('/schedules/indiv'))) {
         return Promise.resolve(new Response('désactivé', { status: 404 }));
       }
-      const corps = chemin.startsWith('/schedules/open-play?') ? { sessions: [] } : [];
+      const corps = chemin.startsWith('/schedules/open-play?') || chemin.startsWith('/schedules/indiv?')
+        ? { sessions: [] }
+        : chemin.includes('/candidates')
+          ? { session: { id: 3, date: '2026-03-17', startTime: '19:30', endTime: '20:30', slots: [] }, candidates: [{ requestId: 1, licence: '7051876' }] }
+          : chemin.startsWith('/members?')
+            ? { data: [{ licence: '07051876', birthDate: '1990-05-06' }] }
+            : chemin.startsWith('/teams/players')
+              ? { players: [{ licence: '07051876', category: 'Senior', singles: 'D8', doubles: null, mixed: null }] }
+              : [];
       return Promise.resolve(
         new Response(JSON.stringify({ success: true, data: corps }), { status: 200 })
       );
@@ -44,7 +52,8 @@ const { GET, POST, ECRANS } = await import('./[screen]');
 const TOUS_LES_DROITS = [
   'schedules:slots:read', 'schedules:slots:write',
   'schedules:open-play:read', 'schedules:open-play:write',
-  'schedules:registrations:read', 'members:members:read'
+  'schedules:registrations:read', 'members:members:read',
+  'schedules:indiv:read', 'schedules:indiv:write', 'teams:teams:read'
 ];
 
 const locals = (permissions: string[]) => ({ user: { email: 'x@nozaybad.fr', permissions } });
@@ -89,6 +98,12 @@ describe('relais séances — le drapeau de fonctionnalité', () => {
     expect(((await res.json()) as any).data.errorMsg).toContain('désactivées sur cet environnement');
   });
 
+  it('dit de même pour les séances individuelles', async () => {
+    reponse404 = true;
+    const res = await lire('indiv');
+    expect(((await res.json()) as any).data.errorMsg).toContain('INDIV_ENABLED');
+  });
+
   it('laisse passer les créneaux, qui ne dépendaient pas du drapeau', async () => {
     expect((await lire('schedules')).status).toBe(200);
   });
@@ -128,6 +143,39 @@ describe('relais séances — les gardes', () => {
       expect((await ecrire('schedules', corps)).status, JSON.stringify(corps)).toBe(400);
       expect(appels).toHaveLength(0);
     }
+  });
+});
+
+describe('relais séances — les indiv', () => {
+  it('joint l’âge et le classement des candidats par licence normalisée', async () => {
+    const res = await GET({
+      params: { screen: 'indiv-candidats' },
+      locals: locals(TOUS_LES_DROITS),
+      request: new Request('https://admin.nozaybad.fr/admin/api/schedules/indiv-candidats?id=3')
+    } as never);
+    expect(res.status).toBe(200);
+    const { data } = (await res.json()) as any;
+    expect(data.candidates[0]).toMatchObject({ birthDate: '1990-05-06', category: 'Senior', singles: 'D8' });
+    expect(data.canWrite).toBe(true);
+  });
+
+  it('se passe des jointures que le compte n’a pas le droit de lire', async () => {
+    const sansAnnuaire = TOUS_LES_DROITS.filter((p) => p !== 'members:members:read' && p !== 'teams:teams:read');
+    const res = await GET({
+      params: { screen: 'indiv-candidats' },
+      locals: locals(sansAnnuaire),
+      request: new Request('https://admin.nozaybad.fr/admin/api/schedules/indiv-candidats?id=3')
+    } as never);
+    const { data } = (await res.json()) as any;
+    expect(data.candidates[0]).toMatchObject({ birthDate: null, category: null });
+    expect(appels.some((a) => a.url.includes('/members?') || a.url.includes('/teams/players'))).toBe(false);
+  });
+
+  it('refuse d’annoncer sans le droit d’écrire', async () => {
+    const lecture = TOUS_LES_DROITS.filter((p) => p !== 'schedules:indiv:write');
+    expect((await ecrire('indiv-candidats', { action: 'announce', id: 3 }, lecture)).status).toBe(403);
+    expect((await ecrire('indiv-candidats', { action: 'announce', id: 3 })).status).toBe(200);
+    expect(appels.at(-1)?.url).toContain('/schedules/indiv/3/announce');
   });
 });
 

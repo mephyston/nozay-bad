@@ -13,6 +13,7 @@ export const STOREFRONT_PAGES = [
   { path: '/annonces', label: 'Annonces du club' },
   { path: '/agenda', label: 'Calendrier du club' },
   { path: '/jeu-libre', label: 'Calendrier — jeu libre' },
+  { path: '/indiv', label: 'Calendrier — séance individuelle' },
   { path: '/mon-compte', label: 'Mon compte' },
   { path: '/boutique', label: 'Boutique' },
   { path: '/note-de-frais', label: 'Notes de frais' },

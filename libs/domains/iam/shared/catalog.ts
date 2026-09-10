@@ -68,6 +68,8 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   'schedules:open-play:read': 'Consulter les séances de jeu libre',
   'schedules:open-play:write': 'Créer et modifier les séances de jeu libre',
   'schedules:registrations:read': 'Voir les inscrits à une séance de jeu libre',
+  'schedules:indiv:read': 'Consulter les séances individuelles et leurs candidats',
+  'schedules:indiv:write': 'Créer, sélectionner et annoncer les séances individuelles',
   'events:events:read': "Consulter l'agenda",
   'events:events:write': 'Créer et modifier un événement',
   'events:events:delete': 'Supprimer un événement',

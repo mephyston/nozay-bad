@@ -61,6 +61,8 @@ export const PAGE_PERMISSIONS: Record<string, Permission | null> = {
   '/admin/website/jeu-libre': 'schedules:open-play:read',
   '/admin/website/jeu-libre/ouvreurs': 'schedules:open-play:read',
   '/admin/website/events': 'events:events:read',
+  '/admin/entrainement/indiv': 'schedules:indiv:read',
+  '/admin/entrainement/indiv/selection': 'schedules:indiv:read',
   '/admin/teams': 'teams:teams:read',
   '/admin/teams/classements': 'teams:rankings:read',
   '/admin/teams/classements/import': 'teams:rankings:import',

@@ -1,0 +1,26 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import AdminLayout from '../../../components/AdminLayout.svelte';
+import { PageHeader } from '@nba/ui';
+import IndivScreen from '../../../components/IndivScreen.svelte';
+
+/**
+ * Les soirées d'indiv, tenues par l'entraîneur.
+ *
+ * Page figée : l'îlot demande ses données au relais du domaine, qui traduit un 404 du
+ * drapeau `INDIV_ENABLED` en message.
+ */
+export const prerender = true;
+---
+
+<Layout title="Séances individuelles - NBA 91">
+  <AdminLayout client:idle breadcrumb="Entraînement / Indiv">
+    <div class="space-y-6">
+      <PageHeader
+        title="Séances individuelles"
+        description="Les soirées d'indiv proposées aux compétiteurs au début de l'entraînement, le mardi et le mercredi : deux créneaux de trente minutes, une ou deux personnes chacun. Les candidatures arrivent depuis l'espace adhérent ; le choix et l'annonce se font soirée par soirée."
+      />
+      <IndivScreen client:load />
+    </div>
+  </AdminLayout>
+</Layout>

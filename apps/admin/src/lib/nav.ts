@@ -91,6 +91,15 @@ export const NAV_GROUPS: NavGroup[] = [
     ]
   },
   {
+    // L'entraîneur tient ses séances individuelles ici : ce n'est ni du jeu libre ni de
+    // la communication, c'est son entraînement.
+    label: 'Entraînement',
+    beta: true,
+    items: [
+      { name: 'Indiv', icon: 'Dumbbell', href: '/admin/entrainement/indiv', permission: 'schedules:indiv:read' }
+    ]
+  },
+  {
     label: 'Interclubs',
     beta: true,
     items: [

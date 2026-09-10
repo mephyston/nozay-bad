@@ -21,3 +21,12 @@ export { default as OpenPlayOpenersCard } from '../open-play/list-open-play-open
 
 /** « Qui vient ? » : la liste des inscrits d'une séance, dépliée à la demande. */
 export { default as OpenPlayAttendees } from '../open-play/list-open-play-attendees/ui/OpenPlayAttendees.svelte';
+
+/** Îlot de candidature à une soirée d'indiv, posé par l'espace adhérent. */
+export { default as IndivRequest } from '../indiv/request-indiv/ui/IndivRequest.svelte';
+
+/** Écran de l'entraîneur : les soirées d'indiv, leur programmation et leur état. */
+export { default as IndivManager } from '../indiv/list-indiv-sessions/ui/IndivManager.svelte';
+
+/** Écran de l'entraîneur : les candidats classés, l'affectation aux créneaux, l'annonce. */
+export { default as IndivSelection } from '../indiv/list-indiv-candidates/ui/IndivSelection.svelte';

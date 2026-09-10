@@ -4,6 +4,8 @@
     Button,
     Input,
     Select,
+    Checkbox,
+    Label,
     Badge,
     Card,
     Table,
@@ -23,6 +25,8 @@
   interface SlotRow {
     id: number; weekday: number; startTime: string; endTime: string;
     audience: keyof typeof AUDIENCE_LABELS; label: string | null; active: boolean;
+    /** Ouvre des séances individuelles : la programmation des soirées d'indiv part de là. */
+    indiv: boolean;
     venueId: number; venue: { name: string } | null;
   }
   interface VenueRow { id: number; name: string }
@@ -50,6 +54,7 @@
   let audience = $state<keyof typeof AUDIENCE_LABELS>('jeunes');
   let venueId = $state(venues[0] ? String(venues[0].id) : '');
   let label = $state('');
+  let indiv = $state(false);
   let busy = $state(false);
   let showFormSheet = $state(false);
   let errorMsg = $state('');
@@ -87,6 +92,7 @@
     audience = 'jeunes';
     venueId = venues[0] ? String(venues[0].id) : '';
     label = '';
+    indiv = false;
     errorMsg = '';
   }
 
@@ -103,6 +109,7 @@
     audience = row.audience;
     venueId = String(row.venueId);
     label = row.label ?? '';
+    indiv = row.indiv;
     errorMsg = '';
     showFormSheet = true;
   }
@@ -127,11 +134,11 @@
           id
             ? {
                 action: 'update', id, venueId: Number(venueId), weekday: Number(weekday),
-                startTime, endTime, audience, label: label.trim() || null
+                startTime, endTime, audience, label: label.trim() || null, indiv
               }
             : {
                 action: 'create', venueId: Number(venueId), weekday: Number(weekday),
-                startTime, endTime, audience, label: label.trim() || undefined
+                startTime, endTime, audience, label: label.trim() || undefined, indiv
               },
           id ? 'La modification a échoué.' : 'La création a échoué.'
         ),
@@ -218,9 +225,14 @@
                 {row.label ?? AUDIENCE_LABELS[row.audience]} · {row.venue?.name ?? '—'}
               </p>
             </div>
-            <Badge variant={row.active ? 'primary-soft' : 'outline'} size="xs">
-              {row.active ? 'Affiché' : 'Masqué'}
-            </Badge>
+            <div class="flex shrink-0 flex-wrap justify-end gap-1">
+              {#if row.indiv}
+                <Badge variant="secondary" size="xs">Indiv</Badge>
+              {/if}
+              <Badge variant={row.active ? 'primary-soft' : 'outline'} size="xs">
+                {row.active ? 'Affiché' : 'Masqué'}
+              </Badge>
+            </div>
           </div>
 
           {#if canWrite}
@@ -268,7 +280,12 @@
       <Table.Cell class="font-medium">{WEEKDAY_LABELS[slot.weekday]}</Table.Cell>
       <Table.Cell class="tabular-nums">{slot.startTime}–{slot.endTime}</Table.Cell>
       <Table.Cell>
-        <span class="block text-foreground">{AUDIENCE_LABELS[slot.audience]}</span>
+        <span class="block text-foreground">
+          {AUDIENCE_LABELS[slot.audience]}
+          {#if slot.indiv}
+            <Badge variant="secondary" size="xs" class="ml-1 align-middle">Indiv</Badge>
+          {/if}
+        </span>
         {#if slot.label}
           <span class="block text-xs text-muted-foreground">{slot.label}</span>
         {/if}
@@ -359,4 +376,17 @@
   <FormField id="slot-label" label="Intitulé (facultatif)">
     <Input id="slot-label" bind:value={label} placeholder="Remplace le nom du groupe sur le site" maxlength={120} />
   </FormField>
+
+  <!-- Le public ne dit pas si le créneau ouvre des indiv : deux des quatre créneaux
+       compétiteurs seulement en portent. Ce marqueur ne touche pas au site, il ne parle
+       qu'à la programmation des soirées. -->
+  <div class="flex items-start gap-2.5 rounded-md border border-border p-3">
+    <Checkbox id="slot-indiv" bind:checked={indiv} />
+    <div class="grid gap-0.5">
+      <Label for="slot-indiv" class="text-sm font-medium">Séances individuelles</Label>
+      <p class="text-xs text-muted-foreground">
+        L'entraîneur y prend des candidats au début du créneau. La programmation des soirées d'indiv ne propose que les créneaux cochés.
+      </p>
+    </div>
+  </div>
 </FormSheet>

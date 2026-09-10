@@ -10,5 +10,6 @@ export interface UpdateScheduleSlotInput {
   label?: string | null;
   coachName?: string | null;
   active?: boolean;
+  indiv?: boolean;
 }
 export type UpdateScheduleSlotOutput = ScheduleSlotRow;

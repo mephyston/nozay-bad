@@ -27,6 +27,10 @@ const tables = [
     // Créneaux et agenda : enfants avant parents, comme le reste de la liste.
     // Jeu libre : les invités pendent des inscriptions, qui pendent des séances, qui
     // pendent des gymnases et des créneaux — d'où cet ordre-là exactement.
+    // Séances individuelles : les candidatures pendent des soirées, qui pendent des
+    // gymnases et des créneaux.
+    'indiv_requests',
+    'indiv_sessions',
     'open_play_guests',
     'open_play_registrations',
     'open_play_sessions',

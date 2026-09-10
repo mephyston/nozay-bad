@@ -104,7 +104,8 @@ describe('définition des rôles', () => {
     for (const p of [
       'members:members:read',
       'shop:products:read', 'shop:products:write', 'shop:categories:write',
-      'shop:orders:read', 'shop:orders:write'
+      'shop:orders:read', 'shop:orders:write',
+      'schedules:indiv:read', 'schedules:indiv:write'
     ]) {
       expect(coach, p).toContain(p);
     }

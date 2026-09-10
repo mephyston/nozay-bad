@@ -57,7 +57,7 @@ export const ECRANS: Record<string, Ecran> = {
           chemin: `/schedules/${identifiant(data.id, 'de créneau')}`,
           method: 'PUT',
           body: presents(data, [
-            'venueId', 'audience', 'weekday', 'startTime', 'endTime', 'label', 'active'
+            'venueId', 'audience', 'weekday', 'startTime', 'endTime', 'label', 'active', 'indiv'
           ] as const)
         })
       },
@@ -160,6 +160,140 @@ export const ECRANS: Record<string, Ecran> = {
         route: (data) => ({
           chemin: `/schedules/open-play/${identifiant(data.id, 'de séance')}/registrations`,
           method: 'GET'
+        })
+      }
+    }
+  },
+
+  /*
+    Séances individuelles : les soirées, telles que l'entraîneur les tient. Historique
+    compris, comme le jeu libre. Le 404 du drapeau devient un message.
+  */
+  indiv: {
+    permission: 'schedules:indiv:read',
+    charger: async (lire, locals) => {
+      const [soirees, venues, slots] = await Promise.all([
+        lire.detail('/schedules/indiv?from=2000-01-01&limit=300'),
+        lire('/schedules/venues'),
+        lire('/schedules')
+      ]);
+      const errorMsg = soirees.ok
+        ? null
+        : soirees.status === 404
+          ? 'Les séances individuelles sont désactivées sur cet environnement (INDIV_ENABLED).'
+          : soirees.status === 403
+            ? "Votre compte n'a pas le droit de consulter les séances individuelles."
+            : `Impossible de charger les soirées (erreur ${soirees.status}).`;
+      return {
+        sessions: soirees.data?.sessions ?? [],
+        venues: venues ?? [],
+        // Seuls les créneaux marqués « séances individuelles » dans la grille se déroulent
+        // en soirées : le public compétiteurs ne suffit pas, deux de ses quatre créneaux
+        // seulement en portent.
+        slots: (slots ?? []).filter((slot: any) => slot.indiv === true),
+        errorMsg,
+        canWrite: can(locals, 'schedules:indiv:write')
+      };
+    },
+    ecritures: {
+      create: {
+        permission: 'schedules:indiv:write',
+        route: (data) => ({
+          chemin: '/schedules/indiv',
+          method: 'POST',
+          body: presents(data, ['venueId', 'date', 'startTime', 'slotCount', 'slotMinutes', 'capacityPerSlot', 'label', 'notes'] as const)
+        })
+      },
+      generate: {
+        permission: 'schedules:indiv:write',
+        route: (data) => ({
+          chemin: '/schedules/indiv/generate',
+          method: 'POST',
+          body: presents(data, ['from', 'to', 'slotIds', 'startTime', 'slotCount', 'slotMinutes', 'capacityPerSlot'] as const)
+        })
+      },
+      update: {
+        permission: 'schedules:indiv:write',
+        route: (data) => ({
+          chemin: `/schedules/indiv/${identifiant(data.id, 'de soirée')}`,
+          method: 'PUT',
+          body: presents(data, ['venueId', 'date', 'startTime', 'slotCount', 'slotMinutes', 'capacityPerSlot', 'label', 'notes', 'status', 'cancelledReason'] as const)
+        })
+      }
+    }
+  },
+
+  /*
+    Les candidats d'une soirée, enrichis de ce que le domaine ne sait pas : l'âge (fichier
+    des adhérents) et le classement Poona (interclubs), joints par licence. Chaque
+    jointure n'est faite que si le compte porte le droit correspondant — l'écran affiche
+    alors « âge inconnu » plutôt que de refuser.
+  */
+  'indiv-candidats': {
+    permission: 'schedules:indiv:read',
+    charger: async (lire, locals, params) => {
+      const id = Number(params.get('id'));
+      const canWrite = can(locals, 'schedules:indiv:write');
+      if (!Number.isSafeInteger(id) || id < 1) {
+        return { session: null, candidates: [], errorMsg: 'Soirée inconnue.', canWrite };
+      }
+      const reponse = await lire.detail(`/schedules/indiv/${id}/candidates`);
+      if (!reponse.ok) {
+        return {
+          session: null,
+          candidates: [],
+          canWrite,
+          errorMsg:
+            reponse.status === 404
+              ? 'Soirée introuvable, ou séances individuelles désactivées sur cet environnement (INDIV_ENABLED).'
+              : `Impossible de charger les candidats (erreur ${reponse.status}).`
+        };
+      }
+
+      const { seasons } = await fetchSeasons(createAdminApiClient(locals));
+      const seasonCode = currentSeasonCode(seasons);
+      const [members, players] = await Promise.all([
+        seasonCode && can(locals, 'members:members:read') ? lire(`/members?season=${encodeURIComponent(seasonCode)}&limit=1000`) : null,
+        seasonCode && can(locals, 'teams:teams:read') ? lire(`/teams/players?seasonCode=${encodeURIComponent(seasonCode)}`) : null
+      ]);
+
+      const key = (licence: unknown) => String(licence ?? '').replace(/\D/g, '').padStart(8, '0');
+      const memberList: any[] = Array.isArray(members) ? members : (members?.data ?? []);
+      const birthDates = new Map(memberList.map((m: any) => [key(m.licence), m.birthDate ?? null]));
+      const playerList: any[] = Array.isArray(players?.players) ? players.players : [];
+      const rankings = new Map(playerList.map((p: any) => [key(p.licence), p]));
+
+      return {
+        session: reponse.data.session,
+        candidates: (reponse.data.candidates ?? []).map((c: any) => {
+          const player = rankings.get(key(c.licence));
+          return {
+            ...c,
+            birthDate: birthDates.get(key(c.licence)) ?? null,
+            category: player?.category ?? null,
+            singles: player?.singles ?? null,
+            doubles: player?.doubles ?? null,
+            mixed: player?.mixed ?? null
+          };
+        }),
+        errorMsg: null,
+        canWrite
+      };
+    },
+    ecritures: {
+      select: {
+        permission: 'schedules:indiv:write',
+        route: (data) => ({
+          chemin: `/schedules/indiv/${identifiant(data.id, 'de soirée')}/selection`,
+          method: 'PUT',
+          body: { selection: Array.isArray(data.selection) ? data.selection : [] }
+        })
+      },
+      announce: {
+        permission: 'schedules:indiv:write',
+        route: (data) => ({
+          chemin: `/schedules/indiv/${identifiant(data.id, 'de soirée')}/announce`,
+          method: 'POST'
         })
       }
     }
