@@ -283,7 +283,7 @@
         <span class="block text-foreground">
           {AUDIENCE_LABELS[slot.audience]}
           {#if slot.indiv}
-            <Badge variant="secondary" size="xs" class="ml-1 align-middle">Indiv</Badge>
+            <Badge variant="secondary" size="xs" class="ml-1">Indiv</Badge>
           {/if}
         </span>
         {#if slot.label}
