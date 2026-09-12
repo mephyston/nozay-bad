@@ -7,12 +7,18 @@ import type { D1Database, D1PreparedStatement } from '@cloudflare/workers-types'
  * licenciés, ce que `persons` permettrait désormais de mesurer.
  */
 export function buildMembersDashboardStatsStmt(db: D1Database, seasonId: number, prevSeasonId: number | null): D1PreparedStatement {
+  /*
+   * Les deux compteurs de règlement lisent le **statut**, et non les montants : c'est lui que
+   * la liste des adhérents filtre (`?status=`), et le tableau de bord doit annoncer le nombre
+   * exact que la liste affichera au clic. Un dossier `suspendu` (annulé côté Poona) n'a rien
+   * payé non plus, mais il n'est pas une relance à faire.
+   */
   return db.prepare(`
     SELECT
       SUM(CASE WHEN season_id = ? THEN 1 ELSE 0 END) as currentTotal,
       SUM(CASE WHEN season_id = ? THEN 1 ELSE 0 END) as previousTotal,
-      SUM(CASE WHEN season_id = ? AND amount_received_cents > 0 AND amount_remaining_cents > 0 THEN 1 ELSE 0 END) as partiallyPaid,
-      SUM(CASE WHEN season_id = ? AND amount_remaining_cents > 0 THEN 1 ELSE 0 END) as unpaidCount
+      SUM(CASE WHEN season_id = ? AND status = 'incomplet' THEN 1 ELSE 0 END) as partiallyPaid,
+      SUM(CASE WHEN season_id = ? AND status = 'en_attente' THEN 1 ELSE 0 END) as unpaidCount
     FROM memberships
     WHERE season_id IN (?, ?)
   `).bind(seasonId, prevSeasonId, seasonId, seasonId, seasonId, prevSeasonId);

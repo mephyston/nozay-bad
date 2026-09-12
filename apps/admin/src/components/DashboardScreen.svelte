@@ -3,11 +3,8 @@
   import DashboardOverview from './DashboardOverview.svelte';
   import EcranDistant from './EcranDistant.svelte';
 
-  let {
-    permissions = []
-  }: { permissions?: string[] } = $props();
-
   let seasons = $state<any[]>([]);
+  let permissions = $state<string[]>([]);
   let currentSeason = $state('');
 </script>
 
@@ -30,6 +27,7 @@
     onDonnees={(d) => {
       seasons = d.seasons ?? [];
       currentSeason = d.currentSeason ?? '';
+      permissions = d.permissions ?? [];
     }}
   >
     {#snippet pret(d)}

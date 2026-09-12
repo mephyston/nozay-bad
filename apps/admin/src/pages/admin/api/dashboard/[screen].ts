@@ -17,7 +17,7 @@ import { currentSeasonCode, sortSeasons } from '../../../../lib/seasons';
  */
 const VIDE = () => ({
   season: '25-26',
-  members: { currentTotal: 0, previousTotal: 0, partiallyPaid: 0 },
+  members: { currentTotal: 0, previousTotal: 0, partiallyPaid: 0, unpaidCount: 0 },
   accounting: { pendingChecks: 0, pendingDeposits: 0, pendingInvoices: 0 },
   expenses: { pendingReports: 0 },
   shop: { pendingOrders: 0 },
@@ -32,7 +32,7 @@ const VIDE = () => ({
 export const ECRANS: Record<string, Ecran> = {
   overview: {
     permission: 'dashboard:overview:read',
-    charger: async (lire, _locals, params) => {
+    charger: async (lire, locals, params) => {
       const demandee = params.get('season') ?? '';
       const requete = demandee ? `?seasonId=${encodeURIComponent(demandee)}` : '';
 
@@ -46,6 +46,11 @@ export const ECRANS: Record<string, Ecran> = {
       return {
         data,
         seasons,
+        /*
+          La page est figée : aucune identité n'y est rendue. Les droits qui décident
+          quelles lignes sont des liens voyagent donc avec les chiffres.
+        */
+        permissions: locals.user?.permissions ?? [],
         /*
           La saison affichée est celle demandée, sinon celle que l'agrégat a retenue —
           l'API du tableau de bord choisit déjà l'active. Quand elle a échoué, c'est le

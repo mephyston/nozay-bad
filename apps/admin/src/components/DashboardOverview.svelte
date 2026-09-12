@@ -1,36 +1,87 @@
 <script lang="ts">
-  import { Users, Banknote, CreditCard, ShoppingCart, Activity, AlertCircle, ArrowUpRight, ArrowDownRight, Package, Receipt, FolderKanban, Building, ChevronRight } from '@lucide/svelte';
+  import { Users, Banknote, CreditCard, Activity, ArrowUpRight, ArrowDownRight, Package, Receipt, FolderKanban, Building, ChevronRight, Scale, Landmark, ExternalLink } from '@lucide/svelte';
   import { DashboardSummaryCard, DashboardPoleCard } from '@nba/ui';
   import { can } from '@nba/iam-ui';
 
-  export let data: any;
-  export let permissions: string[] = [];
+  let { data, permissions = [] }: { data: any; permissions?: string[] } = $props();
 
   const formatAmount = (cents: number) => {
     return (cents / 100).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });
   };
 
-  $: canReadMembers = can(permissions, 'members:members:read');
-  $: canReadAccounting = can(permissions, 'accounting:ledger:read');
-  $: canReadExpenses = can(permissions, 'expenses:reports:read');
-  $: canReadShop = can(permissions, 'shop:orders:read');
+  const canReadMembers = $derived(can(permissions, 'members:members:read'));
+  const canReadAccounting = $derived(can(permissions, 'accounting:ledger:read'));
+  const canReadChecks = $derived(can(permissions, 'accounting:checks:read'));
+  const canReadBank = $derived(can(permissions, 'accounting:bank:read'));
+  const canReadInvoices = $derived(can(permissions, 'accounting:invoices:read'));
+  const canReadExpenses = $derived(can(permissions, 'expenses:reports:read'));
+  const canReadShop = $derived(can(permissions, 'shop:orders:read'));
+
+  /*
+   * Les adhérents se lisent sur la saison affichée, et la liste filtre par statut : le
+   * chiffre du tableau de bord doit être celui que la liste montrera au clic.
+   */
+  const membersHref = $derived((status?: string) => {
+    const q = new URLSearchParams({ season: data.season });
+    if (status) q.set('status', status);
+    return `/admin/members?${q}`;
+  });
+
+  const diff = $derived(data.members.currentTotal - data.members.previousTotal);
+
+  // Classes écrites en toutes lettres : Tailwind ne génère pas une classe composée à l'exécution.
+  const TONS = { warning: 'text-warning', destructive: 'text-destructive' } as const;
 </script>
 
+{#snippet compteur(label: string, count: number, href: string | undefined, tone: 'warning' | 'destructive' = 'warning', Icon: any = undefined)}
+  <!--
+    Une ligne du tableau de bord est un lien vers l'écran qui traite le sujet. Elle doit se
+    lire comme tel : libellé en couleur de texte, chevron visible, soulignement au survol — le
+    gris discret d'avant faisait passer ces lignes pour de simples étiquettes.
+  -->
+  {#if href}
+    <a {href} class="flex justify-between items-center gap-2 hover:bg-muted/50 p-1 -mx-1 rounded transition-colors group/item">
+      <span class="text-sm flex items-center gap-2 group-hover/item:underline underline-offset-4">
+        {#if Icon}<Icon size={14} class="text-muted-foreground" />{/if}
+        {label}
+        <ChevronRight size={14} class="text-muted-foreground" />
+      </span>
+      <span class="font-bold text-lg {count > 0 ? TONS[tone] : 'text-success'}">{count}</span>
+    </a>
+  {:else}
+    <div class="flex justify-between items-center gap-2 p-1 -mx-1">
+      <span class="text-sm text-muted-foreground flex items-center gap-2">
+        {#if Icon}<Icon size={14} />{/if}
+        {label}
+      </span>
+      <span class="font-bold text-lg {count > 0 ? TONS[tone] : 'text-success'}">{count}</span>
+    </div>
+  {/if}
+{/snippet}
+
+{#snippet ecran(label: string, href: string, Icon: any)}
+  <a {href} class="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline underline-offset-4">
+    <Icon size={14} /> {label} <ExternalLink size={12} class="opacity-70" />
+  </a>
+{/snippet}
+
 <div class="space-y-8 pb-10">
-  <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-    <!-- Adhérents -->
-    <DashboardSummaryCard 
+  <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+    <!-- Adhérents : effectif, écart avec n-1, et les deux relances à faire -->
+    <DashboardSummaryCard
       title="Adhérents (Saison {data.season})"
       icon={Users}
-      href={canReadMembers ? '/admin/members' : undefined}
       iconClass="text-info bg-info/10"
       bgIconClass="text-foreground"
       containerClass="border-border/50 hover:border-primary/30 from-card/80 to-card"
     >
-      <div class="text-2xl font-bold font-outfit">{data.members.currentTotal}</div>
+      {#if canReadMembers}
+        <a href={membersHref()} class="text-2xl font-bold font-outfit hover:underline underline-offset-4">{data.members.currentTotal}</a>
+      {:else}
+        <div class="text-2xl font-bold font-outfit">{data.members.currentTotal}</div>
+      {/if}
       <p class="text-xs text-muted-foreground mt-1 flex items-center gap-1">
         {#if data.members.previousTotal > 0}
-          {@const diff = data.members.currentTotal - data.members.previousTotal}
           {#if diff > 0}
             <span class="text-success flex items-center"><ArrowUpRight size={14}/> +{diff}</span>
           {:else if diff < 0}
@@ -43,104 +94,44 @@
           <span>Saison n-1 non disponible</span>
         {/if}
       </p>
-      {#if data.members.partiallyPaid > 0}
-        <div class="mt-4 flex items-center gap-2 text-xs font-medium text-warning bg-warning/10 px-2 py-1.5 rounded-md">
-          <AlertCircle size={14} />
-          {data.members.partiallyPaid} adhésion(s) partiellement payée(s)
-        </div>
-      {/if}
-    </DashboardSummaryCard>
-
-    <!-- 4ème Carte : Cotisations Impayées -->
-    <DashboardSummaryCard 
-      title="Cotisations Incomplètes"
-      icon={Users}
-      href={canReadMembers ? '/admin/members' : undefined}
-      iconClass="text-destructive bg-destructive/10"
-      bgIconClass="text-destructive"
-      containerClass="border-destructive/20 hover:border-destructive/40 from-destructive/5 to-card"
-    >
-      <div class="text-2xl font-bold font-outfit text-destructive">{data.members.unpaidCount}</div>
-      <p class="text-xs text-muted-foreground mt-1">
-        Adhérent(s) n'ayant pas réglé la totalité
-      </p>
+      <div class="space-y-1 mt-4">
+        {@render compteur('Sans règlement', data.members.unpaidCount, canReadMembers ? membersHref('en_attente') : undefined, 'destructive')}
+        {@render compteur('Paiement partiel', data.members.partiallyPaid, canReadMembers ? membersHref('incomplet') : undefined, 'warning')}
+      </div>
     </DashboardSummaryCard>
 
     <!-- Banque & Compta -->
-    <DashboardSummaryCard 
+    <DashboardSummaryCard
       title="Trésorerie & Banque"
       icon={Banknote}
       iconClass="text-success bg-success/10"
       bgIconClass="text-foreground"
       containerClass="border-border/50 hover:border-primary/30 from-card/80 to-card"
     >
-      <div class="space-y-3 mt-1">
-        {#if canReadAccounting}
-          <a href="/admin/accounting/cheques" class="flex justify-between items-center hover:bg-muted/50 p-1 -mx-1 rounded transition-colors group/item">
-            <span class="text-sm text-muted-foreground flex items-center gap-2"><CreditCard size={14} class="text-success/70"/> Chèques à remettre <ChevronRight size={14} class="opacity-50 ml-auto"/></span>
-            <span class="font-bold text-lg {data.accounting.pendingChecks > 0 ? 'text-warning' : 'text-success'}">{data.accounting.pendingChecks}</span>
-          </a>
-          <a href="/admin/accounting/cheques" class="flex justify-between items-center hover:bg-muted/50 p-1 -mx-1 rounded transition-colors group/item">
-            <span class="text-sm text-muted-foreground flex items-center gap-2"><FolderKanban size={14} class="text-success/70"/> Remises à déposer <ChevronRight size={14} class="opacity-50 ml-auto"/></span>
-            <span class="font-bold text-lg {data.accounting.pendingDeposits > 0 ? 'text-warning' : 'text-success'}">{data.accounting.pendingDeposits}</span>
-          </a>
-        {:else}
-          <div class="flex justify-between items-center p-1 -mx-1 group/item cursor-default">
-            <span class="text-sm text-muted-foreground flex items-center gap-2"><CreditCard size={14} class="text-success/70"/> Chèques à remettre</span>
-            <span class="font-bold text-lg {data.accounting.pendingChecks > 0 ? 'text-warning' : 'text-success'}">{data.accounting.pendingChecks}</span>
-          </div>
-          <div class="flex justify-between items-center p-1 -mx-1">
-            <span class="text-sm text-muted-foreground flex items-center gap-2"><FolderKanban size={14} class="text-success/70"/> Remises à déposer</span>
-            <span class="font-bold text-lg {data.accounting.pendingDeposits > 0 ? 'text-warning' : 'text-success'}">{data.accounting.pendingDeposits}</span>
-          </div>
-        {/if}
+      <div class="space-y-1 mt-1">
+        {@render compteur('Chèques à remettre', data.accounting.pendingChecks, canReadChecks ? '/admin/accounting/cheques' : undefined, 'warning', CreditCard)}
+        {@render compteur('Remises à déposer', data.accounting.pendingDeposits, canReadChecks ? '/admin/accounting/cheques' : undefined, 'warning', FolderKanban)}
       </div>
+      {#if canReadChecks || canReadBank}
+        <div class="mt-4 pt-3 border-t border-border/40 flex flex-wrap gap-x-4 gap-y-2">
+          {#if canReadChecks}{@render ecran('Remises de chèques', '/admin/accounting/cheques', Landmark)}{/if}
+          {#if canReadBank}{@render ecran('Rapprochement bancaire', '/admin/accounting/reconciliation', Scale)}{/if}
+        </div>
+      {/if}
     </DashboardSummaryCard>
 
     <!-- Tâches Administratives -->
-    <DashboardSummaryCard 
+    <DashboardSummaryCard
       title="Tâches Administratives"
       icon={Receipt}
       iconClass="text-info bg-info/10"
       bgIconClass="text-foreground"
       containerClass="border-border/50 hover:border-primary/30 from-card/80 to-card"
     >
-      <div class="space-y-3 mt-1">
-        {#if canReadExpenses}
-          <a href="/admin/expenses" class="flex justify-between items-center hover:bg-muted/50 p-1 -mx-1 rounded transition-colors">
-            <span class="text-sm text-muted-foreground flex items-center gap-1">Notes de frais en attente <ChevronRight size={14} class="opacity-50"/></span>
-            <span class="font-bold text-lg {data.expenses.pendingReports > 0 ? 'text-warning' : 'text-success'}">{data.expenses.pendingReports}</span>
-          </a>
-        {:else}
-          <div class="flex justify-between items-center p-1 -mx-1">
-            <span class="text-sm text-muted-foreground">Notes de frais en attente</span>
-            <span class="font-bold text-lg {data.expenses.pendingReports > 0 ? 'text-warning' : 'text-success'}">{data.expenses.pendingReports}</span>
-          </div>
-        {/if}
-
-        {#if canReadAccounting}
-          <a href="/admin/accounting/invoices" class="flex justify-between items-center hover:bg-muted/50 p-1 -mx-1 rounded transition-colors">
-            <span class="text-sm text-muted-foreground flex items-center gap-1">Factures à traiter <ChevronRight size={14} class="opacity-50"/></span>
-            <span class="font-bold text-lg {data.accounting.pendingInvoices > 0 ? 'text-warning' : 'text-success'}">{data.accounting.pendingInvoices}</span>
-          </a>
-        {:else}
-          <div class="flex justify-between items-center p-1 -mx-1">
-            <span class="text-sm text-muted-foreground">Factures à traiter</span>
-            <span class="font-bold text-lg {data.accounting.pendingInvoices > 0 ? 'text-warning' : 'text-success'}">{data.accounting.pendingInvoices}</span>
-          </div>
-        {/if}
-
-        {#if canReadShop}
-          <a href="/admin/shop/orders" class="flex justify-between items-center hover:bg-muted/50 p-1 -mx-1 rounded transition-colors">
-            <span class="text-sm text-muted-foreground flex items-center gap-1">Commandes boutique <ChevronRight size={14} class="opacity-50"/></span>
-            <span class="font-bold text-lg {data.shop.pendingOrders > 0 ? 'text-warning' : 'text-success'}">{data.shop.pendingOrders}</span>
-          </a>
-        {:else}
-          <div class="flex justify-between items-center p-1 -mx-1">
-            <span class="text-sm text-muted-foreground">Commandes boutique</span>
-            <span class="font-bold text-lg {data.shop.pendingOrders > 0 ? 'text-warning' : 'text-success'}">{data.shop.pendingOrders}</span>
-          </div>
-        {/if}
+      <div class="space-y-1 mt-1">
+        {@render compteur('Notes de frais en attente', data.expenses.pendingReports, canReadExpenses ? '/admin/expenses' : undefined)}
+        {@render compteur('Factures à traiter', data.accounting.pendingInvoices, canReadInvoices ? '/admin/accounting/invoices' : undefined)}
+        {@render compteur('Commandes boutique', data.shop.pendingOrders, canReadShop ? '/admin/shop/orders' : undefined)}
       </div>
     </DashboardSummaryCard>
   </div>
