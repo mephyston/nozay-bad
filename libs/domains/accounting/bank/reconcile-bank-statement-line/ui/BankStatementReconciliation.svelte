@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { Upload } from '@lucide/svelte';
-  import { Button, Card, FormField, Alert, Input, SearchableCombobox } from '@nba/ui';
+  import { Button, Card, FormField, Alert, Input, SearchableCombobox, ImportResultDialog } from '@nba/ui';
   import { createReconciliationState, type ReconciliationStateProps } from './reconciliation.svelte';
   import ImportStatementDialog from './ImportStatementDialog.svelte';
   import ReconciliationHeader from './ReconciliationHeader.svelte';
@@ -28,6 +28,21 @@
 
   <!-- svelte-ignore non_reactive_update -->
   <ImportStatementDialog bind:state />
+
+  <!-- Le verdict de l'import ; « Continuer » recharge le rapprochement avec les lignes importées. -->
+  {#if state.importVerdict}
+    <!-- Recréé à chaque verdict : un second échec doit rouvrir le dialogue que le premier a fermé. -->
+    {#key state.importVerdict}
+    <ImportResultDialog
+      open={true}
+      success={state.importVerdict.success}
+      title={state.importVerdict.success ? 'Relevé importé' : "L'import du relevé a échoué"}
+      message={state.importVerdict.message}
+      continueHref={`/admin/accounting/reconciliation?season=${encodeURIComponent(state.selectedSeason)}`}
+      continueLabel="Ouvrir le rapprochement"
+    />
+    {/key}
+  {/if}
 
   <!-- svelte-ignore non_reactive_update -->
   <ReconciliationHeader bind:state />

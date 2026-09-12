@@ -172,6 +172,8 @@ export interface ReconciliationStateFields {
   isAnalyzing: boolean;
   isAnalyzingSingle: boolean;
   errorMsg: string;
+  /** Verdict du dernier import de relevé, affiché en dialogue ; `null` quand il n'y en a pas. */
+  importVerdict: { success: boolean; message: string } | null;
   selectedSeason: string;
   selectedAccount: string;
   category: string;

@@ -48,6 +48,7 @@ export { default as GlobalConfirm } from './components/ui/alert-dialog/GlobalCon
 // Pattern Components
 export { default as CollapsibleSection } from './components/patterns/CollapsibleSection.svelte';
 export { default as EmptyState } from './components/patterns/EmptyState.svelte';
+export { default as ImportResultDialog } from './components/patterns/ImportResultDialog.svelte';
 export { default as DataTable } from './components/patterns/DataTable.svelte';
 export { default as DataTableToolbar } from './components/patterns/DataTableToolbar.svelte';
 export { default as DataTableColumnHeader } from "./components/patterns/DataTableColumnHeader.svelte";

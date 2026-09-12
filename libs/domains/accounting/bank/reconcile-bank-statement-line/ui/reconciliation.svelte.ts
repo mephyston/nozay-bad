@@ -38,6 +38,7 @@ export class ReconciliationStore {
   isAnalyzing = $state(false);
   isAnalyzingSingle = $state(false);
   errorMsg = $state('');
+  importVerdict = $state<{ success: boolean; message: string } | null>(null);
   showImportModal = $state(false);
   selectedAccount = $state('auto');
 

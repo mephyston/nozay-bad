@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Upload, FileText, RefreshCw, CalendarClock, TriangleAlert } from '@lucide/svelte';
-  import { Button, Card, Input, Alert, Badge } from '@nba/ui';
+  import { Button, Card, Input, Alert, Badge, ImportResultDialog } from '@nba/ui';
   import { parseRankingCsv, type RankingCsvResult } from '../../shared/ranking-csv';
   import RankingsImportReport from './RankingsImportReport.svelte';
   import type { ImportRankingsOutput } from '../dto';
@@ -36,6 +36,19 @@
   let localError = $state<string | null>(null);
   let submitting = $state(false);
   let report = $state<ImportRankingsOutput | null>(null);
+  /*
+    Le verdict, en dialogue : « Continuer » mène aux classements de la saison. Le rapport
+    détaillé (compétiteurs sans adhérent, lignes illisibles) reste dans la carte.
+  */
+  let verdict = $state<{ success: boolean; message: string } | null>(null);
+
+  function resumeReport(r: ImportRankingsOutput): string {
+    const parts = [`${r.imported} classement(s) importé(s) au ${r.eloDate}`];
+    if (r.nonCompetitors > 0) parts.push(`${r.nonCompetitors} non compétiteur(s) ignoré(s)`);
+    if (r.unmatched.length > 0) parts.push(`${r.unmatched.length} compétiteur(s) sans adhérent`);
+    if (r.errors.length > 0) parts.push(`${r.errors.length} ligne(s) illisible(s)`);
+    return parts.join(', ') + '.';
+  }
 
   const competitors = $derived(parsed ? parsed.rows.filter((r) => !r.nonCompetitor).length : 0);
   const nonCompetitors = $derived(parsed ? parsed.rows.length - competitors : 0);
@@ -101,15 +114,32 @@
       if (!response.ok) throw new Error(payload.error || "L'import a échoué.");
 
       report = payload.data ?? null;
-      if (report) onImported?.(report);
+      if (report) {
+        onImported?.(report);
+        verdict = { success: true, message: resumeReport(report) };
+      }
       reset();
     } catch (error) {
       localError = error instanceof Error ? error.message : "L'import a échoué.";
+      verdict = { success: false, message: localError };
     } finally {
       submitting = false;
     }
   }
 </script>
+
+{#if verdict}
+  {#key verdict}
+    <ImportResultDialog
+      open={true}
+      success={verdict.success}
+      title={verdict.success ? 'Classements importés' : "L'import des classements a échoué"}
+      message={verdict.message}
+      continueHref={`/admin/teams/classements?season=${encodeURIComponent(seasonCode)}`}
+      continueLabel="Voir les classements"
+    />
+  {/key}
+{/if}
 
 <Card.Root>
   <Card.Header>

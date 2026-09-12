@@ -3,13 +3,26 @@
 
 <script lang="ts">
   import { Upload, AlertCircle, RefreshCw, FileText } from '@lucide/svelte';
-  import { Button, Card, Alert } from '@nba/ui';
+  import { Button, Card, Alert, ImportResultDialog } from '@nba/ui';
   import type { ImportResult } from './poona-importer-types';
   import { parseCsvContent } from './poona-importer-parser';
   import PoonaImporterResults from './PoonaImporterResults.svelte';
   import PoonaImporterPreview from './PoonaImporterPreview.svelte';
 
   let { result = null, error = null }: { result: ImportResult | null; error: string | null } = $props();
+
+  /*
+    Le verdict s'affiche en dialogue dès que la page revient du POST : « Continuer » mène
+    à la liste des adhérents, où l'import se vérifie. L'alerte et les compteurs restent
+    en page pour qui ferme le dialogue.
+  */
+  // svelte-ignore state_referenced_locally
+  let verdictOpen = $state(result !== null || error !== null);
+  const verdictMessage = $derived(
+    result
+      ? `${result.inserted} création(s), ${result.updated} mise(s) à jour${result.errors > 0 ? `, ${result.errors} rejet(s)` : ''}.`
+      : error ?? ''
+  );
 
   let dragOver = $state(false);
   let selectedFile = $state<File | null>(null);
@@ -95,6 +108,15 @@
     else loading = true;
   }
 </script>
+
+<ImportResultDialog
+  bind:open={verdictOpen}
+  success={result !== null && !error}
+  title={result && !error ? 'Import des adhérents terminé' : "L'import des adhérents a échoué"}
+  message={verdictMessage}
+  continueHref="/admin/members"
+  continueLabel="Voir les adhérents"
+/>
 
 <Card.Root class="max-w-xl mx-auto">
   <Card.Content class="p-6">

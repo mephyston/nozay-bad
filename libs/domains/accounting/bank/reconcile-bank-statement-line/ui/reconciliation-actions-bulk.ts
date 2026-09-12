@@ -1,4 +1,4 @@
-import { toast, flashAndReload } from '@nba/ui';
+import { toast } from '@nba/ui';
 import { apiImportOfx, apiAnalyzeAi, type ImportSummary } from './reconciliation-api';
 import type { ReconciliationStateFields } from './reconciliation-types';
 import type { createPatchActions } from './reconciliation-patch';
@@ -10,11 +10,13 @@ import type { createPatchActions } from './reconciliation-patch';
  * contredisait de toute façon la règle posée pour cet écran — une ligne, une écriture validée ; le
  * second masquait de l'argent réellement sorti du compte, sans trace du motif.
  *
- * `flashAndReload` ne subsiste que pour l'import d'un relevé.
+ * L'import d'un relevé est le seul à recharger l'écran — depuis le dialogue de verdict.
  *
  * Lui seul fait apparaître des lignes qui n'existaient pas : l'écran passe de la zone de dépôt à
- * la file, et rien de ce que le client tient en mémoire ne décrit le nouvel état. Tout le reste —
- * y compris l'analyse IA, qui ne fait que réécrire des suggestions — s'applique sur place.
+ * la file, et rien de ce que le client tient en mémoire ne décrit le nouvel état. Le compte rendu
+ * se lit d'abord dans un dialogue (un toast disparaissait avant d'être lu), dont « Continuer »
+ * rouvre le rapprochement. Tout le reste — y compris l'analyse IA, qui ne fait que réécrire des
+ * suggestions — s'applique sur place.
  */
 export function createBulkActions(s: ReconciliationStateFields, patch: ReturnType<typeof createPatchActions>) {
   /**
@@ -42,8 +44,14 @@ export function createBulkActions(s: ReconciliationStateFields, patch: ReturnTyp
     s.isSubmitting = true; s.errorMsg = '';
     try {
       const summary = await apiImportOfx(fileInput.files[0], s.selectedAccount);
-      flashAndReload(resumeImport(summary));
-    } catch (err: any) { s.errorMsg = err.message || 'Erreur.'; toast.error(s.errorMsg); s.isSubmitting = false; }
+      s.showImportModal = false;
+      s.importVerdict = { success: true, message: resumeImport(summary) };
+    } catch (err: any) {
+      s.errorMsg = err.message || 'Erreur.';
+      s.importVerdict = { success: false, message: s.errorMsg };
+    } finally {
+      s.isSubmitting = false;
+    }
   }
 
   async function handleAnalyze() {
