@@ -17,6 +17,11 @@ export interface ClassifiableEntry {
   categoryId?: number | string | null;
 }
 
+export interface DatedClassifiableEntry extends ClassifiableEntry {
+  date: string;
+  accrualType?: string | null;
+}
+
 export interface CategoryLike {
   id: number;
   adminLabel?: string | null;
@@ -64,4 +69,28 @@ export function affectsProfitAndLoss(
   if (entry.type === 'transfert') return false;
   if (legacyTransferCategoryId !== undefined && categoryIdOf(entry) === legacyTransferCategoryId) return false;
   return true;
+}
+
+/**
+ * Vrai si l'écriture compte dans le résultat *arrêté à une date*.
+ *
+ * Une écriture normale n'est réalisée qu'une fois passée : datée après l'arrêté, elle relève du
+ * reste-à-réaliser. Une charge à payer ou un produit à recevoir, non : le motif dit justement
+ * que l'argent passera **après** la fin de l'exercice auquel l'écriture se rattache — le
+ * validateur refuse d'ailleurs toute autre date. Les borner par l'arrêté revenait à les exclure
+ * toujours : quatre charges URSSAF et volants saisies pour 25-26 le 12/09/2026, datées de
+ * septembre et d'octobre, manquaient au compte de résultat de 25-26, lu « entier » — c'est-à-dire
+ * arrêté au 31/08. Le rattachement à l'exercice est porté par `season_id`, la date de ces
+ * écritures n'est qu'une échéance : elles comptent quelle que soit la date d'arrêté.
+ *
+ * Le bilan de trésorerie, lui, reste filtré par date : il ne les verra qu'à leur passage en banque.
+ */
+export function countsInProfitAndLossAsOf(
+  entry: DatedClassifiableEntry,
+  cutoffDate: string,
+  legacyTransferCategoryId?: number
+): boolean {
+  if (!affectsProfitAndLoss(entry, legacyTransferCategoryId)) return false;
+  if (entry.accrualType === 'charge_a_payer' || entry.accrualType === 'produit_a_recevoir') return true;
+  return entry.date <= cutoffDate;
 }

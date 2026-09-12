@@ -194,6 +194,55 @@ describe('getSeasonReports (As-of Cut-off Date & Projections - PROMPT 12)', () =
     expect(res.arretedAu).toBe('2025-08-15');
   });
 
+  it("compte les charges à payer de l'exercice dans son compte de résultat lu entier", async () => {
+    // Prod, 12/09/2026 : quatre charges (URSSAF, volants) saisies pour 25-26 en « charge à
+    // payer », datées de septembre et d'octobre 2026 comme le validateur l'exige. Le rapport
+    // de 25-26, lu sans arrêté, est borné au 31/08 : elles n'y figuraient pas, alors qu'une
+    // charge à payer n'existe que pour peser sur l'exercice qui se termine.
+    await db.insert(ledgerEntriesTable).values([
+      {
+        id: 30, seasonId: 1, type: 'depense', accountId: 1, categoryId: tourCatId,
+        amountCents: 145500, date: '2026-09-15', paymentMethodId: 1,
+        description: 'Charges URSSAF', accrualType: 'charge_a_payer', createdAt: new Date()
+      },
+      {
+        id: 31, seasonId: 1, type: 'depense', accountId: 1, categoryId: tourCatId,
+        amountCents: 180000, date: '2026-10-15', paymentMethodId: 1,
+        description: 'Volants', accrualType: 'charge_a_payer', createdAt: new Date()
+      },
+      // Une dépense normale datée après l'exercice reste hors du résultat : la borne tient
+      // pour ce qui n'est pas une régularisation.
+      {
+        id: 32, seasonId: 1, type: 'depense', accountId: 1, categoryId: tourCatId,
+        amountCents: 999, date: '2026-09-15', paymentMethodId: 1,
+        description: 'Datée hors exercice sans motif', accrualType: 'normal', createdAt: new Date()
+      }
+    ]).run();
+
+    const res = await getSeasonReports(db, '25-26');
+    expect(res.compteResultat.totalDepenses).toBe(145500 + 180000);
+    expect(res.compteResultat.categories[`${tourCatId}_depense`].total).toBe(145500 + 180000);
+    expect(res.compteResultat.netResult).toBe(3310000 - 145500 - 180000);
+  });
+
+  it("compte une charge à payer dans le réalisé d'un arrêté en cours d'exercice", async () => {
+    // Même règle pour la projection : l'engagement est acquis, il ne relève pas du
+    // reste-à-réaliser même si l'échéance tombe après l'arrêté.
+    await db.insert(ledgerEntriesTable).values([
+      {
+        id: 33, seasonId: 1, type: 'depense', accountId: 1, categoryId: tourCatId,
+        amountCents: 145500, date: '2026-09-15', paymentMethodId: 1,
+        description: 'Charges URSSAF', accrualType: 'charge_a_payer', createdAt: new Date()
+      }
+    ]).run();
+
+    const res = await getSeasonReports(db, { seasonId: '25-26', arretedAu: '2026-06-30' });
+    expect(res.compteResultat.totalDepenses).toBe(145500);
+    const tour = res.projections!.categories.find(p => p.categoryName === 'Tournois Hivers' && p.type === 'depense');
+    expect(tour).toBeDefined();
+    expect(tour!.realisedCents).toBe(145500);
+  });
+
   it("regroupe les régularisations par catégorie plutôt que ligne à ligne", async () => {
     // Une rentrée de cotisations encaissées d'avance compte des dizaines d'écritures :
     // les dérouler donnait autant de fois le même libellé, et un total à faire de tête

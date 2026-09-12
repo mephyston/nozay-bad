@@ -1,6 +1,6 @@
 import { type Db, AppError } from '@nba/db';
 import { normalizeCategory } from '../../shared/helpers';
-import { affectsProfitAndLoss, resolveLegacyTransferCategoryId } from '../../shared/entry-classification';
+import { affectsProfitAndLoss, countsInProfitAndLossAsOf, resolveLegacyTransferCategoryId } from '../../shared/entry-classification';
 import { GetSeasonReportsRepository } from './repository';
 import { GetSeasonReportsInput, GetSeasonReportsOutput, CategoryProjection, DeferredCashBreakdown } from "./dto";
 import { getSeasonFromDb } from '../../shared/accruals';
@@ -44,9 +44,7 @@ export async function getSeasonReports(db: Db, input: GetSeasonReportsInput): Pr
      * sur le résultat ? La règle tenait ici en deux tests distincts — le type, puis la catégorie
      * héritée — recopiés à six endroits, dont deux n'en appliquaient qu'un.
      */
-    if (!affectsProfitAndLoss(tx, virementInterneCatId)) continue;
-    // Exclude transactions dated after cut-off date
-    if (tx.date > effectiveEndDate) continue;
+    if (!countsInProfitAndLossAsOf(tx, effectiveEndDate, virementInterneCatId)) continue;
 
     const amount = tx.amountCents ?? 0;
     const catId = normalizeCategory(tx.categoryId ?? tx.category);
@@ -274,12 +272,12 @@ export async function getSeasonReports(db: Db, input: GetSeasonReportsInput): Pr
     //  - filtre par saison → exclut les produits/charges constatés d'avance d'une AUTRE saison
     //    (ceux-ci sont réintégrés séparément plus bas via les PCA/CCA des saisons passées) ;
     //  - filtre par date → applique le cut-off d'arrêté (une recette encaissée après n'est
-    //    pas « réalisée » à date, elle relève du reste-à-réaliser).
+    //    pas « réalisée » à date, elle relève du reste-à-réaliser) — sauf pour une charge à
+    //    payer ou un produit à recevoir, engagés sur l'exercice et datés après lui par nature.
     const seasonTxs = await repo.getTransactionsForSeason(db, season.id);
-    const transactions = seasonTxs.filter((tx: any) => tx.date <= effectiveEndDate);
-    for (const tx of transactions) {
+    for (const tx of seasonTxs) {
       if (tx.categoryId !== null) {
-        if (!affectsProfitAndLoss(tx, virementInterneCatId)) continue;
+        if (!countsInProfitAndLossAsOf(tx, effectiveEndDate, virementInterneCatId)) continue;
         const catId = typeof tx.categoryId === 'object' ? (tx.categoryId as any).id : tx.categoryId;
         const key = `${catId}_${tx.type}`;
         if (!categoryTotals[key]) {
