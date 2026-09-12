@@ -9,6 +9,8 @@ export interface CreateCheckInput {
   description?: string;
   date?: string;
   photoUrl?: string;
+  /** Mois calendaire (1-12) où le chèque devrait partir en banque ; indicatif. */
+  plannedDepositMonth?: number | null;
 }
 
 /**
@@ -36,4 +38,5 @@ export interface UpdateCheckInput {
   memberId?: number | null;
   category?: string | number;
   date: string;
+  plannedDepositMonth?: number | null;
 }

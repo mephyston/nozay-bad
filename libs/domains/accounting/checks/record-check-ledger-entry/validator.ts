@@ -10,7 +10,9 @@ export const createCheckSchema = Type.Object({
   category: Type.Optional(Type.Union([Type.String(), Type.Number()])),
   description: Type.Optional(Type.String()),
   date: Type.Optional(Type.String()),
-  photoUrl: Type.Optional(Type.String())
+  photoUrl: Type.Optional(Type.String()),
+  /** Mois calendaire de remise prévu (1-12), indicatif. */
+  plannedDepositMonth: Type.Optional(Type.Union([Type.Integer({ minimum: 1, maximum: 12 }), Type.Null()]))
 });
 
 /**
@@ -24,5 +26,6 @@ export const updateCheckSchema = Type.Object({
   bank: Type.Optional(Type.Union([Type.String(), Type.Null()])),
   memberId: Type.Optional(Type.Union([Type.Number(), Type.Null()])),
   category: Type.Optional(Type.Union([Type.String(), Type.Number()])),
-  date: Type.String({ minLength: 1 })
+  date: Type.String({ minLength: 1 }),
+  plannedDepositMonth: Type.Optional(Type.Union([Type.Integer({ minimum: 1, maximum: 12 }), Type.Null()]))
 });

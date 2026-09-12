@@ -46,6 +46,7 @@ export class RecordCheckTransactionRepository {
       memberId: values.memberId || null,
       status: values.status || 'received',
       photoUrl: values.photoUrl || null,
+      plannedDepositMonth: values.plannedDepositMonth ?? null,
       ledgerEntryId: sql`(SELECT last_insert_rowid())`,
       createdAt: values.createdAt || new Date()
     });
@@ -54,7 +55,7 @@ export class RecordCheckTransactionRepository {
   buildUpdateCheckStatement(
     db: DbOrTx,
     id: number,
-    values: { number: string; amountCents: number; emitter: string; bank: string | null; memberId: number | null }
+    values: { number: string; amountCents: number; emitter: string; bank: string | null; memberId: number | null; plannedDepositMonth: number | null }
   ): any {
     return db.update(checksTable).set(values).where(eq(checksTable.id, id));
   }

@@ -1,6 +1,6 @@
 import { seasonsTable, ledgerEntriesTable } from '@nba/accounting/schema';
 import { type DbOrTx } from '@nba/db';
-import { eq, and, desc } from 'drizzle-orm';
+import { eq, and, desc, sql } from 'drizzle-orm';
 import { checksTable, checkDepositsTable } from '../../shared/schema';
 import { getMembersByIds } from '@nba/members-api';
 
@@ -31,6 +31,7 @@ export class ListChecksRepository {
       ledgerEntryId: checksTable.ledgerEntryId,
       status: checksTable.status,
       photoUrl: checksTable.photoUrl,
+      plannedDepositMonth: checksTable.plannedDepositMonth,
       createdAt: checksTable.createdAt,
       // Date d'émission et catégorie vivent sur la recette liée : le formulaire de
       // modification les prérenseigne depuis la liste, sans second appel.
@@ -40,7 +41,16 @@ export class ListChecksRepository {
       .from(checksTable)
       .leftJoin(ledgerEntriesTable, eq(checksTable.ledgerEntryId, ledgerEntriesTable.id))
       .where(and(...conditions))
-      .orderBy(desc(checksTable.createdAt))
+      /*
+       * Dans l'ordre de l'exercice — septembre en tête, août en queue — puis les chèques sans
+       * mois de remise, et les plus récents d'abord à mois égal. Même rang que
+       * `depositMonthRank` (shared/deposit-month.ts) : (mois + 3) % 12.
+       */
+      .orderBy(
+        sql`CASE WHEN ${checksTable.plannedDepositMonth} IS NULL THEN 1 ELSE 0 END`,
+        sql`(${checksTable.plannedDepositMonth} + 3) % 12`,
+        desc(checksTable.createdAt)
+      )
       .all();
 
     const memberIds = Array.from(new Set(checks.map((c) => c.memberId).filter((id) => id !== null))) as number[];

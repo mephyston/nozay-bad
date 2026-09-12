@@ -31,6 +31,7 @@ describe('handleSaveCheck', () => {
     checkDate: '2026-08-01',
     checkMemberId: '',
     checkCategory: '2',
+    checkPlannedDepositMonth: '',
     editingCheckId: null as number | null,
     isSubmittingCheck: false,
     formError: '',
@@ -71,6 +72,8 @@ describe('handleSaveCheck', () => {
     // `memberId: null` était refusé par le validateur (Optional(Number)) : on l'omet.
     expect('memberId' in body).toBe(false);
     expect('id' in body).toBe(false);
+    // Sans indication de remise, rien ne part — le validateur n'accepte `null` qu'en modification.
+    expect('plannedDepositMonth' in body).toBe(false);
 
     expect(s.showAddCheckModal).toBe(false);
     expect(pendingFlash()).toMatchObject({ type: 'success', message: 'Chèque enregistré.' });
@@ -132,6 +135,18 @@ describe('handleSaveCheck', () => {
 
     expect(JSON.parse(fetchMock.mock.calls[0][1].body).memberId).toBe(12);
   });
+
+  it("envoie le mois de remise prévu en entier, et `null` pour l'effacer en modification", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, text: async () => '{"success":true}' });
+    vi.stubGlobal('fetch', fetchMock);
+
+    await handleSaveCheck({ preventDefault() {} } as any, '25-26', { ...state(), checkPlannedDepositMonth: '11' });
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body).plannedDepositMonth).toBe(11);
+
+    await handleSaveCheck({ preventDefault() {} } as any, '25-26', { ...state(), editingCheckId: 7, checkPlannedDepositMonth: '' });
+    expect(JSON.parse(fetchMock.mock.calls[1][1].body).plannedDepositMonth).toBeNull();
+  });
+
 });
 
 describe('handleAnalyzeScan', () => {
@@ -200,4 +215,5 @@ describe('handleAnalyzeScan', () => {
     expect(s.formError).toContain('saisir les informations manuellement');
     expect(s.isAnalyzing).toBe(false);
   });
+
 });

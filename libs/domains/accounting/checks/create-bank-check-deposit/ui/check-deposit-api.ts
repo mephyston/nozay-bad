@@ -120,6 +120,8 @@ export async function handleSaveCheck(e: SubmitEvent, seasonId: string, state: a
           bank: state.checkBank,
           date: state.checkDate,
           category: state.checkCategory,
+          // Indicatif : `null` efface l'indication en modification, l'absence n'en pose pas en création.
+          plannedDepositMonth: state.checkPlannedDepositMonth ? parseInt(state.checkPlannedDepositMonth) : (editing ? null : undefined),
           memberId: memberId ?? (editing ? null : undefined)
         })
       });

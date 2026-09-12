@@ -108,6 +108,14 @@ describe('record-check-ledger-entry handler', () => {
    * « chèque », et c'est de ce statut que le solde bancaire théorique déduit ce qui n'est pas
    * encore en banque. Ce chemin laissait le défaut de la table, `cleared`.
    */
+  it('enregistre le mois de remise prévu à la création, nul quand il n’est pas donné', async () => {
+    await createCheck(mockDb as any, { seasonId: '26-27', number: '1', amount: 100, emitter: 'X', plannedDepositMonth: 1 });
+    expect(repo.buildCreateCheckStatement.mock.calls[0][1].plannedDepositMonth).toBe(1);
+
+    await createCheck(mockDb as any, { seasonId: '26-27', number: '2', amount: 100, emitter: 'X' });
+    expect(repo.buildCreateCheckStatement.mock.calls[1][1].plannedDepositMonth).toBeNull();
+  });
+
   it('crée la recette en coffre (`in_vault`), pas encaissée', async () => {
     await createCheck(mockDb as any, { seasonId: '26-27', number: '1', amount: 100, emitter: 'X' });
 
@@ -131,13 +139,20 @@ describe('updateCheck', () => {
     expect(statements.map((s: any) => s.label)).toEqual(['update-check', 'update-ledger']);
 
     expect(repo.buildUpdateCheckStatement).toHaveBeenCalledWith(mockDb, 1, {
-      number: '456', amountCents: 2500, emitter: 'DURAND', bank: 'LCL', memberId: null
+      number: '456', amountCents: 2500, emitter: 'DURAND', bank: 'LCL', memberId: null, plannedDepositMonth: null
     });
     // Le libellé automatique suit le nouveau numéro et le nouvel émetteur.
     expect(repo.buildUpdateLedgerEntryStatement).toHaveBeenCalledWith(mockDb, 10, {
       amountCents: 2500, date: '2026-09-02', categoryId: 2, memberId: null,
       reference: 'Chèque n°456', description: 'Règlement par chèque n°456 de DURAND'
     });
+  });
+
+  it("porte le mois de remise prévu sur le chèque, et lui seul — la recette ne le connaît pas", async () => {
+    await updateCheck(mockDb as any, 1, { ...corps, plannedDepositMonth: 11 });
+
+    expect(repo.buildUpdateCheckStatement.mock.calls[0][2].plannedDepositMonth).toBe(11);
+    expect(repo.buildUpdateLedgerEntryStatement.mock.calls[0][2]).not.toHaveProperty('plannedDepositMonth');
   });
 
   it('conserve un libellé retouché depuis le grand livre', async () => {

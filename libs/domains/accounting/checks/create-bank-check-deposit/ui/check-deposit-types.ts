@@ -10,6 +10,8 @@ export interface Check {
   ledgerEntryId: number | null;
   status: 'received' | 'deposited';
   photoUrl: string | null;
+  /** Mois calendaire (1-12) de remise prévu, indicatif ; le tableau arrive trié dessus. */
+  plannedDepositMonth: number | null;
   createdAt: string;
   /** Date d'émission et catégorie, portées par la recette liée (null pour un chèque orphelin). */
   date: string | null;

@@ -272,6 +272,7 @@ export async function createCheck(db: Db, body: CreateCheckInput) {
     memberId: body.memberId || null,
     status: 'received',
     photoUrl: body.photoUrl || null,
+    plannedDepositMonth: body.plannedDepositMonth ?? null,
     createdAt: new Date()
   });
 
@@ -363,7 +364,8 @@ export async function updateCheck(db: Db, id: number, body: UpdateCheckInput) {
       amountCents,
       emitter: body.emitter,
       bank: body.bank || null,
-      memberId
+      memberId,
+      plannedDepositMonth: body.plannedDepositMonth ?? null
     })
   ];
 

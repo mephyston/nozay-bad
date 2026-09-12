@@ -109,8 +109,8 @@
       containerClass="border-border/50 hover:border-primary/30 from-card/80 to-card"
     >
       <div class="space-y-1 mt-1">
-        {@render compteur('Chèques à remettre', data.accounting.pendingChecks, canReadChecks ? '/admin/accounting/cheques' : undefined, 'warning', CreditCard)}
-        {@render compteur('Remises à déposer', data.accounting.pendingDeposits, canReadChecks ? '/admin/accounting/cheques' : undefined, 'warning', FolderKanban)}
+        {@render compteur('Chèques à remettre', data.accounting.pendingChecks, canReadChecks ? '/admin/accounting/cheques/list' : undefined, 'warning', CreditCard)}
+        {@render compteur('Remises à déposer', data.accounting.pendingDeposits, canReadChecks ? '/admin/accounting/cheques/deposits' : undefined, 'warning', FolderKanban)}
       </div>
       {#if canReadChecks || canReadBank}
         <div class="mt-4 pt-3 border-t border-border/40 flex flex-wrap gap-x-4 gap-y-2">

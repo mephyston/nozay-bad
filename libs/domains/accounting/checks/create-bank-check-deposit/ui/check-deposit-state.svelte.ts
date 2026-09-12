@@ -28,6 +28,8 @@ export function createCheckDepositState(props: () => {
   let checkMemberId = $state<string>('');
   let checkCategory = $state('1');
   let checkDate = $state(today());
+  // Mois de remise prévu, en calendaire ('9' … '8') ; vide = aucune indication.
+  let checkPlannedDepositMonth = $state('');
   let formError = $state('');
 
   // Search filter for checks & members in select
@@ -44,6 +46,7 @@ export function createCheckDepositState(props: () => {
     checkMemberId = '';
     checkCategory = '1';
     checkDate = today();
+    checkPlannedDepositMonth = '';
     formError = '';
     memberSearchQuery = '';
     matchedMemberName = '';
@@ -66,6 +69,7 @@ export function createCheckDepositState(props: () => {
     checkMemberId = check.memberId ? String(check.memberId) : '';
     checkCategory = String(check.categoryId ?? 1);
     checkDate = check.date ?? String(check.createdAt).slice(0, 10);
+    checkPlannedDepositMonth = check.plannedDepositMonth ? String(check.plannedDepositMonth) : '';
     showAddCheckModal = true;
   }
 
@@ -165,6 +169,7 @@ export function createCheckDepositState(props: () => {
     get checkMemberId() { return checkMemberId; }, set checkMemberId(v) { checkMemberId = v; },
     get checkCategory() { return checkCategory; }, set checkCategory(v) { checkCategory = v; },
     get checkDate() { return checkDate; }, set checkDate(v) { checkDate = v; },
+    get checkPlannedDepositMonth() { return checkPlannedDepositMonth; }, set checkPlannedDepositMonth(v) { checkPlannedDepositMonth = v; },
     get formError() { return formError; }, set formError(v) { formError = v; },
     get checkSearchQuery() { return checkSearchQuery; }, set checkSearchQuery(v) { checkSearchQuery = v; },
     get memberSearchQuery() { return memberSearchQuery; }, set memberSearchQuery(v) { memberSearchQuery = v; },

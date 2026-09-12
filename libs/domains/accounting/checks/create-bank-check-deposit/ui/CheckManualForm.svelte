@@ -1,6 +1,7 @@
 <script lang="ts">
-  import { Button, Input, FormField } from '@nba/ui';
+  import { Button, Input, FormField, Select } from '@nba/ui';
   import type { CheckDepositState } from './check-deposit-state.svelte';
+  import { DEPOSIT_MONTH_OPTIONS } from '../../../shared/deposit-month';
 
   interface Props {
     depositState: CheckDepositState;
@@ -166,4 +167,18 @@
       />
     </FormField>
   </div>
+
+  <!--
+    Une consigne, pas un rattachement : « à remettre en novembre » se note ici, et le
+    tableau des chèques en attente se trie dessus, de septembre à août. Le bordereau ne
+    le lit pas — on remet ce qu'on coche.
+  -->
+  <FormField id="check-planned-month" label="Remise prévue (indicatif)">
+    <Select id="check-planned-month" bind:value={depositState.checkPlannedDepositMonth}>
+      <option value="">— Dès que possible —</option>
+      {#each DEPOSIT_MONTH_OPTIONS as mois}
+        <option value={String(mois.value)}>{mois.label}</option>
+      {/each}
+    </Select>
+  </FormField>
 </div>

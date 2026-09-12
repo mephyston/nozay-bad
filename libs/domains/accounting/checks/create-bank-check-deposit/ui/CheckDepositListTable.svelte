@@ -50,7 +50,13 @@
             id="filter-season"
             items={seasons.length > 0 ? toSeasonOptions(seasons) : [{ label: 'Saison 2025-2026', value: '25-26' }]}
             value={seasonId}
-            onValueChange={(v) => { const val = String(v); const params = new URLSearchParams(window.location.search); params.set('season', val); softNavigate(`/admin/accounting/cheques?${params.toString()}`); }}
+            onValueChange={(v) => {
+              // On reste sur l'écran courant : `/cheques` est le hub qui mène aux deux tableaux,
+              // pas l'un d'eux — y renvoyer faisait perdre le tableau qu'on venait de filtrer.
+              const params = new URLSearchParams(window.location.search);
+              params.set('season', String(v));
+              softNavigate(`${window.location.pathname}?${params.toString()}`);
+            }}
           />
         </FormField>
       {/snippet}

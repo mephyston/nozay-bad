@@ -3,6 +3,7 @@
   import { Badge, Button, Input, Checkbox, Amount, DropdownMenu, DataTable, Table, DataTableToolbar, FormField, SearchableCombobox, softNavigate, toSeasonOptions } from '@nba/ui';
   import type { CheckDepositState } from './check-deposit-state.svelte';
   import type { Check } from './check-deposit-types';
+  import { depositMonthLabel } from '../../../shared/deposit-month';
 
   import type { Snippet } from 'svelte';
 
@@ -41,7 +42,13 @@
             id="filter-season"
             items={seasons.length > 0 ? toSeasonOptions(seasons) : [{ label: 'Saison 2025-2026', value: '25-26' }]}
             value={seasonId}
-            onValueChange={(v) => { const val = String(v); const params = new URLSearchParams(window.location.search); params.set('season', val); softNavigate(`/admin/accounting/cheques?${params.toString()}`); }}
+            onValueChange={(v) => {
+              // On reste sur l'écran courant : `/cheques` est le hub qui mène aux deux tableaux,
+              // pas l'un d'eux — y renvoyer faisait perdre le tableau qu'on venait de filtrer.
+              const params = new URLSearchParams(window.location.search);
+              params.set('season', String(v));
+              softNavigate(`${window.location.pathname}?${params.toString()}`);
+            }}
           />
         </FormField>
       {/snippet}
@@ -81,6 +88,7 @@
         disabled={depositState.isClosed}
       />
     </Table.Head>
+    <Table.Head>Remise prévue</Table.Head>
     <Table.Head class="hidden md:table-cell">Date</Table.Head>
     <Table.Head>N° Chèque</Table.Head>
     <Table.Head class="hidden md:table-cell">Banque</Table.Head>
@@ -100,6 +108,13 @@
           }}
           disabled={depositState.isClosed || !!check.checkDepositId}
         />
+      </Table.Cell>
+      <Table.Cell>
+        {#if check.plannedDepositMonth}
+          <Badge variant="secondary" size="xs">{depositMonthLabel(check.plannedDepositMonth)}</Badge>
+        {:else}
+          <span class="text-xs text-muted-foreground italic">Dès que possible</span>
+        {/if}
       </Table.Cell>
       <Table.Cell class="hidden md:table-cell text-muted-foreground">
         {new Date(check.createdAt).toLocaleDateString('fr-FR')}

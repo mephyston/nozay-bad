@@ -239,6 +239,8 @@ export const checksTable = sqliteTable('checks', {
   ledgerEntryId: integer('ledger_entry_id').references(() => ledgerEntriesTable.id),
   status: text('status', { enum: ['received', 'deposited'] }).notNull().default('received'),
   photoUrl: text('photo_url'),
+  /** Mois calendaire (1-12) où le chèque devrait partir en banque : une indication, pas un rattachement. */
+  plannedDepositMonth: integer('planned_deposit_month'),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
 });
 
