@@ -45,6 +45,7 @@ export async function exportMembersEmails(db: Db, filters: ListMembersFilters): 
   const bytes = new Uint8Array(bom.length + csv.length);
   bytes.set(bom, 0);
   bytes.set(csv, bom.length);
-  const suffixe = filters.status ? `-${filters.status}` : '';
+  // Le nom du fichier dit ce qu'il contient : « -lapsed » est la liste de relance des non renouvelés.
+  const suffixe = (filters.status ? `-${filters.status}` : '') + (filters.cohort ? `-${filters.cohort}` : '');
   return { data: bytes, filename: `adherents-emails-${filters.season ?? 'toutes-saisons'}${suffixe}.csv` };
 }

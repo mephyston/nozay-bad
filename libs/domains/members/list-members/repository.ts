@@ -1,6 +1,6 @@
 import { membershipsTable, personsTable } from '@nba/members/schema';
-import { getSeasonId } from '@nba/accounting-api';
-import { eq, and, or, like, sql, asc } from 'drizzle-orm';
+import { getSeasonId, getSeasonById, getAdjacentSeason } from '@nba/accounting-api';
+import { eq, and, or, like, sql, asc, exists, notExists } from 'drizzle-orm';
 import { type DbOrTx } from '@nba/db';
 import { selectMembers, type MemberSummary } from '../shared/queries';
 
@@ -53,11 +53,33 @@ export class ListMembersRepository {
     }
     if (filters.season) {
       const sId = await getSeasonId(db, filters.season);
-      if (sId !== undefined) {
-        conditions.push(eq(membershipsTable.seasonId, sId));
-      } else {
+      if (sId === undefined) {
         // Saison inconnue : aucune adhésion, plutôt que toutes.
         conditions.push(eq(membershipsTable.seasonId, -1));
+      } else if (!filters.cohort) {
+        conditions.push(eq(membershipsTable.seasonId, sId));
+      } else {
+        /*
+         * La cohorte se lit par **personne**, contre la saison qui précède immédiatement : c'est
+         * le même partage que le tableau de bord (members/shared/dashboard.ts), et le lien de la
+         * carte « Renouvellement » doit ouvrir exactement ce qu'elle a compté. Sans saison
+         * précédente, tout le monde est nouveau et personne n'est parti.
+         */
+        const season = await getSeasonById(db, sId);
+        const previous = season ? await getAdjacentSeason(db, season.startDate, 'before') : undefined;
+        const prevId = previous?.id ?? -1;
+        const hadMembership = (seasonId: number) =>
+          db.select({ one: sql`1` }).from(sql`memberships AS other`)
+            .where(sql`other.person_id = ${membershipsTable.personId} AND other.season_id = ${seasonId}`);
+
+        if (filters.cohort === 'lapsed') {
+          conditions.push(eq(membershipsTable.seasonId, prevId), notExists(hadMembership(sId)));
+        } else {
+          conditions.push(
+            eq(membershipsTable.seasonId, sId),
+            filters.cohort === 'renewed' ? exists(hadMembership(prevId)) : notExists(hadMembership(prevId))
+          );
+        }
       }
     }
     if (filters.paid !== undefined) {

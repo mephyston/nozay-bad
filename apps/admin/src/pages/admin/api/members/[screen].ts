@@ -87,6 +87,8 @@ export const ECRANS: Record<string, Ecran> = {
         status: params.get('status') || '',
         season
       });
+      const cohort = params.get('cohort');
+      if (cohort) requete.set('cohort', cohort);
 
       const adherents = await lire.detail(`/members?${requete}`);
 
@@ -111,6 +113,7 @@ export const ECRANS: Record<string, Ecran> = {
           gender: requete.get('gender'),
           type: requete.get('type'),
           status: requete.get('status'),
+          cohort: requete.get('cohort'),
           season
         },
         errorMsg: adherents.ok ? null : 'Impossible de récupérer la liste des adhérents.'

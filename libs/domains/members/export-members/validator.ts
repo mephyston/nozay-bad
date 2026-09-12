@@ -6,5 +6,6 @@ export const exportMembersQuerySchema = Type.Object({
   gender: Type.Optional(Type.String()),
   type: Type.Optional(Type.String()),
   status: Type.Optional(Type.String()),
-  season: Type.Optional(Type.String())
+  season: Type.Optional(Type.String()),
+  cohort: Type.Optional(Type.Union([Type.Literal('new'), Type.Literal('renewed'), Type.Literal('lapsed')]))
 });

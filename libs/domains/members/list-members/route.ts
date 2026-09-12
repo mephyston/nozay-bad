@@ -41,7 +41,7 @@ listMembersRoute.get(
     }
 
     const db = createDb(c.env.DB);
-    const result = await listMembers(db, { search, gender: gender as any, type, status, season, paid }, { page, limit });
+    const result = await listMembers(db, { search, gender: gender as any, type, status, season, paid, cohort: query.cohort }, { page, limit });
 
     return c.json({
       success: true,

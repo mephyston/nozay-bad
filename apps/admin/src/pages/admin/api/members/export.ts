@@ -20,6 +20,7 @@ const SAISON_VALIDE = /^[A-Za-z0-9-]{1,16}$/;
 const GENRES = ['', 'M', 'F'];
 const TYPES = ['', 'Competiteur', 'Loisir'];
 const STATUTS: readonly string[] = ['', ...MEMBERSHIP_STATUSES];
+const COHORTES = ['', 'new', 'renewed', 'lapsed'];
 const RECHERCHE_MAX = 100;
 
 export const GET: APIRoute = async ({ request, locals }) => {
@@ -34,12 +35,14 @@ export const GET: APIRoute = async ({ request, locals }) => {
   const genre = params.get('gender') ?? '';
   const type = params.get('type') ?? '';
   const statut = params.get('status') ?? '';
-  if (!GENRES.includes(genre) || !TYPES.includes(type) || !STATUTS.includes(statut)) {
+  const cohorte = params.get('cohort') ?? '';
+  if (!GENRES.includes(genre) || !TYPES.includes(type) || !STATUTS.includes(statut) || !COHORTES.includes(cohorte)) {
     return new Response('Filtre invalide', { status: 400 });
   }
   const recherche = (params.get('search') ?? '').slice(0, RECHERCHE_MAX);
 
   const requete = new URLSearchParams({ season: saison, gender: genre, type, status: statut, search: recherche });
+  if (cohorte) requete.set('cohort', cohorte);
   const api = createAdminApiClient(locals);
   const res = await api.fetch(`http://localhost/members/export?${requete}`);
   if (!res.ok) {

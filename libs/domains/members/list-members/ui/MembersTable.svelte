@@ -16,7 +16,7 @@
   const exportHref = $derived.by(() => {
     if (!canExport) return null;
     const params = new URLSearchParams();
-    for (const cle of ['search', 'gender', 'type', 'status'] as const) {
+    for (const cle of ['search', 'gender', 'type', 'status', 'cohort'] as const) {
       const valeur = filters?.[cle];
       if (valeur) params.set(cle, valeur);
     }
@@ -85,12 +85,15 @@
   const initialType = filters?.type ?? '';
   // svelte-ignore state_referenced_locally
   const initialSeason = filters?.season ?? '25-26';
+  // svelte-ignore state_referenced_locally
+  const initialCohort = filters?.cohort ?? '';
 
   let searchInput = $state(initialSearch);
   let selectedGender = $state(initialGender);
   let selectedStatus = $state(initialStatus);
   let selectedType = $state(initialType);
   let selectedSeason = $state(initialSeason);
+  let selectedCohort = $state(initialCohort);
 
   function applyFilters() {
     const params = new URLSearchParams();
@@ -99,6 +102,7 @@
     if (selectedStatus) params.set('status', selectedStatus);
     if (selectedType) params.set('type', selectedType);
     if (selectedSeason) params.set('season', selectedSeason);
+    if (selectedCohort) params.set('cohort', selectedCohort);
     params.set('page', '1');
     softNavigate(`/admin/members?${params.toString()}`);
   }
@@ -108,6 +112,7 @@
     selectedGender = '';
     selectedStatus = '';
     selectedType = '';
+    selectedCohort = '';
     selectedSeason = '25-26';
     applyFilters();
   }
@@ -136,6 +141,7 @@
         bind:selectedGender
         bind:selectedType
         bind:selectedStatus
+        bind:selectedCohort
         {seasons}
         {exportHref}
         onApply={applyFilters}

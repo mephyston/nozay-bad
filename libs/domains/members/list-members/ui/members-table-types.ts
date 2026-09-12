@@ -32,6 +32,8 @@ export interface Filters {
   status: string;
   type: string;
   season?: string;
+  /** Cohorte face à n-1 : `new` | `renewed` | `lapsed`, ou vide. */
+  cohort?: string | null;
 }
 
 export interface Season {

@@ -10,6 +10,7 @@
     selectedGender = $bindable(''),
     selectedType = $bindable(''),
     selectedStatus = $bindable(''),
+    selectedCohort = $bindable(''),
     seasons = [],
     exportHref = null,
     onApply,
@@ -20,6 +21,7 @@
     selectedGender: string;
     selectedType: string;
     selectedStatus: string;
+    selectedCohort: string;
     seasons: Season[];
     /** Adresse du fichier des mails aux filtres en cours, ou `null` sans le droit. */
     exportHref?: string | null;
@@ -33,7 +35,7 @@
     }
   }
   
-  const isFilterActive = $derived(!!selectedGender || !!selectedType || !!selectedStatus || (selectedSeason && seasons.length > 0));
+  const isFilterActive = $derived(!!selectedGender || !!selectedType || !!selectedStatus || !!selectedCohort || (selectedSeason && seasons.length > 0));
 
   const seasonItems = $derived(
     seasons.length > 0
@@ -53,6 +55,13 @@
   const statusItems = [
     { label: 'Tous les statuts', value: '' },
     ...MEMBERSHIP_STATUSES.map((value) => ({ label: MEMBERSHIP_STATUS_LABELS[value], value }))
+  ];
+  // Même partage que la carte « Renouvellement » du tableau de bord, par personne contre n-1.
+  const cohortItems = [
+    { label: 'Toute la saison', value: '' },
+    { label: 'Renouvelés (déjà là en n-1)', value: 'renewed' },
+    { label: 'Nouveaux (absents en n-1)', value: 'new' },
+    { label: 'Non renouvelés (adhérents de n-1 sans adhésion)', value: 'lapsed' }
   ];
 </script>
 
@@ -82,6 +91,10 @@
         <div class="space-y-1.5">
           <label for="filter-status" class="text-xs font-semibold text-muted-foreground">Statut</label>
           <SearchableCombobox id="filter-status" items={statusItems} bind:value={selectedStatus} onValueChange={onApply} />
+        </div>
+        <div class="space-y-1.5">
+          <label for="filter-cohort" class="text-xs font-semibold text-muted-foreground">Cohorte</label>
+          <SearchableCombobox id="filter-cohort" items={cohortItems} bind:value={selectedCohort} onValueChange={onApply} />
         </div>
     </div>
     <div class="pt-2 flex justify-end">

@@ -21,9 +21,10 @@
    * Les adhérents se lisent sur la saison affichée, et la liste filtre par statut : le
    * chiffre du tableau de bord doit être celui que la liste montrera au clic.
    */
-  const membersHref = $derived((status?: string) => {
+  const membersHref = $derived((status?: string, cohort?: 'new' | 'renewed' | 'lapsed') => {
     const q = new URLSearchParams({ season: data.season });
     if (status) q.set('status', status);
+    if (cohort) q.set('cohort', cohort);
     return `/admin/members?${q}`;
   });
 
@@ -65,6 +66,24 @@
         {label}
       </span>
       <span class="font-bold text-lg {count > 0 ? TONS[tone] : 'text-success'}">{count}</span>
+    </div>
+  {/if}
+{/snippet}
+
+{#snippet cohorte(label: string, count: number, href: string | undefined, Icon: any, tone: string)}
+  {#if href}
+    <a {href} class="flex justify-between items-center gap-2 hover:bg-muted/50 p-1 -mx-1 rounded transition-colors group/item">
+      <span class="text-sm flex items-center gap-2 group-hover/item:underline underline-offset-4">
+        <Icon size={14} class="text-muted-foreground" />
+        {label}
+        <ChevronRight size={14} class="text-muted-foreground" />
+      </span>
+      <span class="font-bold text-lg {tone}">{count}</span>
+    </a>
+  {:else}
+    <div class="flex justify-between items-center gap-2 p-1 -mx-1">
+      <span class="text-sm text-muted-foreground flex items-center gap-2"><Icon size={14} /> {label}</span>
+      <span class="font-bold text-lg {tone}">{count}</span>
     </div>
   {/if}
 {/snippet}
@@ -114,7 +133,6 @@
     <DashboardSummaryCard
       title="Renouvellement"
       icon={Repeat}
-      href={canReadMembers ? membersHref() : undefined}
       iconClass="text-primary bg-primary/10"
       bgIconClass="text-foreground"
       containerClass="border-border/50 hover:border-primary/30 from-card/80 to-card"
@@ -126,20 +144,12 @@
         <div class="text-2xl font-bold font-outfit text-muted-foreground">—</div>
         <p class="text-xs text-muted-foreground mt-1">Saison n-1 non disponible</p>
       {/if}
-      <div class="space-y-1 mt-4 text-sm">
-        <div class="flex justify-between items-center gap-2 p-1 -mx-1">
-          <span class="flex items-center gap-2 text-muted-foreground"><Repeat size={14} /> Renouvelés</span>
-          <span class="font-bold text-lg">{data.members.renewed}</span>
-        </div>
-        <div class="flex justify-between items-center gap-2 p-1 -mx-1">
-          <span class="flex items-center gap-2 text-muted-foreground"><UserPlus size={14} /> Nouveaux</span>
-          <span class="font-bold text-lg text-success">{data.members.newcomers}</span>
-        </div>
+      <!-- Chaque ligne ouvre la liste filtrée sur sa cohorte : le chiffre et la liste se répondent. -->
+      <div class="space-y-1 mt-4">
+        {@render cohorte('Renouvelés', data.members.renewed, canReadMembers ? membersHref(undefined, 'renewed') : undefined, Repeat, '')}
+        {@render cohorte('Nouveaux', data.members.newcomers, canReadMembers ? membersHref(undefined, 'new') : undefined, UserPlus, 'text-success')}
         {#if data.members.lapsed !== null}
-          <div class="flex justify-between items-center gap-2 p-1 -mx-1">
-            <span class="flex items-center gap-2 text-muted-foreground"><UserMinus size={14} /> Non renouvelés</span>
-            <span class="font-bold text-lg {data.members.lapsed > 0 ? 'text-warning' : 'text-success'}">{data.members.lapsed}</span>
-          </div>
+          {@render cohorte('Non renouvelés', data.members.lapsed, canReadMembers ? membersHref(undefined, 'lapsed') : undefined, UserMinus, data.members.lapsed > 0 ? 'text-warning' : 'text-success')}
         {/if}
       </div>
     </DashboardSummaryCard>

@@ -8,5 +8,6 @@ export const listMembersQuerySchema = Type.Object({
   type: Type.Optional(Type.String()),
   status: Type.Optional(Type.String()),
   season: Type.Optional(Type.String()),
-  paid: Type.Optional(Type.Union([Type.Literal('true'), Type.Literal('false')]))
+  paid: Type.Optional(Type.Union([Type.Literal('true'), Type.Literal('false')])),
+  cohort: Type.Optional(Type.Union([Type.Literal('new'), Type.Literal('renewed'), Type.Literal('lapsed')]))
 });

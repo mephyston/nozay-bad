@@ -28,7 +28,8 @@ exportMembersRoute.get(
       gender: (query.gender as 'M' | 'F') || undefined,
       type: query.type || undefined,
       status: query.status || undefined,
-      season: query.season || undefined
+      season: query.season || undefined,
+      cohort: query.cohort || undefined
     });
     return new Response(fichier.data as unknown as BodyInit, {
       headers: {
