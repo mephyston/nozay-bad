@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Users, Banknote, CreditCard, Activity, ArrowUpRight, ArrowDownRight, Package, Receipt, FolderKanban, Building, ChevronRight, Scale, Landmark, ExternalLink } from '@lucide/svelte';
+  import { Users, Banknote, CreditCard, Activity, ArrowUpRight, ArrowDownRight, Package, Receipt, FolderKanban, Building, ChevronRight, Scale, Landmark, ExternalLink, Repeat, UserPlus, UserMinus } from '@lucide/svelte';
   import { DashboardSummaryCard, DashboardPoleCard } from '@nba/ui';
   import { can } from '@nba/iam-ui';
 
@@ -28,6 +28,16 @@
   });
 
   const diff = $derived(data.members.currentTotal - data.members.previousTotal);
+
+  /*
+   * Taux de renouvellement : la part de l'effectif n-1 revenue cette saison. Sans n-1, ou
+   * avec un effectif nul, il n'y a rien à mesurer.
+   */
+  const renewalRate = $derived(
+    data.members.previousTotal > 0 && data.members.lapsed !== null
+      ? Math.round((data.members.renewed / data.members.previousTotal) * 100)
+      : null
+  );
 
   // Classes écrites en toutes lettres : Tailwind ne génère pas une classe composée à l'exécution.
   const TONS = { warning: 'text-warning', destructive: 'text-destructive' } as const;
@@ -66,7 +76,7 @@
 {/snippet}
 
 <div class="space-y-8 pb-10">
-  <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+  <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
     <!-- Adhérents : effectif, écart avec n-1, et les deux relances à faire -->
     <DashboardSummaryCard
       title="Adhérents (Saison {data.season})"
@@ -97,6 +107,40 @@
       <div class="space-y-1 mt-4">
         {@render compteur('Sans règlement', data.members.unpaidCount, canReadMembers ? membersHref('en_attente') : undefined, 'destructive')}
         {@render compteur('Paiement partiel', data.members.partiallyPaid, canReadMembers ? membersHref('incomplet') : undefined, 'warning')}
+      </div>
+    </DashboardSummaryCard>
+
+    <!-- Renouvellement : ce que l'effectif brut ne dit pas en septembre -->
+    <DashboardSummaryCard
+      title="Renouvellement"
+      icon={Repeat}
+      href={canReadMembers ? membersHref() : undefined}
+      iconClass="text-primary bg-primary/10"
+      bgIconClass="text-foreground"
+      containerClass="border-border/50 hover:border-primary/30 from-card/80 to-card"
+    >
+      {#if renewalRate !== null}
+        <div class="text-2xl font-bold font-outfit">{renewalRate}<span class="text-base font-semibold text-muted-foreground"> %</span></div>
+        <p class="text-xs text-muted-foreground mt-1">de l'effectif n-1 revenu cette saison</p>
+      {:else}
+        <div class="text-2xl font-bold font-outfit text-muted-foreground">—</div>
+        <p class="text-xs text-muted-foreground mt-1">Saison n-1 non disponible</p>
+      {/if}
+      <div class="space-y-1 mt-4 text-sm">
+        <div class="flex justify-between items-center gap-2 p-1 -mx-1">
+          <span class="flex items-center gap-2 text-muted-foreground"><Repeat size={14} /> Renouvelés</span>
+          <span class="font-bold text-lg">{data.members.renewed}</span>
+        </div>
+        <div class="flex justify-between items-center gap-2 p-1 -mx-1">
+          <span class="flex items-center gap-2 text-muted-foreground"><UserPlus size={14} /> Nouveaux</span>
+          <span class="font-bold text-lg text-success">{data.members.newcomers}</span>
+        </div>
+        {#if data.members.lapsed !== null}
+          <div class="flex justify-between items-center gap-2 p-1 -mx-1">
+            <span class="flex items-center gap-2 text-muted-foreground"><UserMinus size={14} /> Non renouvelés</span>
+            <span class="font-bold text-lg {data.members.lapsed > 0 ? 'text-warning' : 'text-success'}">{data.members.lapsed}</span>
+          </div>
+        {/if}
       </div>
     </DashboardSummaryCard>
 

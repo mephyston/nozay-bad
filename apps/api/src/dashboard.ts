@@ -112,7 +112,14 @@ dashboardRouter.get('/overview', async (c) => {
           currentTotal: membersRes?.currentTotal || 0,
           previousTotal: membersRes?.previousTotal || 0,
           partiallyPaid: membersRes?.partiallyPaid || 0,
-          unpaidCount: membersRes?.unpaidCount || 0
+          unpaidCount: membersRes?.unpaidCount || 0,
+          /*
+           * Renouvellement par personne : `renewed` est compté côté base, les deux autres s'en
+           * déduisent — nouveaux = effectif − renouvelés, non renouvelés = n-1 − renouvelés.
+           */
+          renewed: membersRes?.renewed || 0,
+          newcomers: (membersRes?.currentTotal || 0) - (membersRes?.renewed || 0),
+          lapsed: prevSeasonId === null ? null : (membersRes?.previousTotal || 0) - (membersRes?.renewed || 0)
         },
         accounting: {
           pendingChecks: checksRes?.count || 0,
