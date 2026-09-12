@@ -12,5 +12,7 @@ export const listTransactionsQuerySchema = Type.Object({
   memberId: Type.Optional(Type.String()),
   month: Type.Optional(Type.String()),
   search: Type.Optional(Type.String()),
+  /** Motif de régularisation (`produit_constate_avance`, `charge_a_payer`…) : ne montre que ces écritures. */
+  accrual: Type.Optional(Type.String()),
   runningBalance: Type.Optional(Type.Union([Type.Literal('0'), Type.Literal('1'), Type.Literal('true'), Type.Literal('false')]))
 });

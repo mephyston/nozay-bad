@@ -68,6 +68,15 @@ export class ListTransactionsRepository {
     if (filters.month) {
       conditions.push(like(ledgerEntriesTable.date, `%-${filters.month}-%`));
     }
+    if (filters.accrual) {
+      /*
+       * L'encart « Régularisations comptables » du compte de résultat renvoie ici : sans ce
+       * filtre, le lien d'une catégorie ouvrait trois cents cotisations pour y chercher les
+       * quelques encaissées d'avance. La saison ouvre déjà les écritures datées dans la période
+       * quel que soit leur exercice de rattachement — c'est ce qui les rend visibles ici.
+       */
+      conditions.push(eq(ledgerEntriesTable.accrualType, filters.accrual as any));
+    }
     if (filters.classCode) {
       /*
        * La classe est désignée par son **code** (`60`, `70`, `512`…), pas par son identifiant.

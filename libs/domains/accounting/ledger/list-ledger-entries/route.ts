@@ -46,7 +46,8 @@ const handleList = async (c: any) => {
     memberId,
     unreconciledChequesOnly,
     month: query.month,
-    search: query.search
+    search: query.search,
+    accrual: query.accrual
   }, { page, limit, runningBalance });
 
   return c.json({ success: true, ...result });

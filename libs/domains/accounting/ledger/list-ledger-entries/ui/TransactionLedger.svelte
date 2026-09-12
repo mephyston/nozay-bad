@@ -52,11 +52,13 @@
 
   let filteredCategory = $state<string | null>(null);
   let filteredClassCode = $state<string | null>(null);
+  let filteredAccrual = $state<string | null>(null);
 
   onMount(() => {
     const params = new URLSearchParams(window.location.search);
     filteredCategory = params.get('category');
     filteredClassCode = params.get('classCode');
+    filteredAccrual = params.get('accrual');
 
     // Handle PWA shortcuts
     const action = params.get('action');
@@ -124,6 +126,8 @@
     params.delete('category');
     params.delete('classCode');
     params.delete('month');
+    params.delete('accrual');
+    params.delete('type');
     params.set('page', '1');
     softNavigate(`/admin/accounting?${params.toString()}`);
   }
@@ -291,6 +295,7 @@
     {isClosed}
     {filteredCategory}
     {filteredClassCode}
+    {filteredAccrual}
     {categories}
     {accountClasses}
     {unreconciledChequesOnly}

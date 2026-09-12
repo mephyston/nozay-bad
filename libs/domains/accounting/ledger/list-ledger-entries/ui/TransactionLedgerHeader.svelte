@@ -2,6 +2,7 @@
   import { X, Search, Filter } from '@lucide/svelte';
   import { Button, Badge, Input, DropdownMenu, Checkbox, PageHeader } from '@nba/ui';
   import type { Season, Category, AccountClass } from './ledger-types';
+  import { accrualLabel } from '../../../shared/accrual-labels';
 
   let {
     selectedSeason = $bindable(),
@@ -9,6 +10,7 @@
     isClosed,
     filteredCategory,
     filteredClassCode,
+    filteredAccrual = null,
     categories = [],
     accountClasses = [],
     unreconciledChequesOnly,
@@ -22,6 +24,7 @@
     isClosed: boolean;
     filteredCategory: string | null;
     filteredClassCode: string | null;
+    filteredAccrual?: string | null;
     categories?: Category[];
     accountClasses?: AccountClass[];
     unreconciledChequesOnly?: boolean;
@@ -45,7 +48,7 @@
   {/snippet}
 </PageHeader>
 
-{#if filteredCategory || filteredClassCode}
+{#if filteredCategory || filteredClassCode || filteredAccrual}
   <div class="flex items-center gap-2 bg-muted/60 px-3 py-1.5 rounded-lg text-xs font-medium border border-border/80 w-fit no-print">
     <span class="text-muted-foreground">Filtre actif&nbsp;:</span>
     {#if filteredCategory}
@@ -56,6 +59,11 @@
     {#if filteredClassCode}
       <Badge variant="primary-soft" shape="square">
         Classe : {accountClasses.find(ac => ac.code === filteredClassCode)?.label || filteredClassCode} ({filteredClassCode})
+      </Badge>
+    {/if}
+    {#if filteredAccrual}
+      <Badge variant="primary-soft" shape="square">
+        Régularisation : {accrualLabel(filteredAccrual) || filteredAccrual}
       </Badge>
     {/if}
     <Button 

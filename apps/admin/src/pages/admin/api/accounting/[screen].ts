@@ -108,7 +108,7 @@ export const ECRANS: Record<string, Ecran> = {
         limit: params.get('limit') || '20',
         accountId: params.get('accountId') || 'current'
       });
-      for (const cle of ['category', 'classCode', 'type', 'search', 'month'] as const) {
+      for (const cle of ['category', 'classCode', 'type', 'search', 'month', 'accrual'] as const) {
         const valeur = params.get(cle);
         if (valeur) requete.set(cle, valeur);
       }
@@ -134,6 +134,7 @@ export const ECRANS: Record<string, Ecran> = {
         accountId: params.get('accountId') || 'current',
         searchQuery: params.get('search') || '',
         month: params.get('month') || '',
+        accrual: params.get('accrual') || '',
         limit: params.get('limit') || '20',
         canWrite: can(locals, 'accounting:ledger:write'),
         canDelete: can(locals, 'accounting:ledger:delete')

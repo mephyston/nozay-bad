@@ -109,6 +109,14 @@
   const totalRecReal = $derived(getTotalRecettesRealise(mode));
   const netResReal = $derived(totalRecReal - totalDepReal);
   const netResPrev = $derived(totalRecettesPrevisionnel - totalDepensesPrevisionnel);
+
+  /*
+   * Le lien d'une régularisation cible les seules écritures du motif : le grand livre filtre
+   * par catégorie ET par motif, sans quoi « Adhésions » ouvrirait toutes les cotisations de
+   * l'exercice pour y chercher celles encaissées d'avance.
+   */
+  const ecrituresRegularisees = (categoryId: number, type: 'recette' | 'depense', accrual: string) =>
+    `/admin/accounting?season=${encodeURIComponent(selectedSeason)}&category=${categoryId}&type=${type}&accrual=${accrual}`;
 </script>
 
 <Card.Root class="print-container">
@@ -195,7 +203,7 @@
               {#each report.tresorerieDisponible.deferredRevenues as defRev}
                 <div class="flex justify-between pl-4">
                   <span>
-                    {defRev.categoryName}
+                    <a href={ecrituresRegularisees(defRev.categoryId, 'recette', 'produit_constate_avance')} class="hover:underline hover:text-primary transition-colors" title="Voir ces écritures dans le grand livre">{defRev.categoryName}</a>
                     {#if defRev.count > 1}<span class="opacity-70">({defRev.count} écritures)</span>{/if}
                   </span>
                   <span>- {formatAmount(defRev.amountCents)}</span>
@@ -210,7 +218,7 @@
               {#each report.tresorerieDisponible.deferredExpenses as defExp}
                 <div class="flex justify-between pl-4">
                   <span>
-                    {defExp.categoryName}
+                    <a href={ecrituresRegularisees(defExp.categoryId, 'depense', 'charge_constatee_avance')} class="hover:underline hover:text-primary transition-colors" title="Voir ces écritures dans le grand livre">{defExp.categoryName}</a>
                     {#if defExp.count > 1}<span class="opacity-70">({defExp.count} écritures)</span>{/if}
                   </span>
                   <span>+ {formatAmount(defExp.amountCents)}</span>

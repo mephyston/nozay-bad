@@ -8,6 +8,8 @@ export interface ListTransactionsFilters {
   unreconciledChequesOnly?: boolean;
   search?: string;
   month?: string;
+  /** Motif de régularisation exact ; absent = tous les motifs, `normal` compris. */
+  accrual?: string;
 }
 
 export interface Pagination {
