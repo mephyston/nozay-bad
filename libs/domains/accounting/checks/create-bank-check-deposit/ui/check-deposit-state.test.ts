@@ -13,7 +13,7 @@ const base = {
 
 const cheque: Check = {
   id: 7, checkDepositId: null, seasonId: '25-26', number: '1234567', amount: 4250, emitter: 'Marie Durand',
-  bank: 'LCL', memberId: 12, ledgerEntryId: 99, status: 'received', photoUrl: null,
+  bank: 'LCL', memberId: 12, ledgerEntryId: 99, status: 'received', photoUrl: null, plannedDepositMonth: null,
   createdAt: '2026-08-20T10:00:00.000Z', date: '2026-08-01', categoryId: 2, memberName: 'DURAND Marie', memberLicence: '07123456'
 };
 
