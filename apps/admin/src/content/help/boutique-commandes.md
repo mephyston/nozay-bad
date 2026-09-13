@@ -54,7 +54,7 @@ Si la recette avait déjà été supprimée à la main au grand livre, l'annulat
 
 Les commandes en attente de paiement depuis **plus de sept jours** déclenchent une relance hebdomadaire à l'adhérent, dans la catégorie **Relances** de ses notifications. La liste affiche l'ancienneté de chaque attente, pour repérer d'un coup d'œil celles qui traînent.
 
-Les relances automatiques ne partent que si le rappel de cotisation est activé dans la configuration du club (Réglages → Configuration du club → Fonctionnalités), le même interrupteur que les relances de cotisation.
+Les relances automatiques ne partent que si le rappel de cotisation est activé dans la configuration du club (Réglages → Configuration → Fonctionnalités), le même interrupteur que les relances de cotisation.
 
 ## Refuser ou annuler une commande
 

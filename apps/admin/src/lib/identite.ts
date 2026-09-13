@@ -22,6 +22,8 @@ export interface ClubHabillage {
   name: string;
   shortName: string;
   brandColor: string;
+  /** Le logo déposé par le club (adresse complète) ; vide, le menu garde l'image embarquée. */
+  logoUrl?: string;
   /** État effectif des fonctionnalités ; une clé absente vaut « allumée ». */
   features: Partial<Record<string, boolean>>;
   /** Les caisses et porte-monnaie actifs : une entrée de menu chacun, sous le grand livre. */

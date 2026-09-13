@@ -1,4 +1,8 @@
 import type { APIRoute } from 'astro';
+import { clubAssetPath } from '@nba/club-ui';
+
+/** L'origine du site public, qui sert les images du club ; inlinée au build comme dans les relais. */
+const ORIGINE_MEDIAS = (import.meta.env.PUBLIC_WEBSITE_URL as string | undefined) ?? '';
 
 /**
  * L'identité de la personne connectée, telle que l'habillage en a besoin.
@@ -40,6 +44,8 @@ export const GET: APIRoute = ({ locals }) => {
           name: locals.club?.settings.name ?? '',
           shortName: locals.club?.settings.shortName ?? '',
           brandColor: locals.club?.settings.brandColor ?? '',
+          // Le logo déposé par le club ; à défaut, le menu garde l'image embarquée.
+          logoUrl: locals.club?.settings.logoKey ? `${ORIGINE_MEDIAS}${clubAssetPath(locals.club.settings.logoKey)}` : '',
           features: locals.club?.features ?? {},
           menuAccounts: locals.club?.menuAccounts ?? []
         }

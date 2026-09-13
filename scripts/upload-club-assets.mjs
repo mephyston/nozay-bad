@@ -17,7 +17,7 @@
  *
  * Usage :
  *   node scripts/upload-club-assets.mjs --target local|staging|production \
- *     [--header .data/letterhead/letterheadHeader.jpg] [--footer …] [--stamp …] \
+ *     [--logo apps/admin/public/logo.png] [--header .data/letterhead/letterheadHeader.jpg] [--footer …] [--stamp …] \
  *     [--partner …]... [--signature …] [--dry-run]
  */
 import { createHash } from 'node:crypto';
@@ -37,6 +37,9 @@ const target = opt('target', 'local');
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
 const API_DIR = path.join(ROOT, 'apps/api');
 const DEFAULTS = {
+  // Le logo est celui que l'administration embarquait en dur ; en R2, le menu et les
+  // documents sans bande le lisent depuis la configuration.
+  logo: 'apps/admin/public/logo.png',
   header: '.data/letterhead/letterheadHeader.jpg',
   footer: '.data/letterhead/letterheadFooter-cropped.png',
   stamp: '.data/letterhead/stamp.jpg',

@@ -5,7 +5,7 @@ category: "admin"
 order: 4
 ---
 
-**Réglages → Configuration → Configuration du club** rassemble tout ce qui décrit le club. Ces valeurs apparaissent sur les trois applications (administration, espace adhérent, site public), dans les mails envoyés aux adhérents et sur les documents PDF (factures, bordereaux, attestations). Rien de tout cela n'est écrit ailleurs : ce que vous saisissez ici est la seule source.
+La rubrique **Club** de **Réglages → Configuration** rassemble tout ce qui décrit le club. Ces valeurs apparaissent sur les trois applications (administration, espace adhérent, site public), dans les mails envoyés aux adhérents et sur les documents PDF (factures, bordereaux, attestations). Rien de tout cela n'est écrit ailleurs : ce que vous saisissez ici est la seule source.
 
 ## Les écrans
 

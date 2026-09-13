@@ -441,7 +441,7 @@
             href="/"
             class="flex items-center gap-3 w-full h-8 font-semibold text-sidebar-foreground group-data-[collapsible=icon]:justify-center rounded-md transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground px-2 group-data-[collapsible=icon]:px-0"
           >
-            <img src="/logo.png" alt="Logo" class="h-6 w-6 group-data-[collapsible=icon]:h-8 group-data-[collapsible=icon]:w-8 shrink-0 object-contain transition-all duration-200" />
+            <img src={club?.logoUrl || '/logo.png'} alt="Logo" class="h-6 w-6 group-data-[collapsible=icon]:h-8 group-data-[collapsible=icon]:w-8 shrink-0 object-contain transition-all duration-200" />
             <span class="group-data-[collapsible=icon]:hidden text-sm truncate">{club?.shortName ? `${club.shortName} Admin` : 'Administration'}</span>
           </a>
         </Sidebar.MenuItem>
