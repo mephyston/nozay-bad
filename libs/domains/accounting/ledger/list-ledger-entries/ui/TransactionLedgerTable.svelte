@@ -12,6 +12,7 @@
     accounts = [],
     activeCategories = [],
     isClosed,
+    showBalance = true,
     selectedSeasonId,
     pageRange,
     onStartEdit,
@@ -25,6 +26,8 @@
     accounts?: AccountLike[];
     activeCategories: { id: string; code: string; name: string }[];
     isClosed: boolean;
+    /** Faux quand la liste est filtrée : le solde progressif et les soldes de fin de mois disparaissent. */
+    showBalance?: boolean;
     selectedSeasonId?: number | string;
     onStartEdit: (tx: Transaction, e: MouseEvent) => void;
     onDelete: (id: number) => void;
@@ -200,6 +203,7 @@
         />
       {/if}
     </Table.Cell>
+    {#if showBalance}
     <Table.Cell class="text-right whitespace-nowrap">
       {#if isChild}
         <span class="text-muted-foreground text-xs italic opacity-50">inclus</span>
@@ -209,6 +213,7 @@
         <span class="text-muted-foreground">-</span>
       {/if}
     </Table.Cell>
+    {/if}
     <Table.Cell class="text-right relative">
       {#if !isClosed}
         <DataTableRowActions>
@@ -279,7 +284,7 @@
           Catégorie: <span class="font-medium text-foreground">{item.category ? (activeCategories.find(c => c.id === String(item.category))?.name || item.category) : '—'}</span>
         {/if}
       </div>
-      {#if item.runningBalanceCents !== undefined && !isChild}
+      {#if showBalance && item.runningBalanceCents !== undefined && !isChild}
         <div class="text-muted-foreground ml-auto">
           Solde: <Amount cents={item.runningBalanceCents} class="font-bold text-foreground" />
         </div>
@@ -330,7 +335,7 @@
 >
   {#snippet mobileView()}
     {#each groupedTransactions as item, i}
-      {#if i > 0 && item.date.substring(0, 7) !== groupedTransactions[i - 1].date.substring(0, 7) && item.runningBalanceCents !== undefined}
+      {#if showBalance && i > 0 && item.date.substring(0, 7) !== groupedTransactions[i - 1].date.substring(0, 7) && item.runningBalanceCents !== undefined}
         {@const parts = item.date.substring(0, 7).split('-')}
         {@const monthName = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'][parseInt(parts[1]) - 1]}
         <div class="px-4 py-3 bg-muted/30 flex justify-between items-center">
@@ -379,9 +384,11 @@
             <div class="text-muted-foreground">
               Catégorie: <span class="font-medium text-foreground">Ventilation</span>
             </div>
+            {#if showBalance}
             <div class="text-muted-foreground ml-auto">
               Solde: <Amount cents={item.runningBalanceCents} class="font-bold text-foreground" />
             </div>
+            {/if}
             <Badge variant="success" size="xs" shape="square">
               <Check class="w-2.5 h-2.5" /> Rapprochée
             </Badge>
@@ -411,12 +418,14 @@
     <DataTableColumnHeader title="Catégorie" class="w-36" />
     <DataTableColumnHeader title="Libellé" />
     <DataTableColumnHeader title="Montant" class="w-24 text-right" />
-    <DataTableColumnHeader title="Solde" class="w-28 text-right" />
+    {#if showBalance}
+      <DataTableColumnHeader title="Solde" class="w-28 text-right" />
+    {/if}
     <DataTableColumnHeader title="" class="w-12" />
   {/snippet}
 
   {#snippet row(item, i)}
-    {#if i > 0 && item.date.substring(0, 7) !== groupedTransactions[i - 1].date.substring(0, 7) && item.runningBalanceCents !== undefined}
+    {#if showBalance && i > 0 && item.date.substring(0, 7) !== groupedTransactions[i - 1].date.substring(0, 7) && item.runningBalanceCents !== undefined}
       {@const parts = item.date.substring(0, 7).split('-')}
       {@const monthName = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'][parseInt(parts[1]) - 1]}
       <Table.Row class="bg-muted/20 hover:bg-muted/20">
@@ -475,9 +484,11 @@
             <Amount cents={item.amountCents} class="text-muted-foreground" />
           {/if}
         </Table.Cell>
+        {#if showBalance}
         <Table.Cell class="text-right">
           <Amount cents={item.runningBalanceCents} class="font-bold text-foreground" />
         </Table.Cell>
+        {/if}
         <Table.Cell class="text-right text-xs text-muted-foreground whitespace-nowrap">
           {#if !expandedGroups[item.bankStatementLineId]}
             Cliquez pour détailler

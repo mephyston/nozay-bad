@@ -228,4 +228,49 @@ describe('TransactionLedger Component', () => {
     unmount(component);
     document.body.removeChild(target);
   });
+
+  /*
+   * Le solde progressif et les soldes de fin de mois ne valent que sur une liste
+   * continue : une recherche ou un filtre en retire une partie, et un « solde fin
+   * septembre » posé sur la dernière écriture trouvée mentirait.
+   */
+  const deuxMois = [
+    { id: 1, seasonId: '25-26', type: 'recette', accountId: 'current', category: 'adhesions', amount: 4500, date: '2026-10-02', paymentMethod: 'virement', description: 'Cotisation Martin', reference: null, runningBalanceCents: 104500 },
+    { id: 2, seasonId: '25-26', type: 'recette', accountId: 'current', category: 'adhesions', amount: 1000, date: '2026-09-20', paymentMethod: 'virement', description: 'Cotisation Durand', reference: null, runningBalanceCents: 100000 }
+  ];
+  const monter = (props: Record<string, unknown>) => {
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+    const component = mount(TransactionLedger, {
+      target,
+      props: { transactions: deuxMois, pagination: { total: 2, page: 1, limit: 20, totalPages: 1 }, seasonId: '25-26', balances: [], seasons: [], ...props }
+    });
+    flushSync();
+    return { target, component };
+  };
+
+  it('montre le solde et le repère de fin de mois sur la liste complète', () => {
+    const { target, component } = monter({});
+    expect(target.textContent).toContain('Solde fin septembre 2026');
+    expect(target.textContent?.replace(/[\u00a0\u202f]/g, ' ')).toContain('1 045,00');
+    unmount(component);
+    target.remove();
+  });
+
+  it('cache le solde et les repères de fin de mois dès que la liste est filtrée', () => {
+    const { target, component } = monter({ searchQuery: 'Martin' });
+    expect(target.textContent).not.toContain('Solde fin septembre 2026');
+    expect(target.textContent?.replace(/[\u00a0\u202f]/g, ' ')).not.toContain('1 045,00');
+    // Les écritures, elles, restent.
+    expect(target.textContent).toContain('Cotisation Martin');
+    unmount(component);
+    target.remove();
+  });
+
+  it("garde le solde sur un filtre par mois : la liste reste continue", () => {
+    const { target, component } = monter({ month: '2026-09' });
+    expect(target.textContent?.replace(/[\u00a0\u202f]/g, ' ')).toContain('1 045,00');
+    unmount(component);
+    target.remove();
+  });
 });

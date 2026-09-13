@@ -38,6 +38,8 @@ Quand un filtre de catégorie ou de classe est actif, un bandeau le rappelle au-
 
 Chaque ligne affiche la date, le type, la catégorie, le libellé, le montant et le **solde progressif** du compte sélectionné — le solde initial de la saison auquel s'ajoutent les mouvements jusqu'à cette ligne. Une écriture rattachée à une autre saison porte le repère **Cut-off**.
 
+Un repère **Solde fin &lt;mois&gt;** sépare les mois. Le solde progressif et ces repères ne s'affichent que sur la liste complète du compte (le filtre par mois compris) : dès qu'une recherche ou un filtre — catégorie, classe, sens, rattachement, chèques non pointés — retire des écritures, ils disparaissent, car un solde posé sur une ligne isolée ne dirait rien de juste. Pour vérifier qu'aucune écriture ne manque face à la banque, c'est l'écart de l'écran de [rapprochement](/admin/help/rapprochement-bancaire) qui fait foi, pas ce solde : il contient les chèques encore en coffre et les débits en attente.
+
 Les écritures issues d'une même ligne de relevé bancaire sont regroupées : on voit d'un coup d'œil comment un versement unique a été ventilé.
 
 ## Corriger ou supprimer

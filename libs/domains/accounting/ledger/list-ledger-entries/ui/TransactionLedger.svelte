@@ -62,12 +62,26 @@
   let filteredCategory = $state<string | null>(null);
   let filteredClassCode = $state<string | null>(null);
   let filteredAccrual = $state<string | null>(null);
+  let filteredType = $state<string | null>(null);
+
+  /*
+   * Le solde progressif et les soldes de fin de mois n'ont de sens que sur une liste
+   * continue : toutes les écritures du compte, dans l'ordre. Une recherche par libellé
+   * ou un filtre par catégorie, classe, sens, rattachement ou chèques non pointés en
+   * retire une partie — le solde d'une ligne isolée surprend, et un « solde fin
+   * septembre » posé sur la dernière écriture trouvée ment. Le mois, lui, garde une
+   * suite continue : les soldes restent.
+   */
+  const continuous = $derived(
+    !searchQuery && !filteredCategory && !filteredClassCode && !filteredAccrual && !filteredType && !unreconciledChequesOnly
+  );
 
   onMount(() => {
     const params = new URLSearchParams(window.location.search);
     filteredCategory = params.get('category');
     filteredClassCode = params.get('classCode');
     filteredAccrual = params.get('accrual');
+    filteredType = params.get('type');
 
     // Handle PWA shortcuts
     const action = params.get('action');
@@ -321,6 +335,7 @@
     {accounts}
     {activeCategories}
     {isClosed}
+    showBalance={continuous}
     selectedSeasonId={currentSeasonNumericId}
     onStartEdit={startEdit}
     onDelete={handleDelete}
