@@ -117,6 +117,10 @@ const nextSession = sessionComesFirst ? firstSession : null;
         <h1 class="text-2xl sm:text-3xl font-bold text-foreground">
           Bonjour{firstName ? ` ${firstName}` : ''}
         </h1>
+        {/* Le mot d'accueil du club, réglé dans sa configuration (Envois et rappels). */}
+        {Astro.locals.club?.settings.memberWelcomeText && (
+          <p class="mt-2 text-sm text-muted-foreground whitespace-pre-line">{Astro.locals.club.settings.memberWelcomeText}</p>
+        )}
       </div>
 
       {birthdays.length > 0 && (
