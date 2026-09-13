@@ -14,6 +14,8 @@ export interface SeasonBalanceDto {
   initialBalanceCents: number;
   /** Alias historique de `initialBalanceCents`, lu par les écrans. */
   initialBalance: number;
+  /** Calculé depuis l'exercice précédent (non clôturé), et non figé par une clôture. */
+  provisional: boolean;
 }
 
 export type GetSeasonBalancesOutput = SeasonBalanceDto[];

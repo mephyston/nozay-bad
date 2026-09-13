@@ -1,48 +1,45 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
+import { setupMockDb } from '@nba/db/test-utils';
+import { type Db } from '@nba/db';
+import { sql } from 'drizzle-orm';
 import { getSeasonBalances } from './handler';
-import { GetSeasonBalancesRepository } from './repository';
 
-
-vi.mock('./repository');
-
+/**
+ * Le solde d'ouverture d'un compte est le même partout où il s'affiche : la règle de
+ * `shared/opening-balances.ts` (figé gagne, sinon calculé depuis l'exercice précédent)
+ * vaut aussi pour les écrans par compte, qui lisaient jusqu'ici la seule table figée —
+ * vide tant que l'exercice précédent n'est pas clôturé — et repartaient de zéro.
+ */
 describe('getSeasonBalances', () => {
-  let db: any;
+  let db: Db;
 
-  beforeEach(() => {
-    vi.clearAllMocks();
-    db = {};
+  beforeEach(async () => {
+    ({ db } = await setupMockDb());
+    await db.run(sql`INSERT INTO seasons (id, code, name, start_date, end_date, active, created_at)
+      VALUES (1, '25-26', 'Saison 2025-2026', '2025-09-01', '2026-08-31', 0, 0),
+             (2, '26-27', 'Saison 2026-2027', '2026-09-01', '2027-08-31', 1, 0)`);
   });
 
-  it('rend un solde par compte, identifié par son code et son libellé lus de la base', async () => {
-    const mockRepoInstance = {
-      getBalances: vi.fn().mockResolvedValue([
-        { id: 1, seasonId: 7, accountId: 1, accountCode: 'current', accountLabel: 'Compte Courant', initialBalanceCents: 100000, createdAt: new Date() },
-        { id: 2, seasonId: 7, accountId: 4, accountCode: 'badnet', accountLabel: 'Porte-monnaie Badnet', initialBalanceCents: 100000, createdAt: new Date() }
-      ])
-    };
-    (vi.mocked(GetSeasonBalancesRepository) as any).mockImplementation(function() { return mockRepoInstance; });
-
-    const result = await getSeasonBalances(db, '23-24');
-
-    expect(mockRepoInstance.getBalances).toHaveBeenCalledWith(db, '23-24');
-    expect(result).toEqual([
-      { seasonId: 7, accountId: 'current', accountNumericId: 1, label: 'Compte Courant', initialBalanceCents: 100000, initialBalance: 100000 },
-      { seasonId: 7, accountId: 'badnet', accountNumericId: 4, label: 'Porte-monnaie Badnet', initialBalanceCents: 100000, initialBalance: 100000 }
-    ]);
+  it('rend le solde figé quand la clôture l’a écrit', async () => {
+    await db.run(sql`INSERT INTO season_balances (season_id, account_id, initial_balance_cents, created_at)
+      SELECT 2, id, 109200, 0 FROM accounts WHERE code = 'badnet'`);
+    const badnet = (await getSeasonBalances(db, '26-27')).find((b) => b.accountId === 'badnet');
+    expect(badnet).toMatchObject({ initialBalanceCents: 109200, provisional: false });
   });
 
-  it('should throw a business error', async () => {
-    // Arrange
-    const payload = { seasonId: '23-24', items: [] } as any;
-    
+  it('calcule l’à-nouveau depuis l’exercice précédent quand rien n’est figé', async () => {
+    // 25-26 : ouverture figée à 1 000 € sur Badnet, puis 92 € de recette datée avant le
+    // 1er septembre 2026 → le 26-27 ouvre à 1 092 €, sans qu'aucune clôture ait eu lieu.
+    await db.run(sql`INSERT INTO season_balances (season_id, account_id, initial_balance_cents, created_at)
+      SELECT 1, id, 100000, 0 FROM accounts WHERE code = 'badnet'`);
+    await db.run(sql`INSERT INTO ledger_entries (season_id, account_id, category_id, type, amount_cents, date, payment_method_id, description, status, created_at)
+      SELECT 1, a.id, c.id, 'recette', 9200, '2026-06-15', p.id, 'Recharge', 'cleared', 0
+      FROM accounts a, categories c, payment_methods p WHERE a.code = 'badnet' AND p.code = 'virement' LIMIT 1`);
 
-    const mockRepoInstance = {
-      getBalances: vi.fn().mockRejectedValue(new Error('Business error'))
-    };
-    (vi.mocked(GetSeasonBalancesRepository) as any).mockImplementation(function() { return mockRepoInstance; });
-
-    // Act & Assert
-    const args = [db, '23-24'];
-    await expect((getSeasonBalances as any)(...args)).rejects.toThrow();
+    const balances = await getSeasonBalances(db, '26-27');
+    const badnet = balances.find((b) => b.accountId === 'badnet');
+    expect(badnet).toMatchObject({ initialBalanceCents: 109200, initialBalance: 109200, provisional: true });
+    // Chaque compte a sa ligne, même à zéro : l'écran n'a plus à deviner l'absence.
+    expect(balances.map((b) => b.accountId)).toContain('current');
   });
 });

@@ -22,6 +22,25 @@ export class GetSeasonBalancesRepository {
     return row?.id || 1;
   }
 
+  /** L'exercice, avec sa date d'ouverture : ce dont l'à-nouveau a besoin. */
+  async findSeason(db: DbOrTx, seasonId: string | number): Promise<{ id: number; startDate: string } | undefined> {
+    const seasonIdInt = await this.resolveSeasonId(db, seasonId);
+    return db
+      .select({ id: seasonsTable.id, startDate: seasonsTable.startDate })
+      .from(seasonsTable)
+      .where(eq(seasonsTable.id, seasonIdInt))
+      .get();
+  }
+
+  /** Tous les comptes du club, dans l'ordre du seed. */
+  async listAccounts(db: DbOrTx): Promise<{ id: number; code: string; label: string }[]> {
+    return db
+      .select({ id: accountsTable.id, code: accountsTable.code, label: accountsTable.label })
+      .from(accountsTable)
+      .orderBy(accountsTable.id)
+      .all();
+  }
+
   /** Une ligne par compte reporté, avec le code et le libellé du compte lus de `accounts`. */
   async getBalances(db: DbOrTx, seasonId: string | number): Promise<SeasonBalanceRow[]> {
     const seasonIdInt = await this.resolveSeasonId(db, seasonId);

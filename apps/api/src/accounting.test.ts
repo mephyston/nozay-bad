@@ -279,7 +279,12 @@ describe('Accounting API Endpoints', () => {
     expect(getBalRes.status).toBe(200);
     const getBalJson = await getBalRes.json() as any;
     expect(getBalJson.success).toBe(true);
-    expect(getBalJson.data).toHaveLength(2);
+    // Une ligne par compte du club, pas seulement les deux figées : les deux soldes posés
+    // font autorité, les autres valent zéro et se disent calculés.
+    const byCode = Object.fromEntries(getBalJson.data.map((b: any) => [b.accountId, b]));
+    expect(byCode.current).toMatchObject({ initialBalanceCents: 100000, provisional: false });
+    expect(byCode.cash).toMatchObject({ initialBalanceCents: 5000, provisional: false });
+    expect(byCode.savings).toMatchObject({ initialBalanceCents: 0, provisional: true });
 
     // 6. Test GET /accounting/ledger-entries
     const getTxRes = await app.request('http://localhost/accounting/ledger-entries?season=25-26&page=1&limit=20', undefined, { DB: mockD1 as any });
