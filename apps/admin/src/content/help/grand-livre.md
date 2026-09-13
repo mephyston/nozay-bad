@@ -7,6 +7,8 @@ order: 2
 
 Le **Grand livre** (« Journal des écritures ») est le registre de toutes les opérations de la saison. C'est ici que se saisissent les écritures qui ne viennent ni d'un chèque, ni d'un rapprochement bancaire, ni d'une note de frais, ni d'une commande.
 
+En tête, la bande **Disponibilités** donne le total de trésorerie et le solde comptable de chaque compte ; un point orange signale un compte dont le dernier relevé importé ne colle pas au solde. **Détail** déplie une carte par compte — solde du relevé et sa date, écart, chèques encore en coffre, débits en attente — et le choix est retenu d'une visite à l'autre.
+
 ## Saisir une écriture
 
 Trois boutons ouvrent le même formulaire, avec des champs adaptés : **recette**, **dépense**, **virement interne**.

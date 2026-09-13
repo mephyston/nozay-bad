@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { ChevronDown, AlertCircle } from '@lucide/svelte';
+  import { slide } from 'svelte/transition';
   import { Card, Amount } from '@nba/ui';
   import type { BalanceReport } from './ledger-types';
 
@@ -22,6 +24,12 @@
    * vaut un vide qu'un pseudo-solde bancaire pour un compte qui n'a pas de banque.
    *
    * Une carte par ligne du bilan, quel qu'en soit le nombre : les comptes sont des données.
+   *
+   * Les cartes vivent derrière une bande repliée : cinq comptes en grandes cartes poussaient le
+   * journal sous la ligne de flottaison, et l'on arrivait sur un lien filtré (une catégorie du
+   * rapport, une recherche) sans voir une seule écriture. La bande donne le total disponible et
+   * un solde par compte ; le détail — relevé, écart, chèques en coffre — s'ouvre à la demande,
+   * et le choix est retenu dans le navigateur.
    */
   function grossCentsOf(balance: BalanceReport | undefined): number {
     if (!balance) return 0;
@@ -33,8 +41,76 @@
     const [, month, day] = iso.split('-');
     return `${day}/${month}`;
   }
+
+  const OPEN_KEY = 'ledger_balances_open';
+  let open = $state(false);
+  $effect(() => {
+    try {
+      open = localStorage.getItem(OPEN_KEY) === '1';
+    } catch {
+      /* stockage indisponible : replié */
+    }
+  });
+  function toggle() {
+    open = !open;
+    try {
+      localStorage.setItem(OPEN_KEY, open ? '1' : '0');
+    } catch {
+      /* rien à retenir */
+    }
+  }
+
+  const treasury = $derived(balances.filter((b) => !b.thirdParty));
+  const thirdParties = $derived(balances.filter((b) => b.thirdParty));
+  /** Les disponibilités : la somme des comptes de trésorerie, hors comptes de tiers. */
+  const totalCents = $derived(treasury.reduce((sum, b) => sum + grossCentsOf(b), 0));
+  /** Un compte dont le relevé importé ne colle pas au solde comptable : à regarder au rapprochement. */
+  const hasGap = (b: BalanceReport) => b.statementBalanceCents != null && b.statementBalanceCents !== grossCentsOf(b);
 </script>
 
+<div class="rounded-xl border border-border bg-card" data-testid="ledger-balances">
+  <button
+    type="button"
+    class="w-full flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 text-left hover:bg-accent/40 transition-colors rounded-xl"
+    aria-expanded={open}
+    aria-controls="ledger-balances-detail"
+    onclick={toggle}
+  >
+    <span class="flex items-baseline gap-2 shrink-0">
+      <span class="text-xs font-medium uppercase tracking-wider text-muted-foreground">Disponibilités</span>
+      <span class="text-lg font-bold text-foreground"><Amount cents={totalCents} /></span>
+    </span>
+    <span class="flex flex-wrap items-center gap-1.5 min-w-0">
+      {#each treasury as balance (balance.accountId)}
+        <span
+          class="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-2.5 py-0.5 text-xs whitespace-nowrap"
+          title={hasGap(balance) ? 'Le relevé importé ne colle pas au solde comptable : voir le rapprochement.' : undefined}
+        >
+          <span class="text-muted-foreground">{balance.label ?? balance.accountId}</span>
+          <span class="font-semibold text-foreground"><Amount cents={grossCentsOf(balance)} /></span>
+          {#if hasGap(balance)}
+            <AlertCircle class="w-3 h-3 text-warning" aria-label="Écart avec le relevé" />
+          {/if}
+        </span>
+      {/each}
+      {#each thirdParties as balance (balance.accountId)}
+        {@const gross = grossCentsOf(balance)}
+        {#if gross !== 0}
+          <span class="inline-flex items-center gap-1.5 rounded-full border border-dashed border-border px-2.5 py-0.5 text-xs whitespace-nowrap">
+            <span class="text-muted-foreground">{gross < 0 ? 'Dû aux adhérents' : 'Avancé aux adhérents'}</span>
+            <span class="font-semibold text-foreground"><Amount cents={Math.abs(gross)} /></span>
+          </span>
+        {/if}
+      {/each}
+    </span>
+    <span class="ml-auto flex items-center gap-1 text-xs text-muted-foreground shrink-0">
+      {open ? 'Masquer le détail' : 'Détail'}
+      <ChevronDown class="w-4 h-4 transition-transform duration-200 {open ? 'rotate-180' : ''}" />
+    </span>
+  </button>
+
+  {#if open}
+    <div id="ledger-balances-detail" class="border-t border-border p-4" transition:slide={{ duration: 150 }}>
 <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
   {#each balances as balance (balance.accountId)}
     {@const label = balance.label ?? balance.accountId}
@@ -94,4 +170,7 @@
       </Card.Content>
     </Card.Root>
   {/each}
+</div>
+    </div>
+  {/if}
 </div>

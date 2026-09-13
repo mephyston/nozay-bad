@@ -174,17 +174,24 @@ describe('TransactionLedger Component', () => {
     });
 
     // Le filtrage par compte est désormais dans le menu "Filtres" ; les comptes restent
-    // affichés en permanence via les cartes de solde en tête — une par ligne du bilan, avec
-    // le libellé lu de la base, le porte-monnaie Badnet compris.
-    expect(target.innerHTML).toContain('Compte Courant');
-    expect(target.innerHTML).toContain('Livret A / Épargne');
-    expect(target.innerHTML).toContain('Caisse Buvette');
-    expect(target.innerHTML).toContain('Porte-monnaie Badnet');
+    // affichés en permanence dans la bande de trésorerie en tête — une pastille par ligne du
+    // bilan, avec le libellé lu de la base, le porte-monnaie Badnet compris — et le total.
+    const bande = target.querySelector('[data-testid="ledger-balances"]')!;
+    const texte = () => (bande.textContent ?? '').replace(/[\u00a0\u202f]/g, ' ');
+    expect(texte()).toContain('Compte Courant');
+    expect(texte()).toContain('Livret A / Épargne');
+    expect(texte()).toContain('Caisse Buvette');
+    expect(texte()).toContain('Porte-monnaie Badnet');
+    expect(texte()).toContain('1 000,00'); // les disponibilités : Badnet seul est garni
     // Le compte d'attente des adhérents se lit en dette positive, hors trésorerie.
-    expect(target.innerHTML).toContain('Dû aux adhérents');
-    expect(target.innerHTML.replace(/&nbsp;|[\u00a0\u202f]/g, ' ')).toContain('120,00');
-    expect(target.innerHTML.replace(/&nbsp;|[\u00a0\u202f]/g, ' ')).not.toContain('-120,00');
-    expect(target.querySelectorAll('[data-slot="card"], .grid > div').length).toBeGreaterThanOrEqual(4);
+    expect(texte()).toContain('Dû aux adhérents');
+    expect(texte()).toContain('120,00');
+    expect(texte()).not.toContain('-120,00');
+    // Le détail (relevé, écart, chèques en coffre) est replié : le journal reste en vue.
+    expect(bande.querySelectorAll('[data-slot="card"]').length).toBe(0);
+    (bande.querySelector('button[aria-expanded]') as HTMLButtonElement).click();
+    flushSync();
+    expect(bande.querySelectorAll('[data-slot="card"]').length).toBe(5);
 
     unmount(component);
     document.body.removeChild(target);
