@@ -14,6 +14,7 @@
     row,
     mobileView,
     mobileSpacing = 'divided',
+    tableClass,
     pagination,
     onPageChange,
     limitOptions,
@@ -40,6 +41,13 @@
      * le pouce vise mal.
      */
     mobileSpacing?: 'divided' | 'spaced';
+    /**
+     * Classes posées sur le `<table>`. `table-fixed` fait tenir la table dans son
+     * conteneur quoi qu'il arrive : les largeurs viennent des en-têtes, et une colonne
+     * de libellé peut alors tronquer — en disposition automatique, un long motif de
+     * virement poussait les colonnes de droite hors de l'écran.
+     */
+    tableClass?: string;
     pagination?: any;
     onPageChange?: (page: number) => void;
     limitOptions?: number[];
@@ -58,7 +66,11 @@
           {@render toolbarStart()}
         {/if}
       </div>
-      <div class="w-full md:w-auto flex justify-end ml-auto">
+      <!--
+        `min-w-0` et `max-w-full` : sans eux, la barre d'outils, dimensionnée sur son contenu,
+        débordait à droite au lieu de passer à la ligne — le bouton d'export sortait de l'écran.
+      -->
+      <div class="w-full md:w-auto min-w-0 max-w-full flex justify-end ml-auto">
         {#if toolbar}
           {@render toolbar()}
         {/if}
@@ -70,7 +82,7 @@
     <!-- Desktop View (hidden on mobile if mobileView is provided) -->
     <div class={mobileView ? "hidden md:block" : "block"}>
       <div class="overflow-x-auto">
-        <Table>
+        <Table class={tableClass}>
           <TableHeader>
             <TableRow>
               {@render header()}

@@ -115,14 +115,19 @@
   {@const isOtherSeason = selectedSeasonId && String(tx.seasonId) !== String(selectedSeasonId)}
   {@const accrual = accrualLabel(tx.accrualType)}
   <Table.Row id="tx-desktop-{tx.id}" class="{isChild ? 'bg-muted/5 relative border-l-4 border-l-primary/30' : ''} {isOtherSeason ? 'opacity-50 border-y border-dashed border-muted-foreground/40' : ''}">
-    <Table.Cell class={isChild ? "pl-6 text-muted-foreground" : ""}>{tx.date}</Table.Cell>
-    <Table.Cell>
+    <Table.Cell class="whitespace-nowrap {isChild ? 'pl-6 text-muted-foreground' : ''}">{tx.date}</Table.Cell>
+    <!--
+      Les badges se rangent en colonne, en petite taille : alignés en grande taille, le type,
+      le cut-off et « autre exercice » élargissaient la table au-delà de l'écran.
+    -->
+    <Table.Cell class="align-top">
+      <div class="flex flex-col items-start gap-1">
       {#if tx.type === 'recette'}
-        <Badge variant="success" size="lg" shape="pill">Recette</Badge>
+        <Badge variant="success" size="sm" shape="pill">Recette</Badge>
       {:else if tx.type === 'depense'}
-        <Badge variant="destructive" size="lg" shape="pill">Dépense</Badge>
+        <Badge variant="destructive" size="sm" shape="pill">Dépense</Badge>
       {:else}
-        <Badge variant="info" size="lg" shape="pill">
+        <Badge variant="info" size="sm" shape="pill">
           {tx.transferLeg === 'destination' ? 'Virement reçu' : 'Virement émis'}
         </Badge>
       {/if}
@@ -135,11 +140,12 @@
         n'affichait rien — la comptable n'avait aucun moyen de vérifier sa saisie.
       -->
       {#if accrual}
-        <Badge variant="warning" size="xs" class="ml-1" title={tx.accrualNote || accrual}>{accrual}</Badge>
+        <Badge variant="warning" size="xs" title={tx.accrualNote || accrual}>{accrual}</Badge>
       {/if}
       {#if isOtherSeason}
-        <Badge variant="secondary" size="xs" class="ml-1" title="Écriture d'un exercice autre que celui consulté">Autre exercice</Badge>
+        <Badge variant="secondary" size="xs" title="Écriture d'un exercice autre que celui consulté">Autre exercice</Badge>
       {/if}
+      </div>
     </Table.Cell>
     <!--
       Un virement n'a pas de catégorie — le CHECK de la base l'interdit — mais il a deux comptes,
@@ -147,9 +153,9 @@
       entrant et un virement sortant étaient rigoureusement identiques à l'œil : seule la variation
       du solde progressif permettait de trancher.
     -->
-    <Table.Cell>
+    <Table.Cell class="min-w-0 whitespace-normal">
       {#if tx.type === 'transfert'}
-        <span class="text-xs text-muted-foreground whitespace-nowrap">
+        <span class="block text-xs text-muted-foreground break-words">
           {#if tx.transferLeg === 'destination'}
             {accountLabelOf(accounts, tx.counterpartAccountId)} → {accountLabelOf(accounts, tx.accountId)}
           {:else}
@@ -157,11 +163,12 @@
           {/if}
         </span>
       {:else}
-        {tx.category ? (activeCategories.find(c => c.id === String(tx.category))?.name || tx.category) : '—'}
+        {@const categoryName = tx.category ? (activeCategories.find(c => c.id === String(tx.category))?.name || tx.category) : '—'}
+        <span class="block break-words" title={categoryName}>{categoryName}</span>
       {/if}
     </Table.Cell>
-    <Table.Cell class="font-medium max-w-[200px] md:max-w-[300px] lg:max-w-[400px]">
-      <div class="line-clamp-2" title={tx.description}>{tx.description}</div>
+    <Table.Cell class="font-medium min-w-0 whitespace-normal">
+      <div class="line-clamp-2 break-words" title={tx.description}>{tx.description}</div>
       {#if tx.reference}
         <div class="text-xs text-muted-foreground italic truncate mt-0.5" title={tx.reference}>Réf: {tx.reference}</div>
       {/if}
@@ -174,12 +181,12 @@
         {#if tx.bankStatementLineId && !isChild}
           <Badge variant="success" size="xs" shape="square">
             <Check class="w-2.5 h-2.5" />
-            Rapprochée (SG)
+            Rapprochée
           </Badge>
         {/if}
       </div>
     </Table.Cell>
-    <Table.Cell class="text-right font-bold">
+    <Table.Cell class="text-right font-bold whitespace-nowrap">
       {#if tx.type === 'recette'}
         <Amount cents={(tx as any).amountCents ?? tx.amount} showSign colored />
       {:else if tx.type === 'depense'}
@@ -193,7 +200,7 @@
         />
       {/if}
     </Table.Cell>
-    <Table.Cell class="text-right">
+    <Table.Cell class="text-right whitespace-nowrap">
       {#if isChild}
         <span class="text-muted-foreground text-xs italic opacity-50">inclus</span>
       {:else if tx.runningBalanceCents !== undefined}
@@ -313,6 +320,7 @@
 
 <DataTable
   data={groupedTransactions}
+  tableClass="table-fixed min-w-[56rem]"
   {pagination}
   onPageChange={onChangePage}
   {toolbar}
@@ -393,14 +401,18 @@
     {/each}
   {/snippet}
 
+  <!--
+    Disposition fixe : les largeurs des en-têtes font foi, le libellé prend le reste et se
+    tronque. Sous 56 rem, la table défile dans son cadre plutôt que d'écraser le libellé.
+  -->
   {#snippet header()}
-    <DataTableColumnHeader title="Date" />
-    <DataTableColumnHeader title="Type" />
-    <DataTableColumnHeader title="Catégorie" />
+    <DataTableColumnHeader title="Date" class="w-24" />
+    <DataTableColumnHeader title="Type" class="w-28" />
+    <DataTableColumnHeader title="Catégorie" class="w-36" />
     <DataTableColumnHeader title="Libellé" />
-    <DataTableColumnHeader title="Montant" class="text-right" />
-    <DataTableColumnHeader title="Solde" class="text-right" />
-    <DataTableColumnHeader title="Actions" class="text-right" />
+    <DataTableColumnHeader title="Montant" class="w-24 text-right" />
+    <DataTableColumnHeader title="Solde" class="w-28 text-right" />
+    <DataTableColumnHeader title="" class="w-12" />
   {/snippet}
 
   {#snippet row(item, i)}
@@ -423,11 +435,11 @@
         <Table.Cell>{item.date}</Table.Cell>
         <Table.Cell>
           {#if item.type === 'recette'}
-            <Badge variant="success" size="lg" shape="pill">Recette</Badge>
+            <Badge variant="success" size="sm" shape="pill">Recette</Badge>
           {:else if item.type === 'depense'}
-            <Badge variant="destructive" size="lg" shape="pill">Dépense</Badge>
+            <Badge variant="destructive" size="sm" shape="pill">Dépense</Badge>
           {:else}
-            <Badge variant="info" size="lg" shape="pill">Transfert</Badge>
+            <Badge variant="info" size="sm" shape="pill">Transfert</Badge>
           {/if}
         </Table.Cell>
         <Table.Cell class="font-medium text-foreground">
@@ -442,15 +454,15 @@
             Ventilation ({item.children.length})
           </div>
         </Table.Cell>
-        <Table.Cell class="text-muted-foreground">
-          <div class="line-clamp-2" title={item.description}>{item.description}</div>
+        <Table.Cell class="text-muted-foreground min-w-0 whitespace-normal">
+          <div class="line-clamp-2 break-words" title={item.description}>{item.description}</div>
           {#if item.reference}
             <div class="text-xs italic truncate mt-0.5">Réf: {item.reference}</div>
           {/if}
           <div class="flex flex-wrap gap-1.5 mt-1">
             <Badge variant="success" size="xs" shape="square">
               <Check class="w-2.5 h-2.5" />
-              Rapprochée (SG)
+              Rapprochée
             </Badge>
           </div>
         </Table.Cell>
