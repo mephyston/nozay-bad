@@ -24,6 +24,7 @@
     initialBalance = 0,
     transactions = [],
     memberAdvanceEntries = [],
+    paymentMethods = [],
     seasonId,
     seasons = [],
     canWrite = true,
@@ -36,6 +37,8 @@
     transactions: AccountEntry[];
     /** Les écritures du compte d'attente, pour lister les avances à rendre. */
     memberAdvanceEntries?: AccountEntry[];
+    /** Les moyens de paiement actifs du club, avec leur nature. */
+    paymentMethods?: { code: string; label: string; kind: string }[];
     seasonId: string;
     seasons?: Season[];
     canWrite?: boolean;
@@ -81,10 +84,10 @@
     })
   );
 
-  const actions = $derived(accountActions(account.code));
+  const actions = $derived(accountActions(account.kind ?? 'bank'));
   const today = new Date().toISOString().split('T')[0];
   const advances = $derived(
-    showsMemberAdvances(account.code) ? pendingMemberAdvances(memberAdvanceEntries, accounts, today) : null
+    showsMemberAdvances(account.kind ?? 'bank') ? pendingMemberAdvances(memberAdvanceEntries, accounts, today) : null
   );
   const refundAction = $derived(actions.find((a) => a.refundsPendingAdvance));
 
@@ -101,10 +104,10 @@
   let amount = $state('');
   let date = $state(today);
   let category = $state('');
-  let formAccountId = $state('current');
-  let destinationAccountId = $state('cash');
+  let formAccountId = $state('');
+  let destinationAccountId = $state('');
   let destinationDate = $state('');
-  let paymentMethod = $state('virement');
+  let paymentMethod = $state('');
   let description = $state('');
   let reference = $state('');
   let accrualType = $state('normal');
@@ -142,7 +145,7 @@
   const seasonForForm = (date: string) => String(seasonForDate(seasons, date)?.id ?? currentSeason?.id ?? seasonId);
 
   function startAction(action: AccountAction, pending?: PendingAdvance) {
-    applyValues(prefillAction(action, { today, targetSeasonId: seasonForForm(today), accounts, pending: pending ?? null }));
+    applyValues(prefillAction(action, { today, targetSeasonId: seasonForForm(today), self: account, accounts, paymentMethods, pending: pending ?? null }));
   }
 
   function refund(advance: PendingAdvance) {
@@ -227,6 +230,7 @@
     bind:targetSeasonId
     seasons={seasons as any}
     {accounts}
+    {paymentMethods}
     {activeCategories}
     bind:isSubmitting
     bind:errorMsg

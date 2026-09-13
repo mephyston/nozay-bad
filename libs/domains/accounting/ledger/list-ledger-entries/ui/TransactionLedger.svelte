@@ -20,6 +20,9 @@
     accountClasses = [],
     unreconciledChequesOnly = false,
     accountId = '',
+    mainAccountId = '',
+    activeAccounts = [],
+    paymentMethods = [],
     searchQuery = '',
     month = '',
     limit = '20'
@@ -33,16 +36,22 @@
     accountClasses?: AccountClass[];
     unreconciledChequesOnly?: boolean;
     accountId?: string;
+    /** Le compte bancaire principal du club : le compte affiché à défaut, et celui des saisies par défaut. */
+    mainAccountId?: string;
+    /** Les comptes actifs, avec leur nature : ce que les formulaires proposent. */
+    activeAccounts?: AccountLike[];
+    /** Les moyens de paiement actifs du club. */
+    paymentMethods?: { code: string; label: string; kind: string }[];
     searchQuery?: string;
     month?: string;
     limit?: string;
   } = $props();
 
   // svelte-ignore state_referenced_locally
-  let selectedAccount = $state(accountId || 'current');
+  let selectedAccount = $state(accountId || mainAccountId);
 
   $effect(() => {
-    if (selectedAccount !== (accountId || 'current')) {
+    if (selectedAccount !== (accountId || mainAccountId)) {
       const params = new URLSearchParams(window.location.search);
       params.set('accountId', selectedAccount);
       params.set('page', '1');
@@ -140,11 +149,11 @@
   let amount = $state('');
   let date = $state(new Date().toISOString().split('T')[0]);
   let category = $state('1');
-  let formAccountId = $state<string>('current');
-  let destinationAccountId = $state<string>('cash');
+  let formAccountId = $state<string>(mainAccountId);
+  let destinationAccountId = $state<string>('');
   /** Date de valeur au crédit : vide tant que le trésorier ne la distingue pas de celle du débit. */
   let destinationDate = $state('');
-  let paymentMethod = $state('virement');
+  let paymentMethod = $state(paymentMethods[0]?.code ?? '');
   let description = $state('');
   let reference = $state('');
   let accrualType = $state('normal');
@@ -183,10 +192,11 @@
      * dont le `default_entry_status` partait tel quel en base. Un virement pouvait ainsi naître
      * `in_vault`, sans que rien ne le montre.
      */
-    formAccountId = 'current';
-    destinationAccountId = 'cash';
+    formAccountId = mainAccountId;
+    // Le premier autre compte actif : le formulaire ne propose jamais le compte de départ en face.
+    destinationAccountId = activeAccounts.find((a) => a.code !== mainAccountId)?.code ?? '';
     destinationDate = '';
-    paymentMethod = 'virement';
+    paymentMethod = paymentMethods.find((m) => m.kind === 'transfer')?.code ?? paymentMethods[0]?.code ?? '';
     category = '1';
     date = new Date().toISOString().split('T')[0];
   }
@@ -197,7 +207,7 @@
     amount = (tx.amount / 100).toFixed(2);
     date = tx.date;
     category = tx.categoryId ? String(tx.categoryId) : '1';
-    formAccountId = findAccount(accounts, tx.accountId)?.code ?? 'current';
+    formAccountId = findAccount(accounts, tx.accountId)?.code ?? mainAccountId;
     paymentMethod = tx.paymentMethod;
     description = tx.description;
     reference = tx.reference || '';
@@ -321,7 +331,7 @@
         bind:searchValue={searchQuery}
         searchPlaceholder="Rechercher par libellé..."
         hasFilters={true}
-        filtersActive={unreconciledChequesOnly || !!month || (!!selectedAccount && selectedAccount !== 'current')}
+        filtersActive={unreconciledChequesOnly || !!month || (!!selectedAccount && selectedAccount !== mainAccountId)}
         onSearchSubmit={(val) => {
           const params = new URLSearchParams(window.location.search);
           if (val) params.set('search', val);
@@ -342,7 +352,7 @@
           </FormField>
 
             <FormField id="filter-account" label="Compte">
-            <SearchableCombobox id="filter-account" items={accountItems} value={selectedAccount || 'current'} onValueChange={(v) => handleAccountTabChange(String(v))} />
+            <SearchableCombobox id="filter-account" items={accountItems} value={selectedAccount || mainAccountId} onValueChange={(v) => handleAccountTabChange(String(v))} />
           </FormField>
 
             <FormField id="filter-month" label="Mois">
@@ -409,7 +419,8 @@
     bind:accrualNote
     bind:targetSeasonId
     {seasons}
-    {accounts}
+    accounts={activeAccounts.length > 0 ? activeAccounts : accounts}
+    {paymentMethods}
     {activeCategories}
     bind:isSubmitting
     bind:errorMsg

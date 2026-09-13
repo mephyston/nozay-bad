@@ -20,8 +20,15 @@ describe('ShopCatalog Component', () => {
     { id: 11, name: 'Cordage Yonex BG65', productCategoryId: 2, priceCents: 2000, stock: 5, active: true }
   ];
 
+  /* Les moyens de paiement sont des données du club : ceux que la boutique propose. */
+  const paymentMethods = [
+    { value: 'virement', label: 'Virement', kind: 'transfer' as const },
+    { value: 'cheque', label: 'Chèque', kind: 'cheque' as const },
+    { value: 'especes', label: 'Espèces', kind: 'cash' as const }
+  ];
+
   const mountCatalog = (target: HTMLElement) =>
-    mount(ShopCatalog, { target, props: { members, products, activeSeasonId: '25-26' } });
+    mount(ShopCatalog, { target, props: { members, products, paymentMethods, activeSeasonId: '25-26' } });
 
   const norm = (h: string) => h.replace(/&nbsp;|[  ]/g, ' ');
 
@@ -83,7 +90,7 @@ describe('ShopCatalog Component', () => {
     document.body.appendChild(target);
     mount(ShopCatalog, {
       target,
-      props: { members, products, activeSeasonId: '25-26', lockToMembers: true, initialMemberId: '1', historyHref: '/mon-compte#commandes' }
+      props: { members, products, paymentMethods, activeSeasonId: '25-26', lockToMembers: true, initialMemberId: '1', historyHref: '/mon-compte#commandes' }
     });
     flushSync();
 
@@ -100,12 +107,12 @@ describe('ShopCatalog Component', () => {
     expect(target.querySelector('[data-testid="orders-history-link"]')).toBeNull();
   });
 
-  it('ne propose que le virement, le chèque et les espèces', async () => {
+  it('propose les moyens de paiement que le club offre à la boutique, dans son ordre', async () => {
     const target = document.createElement('div');
     document.body.appendChild(target);
     mount(ShopCatalog, {
       target,
-      props: { members, products, activeSeasonId: '25-26', lockToMembers: true, initialMemberId: '1' }
+      props: { members, products, paymentMethods, activeSeasonId: '25-26', lockToMembers: true, initialMemberId: '1' }
     });
     flushSync();
 
@@ -240,7 +247,7 @@ describe('ShopCatalog Component', () => {
     const mountOrderable = async (target: HTMLElement, extra: Record<string, unknown> = {}) => {
       mount(ShopCatalog, {
         target,
-        props: { members, products, activeSeasonId: '25-26', lockToMembers: true, initialMemberId: '1', ...extra }
+        props: { members, products, paymentMethods, activeSeasonId: '25-26', lockToMembers: true, initialMemberId: '1', ...extra }
       });
       flushSync();
       // Adhérent verrouillé : produit (0) puis mode de paiement (1).

@@ -62,9 +62,10 @@ function detectSwallowedOperation(tail: string): ParsedStatementIssue | null {
 }
 
 export function parseOFX(ofxContent: string): ParseOFXOutput {
+  // Le numéro de compte du relevé est rendu tel quel : c'est `accounts.statement_account_number`
+  // qui dit à quel compte du club il correspond, plus un numéro écrit ici.
   const acctIdMatch = ofxContent.match(/<ACCTID>([^\r\n<]+)/);
-  const acctId = acctIdMatch ? acctIdMatch[1].trim() : '';
-  const accountId: 'current' | 'savings' = acctId === '00070007847' ? 'savings' : 'current';
+  const statementAccountNumber = acctIdMatch ? acctIdMatch[1].trim().replace(/\s+/g, '') : '';
 
   const transactions: any[] = [];
   const issues: ParsedStatementIssue[] = [];
@@ -114,7 +115,6 @@ export function parseOFX(ofxContent: string): ParseOFXOutput {
 
     transactions.push({
       fitid: fitidMatch[1].trim(),
-      accountId,
       amountCents,
       date: dateFormatted,
       name: nameMatch[1].trim(),
@@ -122,7 +122,7 @@ export function parseOFX(ofxContent: string): ParseOFXOutput {
     });
   }
 
-  return { transactions, balance: parseLedgerBalance(ofxContent), issues };
+  return { transactions, statementAccountNumber, balance: parseLedgerBalance(ofxContent), issues };
 }
 
 /**
@@ -145,8 +145,23 @@ function describeIssue(issue: ParsedStatementIssue): string {
   return `${quoi} — ${cause}`;
 }
 
+async function detectAccount(repo: ImportBankStatementRepository, db: Db, statementAccountNumber: string): Promise<{ id: number; code: string }> {
+  const banks = await repo.listActiveBankAccounts(db);
+  const known = statementAccountNumber ? banks.find((a) => a.statementAccountNumber === statementAccountNumber) : undefined;
+  if (known) return known;
+  const unnumbered = banks.filter((a) => !a.statementAccountNumber);
+  if (unnumbered.length === 1) return unnumbered[0];
+  if (banks.length === 1) return banks[0];
+  if (banks.length === 0) throw new AppError("Aucun compte bancaire actif : réglez les comptes du club avant d'importer un relevé.", 400);
+  throw new AppError(
+    `Le relevé porte le numéro de compte « ${statementAccountNumber || 'inconnu'} », qu'aucun compte du club ne déclare. ` +
+    'Choisissez le compte cible, ou renseignez ce numéro sur le compte dans les réglages de la comptabilité.',
+    400
+  );
+}
+
 export async function importBankStatement(db: Db, fileContent: string, forcedAccountId?: string): Promise<ImportBankStatementOutput> {
-  const { transactions, balance, issues } = parseOFX(fileContent);
+  const { transactions, statementAccountNumber, balance, issues } = parseOFX(fileContent);
 
   /*
    * Un fichier dont une opération ne se lit pas est refusé EN ENTIER, et nommément.
@@ -177,13 +192,17 @@ export async function importBankStatement(db: Db, fileContent: string, forcedAcc
    * un nombre sur `1`. Un relevé de livret atterrissait donc sur le compte courant, sans la
    * moindre erreur — et le rapprochement d'un compte contre les lignes d'un autre ne pouvait
    * pas boucler.
+   *
+   * Sans compte imposé, c'est le numéro du relevé qui désigne le compte, par
+   * `statement_account_number`. Un numéro inconnu retombe sur le seul compte bancaire actif
+   * qui n'en a pas — le club n'a renseigné que son livret, le relevé est donc celui du
+   * courant — et refuse dès qu'il y en a plusieurs : deviner, c'est l'erreur d'avant.
    */
-  const requestedCode = (forcedAccountId && forcedAccountId !== 'auto')
-    ? forcedAccountId
-    : (transactions[0]?.accountId ?? 'current');
-  const account = await repo.getAccountByCode(db, requestedCode);
+  const account = (forcedAccountId && forcedAccountId !== 'auto')
+    ? await repo.getAccountByCode(db, forcedAccountId)
+    : await detectAccount(repo, db, statementAccountNumber);
   if (!account) {
-    throw new Error(`Compte de trésorerie « ${requestedCode} » introuvable.`);
+    throw new AppError(`Compte de trésorerie « ${forcedAccountId} » introuvable.`, 400);
   }
 
   let insertedCount = 0;

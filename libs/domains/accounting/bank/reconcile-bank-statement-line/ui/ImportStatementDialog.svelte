@@ -60,7 +60,7 @@
 <Dialog.Root bind:open={reconState.showImportModal}>
   <Dialog.Content class="max-w-lg p-6 bg-card border-border shadow-xl">
     <Dialog.Header>
-      <Dialog.Title class="text-xl font-bold">Importer un relevé Société Générale</Dialog.Title>
+      <Dialog.Title class="text-xl font-bold">Importer un relevé bancaire</Dialog.Title>
       <Dialog.Description class="text-sm text-muted-foreground mt-1">
         Déposez votre fichier d'export bancaire (OFX ou CSV) pour charger les opérations du relevé.
       </Dialog.Description>
@@ -107,12 +107,7 @@
       <FormField id="bank-account" label="Compte bancaire cible">
         <SearchableCombobox
           id="bank-account"
-          items={[
-            { label: 'Détection automatique depuis le fichier', value: 'auto' },
-            { label: 'Compte Courant', value: 'current' },
-            { label: 'Compte Livret', value: 'savings' },
-            { label: 'Caisse Physique', value: 'cash' }
-          ]}
+          items={reconState.bankAccountItems}
           bind:value={reconState.selectedAccount}
         />
       </FormField>

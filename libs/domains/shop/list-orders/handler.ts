@@ -15,7 +15,7 @@ export async function listOrders(db: Db, filters: ListOrdersInput): Promise<List
     repo.getPaymentMethods(db)
   ]);
 
-  const paymentMethodsMap = new Map(paymentMethodsList.map(pm => [pm.id, pm.code]));
+  const paymentMethodsMap = new Map(paymentMethodsList.map(pm => [pm.id, pm]));
   const membersMap = new Map(membersList.map(m => [m.id, m]));
   const productsMap = new Map(productsList.map(p => [
     p.id,
@@ -31,7 +31,9 @@ export async function listOrders(db: Db, filters: ListOrdersInput): Promise<List
     return {
       order: {
         ...order,
-        paymentMethod: paymentMethodsMap.get(order.paymentMethodId) || 'inconnu',
+        paymentMethod: paymentMethodsMap.get(order.paymentMethodId)?.code || 'inconnu',
+        // Le libellé vient de la configuration du club : plus de table de libellés côté écran.
+        paymentMethodLabel: paymentMethodsMap.get(order.paymentMethodId)?.label || 'Inconnu',
         totalAmount: totCents,
         totalAmountCents: totCents
       },

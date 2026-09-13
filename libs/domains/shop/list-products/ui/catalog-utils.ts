@@ -1,5 +1,5 @@
 import type { Member } from './catalog-types';
-import { CASH_PAYMENT_METHODS, paymentMethodsList } from './catalog-types';
+import type { OrderPaymentKind, PaymentMethodOption } from './catalog-types';
 
 export function formatMemberName(m: Member | null): string {
   if (!m) return '';
@@ -16,9 +16,9 @@ export function formatLicence(licence: string): string {
   return `${licence.slice(0, 2)}***${licence.slice(-2)}`;
 }
 
-/** Libellé lisible d'un mode de paiement ; la valeur brute à défaut. */
-export function paymentMethodLabel(value: string): string {
-  return paymentMethodsList.find((pm) => pm.value === value)?.label ?? value;
+/** Libellé lisible d'un mode de paiement dans la liste proposée ; la valeur brute à défaut. */
+export function paymentMethodLabel(value: string, methods: readonly PaymentMethodOption[]): string {
+  return methods.find((pm) => pm.value === value)?.label ?? value;
 }
 
 /**
@@ -28,8 +28,8 @@ export function paymentMethodLabel(value: string): string {
  * ne rejoignent la caisse que si quelqu'un les remet à l'entraîneur ou au trésorier.
  * Sans le dire au moment de la commande, l'adhérent repart en croyant avoir payé.
  */
-export function requiresCashHandover(paymentMethod: string): boolean {
-  return CASH_PAYMENT_METHODS.includes(paymentMethod);
+export function requiresCashHandover(kind: OrderPaymentKind | null | undefined): boolean {
+  return kind === 'cash';
 }
 
 /**
@@ -48,8 +48,8 @@ export function transferReference(productName: string, member: Member | null): s
 }
 
 /** Le paiement se fait-il par virement, auquel cas il faut donner les coordonnées du club ? */
-export function requiresBankTransfer(paymentMethod: string): boolean {
-  return paymentMethod === 'virement';
+export function requiresBankTransfer(kind: OrderPaymentKind | null | undefined): boolean {
+  return kind === 'transfer';
 }
 
 /**

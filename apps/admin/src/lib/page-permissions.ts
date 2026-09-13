@@ -77,6 +77,7 @@ export const PAGE_PERMISSIONS: Record<string, Permission | null> = {
   // celui-ci — d'où le droit d'écriture.
   '/admin/settings/seasons': 'accounting:seasons:write',
   '/admin/settings/accounting': 'accounting:config:read',
+  '/admin/settings/tresorerie': 'accounting:config:read',
   '/admin/settings/attestation': 'members:attestations:read',
   '/admin/settings/products': 'shop:products:read',
   '/admin/settings/plateforme': 'settings:platform:read',
@@ -106,7 +107,7 @@ export const PAGE_PERMISSIONS: Record<string, Permission | null> = {
  */
 export const PAGE_FEATURES: Record<string, Feature> = {
   '/admin/accounting': 'accounting',
-  '/admin/accounting/cash-box': 'cash',
+  '/admin/accounting/cash-box': 'accounting',
   '/admin/accounting/accounts/[code]': 'accounting',
   '/admin/accounting/reconciliation': 'accounting',
   '/admin/accounting/invoices': 'invoices',

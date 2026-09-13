@@ -1,7 +1,7 @@
 import { AppError, type Db } from '@nba/db';
 import { CreateInternalTransferRepository } from './repository';
 import { validateAccrualAndFiscalPhase } from '../../shared/accruals';
-import { resolveAccountId, getPaymentMethodByCode } from '../../config/queries';
+import { resolveAccountId, getPaymentMethodByKind } from '../../config/queries';
 import type { CreateInternalTransferDTO, CreateInternalTransferOutput } from './dto';
 
 /**
@@ -45,8 +45,8 @@ export async function createInternalTransfer(
     }
   }
 
-  const sourceAccountId = await resolveAccountId(db, body.sourceAccountId);
-  const destinationAccountId = await resolveAccountId(db, body.destinationAccountId);
+  const sourceAccountId = await resolveAccountId(db, body.sourceAccountId, { active: true });
+  const destinationAccountId = await resolveAccountId(db, body.destinationAccountId, { active: true });
   if (sourceAccountId === destinationAccountId) {
     throw new AppError('Le compte destinataire doit être différent du compte source.', 400);
   }
@@ -71,9 +71,9 @@ export async function createInternalTransfer(
    * un `default_entry_status`, et un virement héritait ainsi d'un `in_vault` dépourvu de sens que
    * le calcul de solde ignorait sans le dire.
    */
-  const paymentMethod = await getPaymentMethodByCode(db, 'virement_interne');
+  const paymentMethod = await getPaymentMethodByKind(db, 'internal');
   if (!paymentMethod) {
-    throw new AppError('Moyen de paiement « virement_interne » introuvable : la migration 0023 n\'a pas été appliquée.', 500);
+    throw new AppError('Aucun moyen de paiement de nature « virement interne » : la migration 0023 n\'a pas été appliquée.', 500);
   }
 
   const seasonCode = await repo.getSeasonCode(db, seasonId);

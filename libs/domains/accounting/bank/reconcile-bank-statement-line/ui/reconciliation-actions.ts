@@ -252,8 +252,12 @@ export function createReconciliationActions(s: ReconciliationStateFields) {
        * depuis le nouvel exercice tombait hors de ses bornes — refus sans motif de rattachement.
        */
       const season = seasonForDate(s.seasons, line.date);
+      const thirdParty = s.thirdPartyAccount;
+      if (!thirdParty) throw new Error("Aucun compte d'attente des adhérents n'est actif : réglez les comptes du club.");
       const { legs } = await apiCreateMemberTransfer({
         seasonId: season ? String(season.code ?? season.id) : s.selectedSeason,
+        sourceAccountId: thirdParty.code,
+        destinationAccountId: String(line.accountId),
         amountCents: cents,
         date: line.date,
         description: description.trim(),

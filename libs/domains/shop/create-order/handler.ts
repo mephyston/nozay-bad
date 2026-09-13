@@ -5,7 +5,12 @@ import { isSeasonClosed } from '@nba/members-api';
 import { CreateOrderInput, CreateOrderOutput } from "./dto";
 import { AppError } from '@nba/db';
 
-export async function createOrder(db: Db, body: CreateOrderInput): Promise<CreateOrderOutput> {
+export interface CreateOrderContext {
+  /** Vrai pour une commande passée par l'adhérent lui-même : seuls les moyens offerts à la boutique valent. */
+  storefront?: boolean;
+}
+
+export async function createOrder(db: Db, body: CreateOrderInput, context: CreateOrderContext = {}): Promise<CreateOrderOutput> {
   const repo = new CreateOrderRepository();
   const seasonId = await repo.resolveSeasonId(db, body.seasonId);
 
@@ -42,9 +47,20 @@ export async function createOrder(db: Db, body: CreateOrderInput): Promise<Creat
     throw new AppError("Désolé, il n'y a plus assez de stock disponible pour cet article.", 400);
   }
 
+  /*
+   * Le moyen de paiement est une donnée du club, avec deux volets : `active` le retire de
+   * partout, `storefront` de la seule boutique des adhérents. Un moyen absent d'une liste
+   * ne doit pas non plus passer par une requête forgée.
+   */
   const paymentMethod = await repo.getPaymentMethodByCode(db, body.paymentMethod);
   if (!paymentMethod) {
     throw new AppError(`Le moyen de paiement '${body.paymentMethod}' n'existe pas.`, 400);
+  }
+  if (paymentMethod.active === false || paymentMethod.kind === 'internal') {
+    throw new AppError(`Le moyen de paiement « ${paymentMethod.label} » n'est plus proposé.`, 400);
+  }
+  if (context.storefront && paymentMethod.storefront === false) {
+    throw new AppError(`Le moyen de paiement « ${paymentMethod.label} » n'est pas proposé dans la boutique.`, 400);
   }
 
   return repo.create(db, {

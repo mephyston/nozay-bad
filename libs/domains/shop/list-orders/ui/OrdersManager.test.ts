@@ -44,7 +44,8 @@ describe('OrdersManager Component', () => {
         productId: 100,
         quantity: 2,
         totalAmount: 5000, // 50.00 €
-        paymentMethod: 'virement' as const,
+        paymentMethod: 'virement',
+        paymentMethodLabel: 'Virement',
         status: 'created' as const,
         awaitingPaymentSince: null,
         ledgerEntryId: null,
@@ -73,7 +74,8 @@ describe('OrdersManager Component', () => {
         productId: 101,
         quantity: 1,
         totalAmount: 1550, // 15.50 €
-        paymentMethod: 'cheque' as const,
+        paymentMethod: 'cheque',
+        paymentMethodLabel: 'Chèque',
         status: 'paid' as const,
         awaitingPaymentSince: null,
         ledgerEntryId: 55,
@@ -102,7 +104,8 @@ describe('OrdersManager Component', () => {
         productId: 101,
         quantity: 3,
         totalAmount: 4650, // 46.50 €
-        paymentMethod: 'especes' as const,
+        paymentMethod: 'especes',
+        paymentMethodLabel: 'Espèces',
         status: 'rejected' as const,
         awaitingPaymentSince: null,
         ledgerEntryId: null,
@@ -131,7 +134,8 @@ describe('OrdersManager Component', () => {
         productId: 100,
         quantity: 1,
         totalAmount: 2500, // 25.00 €
-        paymentMethod: 'especes' as const,
+        paymentMethod: 'especes',
+        paymentMethodLabel: 'Espèces',
         status: 'awaiting_payment' as const,
         awaitingPaymentSince: '2026-07-01',
         ledgerEntryId: null,
@@ -160,7 +164,8 @@ describe('OrdersManager Component', () => {
         productId: 101,
         quantity: 2,
         totalAmount: 3100, // 31.00 €
-        paymentMethod: 'cheque' as const,
+        paymentMethod: 'cheque',
+        paymentMethodLabel: 'Chèque',
         status: 'cancelled' as const,
         awaitingPaymentSince: null,
         ledgerEntryId: null,

@@ -32,7 +32,12 @@ describe('handleMemberTransfer', () => {
       { id: '25-26', name: '2025-2026', active: false, startDate: '2025-09-01', endDate: '2026-08-31' },
       { id: '26-27', name: '2026-2027', active: true, startDate: '2026-09-01', endDate: '2027-08-31' }
     ],
-    members: []
+    members: [],
+    // Le compte d'attente et le compte de la ligne se lisent des comptes du club, par nature.
+    accounts: [
+      { id: 1, code: 'current', label: 'Compte Courant', kind: 'bank' },
+      { id: 5, code: 'member_advances', label: 'Avances', kind: 'third_party' }
+    ]
   });
 
   const repond = (handler: (body: any) => { ok?: boolean; json: any }) => {

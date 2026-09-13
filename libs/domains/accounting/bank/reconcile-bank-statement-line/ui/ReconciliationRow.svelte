@@ -65,7 +65,7 @@
    * interne depuis le compte d'attente et pointe la ligne, en un geste.
    */
   const canBeMemberTransfer = $derived(
-    line.status === 'pending' && cents > 0 && (line.accountId === 'current' || String(line.accountId) === '1')
+    line.status === 'pending' && cents > 0 && !!reconState.thirdPartyAccount && reconState.isBankLine(line)
   );
   let showMemberTransfer = $state(false);
 

@@ -28,28 +28,19 @@ export function maxOrderableQuantity(product: Pick<Product, 'stock' | 'trackStoc
   return product.trackStock ? Math.min(product.stock, 99) : 99;
 }
 
-export const paymentMethodsList = [
-  { value: 'virement', label: 'Virement' },
-  { value: 'cheque', label: 'Chèque' },
-  { value: 'especes', label: 'Espèces' },
-  { value: 'labaz', label: 'Labaz' },
-  { value: 'ancv', label: 'Chèque ANCV' },
-  { value: 'pass_sport', label: "Pass'Sport" },
-  { value: 'ticket_loisir', label: 'Ticket Loisir' },
-  { value: 'up_loisir', label: 'Up Loisir' }
-];
-
 /**
- * Ce que la boutique de l'espace adhérent propose : virement, chèque, espèces.
+ * Un moyen de paiement tel que la boutique le propose.
  *
- * Les coupons sport et chèques-vacances restent connus — la saisie du bureau les
- * offre toujours, et les commandes qui en portent un restent lisibles — mais un
- * adhérent qui commande des volants ne les emploie jamais : ils allongeaient la liste
- * sans être choisis.
+ * La liste vient de la configuration du club (`GET /accounting/payment-methods`,
+ * offerts à l'adhérent ou au bureau selon l'écran) : plus aucune liste en dur. `kind`
+ * porte le comportement — un virement affiche l'IBAN, des espèces se remettent en main
+ * propre — là où le code n'est qu'un identifiant.
  */
-export const STOREFRONT_PAYMENT_METHODS = paymentMethodsList.filter((pm) =>
-  ['virement', 'cheque', 'especes'].includes(pm.value)
-);
+export interface PaymentMethodOption {
+  value: string;
+  label: string;
+  kind: 'transfer' | 'cheque' | 'cash' | 'card' | 'voucher' | 'internal';
+}
 
 export const categoriesList = [
   { value: 0, label: 'Toutes les catégories' },
@@ -72,6 +63,9 @@ export interface OrderConfirmation {
   totalCents: number;
   /** Valeur brute (`especes`, `virement`, …), traduite à l'affichage. */
   paymentMethod: string;
+  /** Libellé et comportement du moyen choisi, figés avec le récapitulatif. */
+  paymentMethodLabel: string;
+  paymentMethodKind: OrderPaymentKind | null;
   /**
    * Motif à recopier dans le libellé du virement, ex. « Cordage Yonex BG65 Jean Dupont ».
    *
@@ -81,5 +75,5 @@ export interface OrderConfirmation {
   transferReference: string;
 }
 
-/** Modes de paiement qui laissent de l'argent à remettre en main propre. */
-export const CASH_PAYMENT_METHODS = ['especes'];
+/** Un virement ou des espèces ne se règlent pas dans l'application : la confirmation le dit. */
+export type OrderPaymentKind = PaymentMethodOption['kind'];

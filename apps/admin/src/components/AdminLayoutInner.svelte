@@ -56,7 +56,7 @@
   }>();
 
   import { can } from '@nba/iam-ui';
-  import { NAV_GROUPS } from '../lib/nav';
+  import { NAV_GROUPS, menuAccountItem } from '../lib/nav';
   import { poserTitre, type ClubHabillage } from '../lib/identite';
 
   /** Une fonctionnalité éteinte par le club ; une clé absente vaut « allumée ». */
@@ -82,6 +82,18 @@
     Menu: MenuIcon
   };
 
+  /*
+    Les caisses et porte-monnaie du club, une entrée chacun, glissées après les remises de
+    chèques : ce sont des comptes réglés dans l'administration, pas des entrées écrites ici.
+  */
+  const avecComptes = (items: typeof NAV_GROUPS[number]['items']) => {
+    const comptes = (club?.menuAccounts ?? []).map(menuAccountItem);
+    if (comptes.length === 0) return items;
+    const apres = items.findIndex((i) => i.href === '/admin/accounting/cheques');
+    const position = apres >= 0 ? apres + 1 : items.length;
+    return [...items.slice(0, position), ...comptes, ...items.slice(position)];
+  };
+
   // Le menu dérive de la même table que le contrôle d'accès des pages : une entrée
   // visible mène donc toujours à une page ouverte.
   const filteredNavGroups = $derived(
@@ -93,7 +105,7 @@
         // Recopié explicitement : cette projection reconstruit chaque groupe, et tout
         // champ non listé ici disparaît en silence.
         beta: g.beta ?? false,
-        items: g.items
+        items: (g.label === 'Comptabilité' ? avecComptes(g.items) : g.items)
           .filter(i => !eteinte(i.feature))
           .filter(i => i.permission === null || can(permissions, i.permission))
           .map(i => ({ name: i.name, href: i.href, icon: ICONS[i.icon] }))

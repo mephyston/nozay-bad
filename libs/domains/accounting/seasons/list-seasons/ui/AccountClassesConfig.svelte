@@ -16,7 +16,7 @@
     tabsNav
   }: {
     accountClasses?: AccountClass[];
-    /** Les comptes du club : listés ici en lecture seule, ils se créent par migration. */
+    /** Les comptes du club : listés ici en lecture seule, ils se règlent dans « Comptes et moyens de paiement ». */
     accounts?: TreasuryAccount[];
     isSubmitting: boolean;
     onUpdateAccountClass: (code: string, updates: { label: string; type: 'recette' | 'depense' | 'tresorerie' }) => Promise<boolean>;

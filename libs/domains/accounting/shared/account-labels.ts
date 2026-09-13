@@ -14,6 +14,8 @@ export interface AccountLike {
   id?: number | string | null;
   code: string;
   label?: string | null;
+  /** Nature du compte, quand l'appelant la connaît. */
+  kind?: string | null;
 }
 
 /** Le compte désigné par un identifiant numérique ou par un code, sous l'une ou l'autre forme. */

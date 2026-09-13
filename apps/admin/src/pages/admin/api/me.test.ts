@@ -28,7 +28,7 @@ describe('GET /admin/api/me', () => {
       name: 'Moi',
       permissions: ['dashboard:overview:read'],
       realEmail: 'moi@nozaybad.fr',
-      club: { name: '', shortName: '', brandColor: '', features: {} }
+      club: { name: '', shortName: '', brandColor: '', features: {}, menuAccounts: [] }
     });
   });
 
@@ -69,7 +69,7 @@ describe('GET /admin/api/me', () => {
       name: null,
       permissions: [],
       realEmail: '',
-      club: { name: '', shortName: '', brandColor: '', features: {} }
+      club: { name: '', shortName: '', brandColor: '', features: {}, menuAccounts: [] }
     });
   });
 });

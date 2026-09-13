@@ -29,8 +29,6 @@ export const FEATURES = [
   'accounting',
   'invoices',
   'checks',
-  'badnet',
-  'cash',
   'expenses',
   // — Boutique —
   'shop',
@@ -94,7 +92,9 @@ export const FEATURE_CATALOG: Record<Feature, FeatureInfo> = {
   },
   accounting: {
     label: 'Comptabilité',
-    description: 'Grand livre, rapports financiers, rapprochement bancaire et exercices. Éteint, la rubrique disparaît du menu.',
+    description:
+      "Grand livre, rapports financiers, rapprochement bancaire, remises de chèques et exercices. Éteint, la rubrique disparaît du menu. " +
+      'Suppose au moins un compte bancaire actif (réglages › Comptabilité) : sans compte, elle reste fermée. Les factures et les notes de frais, eux, se passent de compte.',
     group: 'Comptabilité'
   },
   invoices: {
@@ -105,16 +105,6 @@ export const FEATURE_CATALOG: Record<Feature, FeatureInfo> = {
   checks: {
     label: 'Remises de chèques',
     description: 'Lecture des chèques en photo, bordereaux de remise et suivi de leur encaissement.',
-    group: 'Comptabilité'
-  },
-  badnet: {
-    label: 'Porte-monnaie Badnet',
-    description: 'Suivi du compte Badnet du club, alimenté et débité par les inscriptions aux tournois.',
-    group: 'Comptabilité'
-  },
-  cash: {
-    label: 'Caisse',
-    description: 'Compte de caisse en espèces (buvette, ventes sur place).',
     group: 'Comptabilité'
   },
   expenses: {
@@ -192,10 +182,9 @@ export const FEATURE_CATALOG: Record<Feature, FeatureInfo> = {
  * éteint ce dont le préalable est éteint, pour que l'écran n'ait pas à le redire.
  */
 export const FEATURE_PREREQUISITES: Partial<Record<Feature, readonly Feature[]>> = {
-  invoices: ['accounting'],
+  // Les factures ne sont pas listées : elles s'émettent sans grand livre — seul leur
+  // règlement en demande un, et c'est l'écriture qui le dira.
   checks: ['accounting'],
-  badnet: ['accounting'],
-  cash: ['accounting'],
   reminder_unpaid: ['push'],
   reminder_rankings: ['push', 'teams'],
   reminder_lineups: ['push', 'teams'],
@@ -212,8 +201,18 @@ export type FeatureState = Record<Feature, boolean>;
  * en base — on ne dit pas à un club qu'il a perdu quelque chose qu'il n'a jamais
  * éteint.
  */
-export function effectiveFeatures(stored: Partial<Record<Feature, boolean>>): FeatureState {
+export interface FeatureContext {
+  /**
+   * Le club a-t-il au moins un compte bancaire actif ? Sans lui, la comptabilité reste
+   * fermée quel que soit le réglage : rien à rapprocher, rien à remettre, rien à clôturer.
+   * Absent, on ne ferme rien — c'est l'état des tests et des appelants sans base.
+   */
+  hasBankAccount?: boolean;
+}
+
+export function effectiveFeatures(stored: Partial<Record<Feature, boolean>>, context: FeatureContext = {}): FeatureState {
   const state = Object.fromEntries(FEATURES.map((f) => [f, stored[f] ?? true])) as FeatureState;
+  if (context.hasBankAccount === false) state.accounting = false;
   for (const feature of FEATURES) {
     const required = FEATURE_PREREQUISITES[feature] ?? [];
     if (required.some((r) => !state[r])) state[feature] = false;

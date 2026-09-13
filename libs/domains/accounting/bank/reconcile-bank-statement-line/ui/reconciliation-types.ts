@@ -106,6 +106,12 @@ export interface ReconciliationStateProps {
    * en île séparée, il ne pouvait se mettre à jour que par un rechargement de la page.
    */
   reconciliationStatements?: any[];
+  /**
+   * Les comptes du club, avec leur nature. C'est par elle que l'écran sait sur quelle ligne
+   * proposer le virement d'une adhérente (un compte bancaire) et vers quel compte d'attente
+   * le créer — plus par un code écrit en dur.
+   */
+  accounts?: { id: number; code: string; label: string; kind: string; active?: boolean }[];
 }
 
 /** Catégorie comptable telle que présentée dans les sélecteurs. */
@@ -150,6 +156,10 @@ export interface ReconciliationStateFields {
   seasons: Season[];
   pointableEntries: GLTransaction[];
   reconciliationStatements: any[];
+  accounts: NonNullable<ReconciliationStateProps['accounts']>;
+  thirdPartyAccount: NonNullable<ReconciliationStateProps['accounts']>[number] | undefined;
+  isBankLine: (line: { accountId: string | number }) => boolean;
+  bankAccountItems: { label: string; value: string }[];
   displayedTransactions: BankStatementLine[];
   queueTransactions: BankStatementLine[];
   historyTransactions: BankStatementLine[];

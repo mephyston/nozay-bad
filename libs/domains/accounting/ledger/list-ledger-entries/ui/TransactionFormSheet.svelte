@@ -2,7 +2,6 @@
   import { AlertCircle } from '@lucide/svelte';
   import { Button, Input, Sheet, Label, Alert, SearchableCombobox, FormField, toSeasonOptions } from '@nba/ui';
   import type { Season, Category } from './ledger-types';
-  import { methodLabels } from './ledger-types';
   import { toAccountOptions, type AccountLike } from '../../../shared/account-labels';
 
   let {
@@ -12,10 +11,10 @@
     amount = $bindable(''),
     date = $bindable(''),
     category = $bindable('1'),
-    formAccountId = $bindable('current'),
-    destinationAccountId = $bindable('cash'),
+    formAccountId = $bindable(''),
+    destinationAccountId = $bindable(''),
     destinationDate = $bindable(''),
-    paymentMethod = $bindable('virement'),
+    paymentMethod = $bindable(''),
     description = $bindable(''),
     reference = $bindable(''),
     accrualType = $bindable('normal'),
@@ -23,6 +22,7 @@
     targetSeasonId = $bindable(''),
     seasons = [],
     accounts = [],
+    paymentMethods = [],
     activeCategories = [],
     isSubmitting = $bindable(false),
     errorMsg = $bindable(''),
@@ -46,6 +46,8 @@
     seasons?: Season[];
     /** Les comptes de trésorerie, lus de la base : un sélecteur par compte, quel qu'en soit le nombre. */
     accounts?: AccountLike[];
+    /** Les moyens de paiement actifs du club (configuration), `{ code, label }`. */
+    paymentMethods?: { code: string; label: string }[];
     activeCategories: { id: string; code: string; name: string }[];
     isSubmitting: boolean;
     errorMsg: string;
@@ -60,7 +62,7 @@
   const categoryItems = $derived(activeCategories.map((cat) => ({ label: cat.name, value: String(cat.id) })));
   const accountItems = $derived(toAccountOptions(accounts));
   const destinationItems = $derived(toAccountOptions(accounts.filter((a) => a.code !== formAccountId)));
-  const paymentItems = $derived(Object.entries(methodLabels).map(([key, label]) => ({ label: label as string, value: key })));
+  const paymentItems = $derived(paymentMethods.map((pm) => ({ label: pm.label, value: pm.code })));
   const accrualItems = $derived([
     { label: 'Normal (Même exercice comptable)', value: 'normal' },
     ...(showPanel === 'recette'

@@ -9,7 +9,8 @@ export interface Order {
   productId: number;
   quantity: number;
   totalAmount: number;
-  paymentMethod: 'virement' | 'cheque' | 'especes' | 'labaz' | 'ancv' | 'pass_sport' | 'ticket_loisir' | 'up_loisir';
+  /** Le code d'un moyen de paiement du club : ils sont des données, pas une liste figée. */
+  paymentMethod: string;
   status: OrderStatus;
   awaitingPaymentSince: string | null;
   ledgerEntryId: number | null;
@@ -51,13 +52,5 @@ export interface Season {
   closed?: boolean;
 }
 
-export const paymentMethodLabels: Record<string, string> = {
-  virement: 'Virement',
-  cheque: 'Chèque',
-  especes: 'Espèces',
-  labaz: 'Labaz',
-  ancv: 'Chèque ANCV',
-  pass_sport: "Pass'Sport",
-  ticket_loisir: 'Ticket Loisir',
-  up_loisir: 'Up Loisir'
-};
+// Les libellés des moyens de paiement viennent de la configuration du club, portés par
+// chaque commande (`order.paymentMethodLabel`) : plus de table figée ici.

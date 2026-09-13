@@ -1,10 +1,10 @@
 <script lang="ts">
   import { Button, Input, Badge, SearchableCombobox, FormField } from '@nba/ui';
   import type { Product } from './catalog-types';
-  import { paymentMethodsList, categoriesList } from './catalog-types';
+  import { categoriesList, type PaymentMethodOption } from './catalog-types';
 
   let {
-    selectedPaymentMethod = $bindable('virement'),
+    selectedPaymentMethod = $bindable(''),
     selectedCategory = $bindable(0),
     selectedProductId = $bindable(null),
     selectedQuantity = $bindable(1),
@@ -12,7 +12,7 @@
     selectedProduct,
     maxQuantity,
     outOfStockCount = 0,
-    paymentMethods = paymentMethodsList,
+    paymentMethods = [],
     onIncrementQty,
     onDecrementQty
   }: {
@@ -26,7 +26,7 @@
     /** Articles masqués car en rupture — signalé pour éviter l'effet « article disparu ». */
     outOfStockCount?: number;
     /** Moyens de paiement proposés ; tous par défaut, la boutique de l'adhérent en passe moins. */
-    paymentMethods?: { value: string; label: string }[];
+    paymentMethods?: PaymentMethodOption[];
     onIncrementQty: () => void;
     onDecrementQty: () => void;
   } = $props();

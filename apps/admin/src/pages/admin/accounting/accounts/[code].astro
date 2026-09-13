@@ -9,18 +9,12 @@ import AccountScreen from '../../../../components/AccountScreen.svelte';
  *
  * La page ne connaît le compte que par son code, pris dans l'URL et contrôlé par sa forme.
  * C'est le relais qui le vérifie contre la liste des comptes et rend son libellé ; la page
- * ne porte qu'un titre d'onglet, tiré d'une petite table qui retombe sur le code.
+ * ne porte qu'un titre d'onglet générique, les comptes étant des données.
  */
-const TITRES: Record<string, string> = {
-  cash: 'Caisse',
-  badnet: 'Porte-monnaie Badnet',
-  member_advances: 'Avances des adhérents'
-};
-
 const code = Astro.params.code ?? '';
-if (!/^[a-z_]{1,32}$/.test(code)) return Astro.redirect('/admin/accounting/accounts/cash');
+if (!/^[a-z][a-z0-9_]{0,31}$/.test(code)) return Astro.redirect('/admin/accounting');
 
-const titre = TITRES[code] ?? `Compte ${code}`;
+const titre = 'Compte';
 const season = Astro.url.searchParams.get('season') ?? '';
 ---
 

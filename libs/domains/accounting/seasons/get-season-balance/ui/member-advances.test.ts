@@ -3,9 +3,9 @@ import { pendingMemberAdvances } from './member-advances';
 import type { AccountEntry } from './account-types';
 
 const ACCOUNTS = [
-  { id: 1, code: 'current', label: 'Compte Courant' },
-  { id: 4, code: 'badnet', label: 'Badnet' },
-  { id: 5, code: 'member_advances', label: 'Avances' }
+  { id: 1, code: 'current', label: 'Compte Courant', kind: 'bank' },
+  { id: 4, code: 'badnet', label: 'Badnet', kind: 'wallet' },
+  { id: 5, code: 'member_advances', label: 'Avances', kind: 'third_party' }
 ];
 
 const leg = (over: Partial<AccountEntry>): AccountEntry => ({

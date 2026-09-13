@@ -21,6 +21,8 @@ createOrderRoute.post('/orders', tbValidator('json', createOrderSchema, (result,
   const body = c.req.valid('json');
   const db = createDb(c.env.DB);
 
-  const order = await createOrder(db, body);
+  // L'appelant de service de la boutique des adhérents : les moyens réservés à l'administration lui sont refusés.
+  const caller = c.req.header('x-caller');
+  const order = await createOrder(db, body, { storefront: caller === 'storefront' });
   return c.json({ success: true, data: order });
 });

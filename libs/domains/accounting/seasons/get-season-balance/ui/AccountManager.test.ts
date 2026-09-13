@@ -3,10 +3,15 @@ import { mount, flushSync, unmount } from 'svelte';
 import AccountManager from './AccountManager.svelte';
 
 const ACCOUNTS = [
-  { id: 1, code: 'current', label: 'Compte Courant', thirdParty: false },
-  { id: 3, code: 'cash', label: 'Caisse Buvette', thirdParty: false },
-  { id: 4, code: 'badnet', label: 'Porte-monnaie Badnet', thirdParty: false },
-  { id: 5, code: 'member_advances', label: 'Fonds reçus pour le compte des adhérents', thirdParty: true }
+  { id: 1, code: 'current', label: 'Compte Courant', kind: 'bank', thirdParty: false },
+  { id: 3, code: 'cash', label: 'Caisse Buvette', kind: 'cash', thirdParty: false },
+  { id: 4, code: 'badnet', label: 'Porte-monnaie Badnet', kind: 'wallet', thirdParty: false },
+  { id: 5, code: 'member_advances', label: 'Fonds reçus pour le compte des adhérents', kind: 'third_party', thirdParty: true }
+];
+const PAYMENT_METHODS = [
+  { code: 'virement', label: 'Virement', kind: 'transfer' },
+  { code: 'especes', label: 'Espèces', kind: 'cash' },
+  { code: 'virement_interne', label: 'Virement interne', kind: 'internal' }
 ];
 const SEASONS = [{ id: '25-26', name: 'Saison 2025-2026', active: true }];
 
@@ -29,7 +34,7 @@ describe('AccountManager', () => {
     document.body.appendChild(target);
     component = mount(AccountManager, {
       target,
-      props: { account: ACCOUNTS[1], accounts: ACCOUNTS, seasonId: '25-26', seasons: SEASONS, initialBalance: 0, transactions: [], ...props }
+      props: { account: ACCOUNTS[1], accounts: ACCOUNTS, paymentMethods: PAYMENT_METHODS, seasonId: '25-26', seasons: SEASONS, initialBalance: 0, transactions: [], ...props }
     });
     flushSync();
     return target;

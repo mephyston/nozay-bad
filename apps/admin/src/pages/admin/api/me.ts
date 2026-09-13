@@ -40,7 +40,8 @@ export const GET: APIRoute = ({ locals }) => {
           name: locals.club?.settings.name ?? '',
           shortName: locals.club?.settings.shortName ?? '',
           brandColor: locals.club?.settings.brandColor ?? '',
-          features: locals.club?.features ?? {}
+          features: locals.club?.features ?? {},
+          menuAccounts: locals.club?.menuAccounts ?? []
         }
       }
     }),

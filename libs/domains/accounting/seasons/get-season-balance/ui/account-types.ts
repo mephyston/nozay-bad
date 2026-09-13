@@ -42,6 +42,8 @@ export interface ScreenAccount {
   label: string;
   /** Compte de tiers (classe 4) : son solde est une dette envers les adhérents, pas de la trésorerie. */
   thirdParty: boolean;
+  /** Nature du compte (`bank`, `cash`, `wallet`, `third_party`), qui choisit les gestes proposés. */
+  kind?: string;
 }
 
 export interface CategoryOption {

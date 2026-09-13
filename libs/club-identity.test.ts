@@ -31,7 +31,7 @@ const ALLOWED_FILES = new Set([
   'libs/domains/members/shared/schema.ts'
 ]);
 
-const FORBIDDEN = /nozay|nba ?91|nozaybad|essonne|FR76 ?3000|SOGEFRPP|tresorier@|LIFB\.91|0913011863|433 ?218 ?716/i;
+const FORBIDDEN = /nozay|nba ?91|nozaybad|essonne|FR76 ?3000|SOGEFRPP|tresorier@|LIFB\.91|0913011863|433 ?218 ?716|00070007847/i;
 
 function isTest(file: string): boolean {
   return /\.(test|stories)\.[a-z]+$/.test(file) || /test-fixtures|test-identity|test-utils/.test(file);

@@ -39,6 +39,9 @@
         accountClasses={d.accountClasses}
         unreconciledChequesOnly={d.unreconciledChequesOnly}
         accountId={d.accountId}
+        mainAccountId={d.mainAccountId}
+        activeAccounts={d.accounts}
+        paymentMethods={d.paymentMethods}
         searchQuery={d.searchQuery}
         month={d.month}
         limit={d.limit}

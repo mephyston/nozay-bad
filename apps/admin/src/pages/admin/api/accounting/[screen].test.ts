@@ -40,10 +40,10 @@ vi.mock('../../../../lib/api', () => ({
             JSON.stringify({
               success: true,
               data: [
-                { id: 1, code: 'current', label: 'Compte Courant', classCode: '512', classType: 'tresorerie' },
-                { id: 3, code: 'cash', label: 'Caisse Buvette', classCode: '530', classType: 'tresorerie' },
-                { id: 4, code: 'badnet', label: 'Porte-monnaie Badnet', classCode: '517', classType: 'tresorerie' },
-                { id: 5, code: 'member_advances', label: 'Fonds reçus pour le compte des adhérents', classCode: '467', classType: 'tresorerie' }
+                { id: 1, code: 'current', label: 'Compte Courant', classCode: '512', classType: 'tresorerie', kind: 'bank', active: true },
+                { id: 3, code: 'cash', label: 'Caisse Buvette', classCode: '530', classType: 'tresorerie', kind: 'cash', active: true },
+                { id: 4, code: 'badnet', label: 'Porte-monnaie Badnet', classCode: '517', classType: 'tresorerie', kind: 'wallet', active: true },
+                { id: 5, code: 'member_advances', label: 'Fonds reçus pour le compte des adhérents', classCode: '467', classType: 'tresorerie', kind: 'third_party', active: true }
               ]
             }),
             { status: 200 }
@@ -263,7 +263,7 @@ describe('comptabilité — un compte sans relevé', () => {
     // numérique. Les deux se rencontrent encore en base.
     const d = await donnees(await lire('account', '?account=cash'));
     expect(d.initialBalance).toBe(1234);
-    expect(d.account).toEqual({ id: 3, code: 'cash', label: 'Caisse Buvette', thirdParty: false });
+    expect(d.account).toEqual({ id: 3, code: 'cash', label: 'Caisse Buvette', kind: 'cash', thirdParty: false });
     expect(d.accounts.map((a: any) => a.code)).toEqual(['current', 'cash', 'badnet', 'member_advances']);
     expect(appels.some((a) => a.url.includes('/accounting/transactions?season=25-26&accountId=cash&'))).toBe(true);
     // La caisse ne rend pas d'avances : pas de lecture du compte d'attente.

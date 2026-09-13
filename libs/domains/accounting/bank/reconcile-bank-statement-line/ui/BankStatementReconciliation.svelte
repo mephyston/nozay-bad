@@ -52,7 +52,7 @@
       <div class="rounded-full bg-primary/10 p-4 mb-4 text-primary">
         <Upload class="h-8 w-8" />
       </div>
-      <h3 class="text-xl font-bold mb-2">Importer un relevé Société Générale</h3>
+      <h3 class="text-xl font-bold mb-2">Importer un relevé bancaire</h3>
       <p class="text-muted-foreground text-sm max-w-md mb-6">
         Importez votre fichier de relevé bancaire (format OFX ou CSV) exporté depuis votre banque pour démarrer le rapprochement.
       </p>
@@ -63,7 +63,7 @@
         </FormField>
 
           <FormField id="bank-account-empty" label="Compte bancaire">
-          <SearchableCombobox id="bank-account-empty" items={[{ label: 'Détection automatique depuis le fichier', value: 'auto' }, { label: 'Compte Courant', value: 'current' }, { label: 'Compte Livret', value: 'savings' }, { label: 'Caisse Physique', value: 'cash' }]} bind:value={state.selectedAccount} />
+          <SearchableCombobox id="bank-account-empty" items={state.bankAccountItems} bind:value={state.selectedAccount} />
         </FormField>
 
         {#if state.errorMsg}

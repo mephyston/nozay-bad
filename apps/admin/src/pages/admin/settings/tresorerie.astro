@@ -1,0 +1,22 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import AdminLayout from '../../../components/AdminLayout.svelte';
+import TreasuryConfigScreen from '../../../components/TreasuryConfigScreen.svelte';
+
+/**
+ * Comptes de trésorerie et moyens de paiement.
+ *
+ * Rangé sous « Configuration », servi par le relais de la **comptabilité** (`treasury`) :
+ * c'est `accounting:config:*` qui le garde. Page figée, comme ses voisines : l'îlot
+ * demande ses données au relais.
+ */
+export const prerender = true;
+---
+
+<Layout title="Comptes et moyens de paiement">
+  <AdminLayout client:idle breadcrumb="Configuration / Comptes et moyens de paiement">
+    <div class="space-y-6">
+      <TreasuryConfigScreen client:load />
+    </div>
+  </AdminLayout>
+</Layout>

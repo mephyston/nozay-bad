@@ -64,7 +64,7 @@ export function buildSuggestionRequest(line: BankStatementLine, browsedSeason: s
       category: String(sug!.category),
       amount: Math.abs(cents),
       date: line.date,
-      paymentMethod: 'virement',
+      paymentMethod: '',
       description: line.name,
       reference: line.memo || line.fitid,
       accrualType: sug!.accrualType || 'normal',

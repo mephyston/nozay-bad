@@ -23,9 +23,14 @@ const REQUIRED_REFERENCE_CODES = {
    */
   categories: [],
   account_classes: ['60', '61', '62', '63', '64', '65', '70', '74', '75', '512', '517', '530'],
-  accounts: ['current', 'savings', 'cash'],
-  // Doit couvrir `paymentMethodsList` (libs/domains/shop/.../catalog-types.ts).
-  payment_methods: ['virement', 'cheque', 'especes', 'cb', 'labaz', 'ancv', 'pass_sport', 'ticket_loisir', 'up_loisir']
+  /*
+   * Plus aucun code de compte ni de moyen de paiement n'est exigé : ce sont des données du
+   * club, réglées depuis « Comptes et moyens de paiement », et le code les reconnaît à leur
+   * nature (`kind`) — un compte `bank`, un moyen `transfer` — jamais à leur code. Seul le
+   * virement interne, technique, doit exister : `create-internal-transfer` le cherche par nature.
+   */
+  accounts: [],
+  payment_methods: []
 };
 
 

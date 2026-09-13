@@ -42,12 +42,13 @@ describe('AdminLayout Component', () => {
     });
     flushSync();
 
-    // Sans club connu (aucune identité gardée), le titre reste générique.
+    // Sans club connu (aucune identité gardée), le titre reste générique, et le menu
+    // ne porte aucune caisse : elles viennent des comptes du club.
     expect(target.textContent).toContain('Administration');
     expect(target.textContent).toContain("Tableau de bord");
     expect(target.textContent).toContain("Adhérents");
     expect(target.textContent).toContain("Comptabilité");
-    expect(target.textContent).toContain("Caisse");
+    expect(target.textContent).not.toContain("Caisse");
     expect(target.textContent).toContain("Boutique");
     expect(target.textContent).toContain("Notes de frais");
 
@@ -65,7 +66,13 @@ describe('AdminLayout Component', () => {
           email: 'test@nozay-bad.fr',
           permissions: [...ALL_PERMISSIONS],
           realEmail: 'test@nozay-bad.fr',
-          club: { name: 'Club Test', shortName: 'CT', brandColor: '#000000', features: { shop: false } }
+          club: {
+            name: 'Club Test',
+            shortName: 'CT',
+            brandColor: '#000000',
+            features: { shop: false },
+            menuAccounts: [{ code: 'buvette', label: 'Caisse buvette', kind: 'cash' }, { code: 'badnet', label: 'Badnet', kind: 'wallet' }]
+          }
         },
         t: Date.now()
       })
@@ -82,6 +89,10 @@ describe('AdminLayout Component', () => {
     expect(target.textContent).toContain('CT Admin');
     expect(target.textContent).not.toContain('Boutique');
     expect(target.textContent).toContain('Comptabilité');
+    // Une entrée par caisse ou porte-monnaie du club, sous les remises de chèques.
+    const liens = [...target.querySelectorAll('a')].map((a) => [a.textContent?.trim(), a.getAttribute('href')]);
+    expect(liens).toContainEqual(['Caisse buvette', '/admin/accounting/accounts/buvette']);
+    expect(liens).toContainEqual(['Badnet', '/admin/accounting/accounts/badnet']);
 
     unmount(component);
     target.remove();

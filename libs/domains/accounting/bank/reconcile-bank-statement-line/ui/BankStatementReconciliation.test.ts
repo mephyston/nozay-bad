@@ -126,7 +126,7 @@ describe('BankStatementReconciliation Component', () => {
       }
     });
 
-    expect(target.innerHTML).toContain('Importer un relevé Société Générale');
+    expect(target.innerHTML).toContain('Importer un relevé bancaire');
     expect(target.innerHTML).toContain("Lancer l'importation");
   });
 
@@ -1221,14 +1221,14 @@ describe('BankStatementReconciliation Component', () => {
     flushSync();
 
     // The modal content is not in the DOM initially
-    expect(document.body.innerHTML).not.toContain('Importer un relevé Société Générale');
+    expect(document.body.innerHTML).not.toContain('Importer un relevé bancaire');
 
     // Dispatch the window event
     window.dispatchEvent(new CustomEvent('open-bank-import'));
     flushSync();
 
     // The modal content should now be in the DOM
-    expect(document.body.innerHTML).toContain('Importer un relevé Société Générale');
+    expect(document.body.innerHTML).toContain('Importer un relevé bancaire');
 
     // Clean up
     target.remove();
@@ -1264,14 +1264,14 @@ describe('BankStatementReconciliation Component', () => {
     flushSync();
 
     // The modal content is not in the DOM initially
-    expect(document.body.innerHTML).not.toContain('Importer un relevé Société Générale');
+    expect(document.body.innerHTML).not.toContain('Importer un relevé bancaire');
 
     // Dispatch the window event
     window.dispatchEvent(new CustomEvent('open-bank-import'));
     flushSync();
 
     // The modal content should still NOT be in the DOM
-    expect(document.body.innerHTML).not.toContain('Importer un relevé Société Générale');
+    expect(document.body.innerHTML).not.toContain('Importer un relevé bancaire');
 
     // Clean up
     target.remove();

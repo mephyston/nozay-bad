@@ -40,9 +40,18 @@ describe('catalogue des fonctionnalités', () => {
   it('éteint ce dont le préalable est éteint, même réglé allumé', () => {
     const state = effectiveFeatures({ push: false, reminder_unpaid: true, accounting: false });
     expect(state.reminder_unpaid).toBe(false);
-    expect(state.invoices).toBe(false);
     expect(state.checks).toBe(false);
-    // Ce qui ne dépend de rien reste tel quel.
+    // Ce qui ne dépend de rien reste tel quel — les factures s'émettent sans grand livre.
     expect(state.shop).toBe(true);
+    expect(state.invoices).toBe(true);
+  });
+
+  it('ferme la comptabilité, et ce qui en dépend, à un club sans compte bancaire actif', () => {
+    const state = effectiveFeatures({}, { hasBankAccount: false });
+    expect(state.accounting).toBe(false);
+    expect(state.checks).toBe(false);
+    expect(state.invoices).toBe(true);
+    expect(state.expenses).toBe(true);
+    expect(effectiveFeatures({}, { hasBankAccount: true }).accounting).toBe(true);
   });
 });

@@ -104,6 +104,17 @@ export const ROUTE_PERMISSIONS: RouteRule[] = [
   { method: 'DELETE', path: '/accounting/categories/:id', permission: 'accounting:config:write' },
   // Les comptes de trésorerie, pour les sélecteurs et l'écran des soldes initiaux.
   { method: 'GET', path: '/accounting/accounts', permission: 'accounting:config:read' },
+  // Comptes de trésorerie et moyens de paiement : la configuration, gardée comme les
+  // catégories. La boutique lit les moyens offerts aux adhérents (route de service, filtrée
+  // sur `storefront` par l'appelant).
+  { method: 'POST', path: '/accounting/accounts', permission: 'accounting:config:write' },
+  { method: 'PUT', path: '/accounting/accounts/:id', permission: 'accounting:config:write' },
+  // Lecture ouverte à tout compte : un entraîneur qui saisit une commande doit choisir
+  // un moyen de paiement sans porter le droit de configurer la comptabilité.
+  { method: 'GET', path: '/accounting/payment-methods', permission: null, service: true },
+  { method: 'POST', path: '/accounting/payment-methods', permission: 'accounting:config:write' },
+  { method: 'PUT', path: '/accounting/payment-methods/:id', permission: 'accounting:config:write' },
+  { method: 'DELETE', path: '/accounting/payment-methods/:id', permission: 'accounting:config:write' },
   { method: 'GET', path: '/accounting/account-classes', permission: 'accounting:config:read' },
   { method: 'POST', path: '/accounting/account-classes', permission: 'accounting:config:write' },
   { method: 'PUT', path: '/accounting/account-classes/:code', permission: 'accounting:config:write' },

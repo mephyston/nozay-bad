@@ -4,7 +4,6 @@
 
   import type { OrderItem } from './orders-manager-types';
   import type { Snippet } from 'svelte';
-  import { paymentMethodLabels } from './orders-manager-types';
 
   /**
    * Table des commandes encore ouvertes, pour les deux étapes du workflow.
@@ -146,7 +145,7 @@
               <span class="font-bold text-muted-foreground ml-1">(x{item.order.quantity})</span>
             </div>
             <Badge variant="outline" size="xs">
-              {paymentMethodLabels[item.order.paymentMethod] || item.order.paymentMethod}
+              {item.order.paymentMethodLabel || item.order.paymentMethod}
             </Badge>
           </div>
 
@@ -264,7 +263,7 @@
               {/if}
               <Table.Cell class="whitespace-nowrap">
                 <Badge variant="outline">
-                  {paymentMethodLabels[item.order.paymentMethod] || item.order.paymentMethod}
+                  {item.order.paymentMethodLabel || item.order.paymentMethod}
                 </Badge>
               </Table.Cell>
               <Table.Cell class="text-right font-bold text-foreground">

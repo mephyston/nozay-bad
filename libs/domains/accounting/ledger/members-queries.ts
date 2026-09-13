@@ -14,6 +14,7 @@ export async function getMemberLastPaymentTransaction(db: DbOrTx, memberId: numb
     .limit(1)
     .get();
 
+  // Le libellé du moyen, tel que le club l'a nommé ; « virement » à défaut, pour l'attestation.
   return row ? { paymentMethod: row.paymentMethod || 'virement', date: row.date } : undefined;
 }
 

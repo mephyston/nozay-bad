@@ -2,7 +2,7 @@
   import { Check, Banknote, Landmark, Copy } from '@lucide/svelte';
   import { Dialog, Button, Amount } from '@nba/ui';
   import type { OrderConfirmation } from './catalog-types';
-  import { paymentMethodLabel, requiresBankTransfer, requiresCashHandover, type ClubBankDetails } from './catalog-utils';
+  import { requiresBankTransfer, requiresCashHandover, type ClubBankDetails } from './catalog-utils';
 
   /**
    * Accusé de réception d'une commande, en boîte modale.
@@ -30,8 +30,8 @@
   } = $props();
 
   const open = $derived(confirmation !== null);
-  const cash = $derived(confirmation !== null && requiresCashHandover(confirmation.paymentMethod));
-  const transfer = $derived(confirmation !== null && requiresBankTransfer(confirmation.paymentMethod));
+  const cash = $derived(confirmation !== null && requiresCashHandover(confirmation.paymentMethodKind));
+  const transfer = $derived(confirmation !== null && requiresBankTransfer(confirmation.paymentMethodKind));
 
   /** Champ bancaire copié à l'instant, pour faire clignoter la coche deux secondes. */
   let copiedField = $state<string | null>(null);
@@ -85,7 +85,7 @@
         </div>
         <div class="flex items-start justify-between gap-3">
           <span class="text-muted-foreground">Paiement</span>
-          <span class="text-right font-semibold text-foreground">{paymentMethodLabel(confirmation.paymentMethod)}</span>
+          <span class="text-right font-semibold text-foreground">{confirmation.paymentMethodLabel}</span>
         </div>
         <div class="flex items-center justify-between gap-3 border-t border-border/50 pt-2">
           <span class="font-bold text-foreground">Montant total</span>

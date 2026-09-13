@@ -1,4 +1,5 @@
 import { can } from '../../../../lib/guard';
+import { oublierClub } from '../../../../lib/club';
 import { creerRelais, identifiant, Refus, type Ecran, type Lecteur } from '../../../../lib/relais';
 import { currentSeasonCode, sortSeasons } from '../../../../lib/seasons';
 
@@ -60,24 +61,19 @@ function saisonPrecedente(code: string): string {
  */
 const RAPPORT_VIDE = () => ({
   compteResultat: { totalRecettes: 0, totalDepenses: 0, netResult: 0, categories: {} },
-  bilanTrésorerie: [
-    ['current', 'Compte Courant', false],
-    ['savings', 'Livret A / Épargne', false],
-    ['cash', 'Caisse Buvette', false],
-    ['badnet', 'Porte-monnaie Badnet', false],
-    ['member_advances', 'Fonds reçus pour le compte des adhérents', true]
-  ].map(([accountId, label, thirdParty]) => ({
-    accountId,
-    label,
-    thirdParty,
-    initialBalance: 0,
-    finalBalance: 0,
-    inVaultCents: 0,
-    pendingDebitCents: 0,
-    bankTheoreticalCents: 0,
-    statementBalanceCents: null as number | null,
-    statementDate: null as string | null
-  }))
+  // Aucun compte n'est nommé ici : ils sont des données, et l'écran sait montrer une liste vide.
+  bilanTrésorerie: [] as {
+    accountId: string;
+    label: string;
+    thirdParty: boolean;
+    initialBalance: number;
+    finalBalance: number;
+    inVaultCents: number;
+    pendingDebitCents: number;
+    bankTheoreticalCents: number;
+    statementBalanceCents: number | null;
+    statementDate: string | null;
+  }[]
 });
 
 /** Classe 4 du plan comptable : un compte de tiers, dont le solde est une dette et non de la trésorerie. */
@@ -103,11 +99,19 @@ export const ECRANS: Record<string, Ecran> = {
         ramènerait les deux mélangés ouvre trois cents cotisations pour y trouver sept
         remboursements.
       */
+      // Le compte affiché par défaut est le compte bancaire principal du club : le premier
+      // compte de nature `bank` actif, et non plus un code écrit ici.
+      const [comptes, moyens]: [any[], any[]] = await Promise.all([
+        lire('/accounting/accounts').then((r: any) => r ?? []),
+        lire('/accounting/payment-methods?offered=admin').then((r: any) => r ?? [])
+      ]);
+      const comptePrincipal = comptes.find((c) => c.kind === 'bank' && c.active !== false)?.code ?? comptes[0]?.code ?? '';
+      const compteDemande = params.get('accountId') || comptePrincipal;
       const requete = new URLSearchParams({
         season: saisonnier.seasonId,
         page: params.get('page') || '1',
         limit: params.get('limit') || '20',
-        accountId: params.get('accountId') || 'current'
+        accountId: compteDemande
       });
       for (const cle of ['category', 'classCode', 'type', 'search', 'month', 'accrual'] as const) {
         const valeur = params.get(cle);
@@ -129,10 +133,13 @@ export const ECRANS: Record<string, Ecran> = {
         // d'où la lecture détaillée pour la récupérer.
         pagination: mouvements.enveloppe?.pagination ?? { total: 0, page: 1, limit: 20, totalPages: 1 },
         balances: rapport?.bilanTrésorerie ?? [],
+        accounts: comptes.filter((c) => c.active !== false).map((c) => ({ id: c.id, code: c.code, label: c.label, kind: c.kind })),
+        paymentMethods: moyens.map((m) => ({ code: m.code, label: m.label, kind: m.kind })),
+        mainAccountId: comptePrincipal,
         categories: categories ?? [],
         accountClasses: classes ?? [],
         unreconciledChequesOnly: params.get('unreconciledCheques') === 'true',
-        accountId: params.get('accountId') || 'current',
+        accountId: compteDemande,
         searchQuery: params.get('search') || '',
         month: params.get('month') || '',
         accrual: params.get('accrual') || '',
@@ -390,7 +397,7 @@ export const ECRANS: Record<string, Ecran> = {
         fin: bornes.reduce((max: string, x: any) => (x.endDate > max ? x.endDate : max), bornes[0]?.endDate ?? '2999-12-31')
       };
 
-      const [enAttente, delExercice, listesEcritures, annuaires, categories, etats] = await Promise.all([
+      const [enAttente, delExercice, listesEcritures, annuaires, categories, etats, comptes] = await Promise.all([
         /*
           Les lignes encore à rapprocher, sans borne d'exercice : une ligne de relevé
           n'appartient à aucune saison, c'est un mouvement daté. Les borner à l'exercice
@@ -447,7 +454,10 @@ export const ECRANS: Record<string, Ecran> = {
           L'état de rapprochement ne s'établit que pour les comptes dont un relevé a été
           importé ; sans relevé la réponse est vide, et l'encart ne s'affiche pas.
         */
-        lire(`/accounting/reconciliation-statements?season=${s}`)
+        lire(`/accounting/reconciliation-statements?season=${s}`),
+        // Les comptes et leur nature : le virement d'une adhérente se propose sur une ligne
+        // d'un compte bancaire et se crée depuis le compte d'attente, quels que soient leurs codes.
+        lire('/accounting/accounts').then((r: any) => r ?? [])
       ]);
 
       /*
@@ -508,6 +518,7 @@ export const ECRANS: Record<string, Ecran> = {
         members: membres,
         dbCategories: categories ?? [],
         reconciliationStatements: etats ?? [],
+        accounts: comptes,
         canReconcile: can(locals, 'accounting:bank:reconcile')
       };
     },
@@ -612,6 +623,100 @@ export const ECRANS: Record<string, Ecran> = {
         route: (data) => ({
           chemin: `/accounting/invoices?season=${encodeURIComponent(String(data.season ?? ''))}`,
           method: 'GET'
+        })
+      }
+    }
+  },
+
+  /**
+   * Les comptes de trésorerie et les moyens de paiement : la porte de la comptabilité.
+   *
+   * Aucune fonctionnalité ne garde cet écran : c'est ici qu'un club sans compte bancaire
+   * en crée un, et la comptabilité s'ouvre à la lecture suivante. Les moyens se lisent sans
+   * filtre — inactifs compris, avec leur usage — car c'est l'écran qui décide de leur sort.
+   */
+  treasury: {
+    permission: 'accounting:config:read',
+    // Les comptes font le menu (une entrée par caisse) et ouvrent la comptabilité : le
+    // contexte du club gardé par l'isolate doit être relu à la requête suivante.
+    apres: oublierClub,
+    charger: async (lire, locals) => {
+      const [comptes, moyens, classes] = await Promise.all([
+        lire('/accounting/accounts'),
+        lire('/accounting/payment-methods'),
+        lire('/accounting/account-classes')
+      ]);
+      return {
+        accounts: comptes ?? [],
+        paymentMethods: moyens ?? [],
+        accountClasses: classes ?? [],
+        canWrite: can(locals, 'accounting:config:write')
+      };
+    },
+    ecritures: {
+      create_account: {
+        permission: 'accounting:config:write',
+        route: (data) => ({
+          chemin: '/accounting/accounts',
+          method: 'POST',
+          body: {
+            code: data.code,
+            label: data.label,
+            accountClassCode: data.accountClassCode,
+            kind: data.kind,
+            statementAccountNumber: data.statementAccountNumber || null
+          }
+        })
+      },
+      update_account: {
+        permission: 'accounting:config:write',
+        route: (data) => ({
+          chemin: `/accounting/accounts/${identifiant(data.id, 'de compte')}`,
+          method: 'PUT',
+          body: {
+            ...(data.label !== undefined ? { label: data.label } : {}),
+            ...(data.accountClassCode !== undefined ? { accountClassCode: data.accountClassCode } : {}),
+            ...(data.kind !== undefined ? { kind: data.kind } : {}),
+            ...(data.active !== undefined ? { active: data.active } : {}),
+            ...(data.statementAccountNumber !== undefined ? { statementAccountNumber: data.statementAccountNumber || null } : {})
+          }
+        })
+      },
+      create_payment_method: {
+        permission: 'accounting:config:write',
+        route: (data) => ({
+          chemin: '/accounting/payment-methods',
+          method: 'POST',
+          body: {
+            code: data.code,
+            label: data.label,
+            kind: data.kind,
+            defaultAccountCode: data.defaultAccountCode,
+            defaultEntryStatus: data.defaultEntryStatus,
+            storefront: data.storefront
+          }
+        })
+      },
+      update_payment_method: {
+        permission: 'accounting:config:write',
+        route: (data) => ({
+          chemin: `/accounting/payment-methods/${identifiant(data.id, 'de moyen de paiement')}`,
+          method: 'PUT',
+          body: {
+            ...(data.label !== undefined ? { label: data.label } : {}),
+            ...(data.kind !== undefined ? { kind: data.kind } : {}),
+            ...(data.defaultAccountCode !== undefined ? { defaultAccountCode: data.defaultAccountCode } : {}),
+            ...(data.defaultEntryStatus !== undefined ? { defaultEntryStatus: data.defaultEntryStatus } : {}),
+            ...(data.active !== undefined ? { active: data.active } : {}),
+            ...(data.storefront !== undefined ? { storefront: data.storefront } : {})
+          }
+        })
+      },
+      delete_payment_method: {
+        permission: 'accounting:config:write',
+        route: (data) => ({
+          chemin: `/accounting/payment-methods/${identifiant(data.id, 'de moyen de paiement')}`,
+          method: 'DELETE'
         })
       }
     }
@@ -822,21 +927,24 @@ export const ECRANS: Record<string, Ecran> = {
       const codeCompte = String(params.get('account') ?? '');
       if (!/^[a-z_]{1,32}$/.test(codeCompte)) throw new Refus('Code de compte invalide.');
 
-      const [saisonnier, comptes]: [any, any[]] = await Promise.all([
+      const [saisonnier, comptes, moyens]: [any, any[], any[]] = await Promise.all([
         saison(lire, params),
-        lire('/accounting/accounts').then((r: any) => r ?? [])
+        lire('/accounting/accounts').then((r: any) => r ?? []),
+        lire('/accounting/payment-methods?offered=admin').then((r: any) => r ?? [])
       ]);
       const compte = comptes.find((c) => c.code === codeCompte);
       if (!compte) throw new Refus(`Compte « ${codeCompte} » inconnu.`);
 
       const s = encodeURIComponent(saisonnier.seasonId);
-      const enrichi = (c: any) => ({ id: c.id, code: c.code, label: c.label, thirdParty: estCompteDeTiers(c) });
+      const enrichi = (c: any) => ({ id: c.id, code: c.code, label: c.label, kind: c.kind, thirdParty: estCompteDeTiers(c) });
 
       /*
         Les avances des adhérents se rendent depuis l'écran Badnet et se lisent sur celui du
         compte d'attente : ces deux écrans reçoivent aussi les écritures du compte d'attente.
       */
-      const veutAvances = codeCompte === 'badnet' || estCompteDeTiers(compte);
+      const veutAvances = compte.kind === 'wallet' || compte.kind === 'third_party' || estCompteDeTiers(compte);
+      // Le compte d'attente des adhérents, reconnu à sa nature : ses écritures portent les avances.
+      const compteAttente = comptes.find((c) => c.kind === 'third_party' && c.active !== false) ?? comptes.find((c) => estCompteDeTiers(c));
 
       /*
         Les avances se lisent sur TOUS les exercices ouverts, et non sur le seul consulté : un
@@ -852,7 +960,7 @@ export const ECRANS: Record<string, Ecran> = {
       const lireAvances = () =>
         Promise.all(
           exercicesOuverts.map((code) =>
-            lire(`/accounting/transactions?season=${encodeURIComponent(code)}&accountId=member_advances&limit=200`)
+            lire(`/accounting/transactions?season=${encodeURIComponent(code)}&accountId=${encodeURIComponent(compteAttente.code)}&limit=200`)
           )
         ).then((listes) => listes.flatMap((l: any) => l ?? []));
 
@@ -860,7 +968,7 @@ export const ECRANS: Record<string, Ecran> = {
         lire(`/accounting/seasons/${s}/balances`),
         lire(`/accounting/transactions?season=${s}&accountId=${encodeURIComponent(codeCompte)}&limit=200`),
         lire('/accounting/categories'),
-        veutAvances ? lireAvances() : Promise.resolve(null)
+        veutAvances && compteAttente ? lireAvances() : Promise.resolve(null)
       ]);
 
       const solde = (soldes ?? []).find((b: any) => b.accountId === compte.code || b.accountId === compte.id);
@@ -869,7 +977,8 @@ export const ECRANS: Record<string, Ecran> = {
       return {
         ...saisonnier,
         account: enrichi(compte),
-        accounts: comptes.map(enrichi),
+        accounts: comptes.filter((c) => c.active !== false || c.code === codeCompte).map(enrichi),
+        paymentMethods: moyens.map((m) => ({ code: m.code, label: m.label, kind: m.kind })),
         initialBalance: solde?.initialBalanceCents ?? solde?.initialBalance ?? 0,
         transactions: ecritures,
         categories: categories ?? [],

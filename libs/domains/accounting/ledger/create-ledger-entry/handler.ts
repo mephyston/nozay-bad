@@ -37,9 +37,9 @@ export async function createLedgerEntry(db: Db, body: CreateTransactionDTO & { a
   const repo = new CreateLedgerEntryRepository();
   const seasonIdInt = await repo.resolveSeasonId(db, body.seasonId);
 
-  const accountIdInt = await resolveAccountId(db, body.accountId);
+  const accountIdInt = await resolveAccountId(db, body.accountId, { active: true });
 
-  const paymentMethod = await resolvePaymentMethod(db, body.paymentMethod);
+  const paymentMethod = await resolvePaymentMethod(db, body.paymentMethod, { active: true });
   const paymentMethodIdInt = paymentMethod.id;
 
   const categoryIdInt = body.category ? (typeof body.category === 'number' ? body.category : Number(body.category) || 1) : null;

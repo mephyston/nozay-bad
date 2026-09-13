@@ -20,6 +20,10 @@ const OFX_WITH_BALANCE = `<ACCTID>123
 function mockRepo(over: Record<string, any> = {}) {
   const instance = {
     getAccountByCode: vi.fn().mockResolvedValue({ id: 1, code: 'current' }),
+    listActiveBankAccounts: vi.fn().mockResolvedValue([
+      { id: 1, code: 'current', statementAccountNumber: null },
+      { id: 2, code: 'savings', statementAccountNumber: '00070007847' }
+    ]),
     insertBankStatementLine: vi.fn().mockResolvedValue({ changes: 1 }),
     upsertBankStatementBalance: vi.fn().mockResolvedValue(undefined),
     ...over
@@ -95,6 +99,27 @@ describe('importBankStatement', () => {
   it('refuse un compte inconnu plutôt que de retomber sur le compte courant', async () => {
     mockRepo({ getAccountByCode: vi.fn().mockResolvedValue(undefined) });
     await expect(importBankStatement(db, OFX_ONE_TX, 'livret-b')).rejects.toThrow('introuvable');
+  });
+
+  it("reconnaît le compte au numéro que la banque écrit dans le relevé", async () => {
+    const repo = mockRepo();
+    const result = await importBankStatement(db, OFX_ONE_TX.replace(/<ACCTID>[^<\r\n]+/, '<ACCTID>00070007847'), 'auto');
+    expect(repo.insertBankStatementLine).toHaveBeenCalledWith(db, expect.objectContaining({ accountId: 2 }));
+    expect(result.accountCode).toBe('savings');
+  });
+
+  it("retombe sur le seul compte bancaire sans numéro quand le relevé n'en déclare aucun de connu", async () => {
+    const repo = mockRepo();
+    await importBankStatement(db, OFX_ONE_TX, 'auto');
+    expect(repo.insertBankStatementLine).toHaveBeenCalledWith(db, expect.objectContaining({ accountId: 1 }));
+  });
+
+  it('refuse de deviner entre plusieurs comptes sans numéro', async () => {
+    mockRepo({ listActiveBankAccounts: vi.fn().mockResolvedValue([
+      { id: 1, code: 'current', statementAccountNumber: null },
+      { id: 7, code: 'current_2', statementAccountNumber: null }
+    ]) });
+    await expect(importBankStatement(db, OFX_ONE_TX, 'auto')).rejects.toThrow('Choisissez le compte cible');
   });
 
   it('enregistre le solde arrêté par la banque', async () => {

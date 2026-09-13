@@ -63,6 +63,8 @@ const initialMemberId = session?.activeMemberId ? String(session.activeMemberId)
 
 let products: Product[] = [];
 let seasons: Season[] = [];
+/** Les moyens de paiement proposés aux adhérents, depuis la configuration du club. */
+let paymentMethods: { value: string; label: string; kind: 'transfer' | 'cheque' | 'cash' | 'card' | 'voucher' | 'internal' }[] = [];
 let errorMsg = '';
 
 try {
@@ -76,6 +78,12 @@ try {
 
   seasons = await listSeasons(env);
   if (seasons.length === 0) errorMsg = 'Impossible de charger les saisons.';
+
+  const methodsRes = await apiService.fetch('http://localhost/accounting/payment-methods');
+  if (methodsRes.ok) {
+    const json = (await methodsRes.json()) as any;
+    paymentMethods = (json.data || []).map((m: any) => ({ value: m.code, label: m.label, kind: m.kind }));
+  }
 } catch (e: any) {
   errorMsg = 'Une erreur de connexion est survenue lors du chargement des données.';
 }
@@ -103,6 +111,7 @@ const activeSeasonId = displaySeason(seasons, session?.seasonCode)?.code ?? '';
       lockToMembers={true}
       initialMemberId={initialMemberId}
       historyHref="/mon-compte#commandes"
+      {paymentMethods}
       bankDetails={{
         holder: Astro.locals.club?.settings.bankHolder ?? '',
         iban: Astro.locals.club?.settings.iban ?? '',

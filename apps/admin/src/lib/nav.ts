@@ -66,8 +66,11 @@ export const NAV_GROUPS: NavGroup[] = [
       { name: 'Factures', icon: 'FileCheck', href: '/admin/accounting/invoices', permission: 'accounting:invoices:read', feature: 'invoices' },
       { name: 'Rapprochement bancaire', icon: 'Scale', href: '/admin/accounting/reconciliation', permission: 'accounting:bank:read', feature: 'accounting' },
       { name: 'Remises de chèques', icon: 'Landmark', href: '/admin/accounting/cheques', permission: 'accounting:checks:read', feature: 'checks' },
-      { name: 'Caisse', icon: 'Wallet', href: '/admin/accounting/accounts/cash', permission: 'accounting:ledger:read', feature: 'cash' },
-      { name: 'Badnet', icon: 'CreditCard', href: '/admin/accounting/accounts/badnet', permission: 'accounting:ledger:read', feature: 'badnet' },
+      /*
+        Les caisses et porte-monnaie du club ne sont pas listés ici : ce sont des comptes,
+        réglés dans l'administration, et le menu en tire une entrée chacun à cette place
+        (`menuAccountItems`, ci-dessous). `page-permissions` connaît leur page par son motif.
+      */
       { name: 'Notes de frais', icon: 'Coins', href: '/admin/expenses', permission: 'expenses:reports:read', feature: 'expenses' }
     ]
   },
@@ -146,3 +149,16 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [{ name: "Centre d'aide", icon: 'HelpCircle', href: '/admin/help', permission: 'help:docs:read' }]
   }
 ];
+
+/** Icône et adresse d'une entrée de menu pour un compte sans relevé (caisse, porte-monnaie). */
+export const ACCOUNT_MENU_ICONS: Record<string, string> = { cash: 'Wallet', wallet: 'CreditCard' };
+
+export function menuAccountItem(account: { code: string; label: string; kind: string }): NavItem {
+  return {
+    name: account.label,
+    icon: ACCOUNT_MENU_ICONS[account.kind] ?? 'Wallet',
+    href: `/admin/accounting/accounts/${account.code}`,
+    permission: 'accounting:ledger:read',
+    feature: 'accounting'
+  };
+}

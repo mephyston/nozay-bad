@@ -57,6 +57,7 @@
         initialBalance={d.initialBalance}
         transactions={d.transactions}
         memberAdvanceEntries={d.memberAdvanceEntries}
+        paymentMethods={d.paymentMethods ?? []}
         seasonId={d.seasonId}
         seasons={d.seasons}
         canWrite={d.canWrite}

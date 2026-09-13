@@ -4,7 +4,7 @@
   import { ShoppingBag, Info, AlertCircle, History } from "@lucide/svelte";
   import { Card, Button, Alert } from '@nba/ui';
   import type { Member, OrderConfirmation, Product } from './catalog-types';
-  import { isOutOfStock, maxOrderableQuantity, STOREFRONT_PAYMENT_METHODS } from './catalog-types';
+  import { isOutOfStock, maxOrderableQuantity, type PaymentMethodOption } from './catalog-types';
   import { formatMemberName, transferReference } from './catalog-utils';
   import { handleMemberKeyDown, submitOrder } from './catalog-order-action';
   import ShopCatalogMemberSelect from './ShopCatalogMemberSelect.svelte';
@@ -19,7 +19,8 @@
     lockToMembers = false,
     initialMemberId = '',
     historyHref = null,
-    bankDetails = { holder: '', iban: '', bic: '' }
+    bankDetails = { holder: '', iban: '', bic: '' },
+    paymentMethods = []
   }: {
     products: Product[];
     members: Member[];
@@ -33,6 +34,8 @@
     historyHref?: string | null;
     /** Le compte du club à créditer (configuration du club). */
     bankDetails?: import('./catalog-utils').ClubBankDetails;
+    /** Les moyens de paiement proposés ici, depuis la configuration du club. */
+    paymentMethods?: PaymentMethodOption[];
   } = $props();
 
   // Les articles en rupture ne sont pas proposés à la commande : inutile de les
@@ -51,7 +54,12 @@
   let selectedCategory = $state<number>(0);
   let selectedProductId = $state<number | null>(null);
   let selectedQuantity = $state<number>(1);
-  let selectedPaymentMethod = $state<string>('virement');
+  let selectedPaymentMethod = $state<string>('');
+  // Le premier moyen proposé, tant que rien n'est choisi : la liste vient du serveur.
+  $effect(() => {
+    if (!paymentMethods.some((pm) => pm.value === selectedPaymentMethod)) selectedPaymentMethod = paymentMethods[0]?.value ?? '';
+  });
+  const selectedMethod = $derived(paymentMethods.find((pm) => pm.value === selectedPaymentMethod) ?? null);
   let submitting = $state<boolean>(false);
   let errorMessage = $state<string | null>(null);
   /** Commande venant d'être enregistrée ; non nulle, elle ouvre la boîte de confirmation. */
@@ -179,6 +187,8 @@
       quantity: selectedQuantity,
       totalCents: totalPriceCents,
       paymentMethod: selectedPaymentMethod,
+      paymentMethodLabel: selectedMethod?.label ?? selectedPaymentMethod,
+      paymentMethodKind: selectedMethod?.kind ?? null,
       transferReference: transferReference(selectedProduct?.name ?? '', selectedMember)
     };
     const res = await submitOrder({ selectedMemberId, selectedProduct, selectedQuantity, selectedPaymentMethod, activeSeasonId });
@@ -199,7 +209,7 @@
     selectedQuantity = 1;
     selectedCategory = 0;
     selectedProductId = null;
-    selectedPaymentMethod = 'virement';
+    selectedPaymentMethod = paymentMethods[0]?.value ?? '';
     errorMessage = null;
   }
 </script>
@@ -255,7 +265,7 @@
       {selectedProduct}
       {maxQuantity}
       {outOfStockCount}
-      paymentMethods={STOREFRONT_PAYMENT_METHODS}
+      {paymentMethods}
       onIncrementQty={incrementQty}
       onDecrementQty={decrementQty}
     />

@@ -3,12 +3,12 @@
   import { Button, Alert, Sheet, Input, FormField } from '@nba/ui';
   import type { Member, Product } from '../../list-products/ui/catalog-types';
   import { formatMemberName } from '../../list-products/ui/catalog-utils';
-  import { isOutOfStock } from '../../list-products/ui/catalog-types';
+  import { isOutOfStock, type PaymentMethodOption } from '../../list-products/ui/catalog-types';
   import { handleMemberKeyDown } from '../../list-products/ui/catalog-order-action';
   import ShopCatalogProductSelect from '../../list-products/ui/ShopCatalogProductSelect.svelte';
   import ShopCatalogSummary from '../../list-products/ui/ShopCatalogSummary.svelte';
 
-  let { products = [], members = [], activeSeasonId = '', onClose, onSuccess }: { products: Product[]; members: Member[]; activeSeasonId: string; onClose: () => void; onSuccess: (msg: string) => void; } = $props();
+  let { products = [], members = [], activeSeasonId = '', paymentMethods = [], onClose, onSuccess }: { products: Product[]; members: Member[]; activeSeasonId: string; paymentMethods?: PaymentMethodOption[]; onClose: () => void; onSuccess: (msg: string) => void; } = $props();
 
   let productsList = $derived(products);
   let selectedMemberId = $state<string>('');
@@ -20,7 +20,10 @@
   let selectedCategory = $state<number>(0);
   let selectedProductId = $state<number | null>(null);
   let selectedQuantity = $state<number>(1);
-  let selectedPaymentMethod = $state<string>('virement');
+  let selectedPaymentMethod = $state<string>('');
+  $effect(() => {
+    if (!paymentMethods.some((pm) => pm.value === selectedPaymentMethod)) selectedPaymentMethod = paymentMethods[0]?.value ?? '';
+  });
   let submitting = $state<boolean>(false);
   let errorMessage = $state<string | null>(null);
 
@@ -211,6 +214,7 @@
     </FormField>
 
     <ShopCatalogProductSelect
+      {paymentMethods}
       bind:selectedPaymentMethod
       bind:selectedCategory
       bind:selectedProductId

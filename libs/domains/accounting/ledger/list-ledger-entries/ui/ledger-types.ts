@@ -73,13 +73,5 @@ export interface AccountClass {
   type: 'recette' | 'depense';
 }
 
-export const methodLabels: Record<string, string> = {
-  virement: 'Virement',
-  cheque: 'Chèque',
-  especes: 'Espèces',
-  labaz: 'LABAZ',
-  ancv: 'ANCV',
-  pass_sport: "Pass'Sport",
-  ticket_loisir: 'Ticket Loisir',
-  up_loisir: 'Up & Loisir'
-};
+// Les moyens de paiement viennent de la configuration du club (`/accounting/payment-methods`) :
+// les écrans les reçoivent en props, plus de table de libellés ici.

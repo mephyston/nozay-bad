@@ -31,6 +31,16 @@ export class ReconciliationStore {
   members = $state<Member[]>([]);
   dbCategories = $state<any[]>([]);
   reconciliationStatements = $state<any[]>([]);
+  accounts = $state<NonNullable<ReconciliationStateProps['accounts']>>([]);
+  /** Le compte d'attente des adhérents, s'il existe : sans lui, pas de virement d'adhérente. */
+  thirdPartyAccount = $derived(this.accounts.find((a) => a.kind === 'third_party' && a.active !== false));
+  /** Les comptes qu'un relevé peut viser — les comptes bancaires actifs — derrière la détection automatique. */
+  bankAccountItems = $derived([
+    { label: 'Détection automatique depuis le fichier', value: 'auto' },
+    ...this.accounts.filter((a) => a.kind === 'bank' && a.active !== false).map((a) => ({ label: a.label, value: a.code }))
+  ]);
+  /** Vrai si la ligne est sur un compte bancaire — le seul où un virement d'adhérente peut arriver. */
+  isBankLine = (line: { accountId: string | number }) => this.accounts.find((a) => String(a.id) === String(line.accountId) || a.code === String(line.accountId))?.kind === 'bank';
 
   selectedSeason = $state('');
   selectedTx = $state<BankStatementLine | null>(null);
@@ -217,6 +227,7 @@ export class ReconciliationStore {
     this.members = props.members;
     this.dbCategories = props.dbCategories || [];
     this.reconciliationStatements = props.reconciliationStatements || [];
+    this.accounts = props.accounts || [];
     this.selectedSeason = props.seasonId;
     this.targetSeasonId = props.seasonId;
 

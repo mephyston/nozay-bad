@@ -11,12 +11,21 @@
  * se ferait refuser à l'ouverture. L'API reste l'autorité ; ici on ne fait qu'afficher.
  */
 
+/** Un compte sans relevé — caisse ou porte-monnaie — tel que le menu le présente. */
+export interface MenuAccount {
+  code: string;
+  label: string;
+  kind: string;
+}
+
 export interface ClubHabillage {
   name: string;
   shortName: string;
   brandColor: string;
   /** État effectif des fonctionnalités ; une clé absente vaut « allumée ». */
   features: Partial<Record<string, boolean>>;
+  /** Les caisses et porte-monnaie actifs : une entrée de menu chacun, sous le grand livre. */
+  menuAccounts?: MenuAccount[];
 }
 
 export interface Identite {

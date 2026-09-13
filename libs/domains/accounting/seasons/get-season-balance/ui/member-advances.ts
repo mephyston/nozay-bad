@@ -1,6 +1,5 @@
 import type { AccountEntry } from './account-types';
 import { findAccount, type AccountLike } from '../../../shared/account-labels';
-import { BADNET_CODE, CURRENT_CODE } from './account-actions';
 
 /**
  * Les avances des adhérents encore à rendre.
@@ -43,17 +42,18 @@ const daysBetween = (from: string, to: string) =>
 
 export function pendingMemberAdvances(
   entries: AccountEntry[],
-  accounts: AccountLike[],
+  accounts: (AccountLike & { kind?: string })[],
   today: string
 ): { pending: PendingAdvance[]; totalCents: number } {
-  const codeOf = (id: number | null) => findAccount(accounts, id)?.code ?? '';
+  // Par nature et non par code : reçu depuis un compte bancaire, rendu vers un porte-monnaie.
+  const kindOf = (id: number | null) => findAccount(accounts, id)?.kind ?? '';
   const byDate = (a: AccountEntry, b: AccountEntry) => a.date.localeCompare(b.date) || a.id - b.id;
 
   const received = entries
-    .filter((e) => e.type === 'transfert' && e.transferLeg === 'source' && codeOf(e.counterpartAccountId) === CURRENT_CODE)
+    .filter((e) => e.type === 'transfert' && e.transferLeg === 'source' && kindOf(e.counterpartAccountId) === 'bank')
     .sort(byDate);
   const returned = entries
-    .filter((e) => e.type === 'transfert' && e.transferLeg === 'destination' && codeOf(e.counterpartAccountId) === BADNET_CODE)
+    .filter((e) => e.type === 'transfert' && e.transferLeg === 'destination' && kindOf(e.counterpartAccountId) === 'wallet')
     .sort(byDate);
 
   const matched = new Set<number>();

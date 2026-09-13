@@ -1,4 +1,4 @@
-import { eq, inArray } from 'drizzle-orm';
+import { eq, inArray, sql } from 'drizzle-orm';
 import { type Db, type DbOrTx } from '@nba/db';
 import { clubFeaturesTable, clubSettingsTable, type ClubSettingsRow } from './schema';
 import {
@@ -125,14 +125,36 @@ export function forgetClubFeatures(db: DbOrTx): void {
 }
 
 async function readFeatures(db: DbOrTx): Promise<FeatureState> {
-  const rows = await db.select().from(clubFeaturesTable).all();
+  const [rows, treasury] = await Promise.all([db.select().from(clubFeaturesTable).all(), listTreasuryAccounts(db)]);
   const stored: Partial<Record<Feature, boolean>> = {};
   for (const row of rows) {
     // Une clé sortie du catalogue reste en base sans effet : la retirer serait une
     // migration, et l'ignorer ne coûte rien.
     if (isFeature(row.feature)) stored[row.feature] = row.enabled;
   }
-  return effectiveFeatures(stored);
+  return effectiveFeatures(stored, { hasBankAccount: treasury.some((a) => a.kind === 'bank') });
+}
+
+export interface TreasuryAccount {
+  code: string;
+  label: string;
+  kind: 'bank' | 'cash' | 'wallet' | 'third_party';
+}
+
+/**
+ * Les comptes de trésorerie actifs du club, tels que les menus en ont besoin.
+ *
+ * Lus en SQL nu plutôt que par le schéma du domaine comptable : ce domaine-ci est à la
+ * racine de tous les autres (l'en-tête des PDF, le titre des pages), et l'importer
+ * depuis la comptabilité qui l'importe déjà ferait un cycle. Trois colonnes stables
+ * — `code`, `label`, `kind` — c'est tout ce que le club en sait : un compte bancaire
+ * ouvre la comptabilité, une caisse ou un porte-monnaie fait une entrée de menu.
+ */
+export async function listTreasuryAccounts(db: DbOrTx): Promise<TreasuryAccount[]> {
+  const rows = await db.all<{ code: string; label: string; kind: TreasuryAccount['kind'] }>(
+    sql`SELECT code, label, kind FROM accounts WHERE active = 1 ORDER BY id`
+  );
+  return rows.map((r) => ({ code: r.code, label: r.label, kind: r.kind }));
 }
 
 export class ClubFeaturesRepository {

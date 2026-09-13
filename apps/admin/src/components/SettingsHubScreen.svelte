@@ -34,6 +34,12 @@
       permission: 'accounting:seasons:write'
     },
     {
+      href: '/admin/settings/tresorerie',
+      title: 'Comptes et moyens de paiement',
+      description: 'Comptes bancaires, caisses et porte-monnaie ; ce que le club accepte comme règlement, et où.',
+      permission: 'accounting:config:read'
+    },
+    {
       href: '/admin/settings/accounting',
       title: 'Catégories et Classes',
       description: 'Catégories comptables, plan comptable associatif (classes de comptes).',

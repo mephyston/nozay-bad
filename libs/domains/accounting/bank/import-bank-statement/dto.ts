@@ -32,7 +32,9 @@ export type ParsedStatementIssue = {
 };
 
 export type ParseOFXOutput = {
-  transactions: { fitid: string; amountCents: number; date: string; name: string; memo: string | null; accountId: 'current' | 'savings' }[];
+  transactions: { fitid: string; amountCents: number; date: string; name: string; memo: string | null }[];
+  /** Le numéro de compte que la banque écrit dans le relevé (`<ACCTID>`), tel quel ; vide s'il manque. */
+  statementAccountNumber: string;
   /** Absent des relevés qui n'en portent pas — le rapprochement le signale plutôt que de l'inventer. */
   balance: ParsedStatementBalance | null;
   /** Opérations présentes dans le fichier mais hors de tout bloc lisible. */

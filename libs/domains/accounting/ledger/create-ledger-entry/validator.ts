@@ -13,16 +13,8 @@ export const createTransactionSchema = Type.Object({
   category: Type.Optional(Type.Union([Type.String(), Type.Number(), Type.Null()])),
   amount: Type.Number(),
   date: Type.String({ minLength: 1 }),
-  paymentMethod: Type.Union([
-    Type.Literal('virement'),
-    Type.Literal('cheque'),
-    Type.Literal('especes'),
-    Type.Literal('labaz'),
-    Type.Literal('ancv'),
-    Type.Literal('pass_sport'),
-    Type.Literal('ticket_loisir'),
-    Type.Literal('up_loisir')
-  ]),
+  /* Un code de moyen de paiement, résolu en base comme le compte : les moyens sont des données. */
+  paymentMethod: Type.String({ minLength: 1 }),
   description: Type.String(),
   reference: Type.Optional(Type.Union([Type.String(), Type.Null()]))
 });

@@ -45,9 +45,9 @@ export async function updateLedgerEntry(db: Db, id: number, body: UpdateTransact
   const seasonIdNum = Number(body.seasonId);
   const seasonIdInt = !isNaN(seasonIdNum) ? seasonIdNum : existing.seasonId;
 
-  const accountIdInt = await resolveAccountId(db, body.accountId);
+  const accountIdInt = await resolveAccountId(db, body.accountId, { active: true });
 
-  const paymentMethod = await resolvePaymentMethod(db, body.paymentMethod);
+  const paymentMethod = await resolvePaymentMethod(db, body.paymentMethod, { active: true });
   const paymentMethodIdInt = paymentMethod.id;
 
   /*

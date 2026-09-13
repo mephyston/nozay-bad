@@ -97,7 +97,7 @@ describe('AccountClassesConfig — création', () => {
     expect(rows[1]).toContain('Fonds reçus pour le compte des adhérents');
     expect(rows[1]).toContain('467');
     expect(rows[1]).toContain('Tiers');
-    // Aucun bouton : ces comptes se créent par migration, pas depuis l'écran.
+    // Aucun bouton : ces comptes se règlent sur l'écran « Comptes et moyens de paiement ».
     expect(section.querySelectorAll('button')).toHaveLength(0);
   });
 });

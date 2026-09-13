@@ -1,7 +1,8 @@
 ---
 /*
   L'ancienne adresse de la Caisse. L'écran est devenu celui de tout compte sans relevé,
-  servi à `/admin/accounting/accounts/<code>` ; la saison choisie suit dans l'URL.
+  servi à `/admin/accounting/accounts/<code>` ; la caisse n'a plus de code réservé, le
+  menu mène à chacune. On renvoie donc au tableau de bord de la comptabilité.
 */
-return Astro.redirect(`/admin/accounting/accounts/cash${Astro.url.search}`, 301);
+return Astro.redirect(`/admin/accounting${Astro.url.search}`, 301);
 ---

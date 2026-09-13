@@ -118,13 +118,13 @@ export async function apiCreateAndMatchSplit(bt: BankStatementLine, memberId: nu
         type: (((bt as any).amountCents ?? bt.amount ?? 0) < 0)
           ? (s.amount >= 0 ? 'depense' : 'recette')
           : (s.amount >= 0 ? 'recette' : 'depense'),
-        accountId: bt.accountId || 'current',
+        accountId: bt.accountId,
         category: s.category,
         amount: Math.round(Math.abs(s.amount) * 100),
         date: bt.date,
         /* Une ligne de relevé est, par définition, de l'argent passé par la banque. Le mode ne se
-           demande plus : la nomenclature n'offre rien de plus juste pour ce cas. */
-        paymentMethod: 'virement',
+           demande plus : l'API retient le moyen actif de nature « virement ». */
+        paymentMethod: '',
         description: s.label || `${bt.name} (Partie ${index + 1})`,
         reference: bt.memo || bt.fitid,
         /* La part l'emporte sur la valeur commune : c'est ce qui permet à un virement groupé de
@@ -147,7 +147,7 @@ export async function apiCreateAndMatchSingle(
   accrualNote: string
 ): Promise<ReconcileOutcome> {
   const btAmt = (bt as any).amountCents ?? bt.amount ?? 0;
-  const rawAccountId = bt.accountId || 'current';
+  const rawAccountId = bt.accountId;
   return toOutcome(await postAction({
       action: 'create',
       btId: bt.id,
@@ -160,8 +160,8 @@ export async function apiCreateAndMatchSingle(
         amount: Math.round(amountToLink * 100),
         date: bt.date,
         /* Une ligne de relevé est, par définition, de l'argent passé par la banque. Le mode ne se
-           demande plus : la nomenclature n'offre rien de plus juste pour ce cas. */
-        paymentMethod: 'virement',
+           demande plus : l'API retient le moyen actif de nature « virement ». */
+        paymentMethod: '',
         description: bt.name,
         reference: bt.memo || bt.fitid,
         accrualType,
@@ -174,11 +174,16 @@ export async function apiCreateAndMatchSingle(
  * Le virement reçu d'une adhérente, créé depuis sa ligne de relevé.
  *
  * Deux jambes : le compte d'attente des adhérents (débité, l'argent n'appartient pas au club) et
- * le compte courant (crédité, c'est la ligne du relevé). La réponse porte les jambes et leurs
- * identifiants : c'est la jambe `destination` que l'écran pointe ensuite contre la ligne.
+ * le compte bancaire de la ligne (crédité, c'est la ligne du relevé). La réponse porte les
+ * jambes et leurs identifiants : c'est la jambe `destination` que l'écran pointe ensuite contre
+ * la ligne.
  */
 export async function apiCreateMemberTransfer(input: {
   seasonId: string;
+  /** Le compte d'attente des adhérents (nature `third_party`). */
+  sourceAccountId: string;
+  /** Le compte de la ligne de relevé. */
+  destinationAccountId: string;
   amountCents: number;
   date: string;
   description: string;
@@ -188,8 +193,8 @@ export async function apiCreateMemberTransfer(input: {
     {
       action: 'create-transfer',
       seasonId: input.seasonId,
-      sourceAccountId: 'member_advances',
-      destinationAccountId: 'current',
+      sourceAccountId: input.sourceAccountId,
+      destinationAccountId: input.destinationAccountId,
       amountCents: input.amountCents,
       sourceDate: input.date,
       destinationDate: input.date,

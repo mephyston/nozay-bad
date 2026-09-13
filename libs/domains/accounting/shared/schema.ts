@@ -21,13 +21,30 @@ export const accountClassesTable = sqliteTable('account_classes', {
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
 });
 
+/** Ce qu'est un compte de trésorerie — c'est la nature, et non le code, qui décide de son usage. */
+export const ACCOUNT_KINDS = ['bank', 'cash', 'wallet', 'third_party'] as const;
+export type AccountKind = (typeof ACCOUNT_KINDS)[number];
+
 export const accountsTable = sqliteTable('accounts', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   code: text('code').notNull().unique(),
   label: text('label').notNull(),
   accountClassId: integer('account_class_id').notNull().references(() => accountClassesTable.id),
+  /**
+   * `bank` se rapproche par relevé ; `cash` et `wallet` ont chacun leur écran ;
+   * `third_party` est le compte d'attente des adhérents, une dette hors trésorerie.
+   */
+  kind: text('kind', { enum: ACCOUNT_KINDS }).notNull().default('bank'),
+  /** Inactif : retiré des menus et des formulaires, jamais supprimé — les écritures y renvoient. */
+  active: integer('active', { mode: 'boolean' }).notNull().default(true),
+  /** Le numéro que la banque écrit dans ses relevés (`<ACCTID>` OFX) : l'import y reconnaît le compte. */
+  statementAccountNumber: text('statement_account_number'),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
 });
+
+/** Le comportement d'un moyen de paiement : ce qu'on dit à l'adhérent, où l'argent va. */
+export const PAYMENT_METHOD_KINDS = ['transfer', 'cheque', 'cash', 'card', 'voucher', 'internal'] as const;
+export type PaymentMethodKind = (typeof PAYMENT_METHOD_KINDS)[number];
 
 export const paymentMethodsTable = sqliteTable('payment_methods', {
   id: integer('id').primaryKey({ autoIncrement: true }),
@@ -35,6 +52,11 @@ export const paymentMethodsTable = sqliteTable('payment_methods', {
   label: text('label').notNull(),
   defaultAccountId: integer('default_account_id').notNull().references(() => accountsTable.id),
   defaultEntryStatus: text('default_entry_status', { enum: ['cleared', 'in_vault', 'pending_debit'] }).notNull(),
+  kind: text('kind', { enum: PAYMENT_METHOD_KINDS }).notNull().default('transfer'),
+  /** Inactif : proposé à personne, ni admin ni adhérent. Les écritures passées le gardent. */
+  active: integer('active', { mode: 'boolean' }).notNull().default(true),
+  /** Proposé aux adhérents dans la boutique. Sans effet s'il est inactif. */
+  storefront: integer('storefront', { mode: 'boolean' }).notNull().default(true),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
 });
 

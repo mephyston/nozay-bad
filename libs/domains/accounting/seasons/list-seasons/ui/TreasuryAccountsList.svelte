@@ -17,8 +17,8 @@
 </script>
 
 <!--
-  Les comptes du club et la classe qui les porte, en lecture seule : ils naissent par
-  migration, pas depuis l'écran. Sans cette liste, rien ne disait où le porte-monnaie Badnet
+  Les comptes du club et la classe qui les porte, en lecture seule ici : ils se règlent dans
+  « Comptes et moyens de paiement ». Sans cette liste, rien ne disait où le porte-monnaie
   ou le compte d'attente des adhérents se rangeaient dans le plan comptable.
 -->
 <Card.Root data-testid="treasury-accounts">
@@ -30,6 +30,7 @@
     <Card.Description>
       Les comptes sur lesquels les mouvements sont enregistrés, et leur classe. Un compte de tiers
       porte de l'argent qui n'appartient pas au club : son solde est une dette, hors des totaux de trésorerie.
+      Ils se créent et se modifient dans <a href="/admin/settings/tresorerie" class="underline">Comptes et moyens de paiement</a>.
     </Card.Description>
   </Card.Header>
   <Card.Content>

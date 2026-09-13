@@ -80,4 +80,23 @@ describe('createOrder handler (Eligibility & Validation)', () => {
       seasonId, memberId, productId, quantity: 1, paymentMethod: paymentMethodCode, paidAt: '2099-12-31'
     })).rejects.toThrowError("La date de paiement ne peut pas être postérieure à la date du jour.");
   });
+
+  /*
+   * Un moyen de paiement a deux volets : `active` le retire de partout, `storefront` de la
+   * seule boutique des adhérents. Les deux se vérifient à la création, pas seulement dans
+   * la liste proposée — une requête forgée ne doit pas les contourner.
+   */
+  it("refuse un moyen de paiement rendu inactif, à l'administration comme à la boutique", async () => {
+    await db.run(`UPDATE payment_methods SET active = 0 WHERE code = '${paymentMethodCode}'`);
+    await expect(createOrder(db, { seasonId, memberId, productId, quantity: 1, paymentMethod: paymentMethodCode })).rejects.toThrow("n'est plus proposé");
+  });
+
+  it("refuse à la boutique un moyen retiré du storefront, que l'administration garde", async () => {
+    await db.run(`UPDATE payment_methods SET storefront = 0 WHERE code = '${paymentMethodCode}'`);
+    await expect(
+      createOrder(db, { seasonId, memberId, productId, quantity: 1, paymentMethod: paymentMethodCode }, { storefront: true })
+    ).rejects.toThrow("n'est pas proposé dans la boutique");
+    const order = await createOrder(db, { seasonId, memberId, productId, quantity: 1, paymentMethod: paymentMethodCode });
+    expect(order.status).toBe('created');
+  });
 });

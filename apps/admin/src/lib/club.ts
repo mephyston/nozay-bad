@@ -1,5 +1,6 @@
 import { createApiClient } from '@nba/api-client';
 import { ALL_FEATURES_ON, NEUTRAL_CLUB_SETTINGS, type ClubSettings, type Feature, type FeatureState } from '@nba/club-ui';
+import type { MenuAccount } from './identite';
 
 /**
  * L'identité du club et ses fonctionnalités, côté serveur de l'administration.
@@ -16,6 +17,8 @@ import { ALL_FEATURES_ON, NEUTRAL_CLUB_SETTINGS, type ClubSettings, type Feature
 export interface ClubContexte {
   settings: ClubSettings;
   features: FeatureState;
+  /** Les caisses et porte-monnaie actifs : une entrée de menu chacun. Optionnel : `App.Locals.club` est partagé avec les autres applications, qui ne le portent pas. */
+  menuAccounts?: MenuAccount[];
 }
 
 const CLUB_TTL_MS = 60_000;
@@ -36,7 +39,8 @@ export async function chargerClub(env: Record<string, string>, userEmail: string
   const json = (await res.json()) as { data: ClubContexte };
   const club = {
     settings: { ...json.data.settings, updatedAt: new Date(json.data.settings.updatedAt) },
-    features: json.data.features
+    features: json.data.features,
+    menuAccounts: json.data.menuAccounts ?? []
   };
   garde = { club, expireA: maintenant + CLUB_TTL_MS };
   return club;
@@ -51,7 +55,8 @@ export const CLUB_DE_SECOURS: ClubContexte = {
   // Sans nom ni sigle : un « Club » de repli s'afficherait comme un vrai nom, et se
   // garderait dans le navigateur le temps d'une panne.
   settings: { ...NEUTRAL_CLUB_SETTINGS, name: '', shortName: '' },
-  features: ALL_FEATURES_ON
+  features: ALL_FEATURES_ON,
+  menuAccounts: []
 };
 
 /** La fonctionnalité est-elle active pour ce club ? Sans contexte, oui : ne rien cacher par accident. */

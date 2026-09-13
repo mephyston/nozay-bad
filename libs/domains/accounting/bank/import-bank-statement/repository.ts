@@ -1,5 +1,5 @@
 import { type DbOrTx } from '@nba/db';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { accountsTable, bankStatementBalancesTable, bankStatementLinesTable } from '../../shared/schema';
 
 export class ImportBankStatementRepository {
@@ -8,6 +8,15 @@ export class ImportBankStatementRepository {
       .from(accountsTable)
       .where(eq(accountsTable.code, code))
       .get();
+  }
+
+  /** Les comptes bancaires actifs, avec le numéro que la banque leur donne dans ses relevés. */
+  async listActiveBankAccounts(db: DbOrTx): Promise<{ id: number; code: string; statementAccountNumber: string | null }[]> {
+    return db.select({ id: accountsTable.id, code: accountsTable.code, statementAccountNumber: accountsTable.statementAccountNumber })
+      .from(accountsTable)
+      .where(and(eq(accountsTable.kind, 'bank'), eq(accountsTable.active, true)))
+      .orderBy(accountsTable.id)
+      .all();
   }
 
   async insertBankStatementLine(db: DbOrTx, values: any): Promise<{ changes: number }> {

@@ -5,7 +5,6 @@
   import { onMount } from "svelte";
   import { Alert, Button, Sheet, flashAndReload, toSeasonOptions } from "@nba/ui";
   import type { OrderItem, OrdersTab, Season } from './orders-manager-types';
-  import { paymentMethodLabels } from './orders-manager-types';
   import { validateOrder, payOrder, rejectOrder, cancelOrder, unpayOrder } from './orders-manager-actions';
   import OrdersOpenTable from './OrdersOpenTable.svelte';
   import OrdersHistoryTable from './OrdersHistoryTable.svelte';
@@ -19,11 +18,14 @@
     members = [],
     seasonId,
     initialAction = null,
-    activeTab = $bindable('open')
+    activeTab = $bindable('open'),
+    paymentMethods = []
   }: {
     seasons: Season[];
     orders: OrderItem[];
     products?: any[];
+    /** Les moyens de paiement proposés au bureau (configuration du club). */
+    paymentMethods?: import('../../list-products/ui/catalog-types').PaymentMethodOption[];
     members?: any[];
     seasonId: string;
     initialAction?: string | null;
@@ -79,7 +81,7 @@
       const memberName = `${item.member?.lastName || ''} ${item.member?.firstName || ''}`.toLowerCase();
       const licence = (item.member?.licence || '').toLowerCase();
       const productName = (item.product?.name || '').toLowerCase();
-      const paymentMethod = (paymentMethodLabels[item.order.paymentMethod] || item.order.paymentMethod).toLowerCase();
+      const paymentMethod = (item.order.paymentMethodLabel || item.order.paymentMethod).toLowerCase();
       const amount = (item.order.totalAmount / 100).toFixed(2);
 
       return (
@@ -224,6 +226,7 @@
     <AdminOrderForm
       products={products}
       members={members}
+      {paymentMethods}
       activeSeasonId={seasonId}
       onClose={() => isCreateSheetOpen = false}
       onSuccess={(msg) => {

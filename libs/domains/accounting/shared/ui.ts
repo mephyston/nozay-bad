@@ -6,3 +6,4 @@ export { default as AccountManager } from '../seasons/get-season-balance/ui/Acco
 export { default as GeneralMeetingReport } from '../seasons/get-season-reports/ui/GeneralMeetingReport.svelte';
 export { default as SettingsManager } from '../seasons/list-seasons/ui/SettingsManager.svelte';
 export { default as InvoicesManager } from '../invoices/list-invoices/ui/InvoicesManager.svelte';
+export { default as TreasuryConfig } from '../config/save-account/ui/TreasuryConfig.svelte';

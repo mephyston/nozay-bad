@@ -74,18 +74,14 @@ export async function getSeasonReports(db: Db, input: GetSeasonReportsInput): Pr
 
   // 2. Bilan de Trésorerie (Cash Flow Statement)
   const dbAccounts = await repo.getAccounts(db);
-  const accountTypes: ('current' | 'savings' | 'cash')[] = ['current', 'savings', 'cash'];
   const periodTxs = await repo.getTransactionsForPeriod(db, season.startDate, effectiveEndDate);
 
   /*
-   * Les comptes du bilan de trésorerie, lus de la base quand elle en porte, repliés sur les
-   * trois codes historiques sinon. Repartir de `accounts` fait entrer dans le rapport un
-   * compte ajouté depuis l'écran de configuration, que la liste en dur laissait de côté ;
-   * le repli garde un tableau à trois lignes là où la base n'a pas encore été semée.
+   * Les comptes du bilan de trésorerie, lus de la base : tous, inactifs compris. Un compte
+   * fermé garde son histoire, et son solde — s'il en reste un — doit se voir. Le rapport
+   * n'écarte que les comptes inactifs à zéro, plus bas, une fois les soldes connus.
    */
-  const treasuryAccounts: AccountRef[] = dbAccounts.length > 0
-    ? dbAccounts.map((a: any) => ({ id: a.id, code: a.code, label: a.label, classCode: a.classCode }))
-    : accountTypes.map((code) => ({ id: code as any, code }));
+  const treasuryAccounts: AccountRef[] = dbAccounts.map((a) => ({ id: a.id, code: a.code, label: a.label, classCode: a.classCode }));
 
   /*
    * Le solde d'ouverture de chaque compte : le report figé s'il existe, la reconstitution
@@ -102,22 +98,17 @@ export async function getSeasonReports(db: Db, input: GetSeasonReportsInput): Pr
    * Le repli sur les trois codes historiques (base non semée, jamais en production) n'a pas
    * d'identifiants numériques : il se contente alors du report tel quel, comme avant.
    */
-  const idsNumeriques = treasuryAccounts.every((a) => typeof a.id === 'number');
-  const ouverture = idsNumeriques
-    ? await resolveOpeningBalances(
-        db,
-        { id: season.id, startDate: season.startDate },
-        treasuryAccounts.map((a) => a.id as number)
-      )
-    : null;
+  const ouverture = await resolveOpeningBalances(
+    db,
+    { id: season.id, startDate: season.startDate },
+    treasuryAccounts.map((a) => a.id as number)
+  );
 
   const accountBalances = computeAccountBalances(
     treasuryAccounts,
     treasuryAccounts.map((account) => ({
       accountId: account.id,
-      initialBalanceCents: ouverture
-        ? ouverture.byAccountId.get(account.id as number) ?? 0
-        : balances.find((b) => b.accountId === account.id || b.accountId === account.code)?.initialBalanceCents ?? 0
+      initialBalanceCents: ouverture.byAccountId.get(account.id as number) ?? 0
     })),
     periodTxs
   );
@@ -133,7 +124,8 @@ export async function getSeasonReports(db: Db, input: GetSeasonReportsInput): Pr
    */
   const statementBalances = await repo.getLatestStatementBalances(db, effectiveEndDate);
 
-  const reportBalances = accountBalances.map((b) => {
+  const inactifs = new Set(dbAccounts.filter((a) => !a.active).map((a) => a.id));
+  const reportBalances = accountBalances.filter((b) => !inactifs.has(b.accountId as number) || b.initialBalanceCents !== 0 || b.grossCents !== 0).map((b) => {
     const statement = statementBalances.get(b.accountId);
     return {
       accountId: b.accountCode,
@@ -344,21 +336,26 @@ export async function getSeasonReports(db: Db, input: GetSeasonReportsInput): Pr
     const effectiveMonthIdxRaw = (effectiveDateObj.getFullYear() - seasonStart.getFullYear()) * 12 + (effectiveDateObj.getMonth() - seasonStart.getMonth());
 
     /*
-     * Les comptes de la courbe de trésorerie, résolus en base plutôt que nommés en dur.
+     * Les comptes de la courbe de trésorerie, résolus par nature plutôt que nommés en dur.
      *
      * La boucle qui suit recodait à la main la ventilation d'un virement, avec `'current'` et
      * `'savings'` écrits en toutes lettres : la **caisse n'y figurait pas**. Un dépôt d'espèces —
      * le seul virement que le centre d'aide recommande explicitement — sortait donc de la courbe
-     * comme une fuite de trésorerie. Le total suit désormais les trois comptes ; les deux séries
-     * nommées restent celles que le graphe affiche.
+     * comme une fuite de trésorerie. Les trois séries sont aujourd'hui : le compte bancaire
+     * principal (le premier `bank` actif), les autres comptes bancaires réunis, et tout ce qui
+     * n'est ni banque ni tiers — caisses et porte-monnaie. Le total suit tout.
      */
-    const currentAccount = dbAccounts.find(a => a.code === 'current');
-    const savingsAccount = dbAccounts.find(a => a.code === 'savings');
-    const cashAccount = dbAccounts.find(a => a.code === 'cash');
+    const treasuryOnly = dbAccounts.filter((a) => a.kind !== 'third_party');
+    const mainBank = treasuryOnly.find((a) => a.kind === 'bank' && a.active) ?? treasuryOnly.find((a) => a.kind === 'bank');
+    const currentAccounts = mainBank ? [mainBank] : [];
+    const savingsAccounts = treasuryOnly.filter((a) => a.kind === 'bank' && a !== mainBank);
+    const cashAccounts = treasuryOnly.filter((a) => a.kind !== 'bank');
+    const initOf = (list: typeof dbAccounts) =>
+      list.reduce((sum, a) => sum + (accountBalances.find((b) => b.accountId === a.id)?.initialBalanceCents ?? 0), 0);
 
-    const initCurrent = reportBalances.find(b => b.accountId === 'current')?.initialBalance ?? 0;
-    const initSavings = reportBalances.find(b => b.accountId === 'savings')?.initialBalance ?? 0;
-    const initCash = reportBalances.find(b => b.accountId === 'cash')?.initialBalance ?? 0;
+    const initCurrent = initOf(currentAccounts);
+    const initSavings = initOf(savingsAccounts);
+    const initCash = initOf(cashAccounts);
 
     const validEffectiveMonthIndex = Math.min(11, effectiveMonthIdxRaw);
 
@@ -401,9 +398,9 @@ export async function getSeasonReports(db: Db, input: GetSeasonReportsInput): Pr
          * Une jambe de virement ne touche que son compte : il n'y a plus de destinataire à
          * démêler, et plus de compte à oublier.
          */
-        if (currentAccount) curBal += signedEntryAmountCents(tx, currentAccount);
-        if (savingsAccount) savBal += signedEntryAmountCents(tx, savingsAccount);
-        if (cashAccount) cashBal += signedEntryAmountCents(tx, cashAccount);
+        for (const a of currentAccounts) curBal += signedEntryAmountCents(tx, a);
+        for (const a of savingsAccounts) savBal += signedEntryAmountCents(tx, a);
+        for (const a of cashAccounts) cashBal += signedEntryAmountCents(tx, a);
       }
       
       history.push({

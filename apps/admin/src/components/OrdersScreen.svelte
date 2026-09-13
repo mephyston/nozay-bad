@@ -43,6 +43,7 @@
         products={d.products}
         members={d.members}
         seasonId={d.season}
+        paymentMethods={d.paymentMethods ?? []}
         initialAction={actionInitiale}
       />
     {/snippet}

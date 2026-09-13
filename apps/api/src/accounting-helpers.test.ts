@@ -12,7 +12,7 @@ describe('cleanName', () => {
 });
 
 describe('parseOFX', () => {
-  it('should parse simple OFX contents and determine accountId correctly', () => {
+  it("lit les opérations et rend le numéro de compte du relevé tel quel — c'est l'import qui le reconnaît", () => {
     const ofxContent = `
 OFXHEADER:100
 DATA:OFXSGML
@@ -40,10 +40,10 @@ DATA:OFXSGML
 </OFX>
 `;
     const result = parseOFX(ofxContent);
+    expect(result.statementAccountNumber).toBe('00070007847');
     expect(result.transactions).toHaveLength(1);
     expect(result.transactions[0]).toEqual({
       fitid: 'TX12345',
-      accountId: 'savings',
       amountCents: -1550,
       date: '2026-07-18',
       name: 'Supermarket',
@@ -51,7 +51,7 @@ DATA:OFXSGML
     });
   });
 
-  it('should fallback to current account if ACCTID is not savings', () => {
+  it("ne décide de rien pour un numéro de compte inconnu : il le rend, sans repli sur un code", () => {
     const ofxContent = `
 <BANKTRANLIST>
 <ACCTID>123456789</ACCTID>
@@ -65,10 +65,10 @@ DATA:OFXSGML
 </BANKTRANLIST>
 `;
     const result = parseOFX(ofxContent);
+    expect(result.statementAccountNumber).toBe('123456789');
     expect(result.transactions).toHaveLength(1);
     expect(result.transactions[0]).toEqual({
       fitid: 'TX67890',
-      accountId: 'current',
       amountCents: 10000,
       date: '2026-07-18',
       name: 'Salary',

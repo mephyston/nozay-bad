@@ -32,6 +32,7 @@
       members={d.members}
       dbCategories={d.dbCategories}
       reconciliationStatements={d.reconciliationStatements}
+      accounts={d.accounts}
     />
   {/snippet}
 </EcranDistant>

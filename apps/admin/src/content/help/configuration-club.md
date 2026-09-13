@@ -26,7 +26,7 @@ order: 4
 
 Chaque rubrique de l'application s'allume ou s'éteint : boutique, notes de frais, interclubs, jeu libre, séances individuelles, notifications, site public, attestations, rappels automatiques… Une rubrique éteinte **disparaît du menu**, ses pages répondent « introuvable » dans l'administration comme dans l'espace adhérent, et ses envois automatiques ne partent plus. Rien n'est supprimé : rallumer la rubrique rend tout tel quel.
 
-Certaines fonctionnalités en supposent une autre : sans **Notifications**, les rappels sont inactifs ; sans **Comptabilité**, les factures et les remises de chèques le sont aussi. L'écran le montre en grisant la case et en disant pourquoi.
+Certaines fonctionnalités en supposent une autre : sans **Notifications**, les rappels sont inactifs ; sans **Comptabilité**, les remises de chèques le sont aussi. L'écran le montre en grisant la case et en disant pourquoi. La **Comptabilité** suppose de plus un compte bancaire actif, réglé dans [Comptes et moyens de paiement](/admin/help/comptes-moyens-paiement) ; les factures et les notes de frais, eux, s'en passent. Les caisses et porte-monnaie ne sont plus des fonctionnalités : ce sont des comptes, et le menu en tire une entrée chacun.
 
 > [!NOTE]
 > Le menu se met à jour au chargement suivant de la page ; l'espace adhérent et le site public, au plus tard une minute après l'enregistrement.

@@ -4,7 +4,6 @@
   
   import type { OrderItem, Season } from './orders-manager-types';
   import type { Snippet } from 'svelte';
-  import { paymentMethodLabels } from './orders-manager-types';
 
   /**
    * Une seule action ici, et sur les seules commandes payées : annuler l'encaissement.
@@ -96,7 +95,7 @@
                 </Table.Cell>
                 <Table.Cell class="whitespace-nowrap">
                   <Badge variant="outline">
-                    {paymentMethodLabels[item.order.paymentMethod] || item.order.paymentMethod}
+                    {item.order.paymentMethodLabel || item.order.paymentMethod}
                   </Badge>
                 </Table.Cell>
                 <Table.Cell class="text-right font-bold text-foreground">
@@ -170,7 +169,7 @@
             <div class="flex flex-col items-end shrink-0">
               <Amount cents={(item.order as any).totalAmountCents ?? item.order.totalAmount} class="font-bold text-lg text-foreground" />
               <Badge variant="outline" size="xs" class="mt-1">
-                {paymentMethodLabels[item.order.paymentMethod] || item.order.paymentMethod}
+                {item.order.paymentMethodLabel || item.order.paymentMethod}
               </Badge>
             </div>
           </div>

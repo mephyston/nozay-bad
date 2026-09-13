@@ -25,12 +25,14 @@ export const ECRANS: Record<string, Ecran> = {
       const seasons: any[] = sortSeasons((await lire('/accounting/seasons')) ?? []);
       const season = params.get('season') || currentSeasonCode(seasons) || '25-26';
       const s = encodeURIComponent(season);
-      const [commandes, produits, adherents] = await Promise.all([
+      const [commandes, produits, adherents, moyens] = await Promise.all([
         lire(`/shop/orders?season=${s}`),
         // Seuls les produits encore proposés : on ne crée pas une commande sur un article
         // retiré du catalogue.
         lire('/shop/products?active=true'),
-        lire(`/members?limit=1000&season=${s}`)
+        lire(`/members?limit=1000&season=${s}`),
+        // Les moyens de paiement que le bureau peut saisir, depuis la configuration du club.
+        lire('/accounting/payment-methods?offered=admin')
       ]);
 
       const courante = seasons.find((x: any) => x.code === season || String(x.id) === season);
@@ -40,6 +42,7 @@ export const ECRANS: Record<string, Ecran> = {
         orders: commandes ?? [],
         products: produits ?? [],
         members: adherents ?? [],
+        paymentMethods: (moyens ?? []).map((m: any) => ({ value: m.code, label: m.label, kind: m.kind })),
         season,
         // Le nom sert au sous-titre, l'état de clôture au bandeau « lecture seule ».
         seasonName: courante?.name ? String(courante.name).replace('Saison ', '') : season,

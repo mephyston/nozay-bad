@@ -4,7 +4,8 @@ import { type Db } from '@nba/db';
 import { isValidIban, isValidTimezone, updateClubSettings } from './handler';
 import { getClubSettings } from '../shared/repository';
 import { updateClubFeatures } from '../update-club-features/handler';
-import { getClubFeatures } from '../shared/repository';
+import { forgetClubFeatures, getClubFeatures, listTreasuryAccounts } from '../shared/repository';
+import { sql } from 'drizzle-orm';
 
 describe('isValidIban', () => {
   it('accepte un IBAN à clé juste, espaces compris', () => {
@@ -124,5 +125,23 @@ describe('updateClubFeatures', () => {
     state = await updateClubFeatures(db, { push: true }, 'a@b.c');
     expect(state.reminder_unpaid).toBe(true);
     expect(state.shop).toBe(false); // l'autre réglage tient
+  });
+
+  it('ferme la comptabilité à un club sans compte bancaire actif, pas les factures ni les notes de frais', async () => {
+    expect((await getClubFeatures(db)).accounting).toBe(true);
+    await db.run(sql`UPDATE accounts SET active = 0 WHERE kind = 'bank'`);
+    forgetClubFeatures(db);
+    const state = await getClubFeatures(db);
+    expect(state.accounting).toBe(false);
+    expect(state.checks).toBe(false);
+    expect(state.invoices).toBe(true);
+    expect(state.expenses).toBe(true);
+  });
+
+  it('rend les comptes actifs avec leur nature, pour les menus', async () => {
+    const accounts = await listTreasuryAccounts(db);
+    expect(accounts.map((a) => [a.code, a.kind])).toEqual([
+      ['current', 'bank'], ['savings', 'bank'], ['cash', 'cash'], ['badnet', 'wallet'], ['member_advances', 'third_party']
+    ]);
   });
 });
