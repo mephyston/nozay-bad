@@ -171,8 +171,8 @@ const frenchDate = (iso: string) =>
           <p class="mt-1 text-sm text-muted-foreground">
             Cette licence ne figure pas parmi les adhérents de {season?.name || 'la saison'}.
           </p>
-          <a href="/equipes" class="mt-4 inline-block text-sm text-primary no-underline hover:underline">
-            Retour aux équipes
+          <a href={featureOn(Astro.locals.club, 'teams') ? '/equipes' : '/'} class="mt-4 inline-block text-sm text-primary no-underline hover:underline">
+            {featureOn(Astro.locals.club, 'teams') ? 'Retour aux équipes' : "Retour à l'accueil"}
           </a>
         </div>
       )}

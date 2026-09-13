@@ -1,6 +1,7 @@
 ---
 import { ThemeToggle } from '@nba/ui';
 import UserMenu from './UserMenu.svelte';
+import { featureOn, type Feature } from '@nba/club/context';
 
 interface Props {
   currentPath: string;
@@ -16,13 +17,19 @@ const { currentPath } = Astro.props;
 // personnels, ils vivent sur « Mon compte », à un geste du menu en haut à droite.
 // Une rubrique qui n'apparaît que pour certains adhérents (les notes de frais) n'a de
 // toute façon pas sa place dans une barre censée être la même pour tous.
-const links = [
+//
+// Une rubrique que le club a éteinte disparaît d'ici comme de la barre mobile — la
+// même règle que `MobileNav`, qui la portait seule : le lien restait en haut de
+// l'écran et menait à « Page introuvable ».
+type Link = { href: string; label: string; feature?: Feature };
+const ALL_LINKS: Link[] = [
   { href: '/', label: 'Accueil' },
   { href: '/actualites', label: 'Actualités' },
   { href: '/agenda', label: 'Calendrier' },
-  { href: '/boutique', label: 'Boutique' },
-  { href: '/equipes', label: 'Mon club' }
+  { href: '/boutique', label: 'Boutique', feature: 'shop' },
+  { href: '/equipes', label: 'Mon club', feature: 'teams' }
 ];
+const links = ALL_LINKS.filter((link) => !link.feature || featureOn(Astro.locals.club, link.feature));
 
 const session = Astro.locals.session;
 ---

@@ -1,5 +1,7 @@
 import { createApiClient, type ApiClientEnv } from '@nba/api-client';
 import { ALL_FEATURES_ON, type Feature, type FeatureState } from './features';
+
+export type { Feature, FeatureState };
 import { NEUTRAL_CLUB_SETTINGS, type ClubSettings } from './settings';
 
 /**
