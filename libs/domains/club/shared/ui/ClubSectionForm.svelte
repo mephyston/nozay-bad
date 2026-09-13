@@ -17,13 +17,16 @@
     spec,
     values,
     canWrite = false,
-    endpoint = '/admin/api/club/settings'
+    endpoint = '/admin/api/club/settings',
+    onSaved
   } = $props<{
     spec: SectionSpec;
     values: Record<string, unknown>;
     canWrite?: boolean;
     /** Le relais de la rubrique, jamais la page hôte. */
     endpoint?: string;
+    /** Appelé après un enregistrement réussi, avant le rechargement : pour oublier ce que la page garde en mémoire. */
+    onSaved?: () => void;
   }>();
 
   let form = $state<Record<string, string | number>>(
@@ -69,6 +72,7 @@
           body: JSON.stringify(body)
         });
         if (!res.ok) throw new Error(await readApiError(res, "L'enregistrement a échoué."));
+        onSaved?.();
       },
       success: `${spec.title} : enregistré.`,
       onError: (message) => {

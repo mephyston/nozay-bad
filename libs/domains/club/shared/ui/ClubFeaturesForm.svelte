@@ -21,11 +21,14 @@
   let {
     features,
     canWrite = false,
-    endpoint = '/admin/api/club/settings'
+    endpoint = '/admin/api/club/settings',
+    onSaved
   } = $props<{
     features: FeatureState;
     canWrite?: boolean;
     endpoint?: string;
+    /** Appelé après un enregistrement réussi, avant le rechargement : pour oublier ce que la page garde en mémoire. */
+    onSaved?: () => void;
   }>();
 
   // Ce que le club a réglé, indépendamment des préalables : c'est ce qu'on enregistre.
@@ -62,8 +65,9 @@
           body: JSON.stringify({ action: 'update_features', features: choisi })
         });
         if (!res.ok) throw new Error(await readApiError(res, "L'enregistrement a échoué."));
+        onSaved?.();
       },
-      success: 'Fonctionnalités enregistrées. Le menu se met à jour au prochain chargement.',
+      success: 'Fonctionnalités enregistrées.',
       onError: (message) => {
         errorMsg = message;
       }

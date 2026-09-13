@@ -93,6 +93,22 @@ function lireGardee(): Gardee | null {
   }
 }
 
+/**
+ * Oublie l'identité gardée : le prochain chargement rappellera la route.
+ *
+ * À appeler après une écriture qui change ce que l'identité porte — les
+ * fonctionnalités du club, son sigle. Sans cela, la barre latérale garderait cinq
+ * minutes une rubrique que le bureau vient d'éteindre.
+ */
+export function oublierIdentite(): void {
+  enCours = null;
+  try {
+    localStorage.removeItem(CLE);
+  } catch {
+    /* Sans stockage, il n'y a rien à oublier. */
+  }
+}
+
 /** Ce que le dernier chargement a rendu, ou rien. Synchrone : sert au premier rendu. */
 export function derniereIdentite(): Identite | null {
   return lireGardee()?.identite ?? null;

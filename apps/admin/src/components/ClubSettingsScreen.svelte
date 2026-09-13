@@ -1,6 +1,7 @@
 <script lang="ts">
   import { ClubSectionForm, ClubFeaturesForm, ClubAssetsForm, sectionSpec } from '@nba/club-ui';
   import EcranDistant from './EcranDistant.svelte';
+  import { oublierIdentite } from '../lib/identite';
 
   /**
    * Un écran de la configuration du club, choisi par son nom.
@@ -16,11 +17,11 @@
 <EcranDistant domaine="club" ecran="settings" variante="formulaire">
   {#snippet pret(d)}
     {#if section === 'fonctionnalites'}
-      <ClubFeaturesForm features={d.features} canWrite={d.canWrite} />
+      <ClubFeaturesForm features={d.features} canWrite={d.canWrite} onSaved={oublierIdentite} />
     {:else if section === 'documents'}
       <ClubAssetsForm settings={d.settings} mediaOrigin={d.mediaOrigin} canWrite={d.canWrite} />
     {:else if spec}
-      <ClubSectionForm {spec} values={d.settings} canWrite={d.canWrite} />
+      <ClubSectionForm {spec} values={d.settings} canWrite={d.canWrite} onSaved={oublierIdentite} />
     {:else}
       <p class="text-sm text-destructive">Section inconnue.</p>
     {/if}

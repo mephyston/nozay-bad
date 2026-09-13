@@ -57,6 +57,17 @@ describe('identité mutualisée', () => {
     expect(appels, 'la garde fraîche évite le second appel').toBe(1);
   });
 
+  it("rappelle la route dès qu'on l'a fait oublier — une fonctionnalité éteinte ne doit pas rester au menu cinq minutes", async () => {
+    const module = await neuf();
+    await module.chargerIdentite();
+    expect(appels).toBe(1);
+
+    module.oublierIdentite();
+    expect(module.derniereIdentite()).toBeNull();
+    await module.chargerIdentite();
+    expect(appels).toBe(2);
+  });
+
   it('rappelle la route quand la garde a vieilli', async () => {
     const premier = await neuf();
     await premier.chargerIdentite();
