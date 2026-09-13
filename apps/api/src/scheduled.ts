@@ -1,4 +1,5 @@
 import { createDb } from '@nba/db';
+import { getClubFeatures, type FeatureState } from '@nba/club/settings';
 import { getSeasonAtDate, type SeasonRow } from '@nba/accounting-api';
 import {
   getBirthdaysForActiveSeason,
@@ -21,34 +22,15 @@ import {
 export type ScheduledBindings = {
   DB: D1Database;
   /**
-   * Rappels automatiques : cotisation non soldée et commande boutique en attente de
-   * paiement. Désactivés par défaut, d'un seul interrupteur : personne ne doit
-   * recevoir de relance parce qu'un déploiement a eu lieu. Mettre à "true" en var
-   * de Worker pour les activer.
+   * Interrupteur d'environnement des envois programmés.
+   *
+   * Ce qui part est décidé par le club (`club_features` : anniversaires, rappels) ;
+   * cette variable dit seulement si **cet environnement** a le droit d'envoyer. Elle
+   * est fausse en préproduction — sa base est un clone de la production, et ses
+   * adhérents recevraient des rappels bien réels — et vraie en production. Fermé par
+   * défaut : toute valeur autre que la chaîne `"true"` éteint, y compris l'absence.
    */
-  PUSH_REMINDERS_ENABLED?: string;
-  /**
-   * Annonce quotidienne des anniversaires. Désactivée par défaut pour la même
-   * raison que les rappels : rien ne doit partir du seul fait d'un déploiement.
-   */
-  PUSH_BIRTHDAYS_ENABLED?: string;
-  /**
-   * Rappel « classements à mettre à jour » aux fonctions du club, le jeudi précédant
-   * une journée d'interclubs régional. Désactivé par défaut, comme les autres.
-   */
-  PUSH_RANKING_REMINDERS_ENABLED?: string;
-  /**
-   * Appel aux ouvreurs pour les séances de jeu libre qui ont assez de joueurs mais
-   * personne pour ouvrir. Distinct d'`OPEN_PLAY_ENABLED` : celui-là dit si la
-   * fonctionnalité existe, celui-ci si elle a le droit de réveiller les gens. Les deux
-   * ne s'allument pas le même jour.
-   */
-  PUSH_OPEN_PLAY_ENABLED?: string;
-  /**
-   * Relance des capitaines dont la composition n'est pas validée à l'approche d'une
-   * journée d'interclubs. Désactivée par défaut, comme les autres.
-   */
-  PUSH_LINEUP_REMINDERS_ENABLED?: string;
+  SCHEDULED_SENDS_ENABLED?: string;
 } & VapidEnv;
 
 /*
@@ -358,8 +340,15 @@ export async function handleScheduled(
     console.warn(`[push] cron inconnu « ${event.cron} » : aucune branche programmée, file drainée seulement`);
   }
 
-  if (event.cron === DAILY_CRON) {
-    if (env.PUSH_BIRTHDAYS_ENABLED === 'true') {
+  // Les envois programmés : ce que le club a gardé, sur un environnement qui a le
+  // droit d'envoyer. Le drain, lui, tourne toujours — il ne crée rien, il expédie ce
+  // qu'une action métier a déjà mis en file.
+  const sendsEnabled = env.SCHEDULED_SENDS_ENABLED === 'true';
+  const features: FeatureState | null = sendsEnabled ? await getClubFeatures(db) : null;
+  const on = (feature: keyof FeatureState) => features?.[feature] === true;
+
+  if (event.cron === DAILY_CRON && features) {
+    if (on('birthdays')) {
       await sendBirthdayAnnouncements(db, now);
     }
 
@@ -369,13 +358,13 @@ export async function handleScheduled(
     // outil comptable, basculé quand la clôture l'arrange (cf. seasons/queries.ts).
     const season = await getSeasonAtDate(db, parisToday);
     if (season) {
-      if (env.PUSH_RANKING_REMINDERS_ENABLED === 'true') {
+      if (on('reminder_rankings')) {
         await sendRankingUpdateReminders(db, season, now, parisToday);
       }
-      if (env.PUSH_OPEN_PLAY_ENABLED === 'true') {
+      if (on('reminder_open_play')) {
         await sendOpenPlayOpenerReminders(db, season, now, parisToday);
       }
-      if (env.PUSH_LINEUP_REMINDERS_ENABLED === 'true') {
+      if (on('reminder_lineups')) {
         const { reminded } = await remindMissingLineups(
           db,
           { seasonCode: season.code, parisNow: paris },
@@ -389,7 +378,7 @@ export async function handleScheduled(
   }
 
   if (event.cron === WEEKLY_CRON) {
-    if (env.PUSH_REMINDERS_ENABLED === 'true') {
+    if (on('reminder_unpaid')) {
       await sendUnpaidReminders(db, now);
       await sendAwaitingPaymentOrderReminders(db, now);
     }

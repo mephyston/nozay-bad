@@ -1,4 +1,5 @@
 import type { Permission } from '@nba/iam-ui';
+import type { Feature } from '@nba/club-ui';
 
 /**
  * Permission requise pour ouvrir une page, par motif de route Astro.
@@ -81,6 +82,65 @@ export const PAGE_PERMISSIONS: Record<string, Permission | null> = {
   '/admin/settings/plateforme': 'settings:platform:read',
 
   '/admin/iam': 'iam:users:read'
+};
+
+/**
+ * Fonctionnalité dont dépend une page, par motif de route.
+ *
+ * Complément de `PAGE_PERMISSIONS`, même granularité : une page dont le club a éteint
+ * la fonctionnalité répond **introuvable**, avant même la question des droits — une
+ * rubrique éteinte n'existe pas, et « accès refusé » laisserait entendre qu'elle est là.
+ * Une page absente d'ici ne dépend d'aucune fonctionnalité.
+ *
+ * `page-permissions.test.ts` vérifie que chaque entrée du menu qui porte une
+ * fonctionnalité (`nav.ts`) est déclarée ici avec la même, et qu'aucun motif n'est
+ * orphelin de `PAGE_PERMISSIONS`.
+ *
+ * Les pages figées (`prerender`) ne passent pas par le middleware : pour elles, ce sont
+ * leurs relais qui répondent introuvable (`disponible` dans `relais.ts`), et la coquille
+ * affiche l'écran vide. Le menu, lui, cache l'entrée dans tous les cas.
+ */
+export const PAGE_FEATURES: Record<string, Feature> = {
+  '/admin/accounting': 'accounting',
+  '/admin/accounting/cash-box': 'cash',
+  '/admin/accounting/accounts/[code]': 'accounting',
+  '/admin/accounting/reconciliation': 'accounting',
+  '/admin/accounting/invoices': 'invoices',
+  '/admin/accounting/invoices/[id]': 'invoices',
+  '/admin/accounting/attestations/[id]': 'attestations',
+  '/admin/accounting/cheques': 'checks',
+  '/admin/accounting/cheques/list': 'checks',
+  '/admin/accounting/cheques/deposits': 'checks',
+  '/admin/accounting/cheques/deposits/[id]': 'checks',
+  '/admin/accounting/reports': 'accounting',
+  '/admin/accounting/reports/[report]': 'accounting',
+
+  '/admin/expenses': 'expenses',
+
+  '/admin/shop/products': 'shop',
+  '/admin/shop/orders': 'shop',
+
+  '/admin/website/media': 'website',
+  '/admin/website/pages': 'website',
+  '/admin/website/pages/[id]': 'website',
+  '/admin/website/menus': 'website',
+  '/admin/website/redirects': 'website',
+  '/admin/website/footer': 'website',
+  '/admin/website/schedules': 'schedules',
+  '/admin/website/jeu-libre': 'open_play',
+  '/admin/website/jeu-libre/ouvreurs': 'open_play',
+  '/admin/website/events': 'events',
+  '/admin/entrainement/indiv': 'indiv',
+  '/admin/entrainement/indiv/selection': 'indiv',
+  '/admin/teams': 'teams',
+  '/admin/teams/classements': 'teams',
+  '/admin/teams/classements/import': 'teams',
+  '/admin/teams/journees': 'teams',
+  '/admin/teams/reglements': 'teams',
+  '/admin/notifications': 'push',
+
+  '/admin/settings/attestation': 'attestations',
+  '/admin/settings/products': 'shop'
 };
 
 /**

@@ -1,4 +1,5 @@
 import type { Permission } from '@nba/iam';
+import type { Feature } from '@nba/club/settings';
 
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
@@ -31,4 +32,12 @@ export interface RouteRule {
    * de la route reste exigée, et le gestionnaire décide ensuite quoi répondre.
    */
   allowUnknownActor?: true;
+  /**
+   * Fonctionnalité dont dépend la route (voir `@nba/club/settings`, `FEATURES`).
+   *
+   * Éteinte par le club, la route répond **introuvable**, avant toute question de
+   * droit (`requireClubFeature`, posé avant `authorize`). Une route sans
+   * fonctionnalité existe pour tous les clubs.
+   */
+  feature?: Feature;
 }

@@ -25,7 +25,7 @@ if (!rapport) return Astro.redirect('/admin/accounting/reports');
 const season = Astro.url.searchParams.get('season') ?? '';
 ---
 
-<Layout title={`${rapport.titre} - NBA 91`}>
+<Layout title={`${rapport.titre}`}>
   <AdminLayout
     realEmail={Astro.locals.realUser?.email || ''}
     name={Astro.locals.user?.name}

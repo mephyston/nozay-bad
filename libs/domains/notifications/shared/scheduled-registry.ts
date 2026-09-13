@@ -21,8 +21,8 @@ export interface ScheduledNotificationView {
   /** `cron` : envoi récurrent planifié ; `event` : déclenché par une action métier. */
   trigger: 'cron' | 'event';
   category: NotificationCategory;
-  /** Kill-switch résolu : `false` = rien ne part tant que le drapeau n'est pas activé. */
+  /** État résolu : `false` = rien ne part (fonctionnalité éteinte par le club, ou environnement fermé). */
   enabled: boolean;
-  /** Nom de la variable d'environnement qui pilote l'envoi, `null` si toujours actif. */
+  /** Clé de la fonctionnalité du club qui pilote l'envoi, `null` si toujours actif. */
   flag: string | null;
 }

@@ -21,7 +21,7 @@ const id = Number(Astro.params.id);
 if (!Number.isSafeInteger(id) || id < 1) return Astro.redirect('/admin/website/pages');
 ---
 
-<Layout title="Page du site - NBA 91">
+<Layout title="Page du site">
   <AdminLayout
     realEmail={Astro.locals.realUser?.email || ''}
     name={Astro.locals.user?.name}

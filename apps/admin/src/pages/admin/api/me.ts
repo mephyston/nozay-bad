@@ -29,7 +29,19 @@ export const GET: APIRoute = ({ locals }) => {
           sur deux identités réellement distinctes, faute de quoi le bandeau s'affiche à
           des comptes qui n'ont emprunté personne.
         */
-        realEmail: realUser?.email ?? ''
+        realEmail: realUser?.email ?? '',
+        /*
+          Le club, pour la même raison que l'identité : une page figée n'a pas de
+          serveur pour lui dire comment elle s'appelle ni ce que le club a éteint.
+          Le strict nécessaire à l'habillage — le reste se lit par le relais de
+          configuration, gardé par son droit.
+        */
+        club: {
+          name: locals.club?.settings.name ?? '',
+          shortName: locals.club?.settings.shortName ?? '',
+          brandColor: locals.club?.settings.brandColor ?? '',
+          features: locals.club?.features ?? {}
+        }
       }
     }),
     {

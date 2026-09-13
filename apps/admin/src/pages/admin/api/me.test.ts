@@ -27,7 +27,8 @@ describe('GET /admin/api/me', () => {
       email: 'moi@nozaybad.fr',
       name: 'Moi',
       permissions: ['dashboard:overview:read'],
-      realEmail: 'moi@nozaybad.fr'
+      realEmail: 'moi@nozaybad.fr',
+      club: { name: '', shortName: '', brandColor: '', features: {} }
     });
   });
 
@@ -63,6 +64,12 @@ describe('GET /admin/api/me', () => {
 
   it('reste lisible quand le middleware n’a rien posé', async () => {
     const d = await corps(appeler({}));
-    expect(d).toEqual({ email: '', name: null, permissions: [], realEmail: '' });
+    expect(d).toEqual({
+      email: '',
+      name: null,
+      permissions: [],
+      realEmail: '',
+      club: { name: '', shortName: '', brandColor: '', features: {} }
+    });
   });
 });

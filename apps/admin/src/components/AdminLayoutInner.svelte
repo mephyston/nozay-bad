@@ -43,18 +43,33 @@
   import { onMount } from "svelte";
   import { Sidebar, Breadcrumb, Separator, Avatar, GlobalConfirm, AppVersion, MobileBottomNav, PwaInstallBanner, ThemeToggle, toast } from "@nba/ui";
 
-  let { children, email, name, permissions = [], realEmail = '', breadcrumb } = $props<{
+  let { children, email, name, permissions = [], realEmail = '', club, breadcrumb } = $props<{
     children?: import('svelte').Snippet;
     email: string;
     name?: string;
     permissions?: string[];
     /** Compte réellement connecté ; diffère de `email` pendant une usurpation. */
     realEmail?: string;
+    /** Le club : son nom au menu, et les fonctionnalités qu'il a éteintes. */
+    club?: ClubHabillage;
     breadcrumb: string;
   }>();
 
   import { can } from '@nba/iam-ui';
   import { NAV_GROUPS } from '../lib/nav';
+  import { poserTitre, type ClubHabillage } from '../lib/identite';
+
+  /** Une fonctionnalité éteinte par le club ; une clé absente vaut « allumée ». */
+  const eteinte = (feature: string | undefined) => feature !== undefined && club?.features?.[feature] === false;
+
+  /*
+    Le titre de l'onglet porte le sigle du club. Les pages figées ne le connaissent pas
+    au build — c'est ici, quand l'identité arrive, qu'il se complète. Idempotent : un
+    titre déjà suffixé ne l'est pas deux fois.
+  */
+  $effect(() => {
+    if (club?.shortName) poserTitre();
+  });
 
   const sidebar = Sidebar.useSidebar();
 
@@ -71,12 +86,15 @@
   // visible mène donc toujours à une page ouverte.
   const filteredNavGroups = $derived(
     NAV_GROUPS
+      // Un groupe dont le club a éteint la fonctionnalité disparaît en entier.
+      .filter(g => !eteinte(g.feature))
       .map(g => ({
         label: g.label,
         // Recopié explicitement : cette projection reconstruit chaque groupe, et tout
         // champ non listé ici disparaît en silence.
         beta: g.beta ?? false,
         items: g.items
+          .filter(i => !eteinte(i.feature))
           .filter(i => i.permission === null || can(permissions, i.permission))
           .map(i => ({ name: i.name, href: i.href, icon: ICONS[i.icon] }))
       }))
@@ -412,7 +430,7 @@
             class="flex items-center gap-3 w-full h-8 font-semibold text-sidebar-foreground group-data-[collapsible=icon]:justify-center rounded-md transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground px-2 group-data-[collapsible=icon]:px-0"
           >
             <img src="/logo.png" alt="Logo" class="h-6 w-6 group-data-[collapsible=icon]:h-8 group-data-[collapsible=icon]:w-8 shrink-0 object-contain transition-all duration-200" />
-            <span class="group-data-[collapsible=icon]:hidden text-sm truncate">Nozay Bad Admin</span>
+            <span class="group-data-[collapsible=icon]:hidden text-sm truncate">{club?.shortName ? `${club.shortName} Admin` : 'Administration'}</span>
           </a>
         </Sidebar.MenuItem>
       </Sidebar.Menu>

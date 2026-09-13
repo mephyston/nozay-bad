@@ -1,7 +1,6 @@
 import type { Context, Next } from 'hono';
 import { createDb } from '@nba/db';
 import { bumpContentVersion } from '@nba/cms-api';
-import { isOpenPlayPath } from './open-play';
 
 /**
  * Invalidation du cache du site public après une écriture sur les créneaux ou les événements.
@@ -50,10 +49,17 @@ function sousPrefixe(path: string, prefix: string): boolean {
   return path === prefix || path.startsWith(`${prefix}/`);
 }
 
+/** Préfixe du jeu libre, exclu de l'invalidation (voir ci-dessus). */
+const OPEN_PLAY_PREFIX = '/schedules/open-play';
+
+export function isOpenPlayPath(path: string): boolean {
+  return sousPrefixe(path, OPEN_PLAY_PREFIX);
+}
+
 /**
  * L'écriture change-t-elle ce que lit le site public ?
  *
- * Comparaison sur le segment complet, comme `isOpenPlayPath` et pour la même raison :
+ * Comparaison sur le segment complet, pour la même raison que le préfixe du jeu libre :
  * un `/schedulesomething` ne doit pas tomber dans le filet.
  */
 export function affectsPublicSite(method: string, path: string): boolean {

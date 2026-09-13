@@ -11,15 +11,47 @@
  * se ferait refuser à l'ouverture. L'API reste l'autorité ; ici on ne fait qu'afficher.
  */
 
+export interface ClubHabillage {
+  name: string;
+  shortName: string;
+  brandColor: string;
+  /** État effectif des fonctionnalités ; une clé absente vaut « allumée ». */
+  features: Partial<Record<string, boolean>>;
+}
+
 export interface Identite {
   email: string;
   name?: string | null;
   permissions: string[];
   realEmail: string;
+  /** Le club, servi par la même route : le menu et le titre des pages en dépendent. */
+  club?: ClubHabillage;
 }
 
 const CLE = 'admin_identite';
 const VIDE: Identite = { email: '', name: undefined, permissions: [], realEmail: '' };
+
+/**
+ * Pose le titre de l'onglet, suffixé du sigle du club.
+ *
+ * Sans argument, complète le titre en place — c'est ce que fait l'habillage quand
+ * l'identité arrive sur une page figée, dont le titre a été gravé sans sigle au build.
+ * Avec un titre, le remplace : les écrans qui titrent d'après leurs données (profil
+ * d'adhérent, page en cours d'édition) passent par ici pour ne pas perdre le sigle.
+ * Idempotent : un titre déjà suffixé ne l'est pas deux fois.
+ */
+export function poserTitre(titre?: string): void {
+  if (typeof document === 'undefined') return;
+  const base = titre ?? document.title;
+  const sigle = derniereIdentite()?.club?.shortName;
+  const suffixe = sigle ? ` - ${sigle}` : '';
+  document.title = suffixe && !base.endsWith(suffixe) ? `${base}${suffixe}` : base;
+}
+
+/** La fonctionnalité est-elle allumée d'après la dernière identité connue ? Sans réponse, oui. */
+export function fonctionnaliteAllumee(identite: Identite | null, feature: string): boolean {
+  return identite?.club?.features?.[feature] ?? true;
+}
 
 /**
  * Durée pendant laquelle l'identité gardée fait foi, sans rappeler la route.

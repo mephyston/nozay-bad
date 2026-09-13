@@ -17,15 +17,10 @@ import { creerRelais, identifiant, type Ecran } from '../../../../lib/relais';
  */
 
 /*
-  Le drapeau `OPEN_PLAY_ENABLED` ne vit plus côté administration.
-
-  C'est l'API qui le porte, et c'est le bon endroit : elle répond 404 quand il est baissé,
-  et le relais traduit ce code en message — « désactivées sur cet environnement ». Le
-  redoubler ici donnait deux verrous à tenir en accord pour une seule décision, et le
-  second se serait périmé au premier oubli.
-
-  L'espace adhérent, lui, garde le sien : il annonce une fonctionnalité à des adhérents,
-  là où l'administration ne fait que la tenir.
+  Le jeu libre et les indiv se règlent dans la configuration du club, et c'est l'API qui
+  applique ce réglage : elle répond 404 quand la fonctionnalité est éteinte, et le relais
+  traduit ce code en message. Le redoubler ici donnerait deux verrous à tenir en accord
+  pour une seule décision, et le second se périmerait au premier oubli.
 */
 
 /** Champs qu'une mise à jour partielle peut porter ; les absents ne changent rien. */
@@ -92,7 +87,7 @@ export const ECRANS: Record<string, Ecran> = {
       const errorMsg = seances.ok
         ? null
         : seances.status === 404
-          ? 'Les séances de jeu libre sont désactivées sur cet environnement (OPEN_PLAY_ENABLED).'
+          ? 'Le jeu libre est éteint dans la configuration du club (Réglages → Fonctionnalités).'
           : seances.status === 403
             ? "Votre compte n'a pas le droit de consulter les séances de jeu libre."
             : `Impossible de charger les séances (erreur ${seances.status}).`;
@@ -180,7 +175,7 @@ export const ECRANS: Record<string, Ecran> = {
       const errorMsg = soirees.ok
         ? null
         : soirees.status === 404
-          ? 'Les séances individuelles sont désactivées sur cet environnement (INDIV_ENABLED).'
+          ? 'Les séances individuelles sont éteintes dans la configuration du club (Réglages → Fonctionnalités).'
           : soirees.status === 403
             ? "Votre compte n'a pas le droit de consulter les séances individuelles."
             : `Impossible de charger les soirées (erreur ${soirees.status}).`;
@@ -245,7 +240,7 @@ export const ECRANS: Record<string, Ecran> = {
           canWrite,
           errorMsg:
             reponse.status === 404
-              ? 'Soirée introuvable, ou séances individuelles désactivées sur cet environnement (INDIV_ENABLED).'
+              ? 'Soirée introuvable, ou séances individuelles éteintes dans la configuration du club.'
               : `Impossible de charger les candidats (erreur ${reponse.status}).`
         };
       }
@@ -329,7 +324,7 @@ export const ECRANS: Record<string, Ecran> = {
       const errorMsg = reponse.ok
         ? null
         : reponse.status === 404
-          ? 'Les séances de jeu libre sont désactivées sur cet environnement (OPEN_PLAY_ENABLED).'
+          ? 'Le jeu libre est éteint dans la configuration du club (Réglages → Fonctionnalités).'
           : `Impossible de charger les ouvreurs (erreur ${reponse.status}).`;
 
       /*

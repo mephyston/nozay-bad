@@ -3,7 +3,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 /**
  * Le relais du domaine « séances ».
  *
- * Deux de ses écrans sont derrière le drapeau `OPEN_PLAY_ENABLED`. La page répond 404
+ * Deux de ses écrans dépendent de la fonctionnalité « jeu libre » du club. La page répond 404
  * quand il est baissé ; si le relais, lui, servait les données, la fonctionnalité serait
  * fermée à l'œil et ouverte à qui sait former une URL. C'est la régression que ce fichier
  * ferme en premier.
@@ -83,7 +83,7 @@ beforeEach(() => {
 
 describe('relais séances — le drapeau de fonctionnalité', () => {
   /*
-   * Le drapeau `OPEN_PLAY_ENABLED` ne vit plus côté administration : c'est l'API qui le
+   * La fonctionnalité se règle dans la configuration du club : c'est l'API qui la
    * porte, et elle répond 404 quand il est baissé. Le relais ne le redouble pas — deux
    * verrous pour une décision se seraient périmés au premier oubli — mais il **traduit**
    * ce 404 en message, ce qui est sa part du travail.
@@ -95,13 +95,13 @@ describe('relais séances — le drapeau de fonctionnalité', () => {
     reponse404 = true;
     const res = await lire('jeu-libre');
     expect(res.status).toBe(200);
-    expect(((await res.json()) as any).data.errorMsg).toContain('désactivées sur cet environnement');
+    expect(((await res.json()) as any).data.errorMsg).toContain('éteint dans la configuration du club');
   });
 
   it('dit de même pour les séances individuelles', async () => {
     reponse404 = true;
     const res = await lire('indiv');
-    expect(((await res.json()) as any).data.errorMsg).toContain('INDIV_ENABLED');
+    expect(((await res.json()) as any).data.errorMsg).toContain('éteintes dans la configuration du club');
   });
 
   it('laisse passer les créneaux, qui ne dépendaient pas du drapeau', async () => {

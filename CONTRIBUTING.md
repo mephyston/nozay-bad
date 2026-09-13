@@ -115,7 +115,7 @@ Le script `node scripts/check-schema-integrity.js` valide automatiquement 5 règ
 
 ### 8.1 Une seule branche durable
 
-`main` est la seule branche de long terme. Les branches `feat/*` sont **locales et courtes** — moins d'une journée. Une fonctionnalité inachevée est fusionnée dans `main` **éteinte derrière un drapeau** (`vars` du `wrangler.json` concerné, comme `PUSH_REMINDERS_ENABLED`), jamais laissée à mûrir sur une branche.
+`main` est la seule branche de long terme. Les branches `feat/*` sont **locales et courtes** — moins d'une journée. Une fonctionnalité inachevée est fusionnée dans `main` **éteinte derrière un drapeau** (`vars` du `wrangler.json` concerné, comme `INDIV_ENABLED` sur l'espace adhérent ; à ne pas confondre avec les fonctionnalités que le club allume ou éteint lui-même depuis sa configuration), jamais laissée à mûrir sur une branche.
 
 Le modèle précédent couplait une branche à un environnement : promouvoir demandait un merge, donc se remettait à plus tard, et `main` avait fini par accuser 601 commits de retard. Ici, l'écart entre préproduction et production s'exprime en **numéro de version**, pas en divergence de branches.
 

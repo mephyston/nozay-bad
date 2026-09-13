@@ -18,6 +18,8 @@ export default defineConfig({
       '@nba/security-headers': path.resolve(__dirname, '../../libs/shared/security-headers/src/index.ts'),
       '@nba/runtime-env': path.resolve(__dirname, '../../libs/shared/runtime-env/src/index.ts'),
       '@nba/iam-ui': path.resolve(__dirname, '../../libs/domains/iam/shared/ui.ts'),
+      '@nba/club-ui': path.resolve(__dirname, '../../libs/domains/club/shared/ui.ts'),
+      '@nba/club/settings': path.resolve(__dirname, '../../libs/domains/club/shared/settings-api.ts'),
       '@nba/iam': path.resolve(__dirname, '../../libs/domains/iam/index.ts'),
       // Le barrel @nba/iam expose désormais la résolution d'identité, qui touche la
       // base : l'alias devient nécessaire ici comme il l'est déjà côté build.

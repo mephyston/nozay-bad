@@ -8,12 +8,12 @@ import IndivScreen from '../../../components/IndivScreen.svelte';
  * Les soirées d'indiv, tenues par l'entraîneur.
  *
  * Page figée : l'îlot demande ses données au relais du domaine, qui traduit un 404 du
- * drapeau `INDIV_ENABLED` en message.
+ * réglage « séances individuelles » du club en message.
  */
 export const prerender = true;
 ---
 
-<Layout title="Séances individuelles - NBA 91">
+<Layout title="Séances individuelles">
   <AdminLayout client:idle breadcrumb="Entraînement / Indiv">
     <div class="space-y-6">
       <PageHeader

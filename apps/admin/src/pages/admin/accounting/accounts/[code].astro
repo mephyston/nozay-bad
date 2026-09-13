@@ -24,7 +24,7 @@ const titre = TITRES[code] ?? `Compte ${code}`;
 const season = Astro.url.searchParams.get('season') ?? '';
 ---
 
-<Layout title={`${titre} - NBA 91`}>
+<Layout title={`${titre}`}>
   <AdminLayout
     realEmail={Astro.locals.realUser?.email || ''}
     name={Astro.locals.user?.name}

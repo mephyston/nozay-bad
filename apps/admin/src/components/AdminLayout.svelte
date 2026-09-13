@@ -42,8 +42,10 @@
    * brièvement une entrée de trop, et se ferait refuser à l'ouverture. C'est le compromis
    * assumé — l'API reste l'autorité, ici on ne fait qu'afficher.
    */
+  // Le club vient toujours du dernier état connu, même quand la page passe l'identité
+  // en props : aucune page ne le passe, et le menu en a besoin dès le premier pinceau.
   const initiale: Identite = email
-    ? { email, name, permissions, realEmail }
+    ? { email, name, permissions, realEmail, club: derniereIdentite()?.club }
     : (derniereIdentite() ?? { email: '', name: undefined, permissions: [], realEmail: '' });
 
   let identite = $state<Identite>(initiale);
@@ -88,6 +90,7 @@
     name={identite.name}
     permissions={identite.permissions}
     realEmail={identite.realEmail}
+    club={identite.club}
     {breadcrumb}
   >
     {@render children?.()}

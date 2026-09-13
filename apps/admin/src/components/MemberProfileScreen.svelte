@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { poserTitre } from '../lib/identite';
   import { ErrorAlert } from '@nba/ui';
   import { MemberProfile } from '@nba/members-ui';
   import EcranDistant from './EcranDistant.svelte';
@@ -18,7 +19,7 @@
 
   function recevoir(d: Record<string, any>) {
     errorMsg = d.errorMsg ?? null;
-    if (d.member) document.title = `Profil ${d.member.lastName} ${d.member.firstName} - NBA 91`;
+    if (d.member) poserTitre(`Profil ${d.member.lastName} ${d.member.firstName}`);
   }
 </script>
 

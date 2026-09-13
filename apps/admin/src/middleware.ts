@@ -5,9 +5,10 @@ import { createApiClient } from '@nba/api-client';
 import { resolveEnv as resolveRuntimeEnv } from '@nba/runtime-env';
 import { can, resolvePermissions, isRole, DEFAULT_ROLE, type ActorDto, type Role } from '@nba/iam-ui';
 import { applySecurityHeaders } from './lib/security-headers';
-import { PAGE_PERMISSIONS, matchPagePattern, isPageRoute } from './lib/page-permissions';
+import { PAGE_PERMISSIONS, PAGE_FEATURES, matchPagePattern, isPageRoute } from './lib/page-permissions';
 import { accepteEcriture } from './lib/page-writes';
 import { impersonationEnabled } from './lib/guard';
+import { chargerClub, CLUB_DE_SECOURS } from './lib/club';
 
 const jwksCache = new Map<string, ReturnType<typeof createRemoteJWKSet>>();
 
@@ -252,6 +253,16 @@ export const handleAuth = async (context: APIContext, next: MiddlewareNext) => {
     permissions: realActor.permissions
   };
 
+  // L'identité du club : titre des pages, nom au menu, fonctionnalités éteintes.
+  try {
+    context.locals.club = await chargerClub(env, realActor.email);
+  } catch (err) {
+    // Une panne de cette lecture ne doit pas fermer l'administration : on affiche un
+    // club sans nom, toutes fonctionnalités visibles, et on le dit dans les journaux.
+    console.error('[club] identité du club illisible, repli neutre :', err);
+    context.locals.club = CLUB_DE_SECOURS;
+  }
+
   // Autorisation de page, fermée par défaut : une page non déclarée dans
   // PAGE_PERMISSIONS est refusée, y compris si personne n'a pensé à la garder.
   const pathname = new URL(request.url).pathname;
@@ -275,6 +286,12 @@ export const handleAuth = async (context: APIContext, next: MiddlewareNext) => {
     if (!pattern) {
       console.warn(`[auth] page non déclarée dans PAGE_PERMISSIONS : ${pathname}`);
       return refusedPage(actor.email);
+    }
+    // Une fonctionnalité éteinte par le club se lit avant le droit : la page n'existe
+    // pas, et « accès refusé » laisserait entendre qu'elle est là.
+    const feature = PAGE_FEATURES[pattern];
+    if (feature && !context.locals.club.features[feature]) {
+      return new Response('Page introuvable', { status: 404 });
     }
     const required = PAGE_PERMISSIONS[pattern];
     if (required !== null && !can(actor.permissions, required)) {

@@ -27,6 +27,11 @@ declare namespace App {
        */
       permissions?: import('@nba/iam-ui').Permission[];
     };
+    /**
+     * L'identité du club et l'état de ses fonctionnalités, résolus par le middleware
+     * (`lib/club.ts`). Absent au build des pages figées, qui ne passent pas par lui.
+     */
+    club?: import('./lib/club').ClubContexte;
     runtime: import('@astrojs/cloudflare').Runtime<Env>;
   }
 }

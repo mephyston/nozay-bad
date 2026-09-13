@@ -8,7 +8,7 @@
 
 <PageHeader
   title="Accès et rôles"
-  description="Attribuez un rôle aux personnes qui administrent Nozay Bad Association."
+  description="Attribuez un rôle aux personnes qui administrent le club."
 />
 
 {#if errorMsg}

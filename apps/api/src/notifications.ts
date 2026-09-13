@@ -13,7 +13,8 @@ import {
   type NotificationTarget,
   type NotificationTargetLabel
 } from '@nba/notifications-api';
-import { listScheduledNotifications, type RegistryEnv } from './scheduled-registry';
+import { listScheduledNotifications } from './scheduled-registry';
+import { getClubFeatures } from '@nba/club/settings';
 
 /**
  * Émission des notifications et audiences.
@@ -27,16 +28,26 @@ import { listScheduledNotifications, type RegistryEnv } from './scheduled-regist
 
 export type NotificationsBindings = {
   DB: D1Database;
-} & RegistryEnv;
+  /** Interrupteur d'environnement des envois programmés (voir `scheduled.ts`). */
+  SCHEDULED_SENDS_ENABLED?: string;
+};
 
 export const notificationsSendRouter = new Hono<{ Bindings: NotificationsBindings }>();
 
 /**
  * Notifications automatiques (cron et événements métier), en consultation seule :
- * le registre est déclaratif, seuls les drapeaux d'environnement résolvent `enabled`.
+ * le registre est déclaratif ; `enabled` se résout d'après les fonctionnalités que le
+ * club a gardées et l'interrupteur de l'environnement.
  */
-notificationsSendRouter.get('/scheduled', (c) => {
-  return c.json({ success: true, data: listScheduledNotifications(c.env) });
+notificationsSendRouter.get('/scheduled', async (c) => {
+  if (!c.env?.DB) {
+    return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
+  }
+  const features = await getClubFeatures(createDb(c.env.DB));
+  return c.json({
+    success: true,
+    data: listScheduledNotifications({ sendsEnabled: c.env.SCHEDULED_SENDS_ENABLED === 'true', features })
+  });
 });
 
 /** Cibles proposées à l'émetteur : groupes de la saison active et leurs effectifs. */

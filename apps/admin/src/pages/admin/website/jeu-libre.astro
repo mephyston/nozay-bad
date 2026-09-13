@@ -11,7 +11,7 @@ import { resolveEnv } from '@nba/runtime-env';
  * Remplace le Google Sheet : ici on ouvre des séances datées, on lit qui vient — invités
  * compris — et on annule avec un motif que l'adhérent inscrit pourra lire.
  *
- * Le drapeau `OPEN_PLAY_ENABLED` ne se lit plus ici : c'est l'API qui le porte, et le
+ * Le réglage « jeu libre » du club ne se lit pas ici : c'est l'API qui le porte, et le
  * relais traduit son 404 en message. L'espace adhérent garde le sien, parce que lui
  * annonce la fonctionnalité à des adhérents.
  */
@@ -29,7 +29,7 @@ import { resolveEnv } from '@nba/runtime-env';
 export const prerender = true;
 ---
 
-<Layout title="Jeu libre - NBA 91">
+<Layout title="Jeu libre">
   <AdminLayout
     client:idle
     breadcrumb="Jeu libre"

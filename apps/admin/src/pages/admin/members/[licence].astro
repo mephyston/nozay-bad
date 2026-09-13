@@ -15,7 +15,7 @@ if (!/^\d{1,8}$/.test(licence)) return Astro.redirect('/admin/members');
 const season = Astro.url.searchParams.get('season') ?? '';
 ---
 
-<Layout title="Profil Adhérent - NBA 91">
+<Layout title="Profil Adhérent">
   <AdminLayout
     email={Astro.locals.user?.email || ''}
     realEmail={Astro.locals.realUser?.email || ''}

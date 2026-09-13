@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { poserTitre } from '../lib/identite';
   import { PageHeader, ErrorAlert } from '@nba/ui';
   import { PageEditor } from '@nba/cms-ui';
   import EcranDistant from './EcranDistant.svelte';
@@ -25,7 +26,7 @@
   function titrer(d: Record<string, any>) {
     if (!d.page?.title) return;
     titre = d.page.title;
-    document.title = `${d.page.title} - NBA 91`;
+    poserTitre(d.page.title);
   }
 </script>
 

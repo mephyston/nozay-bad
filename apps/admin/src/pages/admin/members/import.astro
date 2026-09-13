@@ -41,7 +41,7 @@ if (Astro.request.method === 'POST') {
 }
 ---
 
-<Layout title="Import Adhérents Poona - NBA 91">
+<Layout title="Import Adhérents Poona">
   <AdminLayout email={Astro.locals.user?.email || ""} realEmail={Astro.locals.realUser?.email || ""} name={Astro.locals.user?.name} client:idle breadcrumb="Adhérents / Import Poona" permissions={Astro.locals.user?.permissions || []}>
     <div class="space-y-6">
       <PageHeader

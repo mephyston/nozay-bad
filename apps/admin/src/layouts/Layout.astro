@@ -10,6 +10,13 @@ interface Props {
 }
 
 const { title } = Astro.props;
+/*
+  Le sigle du club suffixe le titre de l'onglet. Il vient du middleware pour une page
+  rendue à la demande ; une page figée ne l'a pas au build, et c'est `AdminLayoutInner`
+  qui le complète dans le navigateur, dès que l'identité arrive.
+*/
+const sigle = Astro.locals.club?.settings.shortName;
+const titreOnglet = sigle ? `${title} - ${sigle}` : title;
 // Suffixe d'icône selon l'environnement (inliné au build) : bandeau DEV / TEST.
 const APP_ENV = import.meta.env.PUBLIC_APP_ENV || 'production';
 const ICON_SUFFIX = APP_ENV === 'development' ? '-dev' : APP_ENV === 'staging' ? '-test' : '';
@@ -41,9 +48,9 @@ const ORIGINE_MEDIAS = (import.meta.env.PUBLIC_WEBSITE_URL as string | undefined
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap" rel="stylesheet" />
     <link rel="apple-touch-icon" sizes="180x180" href={`/pwa/apple-touch-icon${ICON_SUFFIX}.png`} />
-    <meta name="apple-mobile-web-app-title" content="Nozay Bad" />
+    <meta name="apple-mobile-web-app-title" content={sigle ? `${sigle} Admin` : 'Administration'} />
     { pwaInfo && <Fragment set:html={pwaInfo.webManifest.linkTag} /> }
-    <title>{title}</title>
+    <title>{titreOnglet}</title>
     <ClientRouter />
     <script>
       /*
@@ -153,7 +160,7 @@ const ORIGINE_MEDIAS = (import.meta.env.PUBLIC_WEBSITE_URL as string | undefined
     <!-- PWA Splash Screen -->
     <div id="pwa-splash" class="fixed inset-0 z-[9999] bg-background flex flex-col items-center justify-center transition-opacity duration-500">
       <div class="relative z-10 flex flex-col items-center gap-6">
-        <img src="/logo.png" alt="Logo Nozay Bad" class="w-80 h-80 animate-pulse object-contain" />
+        <img src="/logo.png" alt="Logo du club" class="w-80 h-80 animate-pulse object-contain" />
       </div>  
         <div class="absolute -bottom-8 left-1/2 -translate-x-1/2 flex gap-1.5">
           <span class="w-2 h-2 rounded-full bg-primary animate-bounce" style="animation-delay: -0.3s"></span>

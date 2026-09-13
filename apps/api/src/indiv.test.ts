@@ -3,6 +3,8 @@ import { asc } from 'drizzle-orm';
 import { setupMockDb } from '@nba/db/test-utils';
 import { insertMemberFixture } from '@nba/members/test-fixtures';
 import { pushMessagesTable } from '../../../libs/domains/notifications/shared/schema';
+import { updateClubFeatures } from '@nba/club';
+import { forgetIsolateFeatures } from './club-features';
 import {
   indivRequestsTable,
   indivSessionsTable,
@@ -44,6 +46,9 @@ async function seedRequest(memberId: number, licence: string, selectedSlot: numb
 
 beforeEach(async () => {
   ({ mockD1, db } = await setupMockDb());
+  // Le cache des fonctionnalités vit à l'échelle de l'isolate : un test qui a éteint
+  // les indiv le laisserait sinon au suivant.
+  forgetIsolateFeatures();
   await seedTestAdmin(db);
   const [venue] = await db
     .insert(venuesTable)
@@ -68,7 +73,7 @@ const announce = () =>
   app.request(
     `http://localhost/schedules/indiv/${sessionId}/announce`,
     { method: 'POST', headers: ADMIN },
-    { DB: mockD1, INTERNAL_API_KEY: KEY, INDIV_ENABLED: 'true' }
+    { DB: mockD1, INTERNAL_API_KEY: KEY }
   );
 
 describe('POST /schedules/indiv/:id/announce', () => {
@@ -109,11 +114,13 @@ describe('POST /schedules/indiv/:id/announce', () => {
     expect(await db.select().from(pushMessagesTable).all()).toHaveLength(0);
   });
 
-  it('reste derrière le drapeau', async () => {
+  it('est introuvable quand le club a éteint les séances individuelles', async () => {
+    await updateClubFeatures(db, { indiv: false }, 'a@b.c');
+    forgetIsolateFeatures();
     const res = await app.request(
       `http://localhost/schedules/indiv/${sessionId}/announce`,
       { method: 'POST', headers: ADMIN },
-      { DB: mockD1, INTERNAL_API_KEY: KEY, INDIV_ENABLED: 'false' }
+      { DB: mockD1, INTERNAL_API_KEY: KEY }
     );
     expect(res.status).toBe(404);
   });

@@ -436,7 +436,7 @@
             </p>
             {#if entry.flag && !entry.enabled}
               <p class="text-[11px] text-muted-foreground">
-                S'active via la variable <code class="font-mono">{entry.flag}</code> du Worker API.
+                Ne part pas : fonctionnalité éteinte dans la configuration du club, ou envois programmés fermés sur cet environnement.
               </p>
             {/if}
           </div>

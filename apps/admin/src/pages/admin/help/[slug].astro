@@ -19,7 +19,7 @@ const { user } = Astro.locals as any;
 const permissions = user?.permissions || [];
 ---
 
-<Layout title={`${entry.data.title} - Aide NBA`}>
+<Layout title={`${entry.data.title} - Aide`}>
   <AdminLayout realEmail={Astro.locals.realUser?.email || ""} 
     client:load 
     email={user?.email || ""} 

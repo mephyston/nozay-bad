@@ -15,16 +15,20 @@ import type { ScheduledNotificationView } from '@nba/notifications-api';
  * Les horaires sont exprimés en heure de Paris ; les crons du Worker tournent en UTC
  * (7h UTC = 8h ou 9h à Paris selon la saison), d'où les libellés « vers ».
  */
-export type RegistryEnv = {
-  PUSH_REMINDERS_ENABLED?: string;
-  PUSH_BIRTHDAYS_ENABLED?: string;
-  PUSH_RANKING_REMINDERS_ENABLED?: string;
-  PUSH_LINEUP_REMINDERS_ENABLED?: string;
-  PUSH_OPEN_PLAY_ENABLED?: string;
+import type { Feature, FeatureState } from '@nba/club/settings';
+
+/**
+ * Ce que le registre lit pour dire si un envoi part : l'interrupteur de
+ * l'environnement (`SCHEDULED_SENDS_ENABLED`, voir `scheduled.ts`) et les
+ * fonctionnalités que le club a gardées.
+ */
+export type RegistryContext = {
+  sendsEnabled: boolean;
+  features: FeatureState;
 };
 
-export function listScheduledNotifications(env: RegistryEnv): ScheduledNotificationView[] {
-  const on = (flag: keyof RegistryEnv) => env?.[flag] === 'true';
+export function listScheduledNotifications(ctx: RegistryContext): ScheduledNotificationView[] {
+  const on = (feature: Feature) => ctx.sendsEnabled && ctx.features[feature] === true;
 
   return [
     // ── Récurrentes (cron du Worker API) ─────────────────────────────────────
@@ -35,8 +39,8 @@ export function listScheduledNotifications(env: RegistryEnv): ScheduledNotificat
       schedule: 'Tous les jours vers 8-9h',
       trigger: 'cron',
       category: 'birthday',
-      enabled: on('PUSH_BIRTHDAYS_ENABLED'),
-      flag: 'PUSH_BIRTHDAYS_ENABLED'
+      enabled: on('birthdays'),
+      flag: 'birthdays'
     },
     {
       id: 'reminder:unpaid',
@@ -45,8 +49,8 @@ export function listScheduledNotifications(env: RegistryEnv): ScheduledNotificat
       schedule: 'Le lundi vers 9-10h',
       trigger: 'cron',
       category: 'reminder',
-      enabled: on('PUSH_REMINDERS_ENABLED'),
-      flag: 'PUSH_REMINDERS_ENABLED'
+      enabled: on('reminder_unpaid'),
+      flag: 'reminder_unpaid'
     },
     {
       id: 'reminder:order-awaiting-payment',
@@ -55,8 +59,8 @@ export function listScheduledNotifications(env: RegistryEnv): ScheduledNotificat
       schedule: 'Le lundi vers 9-10h',
       trigger: 'cron',
       category: 'reminder',
-      enabled: on('PUSH_REMINDERS_ENABLED'),
-      flag: 'PUSH_REMINDERS_ENABLED'
+      enabled: on('reminder_unpaid'),
+      flag: 'reminder_unpaid'
     },
     {
       id: 'teams:ranking-reminder',
@@ -65,8 +69,8 @@ export function listScheduledNotifications(env: RegistryEnv): ScheduledNotificat
       schedule: "Le jeudi précédant chaque journée d'interclubs régional",
       trigger: 'cron',
       category: 'interclubs',
-      enabled: on('PUSH_RANKING_REMINDERS_ENABLED'),
-      flag: 'PUSH_RANKING_REMINDERS_ENABLED'
+      enabled: on('reminder_rankings'),
+      flag: 'reminder_rankings'
     },
     {
       id: 'schedules:open-play-opener-reminder',
@@ -75,8 +79,8 @@ export function listScheduledNotifications(env: RegistryEnv): ScheduledNotificat
       schedule: 'Chaque jour à 7 h, si au moins une séance cherche un ouvreur',
       trigger: 'cron',
       category: 'open_play',
-      enabled: on('PUSH_OPEN_PLAY_ENABLED'),
-      flag: 'PUSH_OPEN_PLAY_ENABLED'
+      enabled: on('reminder_open_play'),
+      flag: 'reminder_open_play'
     },
     {
       id: 'teams:lineup-reminder',
@@ -85,8 +89,8 @@ export function listScheduledNotifications(env: RegistryEnv): ScheduledNotificat
       schedule: "Chaque jour de la veille de la journée jusqu'à la première rencontre du club",
       trigger: 'cron',
       category: 'interclubs',
-      enabled: on('PUSH_LINEUP_REMINDERS_ENABLED'),
-      flag: 'PUSH_LINEUP_REMINDERS_ENABLED'
+      enabled: on('reminder_lineups'),
+      flag: 'reminder_lineups'
     },
 
     // ── Événementielles (déclenchées par une action métier, toujours actives) ─

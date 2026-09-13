@@ -14,8 +14,7 @@ import { dashboardRouter } from './dashboard';
 import { handleScheduled, type ScheduledBindings } from './scheduled';
 import { notificationsSendRouter } from './notifications';
 import { indivRouter } from './indiv';
-import { openPlayFeatureFlag } from './open-play';
-import { indivFeatureFlag } from './feature-flags';
+import { requireClubFeature, forgetIsolateFeatures } from './club-features';
 import { invalidatePublicContent } from './content-version';
 import { AppError } from '@nba/db';
 import { authorize } from './authz/middleware';
@@ -27,10 +26,6 @@ type Bindings = {
   AI: any;
   INTERNAL_API_KEY?: string;
   RBAC_ENFORCE?: string;
-  /** Drapeau de la fonctionnalité « jeu libre » (voir `./open-play`). */
-  OPEN_PLAY_ENABLED?: string;
-  /** Drapeau des séances individuelles (voir `./feature-flags`). */
-  INDIV_ENABLED?: string;
 };
 
 const app = new Hono<{ Bindings: Bindings }>();
@@ -82,10 +77,9 @@ app.use('*', async (c, next) => {
   return c.json({ success: false, error: 'Accès non autorisé' }, 401);
 });
 
-// Drapeau de fonctionnalité, avant l'autorisation : une route éteinte n'existe pas,
-// et la question des droits n'a donc pas à se poser sur elle.
-app.use('*', openPlayFeatureFlag());
-app.use('*', indivFeatureFlag());
+// Fonctionnalités éteintes par le club, avant l'autorisation : une route éteinte
+// n'existe pas, et la question des droits n'a donc pas à se poser sur elle.
+app.use('*', requireClubFeature());
 
 // Autorisation par route, fermée par défaut. Elle vient APRÈS le contrôle de clé :
 // la clé prouve que l'appelant est un Worker de confiance, ce qui est la condition
@@ -120,6 +114,13 @@ app.route('/events', eventsRouter);
 app.route('/teams', teamsRouter);
 app.route('/dashboard', dashboardRouter);
 app.route('/platform', platformRouter);
+// L'identité du club et ses fonctionnalités. Une écriture sur les fonctionnalités
+// vide le cache de ce même isolate : celui qui vient d'éteindre la boutique ne doit
+// pas la voir répondre encore trente secondes.
+app.use('/club/features', async (c, next) => {
+  await next();
+  if (c.req.method === 'PUT' && c.res.ok) forgetIsolateFeatures();
+});
 app.route('/club', clubRouter);
 
 // Application Hono exposée pour les tests, qui appellent `app.request()`.

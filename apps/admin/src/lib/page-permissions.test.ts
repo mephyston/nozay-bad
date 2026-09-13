@@ -1,7 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import * as fs from 'fs';
 import * as path from 'path';
-import { PAGE_PERMISSIONS, matchPagePattern, isPageRoute } from './page-permissions';
+import { PAGE_PERMISSIONS, PAGE_FEATURES, matchPagePattern, isPageRoute } from './page-permissions';
+import { NAV_GROUPS } from './nav';
+import { FEATURE_PREREQUISITES } from '@nba/club-ui';
 
 const PAGES_DIR = path.resolve(__dirname, '../pages');
 
@@ -35,6 +37,34 @@ describe('couverture de PAGE_PERMISSIONS', () => {
     const known = new Set(routePatterns);
     const orphans = Object.keys(PAGE_PERMISSIONS).filter((p) => !known.has(p));
     expect(orphans, `entrées orphelines :\n${orphans.join('\n')}`).toEqual([]);
+  });
+});
+
+describe('couverture de PAGE_FEATURES', () => {
+  it('ne déclare que des motifs connus de PAGE_PERMISSIONS', () => {
+    const orphans = Object.keys(PAGE_FEATURES).filter((p) => PAGE_PERMISSIONS[p] === undefined);
+    expect(orphans, `motifs orphelins :\n${orphans.join('\n')}`).toEqual([]);
+  });
+
+  it('porte, pour chaque entrée du menu qui dépend d’une fonctionnalité, la même fonctionnalité', () => {
+    // Le menu cache l'entrée, la page répond introuvable : les deux doivent lire la
+    // même clé, sinon une entrée visible mènerait à une page qui n'existe pas — ou
+    // l'inverse, une page ouverte que le menu n'annonce pas.
+    const mismatches: string[] = [];
+    for (const group of NAV_GROUPS) {
+      for (const item of group.items) {
+        const expected = item.feature ?? group.feature;
+        if (!expected) continue;
+        const pattern = matchPagePattern(item.href);
+        const declared = pattern ? PAGE_FEATURES[pattern] : undefined;
+        // Une page paramétrée sert plusieurs entrées (« Caisse » et « Badnet » sur
+        // `/accounting/accounts/[code]`) : elle porte alors leur préalable commun.
+        const compatible =
+          declared === expected || (declared !== undefined && (FEATURE_PREREQUISITES[expected] ?? []).includes(declared));
+        if (!compatible) mismatches.push(`${item.href} : menu ${expected}, page ${declared ?? 'aucune'}`);
+      }
+    }
+    expect(mismatches).toEqual([]);
   });
 });
 

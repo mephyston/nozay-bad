@@ -20,7 +20,7 @@
       class="w-56 rounded-md border border-border bg-card text-card-foreground shadow-md z-50"
     >
       <div class="p-2 border-b border-border">
-        <p class="text-xs text-muted-foreground">CA NBA 91</p>
+        <p class="text-xs text-muted-foreground">Bureau du club</p>
         <p class="text-sm font-medium truncate">{email}</p>
       </div>
       <div class="p-1">

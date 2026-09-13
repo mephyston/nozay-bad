@@ -1,4 +1,5 @@
 import type { Permission } from '@nba/iam-ui';
+import type { Feature } from '@nba/club-ui';
 
 export interface NavItem {
   name: string;
@@ -7,6 +8,13 @@ export interface NavItem {
   icon: string;
   /** `null` = visible par tout compte, quel que soit son rôle. */
   permission: Permission | null;
+  /**
+   * Fonctionnalité dont l'entrée dépend (voir `@nba/club-ui`, `FEATURES`).
+   *
+   * Éteinte par le club, l'entrée disparaît du menu et sa page répond introuvable —
+   * même source que les droits : une entrée visible mène toujours à une page ouverte.
+   */
+  feature?: Feature;
 }
 
 export interface NavGroup {
@@ -20,6 +28,8 @@ export interface NavGroup {
    * à la signaler plutôt qu'à la contourner.
    */
   beta?: boolean;
+  /** Fonctionnalité dont dépend tout le groupe ; chaque entrée peut en préciser une autre. */
+  feature?: Feature;
 }
 
 /**
@@ -51,18 +61,19 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: 'Comptabilité',
     items: [
-      { name: 'Rapports financiers', icon: 'BarChart3', href: '/admin/accounting/reports', permission: 'accounting:reports:read' },
-      { name: 'Grand Livre', icon: 'BookOpen', href: '/admin/accounting', permission: 'accounting:ledger:read' },
-      { name: 'Factures', icon: 'FileCheck', href: '/admin/accounting/invoices', permission: 'accounting:invoices:read' },
-      { name: 'Rapprochement bancaire', icon: 'Scale', href: '/admin/accounting/reconciliation', permission: 'accounting:bank:read' },
-      { name: 'Remises de chèques', icon: 'Landmark', href: '/admin/accounting/cheques', permission: 'accounting:checks:read' },
-      { name: 'Caisse', icon: 'Wallet', href: '/admin/accounting/accounts/cash', permission: 'accounting:ledger:read' },
-      { name: 'Badnet', icon: 'CreditCard', href: '/admin/accounting/accounts/badnet', permission: 'accounting:ledger:read' },
-      { name: 'Notes de frais', icon: 'Coins', href: '/admin/expenses', permission: 'expenses:reports:read' }
+      { name: 'Rapports financiers', icon: 'BarChart3', href: '/admin/accounting/reports', permission: 'accounting:reports:read', feature: 'accounting' },
+      { name: 'Grand Livre', icon: 'BookOpen', href: '/admin/accounting', permission: 'accounting:ledger:read', feature: 'accounting' },
+      { name: 'Factures', icon: 'FileCheck', href: '/admin/accounting/invoices', permission: 'accounting:invoices:read', feature: 'invoices' },
+      { name: 'Rapprochement bancaire', icon: 'Scale', href: '/admin/accounting/reconciliation', permission: 'accounting:bank:read', feature: 'accounting' },
+      { name: 'Remises de chèques', icon: 'Landmark', href: '/admin/accounting/cheques', permission: 'accounting:checks:read', feature: 'checks' },
+      { name: 'Caisse', icon: 'Wallet', href: '/admin/accounting/accounts/cash', permission: 'accounting:ledger:read', feature: 'cash' },
+      { name: 'Badnet', icon: 'CreditCard', href: '/admin/accounting/accounts/badnet', permission: 'accounting:ledger:read', feature: 'badnet' },
+      { name: 'Notes de frais', icon: 'Coins', href: '/admin/expenses', permission: 'expenses:reports:read', feature: 'expenses' }
     ]
   },
   {
     label: 'Boutique',
+    feature: 'shop',
     items: [
       { name: 'Produits', icon: 'Package', href: '/admin/shop/products', permission: 'shop:products:read' },
       { name: 'Commandes', icon: 'ShoppingCart', href: '/admin/shop/orders', permission: 'shop:orders:read' }
@@ -74,9 +85,9 @@ export const NAV_GROUPS: NavGroup[] = [
       // En tête de la communication, et non sous « Site public » : depuis l'absorption
       // des annonces, une actualité s'adresse aussi bien aux adhérents qu'aux visiteurs.
       { name: 'Actualités', icon: 'Newspaper', href: '/admin/website/posts', permission: 'cms:posts:read' },
-      { name: 'Notifications', icon: 'Bell', href: '/admin/notifications', permission: 'notifications:messages:read' },
-      { name: 'Créneaux', icon: 'CalendarClock', href: '/admin/website/schedules', permission: 'schedules:slots:read' },
-      { name: 'Agenda', icon: 'CalendarDays', href: '/admin/website/events', permission: 'events:events:read' }
+      { name: 'Notifications', icon: 'Bell', href: '/admin/notifications', permission: 'notifications:messages:read', feature: 'push' },
+      { name: 'Créneaux', icon: 'CalendarClock', href: '/admin/website/schedules', permission: 'schedules:slots:read', feature: 'schedules' },
+      { name: 'Agenda', icon: 'CalendarDays', href: '/admin/website/events', permission: 'events:events:read', feature: 'events' }
     ]
   },
   {
@@ -84,6 +95,7 @@ export const NAV_GROUPS: NavGroup[] = [
     // vient n'est pas communiquer. La grille hebdomadaire, elle, reste là-bas — c'est
     // bien ce que le site affiche.
     label: 'Jeu libre',
+    feature: 'open_play',
     beta: true,
     items: [
       { name: 'Séances', icon: 'DoorOpen', href: '/admin/website/jeu-libre', permission: 'schedules:open-play:read' },
@@ -94,6 +106,7 @@ export const NAV_GROUPS: NavGroup[] = [
     // L'entraîneur tient ses séances individuelles ici : ce n'est ni du jeu libre ni de
     // la communication, c'est son entraînement.
     label: 'Entraînement',
+    feature: 'indiv',
     beta: true,
     items: [
       { name: 'Indiv', icon: 'Dumbbell', href: '/admin/entrainement/indiv', permission: 'schedules:indiv:read' }
@@ -101,6 +114,7 @@ export const NAV_GROUPS: NavGroup[] = [
   },
   {
     label: 'Interclubs',
+    feature: 'teams',
     beta: true,
     items: [
       { name: 'Équipes', icon: 'Trophy', href: '/admin/teams', permission: 'teams:teams:read' },
@@ -111,6 +125,7 @@ export const NAV_GROUPS: NavGroup[] = [
   },
   {
     label: 'Site public',
+    feature: 'website',
     items: [
       { name: 'Pages', icon: 'FileText', href: '/admin/website/pages', permission: 'cms:pages:read' },
       { name: 'Médiathèque', icon: 'Image', href: '/admin/website/media', permission: 'cms:media:read' },

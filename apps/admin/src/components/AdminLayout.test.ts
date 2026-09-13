@@ -42,8 +42,8 @@ describe('AdminLayout Component', () => {
     });
     flushSync();
 
-    // Verify desktop title and navigation items are rendered
-    expect(target.textContent).toContain('Nozay Bad Admin');
+    // Sans club connu (aucune identité gardée), le titre reste générique.
+    expect(target.textContent).toContain('Administration');
     expect(target.textContent).toContain("Tableau de bord");
     expect(target.textContent).toContain("Adhérents");
     expect(target.textContent).toContain("Comptabilité");
@@ -54,6 +54,38 @@ describe('AdminLayout Component', () => {
     // Clean up
     unmount(component);
     target.remove();
+  });
+
+  it('nomme le club et cache les rubriques qu’il a éteintes', () => {
+    isMobileViewport = false;
+    localStorage.setItem(
+      'admin_identite',
+      JSON.stringify({
+        identite: {
+          email: 'test@nozay-bad.fr',
+          permissions: [...ALL_PERMISSIONS],
+          realEmail: 'test@nozay-bad.fr',
+          club: { name: 'Club Test', shortName: 'CT', brandColor: '#000000', features: { shop: false } }
+        },
+        t: Date.now()
+      })
+    );
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+
+    const component = mount(AdminLayout, {
+      target,
+      props: { email: 'test@nozay-bad.fr', permissions: [...ALL_PERMISSIONS] }
+    });
+    flushSync();
+
+    expect(target.textContent).toContain('CT Admin');
+    expect(target.textContent).not.toContain('Boutique');
+    expect(target.textContent).toContain('Comptabilité');
+
+    unmount(component);
+    target.remove();
+    localStorage.removeItem('admin_identite');
   });
 
   it('signale les rubriques en rodage, et elles seules', () => {

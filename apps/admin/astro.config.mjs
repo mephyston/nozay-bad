@@ -163,7 +163,9 @@ export default defineConfig({
         // Liste fermée des fonctions au club, partagée ; alias étroit plutôt que le barrel.
         '@nba/members/club-functions': path.resolve(__dirname, '../../libs/domains/members/shared/club-functions.ts'),
         '@nba/members/membership-status': path.resolve(__dirname, '../../libs/domains/members/shared/membership-status.ts'),
-        '@nba/teams-ui': path.resolve(__dirname, '../../libs/domains/teams/shared/ui.ts')
+        '@nba/teams-ui': path.resolve(__dirname, '../../libs/domains/teams/shared/ui.ts'),
+        '@nba/club-ui': path.resolve(__dirname, '../../libs/domains/club/shared/ui.ts'),
+        '@nba/club/settings': path.resolve(__dirname, '../../libs/domains/club/shared/settings-api.ts')
       }
     },
     optimizeDeps: {
@@ -178,7 +180,7 @@ export default defineConfig({
         '@nba/notifications-ui',
         '@nba/iam',
         '@nba/iam-ui',
-        '@nba/announcements-ui', '@nba/cms-ui', '@nba/schedules-ui', '@nba/events-ui', '@nba/teams-ui'
+        '@nba/announcements-ui', '@nba/cms-ui', '@nba/schedules-ui', '@nba/events-ui', '@nba/teams-ui', '@nba/club-ui'
       ]
     },
     ssr: {
