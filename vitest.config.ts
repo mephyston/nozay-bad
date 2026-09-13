@@ -288,6 +288,18 @@ export default defineConfig({
       {
         extends: true,
         plugins: [cloudflareTest({ wrangler: { configPath: wranglerConfig } })],
+        cacheDir: path.resolve(__dirname, 'node_modules/.vite/features-club-api'),
+        test: {
+          name: 'features-club-api',
+          globals: true,
+          root: path.resolve(__dirname, 'libs/domains/club'),
+          include: ['**/*.test.ts'],
+          exclude: ['**/ui/**', '**/node_modules/**'],
+        }
+      },
+      {
+        extends: true,
+        plugins: [cloudflareTest({ wrangler: { configPath: wranglerConfig } })],
         cacheDir: path.resolve(__dirname, 'node_modules/.vite/features-teams-api'),
         test: {
           name: 'features-teams-api',

@@ -9,6 +9,7 @@ import { cmsRouter } from '@nba/cms-api';
 import { schedulesRouter } from '@nba/schedules-api';
 import { eventsRouter } from '@nba/events-api';
 import { teamsRouter } from '@nba/teams-api';
+import { clubRouter } from '@nba/club';
 import { dashboardRouter } from './dashboard';
 import { handleScheduled, type ScheduledBindings } from './scheduled';
 import { notificationsSendRouter } from './notifications';
@@ -119,6 +120,7 @@ app.route('/events', eventsRouter);
 app.route('/teams', teamsRouter);
 app.route('/dashboard', dashboardRouter);
 app.route('/platform', platformRouter);
+app.route('/club', clubRouter);
 
 // Application Hono exposée pour les tests, qui appellent `app.request()`.
 export { app };

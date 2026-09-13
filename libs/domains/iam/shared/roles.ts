@@ -152,6 +152,9 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     // sans pouvoir déplacer les limites du poste lui-même.
     'iam:roles:read',
     'settings:hub:read',
+    // L'identité du club est de la responsabilité du représentant légal.
+    'settings:club:read',
+    'settings:club:write',
     'ai:assistant:use'
     // Pas d'écriture comptable : séparation des tâches. Le trésorier saisit, la
     // présidence contrôle, et le grand livre reste imputable à une seule personne.
@@ -180,6 +183,9 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'schedules:open-play:read',
     'events:events:read',
     'settings:hub:read',
+    // Coordonnées bancaires et préfixe des factures : ce que la trésorerie imprime.
+    'settings:club:read',
+    'settings:club:write',
     'ai:assistant:use'
   ],
 
@@ -225,7 +231,8 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     // Consultation seule côté finances.
     'accounting:reports:read',
     'expenses:reports:read',
-    'settings:hub:read'
+    'settings:hub:read',
+    'settings:club:read'
   ],
 
   coach: [

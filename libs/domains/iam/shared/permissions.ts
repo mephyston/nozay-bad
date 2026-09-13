@@ -137,6 +137,11 @@ export const ALL_PERMISSIONS = [
   // compte, qui voit tous les Workers hébergés — y compris ceux qui n'ont rien à voir
   // avec le club. Le droit reste donc à part de la configuration fonctionnelle.
   'settings:platform:read',
+  // L'identité du club (nom, adresse, mentions légales, banque, images des documents)
+  // et les fonctionnalités qu'il utilise. Écrire ici change ce que portent tous les
+  // PDF, tous les mails et tous les menus : c'est un acte de direction.
+  'settings:club:read',
+  'settings:club:write',
   'iam:users:read',
   'iam:users:write',
   'iam:users:delete',

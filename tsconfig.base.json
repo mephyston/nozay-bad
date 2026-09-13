@@ -55,7 +55,11 @@
       "@nba/members/club-functions": ["libs/domains/members/shared/club-functions.ts"],
       "@nba/members/membership-status": ["libs/domains/members/shared/membership-status.ts"],
       "@nba/teams-ui": ["libs/domains/teams/shared/ui.ts"],
-      "@nba/cms/schema": ["libs/domains/cms/shared/schema.ts"]
+      "@nba/cms/schema": ["libs/domains/cms/shared/schema.ts"],
+      "@nba/club": ["libs/domains/club/index.ts"],
+      "@nba/club/schema": ["libs/domains/club/shared/schema.ts"],
+      "@nba/club/settings": ["libs/domains/club/shared/settings-api.ts"],
+      "@nba/club-ui": ["libs/domains/club/shared/ui.ts"]
     }
 
   },

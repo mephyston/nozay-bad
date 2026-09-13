@@ -38,6 +38,17 @@ export const ROUTE_PERMISSIONS: RouteRule[] = [
   // compte : jamais ouvert aux appelants de service.
   { method: 'GET', path: '/platform/usage', permission: 'settings:platform:read' },
 
+  // ── Identité du club et fonctionnalités ────────────────────────────────────
+  // La lecture est ouverte à tout compte et aux appelants de service : titre des
+  // pages, pied de page, expéditeur des mails — tout le monde en a besoin, et rien
+  // n'y est secret (l'IBAN figure sur chaque facture).
+  { method: 'GET', path: '/club/settings', permission: null, service: true },
+  { method: 'PUT', path: '/club/settings/:section', permission: 'settings:club:write' },
+  { method: 'PUT', path: '/club/features', permission: 'settings:club:write' },
+  { method: 'POST', path: '/club/assets/:asset', permission: 'settings:club:write' },
+  { method: 'DELETE', path: '/club/assets/:asset', permission: 'settings:club:write' },
+  { method: 'PUT', path: '/club/assets/partners', permission: 'settings:club:write' },
+
   // ── Adhérents ──────────────────────────────────────────────────────────────
   { method: 'GET', path: '/members', permission: 'members:members:read' },
   { method: 'POST', path: '/members/import', permission: 'members:members:import' },

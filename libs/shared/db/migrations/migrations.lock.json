@@ -37,6 +37,7 @@
     "0033_venues_localisation.sql": "700da8b913872103",
     "0034_indiv.sql": "36d87df16604c42e",
     "0035_schedule_slots_indiv.sql": "5be4b006538e1d71",
-    "0036_checks_planned_deposit_month.sql": "28614a248cb44304"
+    "0036_checks_planned_deposit_month.sql": "28614a248cb44304",
+    "0037_club_settings.sql": "96990b63fa414fca"
   }
 }

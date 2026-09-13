@@ -9,6 +9,8 @@ const tables = [
     'admin_user_roles',
     'admin_users',
     'attestation_config',
+    'club_features',
+    'club_settings',
     // CMS du site public. Enfants avant parents, comme le reste de la liste : une
     // table oubliée ici ne casse rien tout de suite, elle laisse fuiter des lignes
     // d'un test à l'autre — ce qui se lit comme de l'instabilité, pas comme un bug.

@@ -41,6 +41,9 @@ export default defineConfig({
       '@nba/expenses/schema': path.resolve(__dirname, '../../libs/domains/expenses/shared/schema.ts'),
       '@nba/shop-api': path.resolve(__dirname, '../../libs/domains/shop/index.ts'),
       '@nba/shop/schema': path.resolve(__dirname, '../../libs/domains/shop/shared/schema.ts'),
+      '@nba/club': path.resolve(__dirname, '../../libs/domains/club/index.ts'),
+      '@nba/club/schema': path.resolve(__dirname, '../../libs/domains/club/shared/schema.ts'),
+      '@nba/club/settings': path.resolve(__dirname, '../../libs/domains/club/shared/settings-api.ts'),
     },
   },
   test: {

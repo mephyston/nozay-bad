@@ -88,6 +88,8 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
 
   'settings:hub:read': 'Accéder aux réglages',
   'settings:platform:read': 'Consulter la consommation de la plateforme',
+  'settings:club:read': 'Consulter la configuration du club',
+  'settings:club:write': 'Modifier la configuration du club et ses fonctionnalités',
   'iam:users:read': 'Consulter les accès',
   'iam:users:write': 'Créer un accès et attribuer des rôles',
   'iam:users:delete': 'Supprimer un accès',
