@@ -71,7 +71,9 @@ function upload(file, name) {
   const bytes = readFileSync(abs);
   const { ext, mime } = kind(bytes);
   const hash = createHash('sha256').update(bytes).digest('hex').slice(0, 16);
-  const key = `media/${hash}/${name}.${ext}`;
+  // Minuscules et tirets : le site public ne sert que ces noms-là (`isSafeMediaKey`).
+  const fileName = name.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase();
+  const key = `media/${hash}/${fileName}.${ext}`;
   console.log(`- ${name} ← ${file} (${bytes.length} o) → ${key}`);
   wrangler(['r2', 'object', 'put', `${t.bucket}/${key}`, '--file', abs, '--content-type', mime, ...t.flags]);
   return key;

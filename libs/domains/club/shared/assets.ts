@@ -40,8 +40,22 @@ export async function contentHashOf(bytes: ArrayBuffer): Promise<string> {
     .slice(0, 16);
 }
 
+/**
+ * Le nom de fichier, en minuscules et tirets : le site public ne sert que les clés
+ * `[a-f0-9]{16}/[a-z0-9._-]+` (`isSafeMediaKey`, domaine cms). `letterheadHeader.jpg`
+ * était déposé tel quel et l'aperçu répondait 404 — le tampon et les logos partenaires,
+ * déjà en minuscules, passaient.
+ */
+export function clubAssetFileName(name: string): string {
+  return name
+    .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
+    .toLowerCase()
+    .replace(/[^a-z0-9._-]+/g, '-')
+    .replace(/^-+|-+$/g, '') || 'image';
+}
+
 export function clubAssetKey(hash: string, name: string, mimeType: ClubAssetMimeType): string {
-  return `${CLUB_MEDIA_PREFIX}${hash}/${name}.${mimeType === 'image/png' ? 'png' : 'jpg'}`;
+  return `${CLUB_MEDIA_PREFIX}${hash}/${clubAssetFileName(name)}.${mimeType === 'image/png' ? 'png' : 'jpg'}`;
 }
 
 /** Chemin public d'une clé, tel que le site le sert (`/media/<empreinte>/<nom>.<ext>`). */
