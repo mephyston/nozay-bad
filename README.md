@@ -1,6 +1,6 @@
 # Nozay Badminton (NBA 91) - Monorepo
 
-Plateforme de gestion complète pour le club de badminton de Nozay (NBA 91). Ce monorepo réunit le backend API, le portail d'administration et le site public.
+Plateforme de gestion complète pour un club de badminton — née pour Nozay (NBA 91), en route vers un service pour tous les clubs. Ce monorepo réunit le backend API, le portail d'administration, l'espace adhérent et le site public. L'identité du club (nom, adresse, banque, documents, fonctionnalités utilisées) se règle depuis l'administration (**Réglages → Configuration du club**), jamais dans le code.
 
 ## 🛠️ Stack Technique
 
