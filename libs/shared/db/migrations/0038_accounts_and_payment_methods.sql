@@ -51,3 +51,7 @@ UPDATE `payment_methods` SET `kind` = 'card', `storefront` = 0 WHERE `code` = 'c
 UPDATE `payment_methods` SET `kind` = 'voucher' WHERE `code` IN ('labaz', 'ancv', 'pass_sport', 'ticket_loisir', 'up_loisir');
 --> statement-breakpoint
 UPDATE `payment_methods` SET `kind` = 'internal', `storefront` = 0 WHERE `code` = 'virement_interne';
+--> statement-breakpoint
+-- L'écran de configuration compte les écritures par moyen (un moyen référencé ne se
+-- supprime pas) ; sans index, ce comptage parcourait tout le grand livre.
+CREATE INDEX IF NOT EXISTS `ledger_entries_payment_method_idx` ON `ledger_entries` (`payment_method_id`);

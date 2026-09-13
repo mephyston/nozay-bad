@@ -12,7 +12,12 @@ export interface PaymentMethodView {
   defaultAccountId: number;
   defaultAccountCode: string;
   defaultEntryStatus: 'cleared' | 'in_vault' | 'pending_debit';
-  /** Écritures du grand livre qui y renvoient : un moyen référencé ne se supprime pas. */
+  /**
+   * Écritures du grand livre qui y renvoient : un moyen référencé ne se supprime pas.
+   * Compté pour la seule liste complète (l'écran de configuration) : les formulaires qui
+   * demandent ce qui est `offered` n'en ont pas besoin, et ce comptage lit `ledger_entries`,
+   * la plus grosse table de la base.
+   */
   ledgerUses: number;
 }
 
@@ -40,17 +45,26 @@ export async function listPaymentMethods(db: DbOrTx, options: ListPaymentMethods
       storefront: paymentMethodsTable.storefront,
       defaultAccountId: paymentMethodsTable.defaultAccountId,
       defaultAccountCode: accountsTable.code,
-      defaultEntryStatus: paymentMethodsTable.defaultEntryStatus,
-      ledgerUses: sql<number>`(SELECT COUNT(*) FROM ${ledgerEntriesTable} WHERE ${ledgerEntriesTable.paymentMethodId} = ${paymentMethodsTable.id})`.mapWith(Number)
+      defaultEntryStatus: paymentMethodsTable.defaultEntryStatus
     })
     .from(paymentMethodsTable)
     .innerJoin(accountsTable, eq(accountsTable.id, paymentMethodsTable.defaultAccountId))
     .orderBy(paymentMethodsTable.id)
     .all();
 
-  return rows.filter((r) => {
-    if (!options.offered) return true;
-    if (!r.active || r.kind === 'internal') return false;
-    return options.offered === 'admin' || r.storefront;
-  });
+  if (options.offered) {
+    return rows
+      .filter((r) => r.active && r.kind !== 'internal' && (options.offered === 'admin' || r.storefront))
+      .map((r) => ({ ...r, ledgerUses: 0 }));
+  }
+
+  // Une seule lecture groupée, sur l'index `ledger_entries_payment_method_idx` — et non
+  // une sous-requête par moyen, qui parcourait la table entière dix fois.
+  const uses = await db
+    .select({ paymentMethodId: ledgerEntriesTable.paymentMethodId, n: sql<number>`COUNT(*)`.mapWith(Number) })
+    .from(ledgerEntriesTable)
+    .groupBy(ledgerEntriesTable.paymentMethodId)
+    .all();
+  const byMethod = new Map(uses.map((u) => [u.paymentMethodId, u.n]));
+  return rows.map((r) => ({ ...r, ledgerUses: byMethod.get(r.id) ?? 0 }));
 }

@@ -43,6 +43,8 @@ import type { Context, Next } from 'hono';
  * qui ne lit jamais le cache.
  */
 const CACHED_READS = new Map<string, number>([
+  // Les moyens de paiement que la boutique propose : lus à chaque affichage du catalogue.
+  ['/accounting/payment-methods', 300],
   ['/members/birthdays', 3600],
   ['/cms/posts/announcements', 300],
   ['/schedules', 300],

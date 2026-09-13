@@ -122,6 +122,7 @@ export async function getClubFeatures(db: DbOrTx): Promise<FeatureState> {
 
 export function forgetClubFeatures(db: DbOrTx): void {
   featuresCache.delete(db);
+  treasuryCache.delete(db);
 }
 
 async function readFeatures(db: DbOrTx): Promise<FeatureState> {
@@ -151,11 +152,19 @@ export interface TreasuryAccount {
  * ouvre la comptabilité, une caisse ou un porte-monnaie fait une entrée de menu.
  */
 export async function listTreasuryAccounts(db: DbOrTx): Promise<TreasuryAccount[]> {
-  const rows = await db.all<{ code: string; label: string; kind: TreasuryAccount['kind'] }>(
-    sql`SELECT code, label, kind FROM accounts WHERE active = 1 ORDER BY id`
-  );
-  return rows.map((r) => ({ code: r.code, label: r.label, kind: r.kind }));
+  // Mémoïsé par base comme les fonctionnalités : `/club/settings` lit les comptes pour
+  // le menu ET pour la porte de la comptabilité, une seule requête suffit.
+  let pending = treasuryCache.get(db);
+  if (!pending) {
+    pending = db
+      .all<{ code: string; label: string; kind: TreasuryAccount['kind'] }>(sql`SELECT code, label, kind FROM accounts WHERE active = 1 ORDER BY id`)
+      .then((rows) => rows.map((r) => ({ code: r.code, label: r.label, kind: r.kind })));
+    treasuryCache.set(db, pending);
+  }
+  return pending;
 }
+
+const treasuryCache = new WeakMap<object, Promise<TreasuryAccount[]>>();
 
 export class ClubFeaturesRepository {
   /**
