@@ -21,23 +21,25 @@ const __dirname = path.dirname(__filename);
 const APP_ENV = process.env.PUBLIC_APP_ENV || 'production';
 // Suffixe des icônes selon l'env : bandeau DEV / TEST baked dans le PNG.
 const ICON_SUFFIX = APP_ENV === 'development' ? '-dev' : APP_ENV === 'staging' ? '-test' : '';
-const ENV_LABEL = APP_ENV === 'development' ? ' (DEV)' : APP_ENV === 'staging' ? ' (TEST)' : '';
 
 // Espace adhérent correspondant à cet environnement. Sert à prévisualiser la page
 // qu'ouvrira une notification : l'admin doit pointer vers SON storefront, sinon un
 // test depuis la staging enverrait vers la production.
-const STOREFRONT_URL =
-  APP_ENV === 'development'
-    ? 'http://localhost:4322'
-    : APP_ENV === 'staging'
-      ? 'https://staging-my.nozaybad.fr'
-      : 'https://my.nozaybad.fr';
-const WEBSITE_URL =
-  APP_ENV === 'development'
-    ? 'http://localhost:4323'
-    : APP_ENV === 'staging'
-      ? 'https://staging-www.nozaybad.fr'
-      : 'https://nozaybad.fr';
+//
+// Les adresses viennent de `scripts/build-env.mjs` (une table par environnement, posée
+// dans l'environnement du build par la CI) : aucun domaine n'est écrit ici. En
+// développement, les trois applications tournent sur leurs ports locaux.
+//
+// Sans elles hors développement : la CI (`CI=true`) refuse — un bundle de production
+// pointant sur localhost ne doit pas exister — ; un poste de développeur se contente
+// d'un avertissement, pour que `nx build` reste le filet des gabarits Svelte.
+const STOREFRONT_URL = process.env.PUBLIC_STOREFRONT_URL || 'http://localhost:4322';
+const WEBSITE_URL = process.env.PUBLIC_WEBSITE_URL || 'http://localhost:4323';
+if (APP_ENV !== 'development' && (!process.env.PUBLIC_STOREFRONT_URL || !process.env.PUBLIC_WEBSITE_URL)) {
+  const message = `[admin] PUBLIC_STOREFRONT_URL et PUBLIC_WEBSITE_URL absents pour un build « ${APP_ENV} » (voir scripts/build-env.mjs)`;
+  if (process.env.CI) throw new Error(message);
+  console.warn(`${message} : adresses locales utilisées.`);
+}
 
 export default defineConfig({
   /*
@@ -86,28 +88,9 @@ export default defineConfig({
       // récupère hors du contexte authentifié lors de « Ajouter à l'écran d'accueil ».
       useCredentials: true,
       includeAssets: ['pwa/favicon.png', `pwa/apple-touch-icon${ICON_SUFFIX}.png`],
-      manifest: {
-        name: 'Nozay Bad Admin' + ENV_LABEL,
-        short_name: 'NBA Admin' + ENV_LABEL,
-        description: 'Administration du club Nozay Badminton',
-        // Sans cette ligne, vite-pwa émet `"lang": "en"` pour une app en français.
-        lang: 'fr',
-        theme_color: '#262624',
-        background_color: '#262624',
-        display: 'standalone',
-        icons: [
-          {
-            src: `/pwa/icon-192${ICON_SUFFIX}.png`,
-            sizes: '192x192',
-            type: 'image/png'
-          },
-          {
-            src: `/pwa/icon-512${ICON_SUFFIX}.png`,
-            sizes: '512x512',
-            type: 'image/png'
-          }
-        ]
-      },
+      // Le manifeste est servi à la demande par `src/pages/manifest.webmanifest.ts`,
+      // d'après l'identité du club : rien à graver au build.
+      manifest: false,
       workbox: {
         globPatterns: ['**/*.{css,js,svg,png,ico,txt}'],
         /*

@@ -12,7 +12,6 @@ import { headersStatiques } from '../../scripts/headers-statiques.mjs';
 const APP_ENV = process.env.PUBLIC_APP_ENV || 'production';
 // Suffixe des icônes selon l'env : bandeau DEV / TEST baked dans le PNG.
 const ICON_SUFFIX = APP_ENV === 'development' ? '-dev' : APP_ENV === 'staging' ? '-test' : '';
-const ENV_LABEL = APP_ENV === 'development' ? ' (DEV)' : APP_ENV === 'staging' ? ' (TEST)' : '';
 
 // Clé publique VAPID, inlinée au build comme PUBLIC_APP_ENV : `pushManager.subscribe()`
 // en a besoin côté navigateur. Elle est publique par nature (la clé privée reste un
@@ -23,12 +22,15 @@ const VAPID_PUBLIC_KEY = process.env.PUBLIC_VAPID_PUBLIC_KEY || '';
 // L'espace adhérent affiche les couvertures d'actualités : sans cette origine, leurs
 // adresses relatives seraient résolues ici, où rien ne répond. Même règle que côté
 // administration (`@nba/cms` → `media-url.ts`).
-const WEBSITE_URL =
-  APP_ENV === 'development'
-    ? 'http://localhost:4323'
-    : APP_ENV === 'staging'
-      ? 'https://staging-www.nozaybad.fr'
-      : 'https://nozaybad.fr';
+// L'adresse vient de `scripts/build-env.mjs`, jamais d'ici.
+// Absente hors développement : la CI refuse, un poste de développeur est averti (même
+// règle que l'administration).
+const WEBSITE_URL = process.env.PUBLIC_WEBSITE_URL || 'http://localhost:4323';
+if (APP_ENV !== 'development' && !process.env.PUBLIC_WEBSITE_URL) {
+  const message = `[storefront] PUBLIC_WEBSITE_URL absente pour un build « ${APP_ENV} » (voir scripts/build-env.mjs)`;
+  if (process.env.CI) throw new Error(message);
+  console.warn(`${message} : adresse locale utilisée.`);
+}
 
 export default defineConfig({
   output: 'server',
@@ -64,28 +66,9 @@ export default defineConfig({
       srcDir: 'src',
       filename: 'sw.ts',
       includeAssets: ['pwa/favicon.png', `pwa/apple-touch-icon${ICON_SUFFIX}.png`],
-      manifest: {
-        name: 'Nozay Bad' + ENV_LABEL,
-        short_name: 'Nozay Bad' + ENV_LABEL,
-        description: 'Espace adhérent du club Nozay Badminton',
-        // Sans cette ligne, vite-pwa émet `"lang": "en"` pour une app en français.
-        lang: 'fr',
-        theme_color: '#262624',
-        background_color: '#262624',
-        display: 'standalone',
-        icons: [
-          {
-            src: `/pwa/icon-192${ICON_SUFFIX}.png`,
-            sizes: '192x192',
-            type: 'image/png'
-          },
-          {
-            src: `/pwa/icon-512${ICON_SUFFIX}.png`,
-            sizes: '512x512',
-            type: 'image/png'
-          }
-        ]
-      },
+      // Le manifeste est servi à la demande par `src/pages/manifest.webmanifest.ts`,
+      // d'après l'identité du club : rien à graver au build.
+      manifest: false,
       injectManifest: {
         globPatterns: ['**/*.{css,js,svg,png,ico,txt}']
       }

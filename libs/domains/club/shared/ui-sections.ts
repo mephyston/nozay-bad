@@ -97,7 +97,7 @@ export const SECTION_SPECS: SectionSpec[] = [
       { key: 'rna', label: 'Numéro RNA (association déclarée)', kind: 'text', maxlength: 12, placeholder: 'W091000000' },
       { key: 'siret', label: 'SIRET', kind: 'text', maxlength: 17, placeholder: '000 000 000 00000' },
       { key: 'ddjsApproval', label: 'Agrément jeunesse et sports', kind: 'text', maxlength: 60 },
-      { key: 'ffbadAffiliation', label: 'Numéro d’affiliation FFBaD', kind: 'text', maxlength: 60, placeholder: 'LIFB.91.96.000' }
+      { key: 'ffbadAffiliation', label: 'Numéro d’affiliation FFBaD', kind: 'text', maxlength: 60, placeholder: 'LIGUE.00.00.000' }
     ]
   },
   {
@@ -116,7 +116,7 @@ export const SECTION_SPECS: SectionSpec[] = [
     section: 'competition',
     title: 'Compétition et numérotation',
     description: 'Les préfixes qui nomment les équipes et numérotent les factures.',
-    usedIn: 'Noms d’équipe (« NBA91-1 »), numéros de facture (« FAC-25-26-NBA91-001 »), libellés des championnats.',
+    usedIn: 'Noms d’équipe (« CLUB-1 »), numéros de facture (« FAC-2526-CLUB-0001 »), libellés des championnats.',
     fields: [
       { key: 'teamPrefix', label: 'Préfixe des équipes', kind: 'text', required: true, maxlength: 12, help: 'Majuscules et chiffres, sans espace.' },
       { key: 'invoicePrefix', label: 'Préfixe des factures', kind: 'text', required: true, maxlength: 12, help: 'Changer le préfixe ne renumérote pas les factures déjà émises.' },

@@ -19,7 +19,7 @@ import { applySecurityHeaders, withMutableHeaders } from './lib/security-headers
 import { listSeasons, isSeasonOpen, parisToday } from './lib/season';
 
 // Chemins accessibles sans session : page de login, endpoints d'auth, et assets Astro (_astro/_image).
-const PUBLIC_PREFIXES = ['/login', '/api/auth/', '/confidentialite', '/mentions-legales'];
+const PUBLIC_PREFIXES = ['/login', '/api/auth/', '/confidentialite', '/mentions-legales', '/manifest.webmanifest'];
 
 /**
  * Pages publiques qui doivent tout de même reconnaître un visiteur connecté.
@@ -123,7 +123,8 @@ const handleRequest = async (
   const url = new URL(request.url);
   const path = url.pathname;
 
-  const isStatic = path.startsWith('/_') || (!path.startsWith('/api/') && STATIC_FILE.test(path));
+  // Le manifeste PWA n'est pas un fichier : il se compose d'après le club.
+  const isStatic = path.startsWith('/_') || (path !== '/manifest.webmanifest' && !path.startsWith('/api/') && STATIC_FILE.test(path));
 
   // Le club, pour toute page et tout point d'entrée : titre, pied de page, expéditeur
   // des mails, fonctionnalités éteintes. Pas pour les fichiers statiques.

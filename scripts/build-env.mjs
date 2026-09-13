@@ -54,10 +54,28 @@ const TURNSTILE_SITE_KEY = '0x4AAAAAAD1TY7I_ql47XOjI';
  * qui compte vraiment — un marqueur de *préproduction* dans un bundle de *production* —
  * reste, lui, entièrement couvert.
  */
-const HOSTS = {
-  staging: ['staging-my.nozaybad.fr', 'staging-www.nozaybad.fr'],
-  production: ['my.nozaybad.fr', 'nozaybad.fr']
+/**
+ * Les adresses des trois applications, par environnement.
+ *
+ * C'est **le** seul endroit du dépôt qui nomme les domaines : les `astro.config.mjs`
+ * les reçoivent par `PUBLIC_*_URL`, et le code ne les connaît qu'inlinées au build.
+ * (Le `wrangler.json` du site public porte aussi `SITE_URL`, pour l'exécution.)
+ */
+const URLS = {
+  staging: {
+    website: 'https://staging-www.nozaybad.fr',
+    storefront: 'https://staging-my.nozaybad.fr',
+    admin: 'https://staging-admin.nozaybad.fr'
+  },
+  production: {
+    website: 'https://nozaybad.fr',
+    storefront: 'https://my.nozaybad.fr',
+    admin: 'https://admin.nozaybad.fr'
+  }
 };
+const HOSTS = Object.fromEntries(
+  ENVS.map((env) => [env, [URLS[env].storefront, URLS[env].website].map((u) => new URL(u).hostname)])
+);
 
 function fail(message) {
   console.error(`\n[build-env] ${message}\n`);
@@ -98,9 +116,18 @@ function vapidPublicKey(env) {
 
 function resolve(app, env) {
   const vars = { PUBLIC_APP_ENV: env };
+  const urls = URLS[env];
   if (app === 'storefront') {
     vars.PUBLIC_VAPID_PUBLIC_KEY = vapidPublicKey(env);
     vars.PUBLIC_TURNSTILE_SITE_KEY = TURNSTILE_SITE_KEY;
+    vars.PUBLIC_WEBSITE_URL = urls.website;
+  }
+  if (app === 'admin') {
+    vars.PUBLIC_WEBSITE_URL = urls.website;
+    vars.PUBLIC_STOREFRONT_URL = urls.storefront;
+  }
+  if (app === 'website') {
+    vars.PUBLIC_SITE_URL = urls.website;
   }
   return vars;
 }

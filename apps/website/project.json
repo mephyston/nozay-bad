@@ -30,6 +30,9 @@
         "^production",
         {
           "env": "PUBLIC_APP_ENV"
+        },
+        {
+          "env": "PUBLIC_SITE_URL"
         }
       ],
       "options": {

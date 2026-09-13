@@ -7,12 +7,15 @@ import { headersStatiques } from '../../scripts/headers-statiques.mjs';
 
 const APP_ENV = process.env.PUBLIC_APP_ENV || 'production';
 
-const SITE_URL =
-  APP_ENV === 'development'
-    ? 'http://localhost:4323'
-    : APP_ENV === 'staging'
-      ? 'https://staging-www.nozaybad.fr'
-      : 'https://nozaybad.fr';
+// L'adresse vient de `scripts/build-env.mjs`, jamais d'ici ; à l'exécution, la variable
+// `SITE_URL` du Worker prime (voir `request-context.ts`).
+// Absente hors développement : la CI refuse, un poste de développeur est averti.
+const SITE_URL = process.env.PUBLIC_SITE_URL || 'http://localhost:4323';
+if (APP_ENV !== 'development' && !process.env.PUBLIC_SITE_URL) {
+  const message = `[website] PUBLIC_SITE_URL absente pour un build « ${APP_ENV} » (voir scripts/build-env.mjs)`;
+  if (process.env.CI) throw new Error(message);
+  console.warn(`${message} : adresse locale utilisée.`);
+}
 
 export default defineConfig({
   output: 'server',

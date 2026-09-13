@@ -45,6 +45,9 @@
           "env": "PUBLIC_APP_ENV"
         },
         {
+          "env": "PUBLIC_WEBSITE_URL"
+        },
+        {
           "env": "VITE_APP_VERSION"
         },
         {
