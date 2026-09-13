@@ -31,6 +31,11 @@ vi.mock('./repository', () => ({
   }
 }));
 
+vi.mock('@nba/club/settings', () => ({
+  getClubSettings: async () => ({ name: 'Nozay Badminton Association', shortName: 'NBA 91' }),
+  clubNameVariants: () => ['nozay badminton association', 'nozay badminton', 'nba 91', 'nba', 'nba91']
+}));
+
 vi.mock('../../shared/helpers', () => ({
   cleanName: vi.fn((s) => s)
 }));

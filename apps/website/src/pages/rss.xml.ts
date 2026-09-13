@@ -6,6 +6,8 @@ import { escapeXml } from '../lib/xml';
 export const GET: APIRoute = async ({ locals, url }) => {
   const env = resolveEnv(locals);
   const siteUrl = env.SITE_URL ?? import.meta.env.PUBLIC_SITE_URL ?? url.origin;
+  const club = locals.club?.settings;
+  const where = [club?.city, club?.region].filter(Boolean).join(' (') + (club?.region ? ')' : '');
 
   const { posts } = await listPublishedPosts(env, { limit: 20 });
 
@@ -26,9 +28,9 @@ export const GET: APIRoute = async ({ locals, url }) => {
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Nozay Badminton Association</title>
+    <title>${escapeXml(club?.name ?? '')}</title>
     <link>${siteUrl}</link>
-    <description>Les actualités du club de badminton de Nozay (Essonne).</description>
+    <description>${escapeXml(`Les actualités du club de badminton${where ? ` de ${where}` : ''}.`)}</description>
     <language>fr-FR</language>
     <atom:link href="${new URL('/rss.xml', siteUrl)}" rel="self" type="application/rss+xml" />
 ${items}

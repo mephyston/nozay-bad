@@ -172,12 +172,20 @@ export function normaliseIssueDate(raw: string | null | undefined, today: Date):
   return date.toISOString().slice(0, 10);
 }
 
-/** Le club lui-même, sous les formes qu'on écrit sur la ligne « à l'ordre de ». */
-const CLUB_PATTERNS = [/nozay/i, /badminton/i, /\bbad\b/i, /\bnba\b/i, /association/i];
+/** Ce qu'on écrit à l'ordre de n'importe quel club de badminton, quel que soit son nom. */
+const GENERIC_CLUB_PATTERNS = [/badminton/i, /\bbad\b/i, /association/i];
 
-export function looksLikeClub(name: string | null | undefined): boolean {
+/**
+ * Le club lui-même, sous les formes qu'on écrit sur la ligne « à l'ordre de ».
+ *
+ * `clubForms` vient de `clubNameVariants(settings)` : le nom, le sigle et leurs
+ * abréviations. Les motifs génériques restent — un chèque « à l'ordre de l'association »
+ * est pour le club, quel que soit son nom.
+ */
+export function looksLikeClub(name: string | null | undefined, clubForms: string[] = []): boolean {
   if (!name) return false;
-  return CLUB_PATTERNS.some((pattern) => pattern.test(name));
+  const lower = name.toLowerCase();
+  return GENERIC_CLUB_PATTERNS.some((pattern) => pattern.test(name)) || clubForms.some((form) => lower.includes(form));
 }
 
 /**
@@ -190,10 +198,10 @@ export function looksLikeClub(name: string | null | undefined): boolean {
  * le club, où qu'il ait été rangé, est celui de l'émetteur. Le titulaire a la priorité,
  * le bénéficiaire ne sert qu'à défaut.
  */
-export function pickEmitter(holder: string | null | undefined, payee: string | null | undefined): string {
+export function pickEmitter(holder: string | null | undefined, payee: string | null | undefined, clubForms: string[] = []): string {
   for (const raw of [holder, payee]) {
     const candidate = (raw ?? '').replace(/\s+/g, ' ').trim();
-    if (candidate && !looksLikeClub(candidate)) return candidate;
+    if (candidate && !looksLikeClub(candidate, clubForms)) return candidate;
   }
   return '';
 }

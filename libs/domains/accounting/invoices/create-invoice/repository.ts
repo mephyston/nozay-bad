@@ -1,5 +1,6 @@
 import { seasonsTable } from '@nba/accounting/schema';
 import { type DbOrTx } from '@nba/db';
+import { getClubSettings } from '@nba/club/settings';
 import { desc, like, sql } from 'drizzle-orm';
 import { eq } from 'drizzle-orm';
 import { invoicesTable, invoiceItemsTable } from '../../shared/schema';
@@ -14,7 +15,10 @@ export class CreateInvoiceRepository {
   }
   async generateInvoiceNumber(db: DbOrTx, seasonId: string): Promise<string> {
     const seasonShort = seasonId.replace('-', '');
-    const prefix = `FAC-${seasonShort}-NBA91-`;
+    // Le préfixe est celui du club ; le changer ne renumérote pas l'existant, la
+    // recherche du dernier numéro ne portant que sur le préfixe courant.
+    const { invoicePrefix } = await getClubSettings(db);
+    const prefix = `FAC-${seasonShort}-${invoicePrefix}-`;
     const [lastInvoice] = await db
       .select({ invoiceNumber: invoicesTable.invoiceNumber })
       .from(invoicesTable)

@@ -228,12 +228,14 @@ export function getDivision(code: Championship, division: string): DivisionRules
   return CHAMPIONSHIP_RULES[code].divisions.find((d) => d.code === division);
 }
 
-/** Préfixe des équipes du club. Le nom d'une équipe est dérivé, jamais saisi. */
-export const CLUB_TEAM_PREFIX = 'NBA91';
-
-/** Nom d'affichage d'une équipe : « NBA91-3 ». Le numéro porte la hiérarchie. */
-export function teamName(number: number): string {
-  return `${CLUB_TEAM_PREFIX}-${number}`;
+/**
+ * Nom d'affichage d'une équipe : « NBA91-3 ». Le numéro porte la hiérarchie.
+ *
+ * Le préfixe est celui du club (`club_settings.team_prefix`), lu par les handlers ;
+ * le nom d'une équipe est dérivé, jamais saisi.
+ */
+export function teamName(prefix: string, number: number): string {
+  return `${prefix}-${number}`;
 }
 
 /** Jour ISO d'une date (1 = lundi … 7 = dimanche), sans passer par le fuseau local. */

@@ -24,6 +24,7 @@ export {
   NEUTRAL_CLUB_SETTINGS,
   isSettingsSection,
   isClubAsset,
+  clubNameVariants,
   type ClubSettings,
   type ClubAsset,
   type SettingsSection,
@@ -34,3 +35,4 @@ export { SECTION_SPECS, sectionSpec, type SectionSpec, type FieldSpec } from './
 export { default as ClubSectionForm } from './ui/ClubSectionForm.svelte';
 export { default as ClubFeaturesForm } from './ui/ClubFeaturesForm.svelte';
 export { default as ClubAssetsForm } from './ui/ClubAssetsForm.svelte';
+export { localClock, localDate, DEFAULT_TIMEZONE, type LocalClock, type Weekday } from './clock';

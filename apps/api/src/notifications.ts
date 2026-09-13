@@ -14,7 +14,7 @@ import {
   type NotificationTargetLabel
 } from '@nba/notifications-api';
 import { listScheduledNotifications } from './scheduled-registry';
-import { getClubFeatures } from '@nba/club/settings';
+import { getClubFeatures, getClubSettings } from '@nba/club/settings';
 
 /**
  * Émission des notifications et audiences.
@@ -43,10 +43,17 @@ notificationsSendRouter.get('/scheduled', async (c) => {
   if (!c.env?.DB) {
     return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
   }
-  const features = await getClubFeatures(createDb(c.env.DB));
+  const db = createDb(c.env.DB);
+  const [features, settings] = await Promise.all([getClubFeatures(db), getClubSettings(db)]);
   return c.json({
     success: true,
-    data: listScheduledNotifications({ sendsEnabled: c.env.SCHEDULED_SENDS_ENABLED === 'true', features })
+    data: listScheduledNotifications({
+      sendsEnabled: c.env.SCHEDULED_SENDS_ENABLED === 'true',
+      features,
+      dailySendHour: settings.dailySendHour,
+      weeklySendDay: settings.weeklySendDay,
+      weeklySendHour: settings.weeklySendHour
+    })
   });
 });
 

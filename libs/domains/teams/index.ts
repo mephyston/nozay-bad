@@ -121,7 +121,6 @@ export {
   CHAMPIONSHIPS,
   CHAMPIONSHIP_LABELS,
   CHAMPIONSHIP_RULES,
-  CLUB_TEAM_PREFIX,
   getChampionship,
   getDivision,
   teamName,

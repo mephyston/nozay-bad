@@ -81,7 +81,7 @@ const pillClass = (active: boolean) =>
   ].join(' ');
 ---
 
-<Layout title="Actualités - Nozay Bad">
+<Layout title="Actualités">
   <Header currentPath="/actualites" />
 
   <main class="flex-1 p-3 sm:p-6 w-full pb-24 md:pb-6">
@@ -126,5 +126,5 @@ const pillClass = (active: boolean) =>
     </div>
   </main>
 
-  <MobileNav client:idle currentPath="/actualites" />
+  <MobileNav client:idle features={Astro.locals.club?.features ?? {}} currentPath="/actualites" />
 </Layout>

@@ -1,9 +1,11 @@
 import { Hono } from 'hono';
 import { createDb } from '@nba/db';
+import { r2ClubAssetStore } from '@nba/club/settings';
 import { generateDepositSlip } from './handler';
 
 export type Bindings = {
   DB: D1Database;
+  MEDIA: R2Bucket;
 };
 
 export const generateDepositSlipRoute = new Hono<{ Bindings: Bindings }>();
@@ -18,7 +20,8 @@ generateDepositSlipRoute.get('/check-deposits/:id/deposit-slip.pdf', async (c) =
     return c.json({ success: false, error: 'Identifiant invalide' }, 400);
   }
   const db = createDb(c.env.DB);
-  const { pdf, filename } = await generateDepositSlip(db, id);
+  if (!c.env.MEDIA) return c.json({ success: false, error: 'Bucket binding MEDIA is missing' }, 500);
+  const { pdf, filename } = await generateDepositSlip(db, r2ClubAssetStore(c.env.MEDIA), id);
 
   return new Response(pdf as unknown as BodyInit, {
     status: 200,

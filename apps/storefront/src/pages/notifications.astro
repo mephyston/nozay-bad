@@ -7,7 +7,7 @@ import PushPreferences from '../components/PushPreferences.svelte';
 
 ---
 
-<Layout title="Mes notifications - Nozay Bad">
+<Layout title="Mes notifications">
   <Header currentPath="/notifications" />
 
   <main class="flex-1 p-3 sm:p-6 w-full pb-24 md:pb-6">
@@ -27,5 +27,5 @@ import PushPreferences from '../components/PushPreferences.svelte';
     </div>
   </main>
 
-  <MobileNav currentPath="/notifications" />
+  <MobileNav features={Astro.locals.club?.features ?? {}} currentPath="/notifications" />
 </Layout>

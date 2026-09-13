@@ -1,6 +1,5 @@
 import { PDFDocument, StandardFonts } from 'pdf-lib';
 import {
-  BRAND,
   CONTENT_W,
   GREY,
   INK,
@@ -30,7 +29,8 @@ export type InvoiceItem = {
   totalPriceCents: number;
 };
 
-import { CLUB_BANK as BANK } from '../../shared/club-bank';
+import type { LetterheadSpec } from '@nba/pdf';
+import type { BankDetails } from '@nba/club/settings';
 
 const REGLEMENT = 'Virement';
 
@@ -42,18 +42,24 @@ function formatEuros(cents: number): string {
   return `${(cents / 100).toFixed(2).replace('.', ',')} €`;
 }
 
-export async function generateInvoicePdf(invoice: InvoiceData, items: InvoiceItem[]): Promise<Uint8Array> {
+export async function generateInvoicePdf(
+  invoice: InvoiceData,
+  items: InvoiceItem[],
+  spec: LetterheadSpec,
+  bank: BankDetails
+): Promise<Uint8Array> {
   const doc = await PDFDocument.create();
   doc.setTitle(`Facture ${invoice.invoiceNumber}`);
-  doc.setCreator('Nozay Badminton Association');
+  doc.setCreator(spec.clubName);
   const page = doc.addPage([PAGE_W, PAGE_H]);
 
   const font = await doc.embedFont(StandardFonts.Helvetica);
   const bold = await doc.embedFont(StandardFonts.HelveticaBold);
 
   // ---------- PAPIER À LETTRE (club, partagé) ----------
-  const letterhead = await loadLetterhead(doc);
-  drawLetterhead(page, letterhead, font);
+  const letterhead = await loadLetterhead(doc, spec);
+  drawLetterhead(page, letterhead, font, bold);
+  const BRAND = letterhead.brand;
 
   const rightEdge = PAGE_W - MARGIN;
   const blockTop = letterhead.bodyTop;
@@ -141,10 +147,10 @@ export async function generateInvoicePdf(invoice: InvoiceData, items: InvoiceIte
     page.drawText(value, { x: MARGIN + 70, y: by, size: 10, font, color: INK });
     by -= 14;
   };
-  bankLine('Titulaire', BANK.titulaire);
-  bankLine('Nom', BANK.nom);
-  bankLine('IBAN', BANK.iban);
-  bankLine('BIC', BANK.bic);
+  bankLine('Titulaire', bank.holder);
+  bankLine('Nom', bank.bank);
+  bankLine('IBAN', bank.iban);
+  bankLine('BIC', bank.bic);
   by -= 12;
   page.drawText("Merci d'indiquer le numéro de facture dans le motif du virement.", { x: MARGIN, y: by, size: 9.5, font, color: GREY });
 

@@ -9,11 +9,12 @@ import {
   resolveSessionSecret,
   type SessionMember
 } from '../../../lib/auth';
-import { sendOtpEmail, sendRenewalEmail, sendUpcomingAccessEmail, sendPaymentPendingEmail } from '../../../lib/email';
+import { sendOtpEmail, sendRenewalEmail, sendUpcomingAccessEmail, sendPaymentPendingEmail, clubMailIdentity } from '../../../lib/email';
 import { resolveEnv, clientIp, json, IS_DEV, COOKIE_SECURE } from '../../../lib/request-context';
 
 export const POST: APIRoute = async ({ request, locals }) => {
   const env = resolveEnv(locals);
+  const club = clubMailIdentity(locals.club);
   const kv = env.RATE_LIMIT_KV;
   const ip = clientIp(request);
 
@@ -110,10 +111,10 @@ export const POST: APIRoute = async ({ request, locals }) => {
   if (status === 'lapsed' || status === 'upcoming' || status === 'unpaid') {
     if (!mailRateLimited) {
       await (status === 'lapsed'
-        ? sendRenewalEmail(env, accountEmail, seasonName)
+        ? sendRenewalEmail(env, club, accountEmail, seasonName)
         : status === 'upcoming'
-          ? sendUpcomingAccessEmail(env, accountEmail, seasonName, accessOpensOn)
-          : sendPaymentPendingEmail(env, accountEmail, seasonName));
+          ? sendUpcomingAccessEmail(env, club, accountEmail, seasonName, accessOpensOn)
+          : sendPaymentPendingEmail(env, club, accountEmail, seasonName));
     }
     return decoy();
   }
@@ -127,7 +128,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
   const code = generateOtpCode();
   await storeOtp(kv, accountEmail, code, members, seasonCode);
 
-  const sent = await sendOtpEmail(env, accountEmail, code);
+  const sent = await sendOtpEmail(env, club, accountEmail, code);
   if (!sent.ok) {
     return json({ ok: false, error: sent.error || "Échec de l'envoi de l'email." }, 502);
   }

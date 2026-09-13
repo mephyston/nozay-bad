@@ -1,7 +1,6 @@
 import { type Db } from '@nba/db';
 import { signatureMimeType } from '../shared/attestation/config';
 import { getEffectiveConfig } from '../shared/attestation/repository';
-import { assets } from '@nba/pdf';
 
 export type GetAttestationConfigOutput = {
   signatoryName: string;
@@ -17,15 +16,16 @@ export type GetAttestationConfigOutput = {
 
 export async function getAttestationConfig(db: Db): Promise<GetAttestationConfigOutput> {
   const config = await getEffectiveConfig(db);
-  const base64 = config.signatureBase64 ?? assets.defaultSignature.base64;
+  const base64 = config.signatureBase64;
   return {
     signatoryName: config.signatoryName,
     signatoryEmail: config.signatoryEmail,
     websiteUrl: config.websiteUrl,
     signature: {
-      isDefault: config.signatureBase64 === null,
+      isDefault: base64 === null,
       // Le type suit l'image : un PNG servi en `image/jpeg` ne s'affiche pas.
-      dataUrl: `data:${signatureMimeType(base64)};base64,${base64}`
+      // Sans signature déposée, rien à afficher : l'attestation sort sans image.
+      dataUrl: base64 ? `data:${signatureMimeType(base64)};base64,${base64}` : ''
     }
   };
 }

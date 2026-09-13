@@ -1,4 +1,5 @@
 import { type DbOrTx } from '@nba/db';
+import { getClubSettings } from '@nba/club/settings';
 import { CHAMPIONSHIP_LABELS, getDivision, teamName } from '../shared/championship';
 import { GetPlayerCardRepository } from './repository';
 import type { GetPlayerCardInput, GetPlayerCardOutput, PlayerTeam } from './dto';
@@ -18,14 +19,15 @@ const repo = new GetPlayerCardRepository();
  * elle n'a pas de sens sur une fiche.
  */
 export async function getPlayerCard(db: DbOrTx, input: GetPlayerCardInput): Promise<GetPlayerCardOutput> {
-  const [teamRows, referenceEloDate] = await Promise.all([
+  const [teamRows, referenceEloDate, { teamPrefix }] = await Promise.all([
     repo.teamsFor(db, input.licence, input.seasonCode),
-    repo.latestEloDate(db)
+    repo.latestEloDate(db),
+    getClubSettings(db)
   ]);
 
   const teams: PlayerTeam[] = teamRows.map((team) => ({
     teamId: team.id,
-    name: teamName(team.number),
+    name: teamName(teamPrefix, team.number),
     championshipLabel: CHAMPIONSHIP_LABELS[team.championship],
     // Le code de division est stocké tel quel (« D1 », « PN ») ; son libellé vient du
     // référentiel, et l'on retombe sur le code si la division n'y figure plus.

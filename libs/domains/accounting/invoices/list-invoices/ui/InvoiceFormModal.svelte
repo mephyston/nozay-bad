@@ -52,7 +52,7 @@
         <FileText class="w-5 h-5 text-primary" />
         {editingId ? 'Modifier la facture' : 'Créer une facture'}
       </Sheet.Title>
-      <Sheet.Description class="hidden">Création ou modification des factures NBA 91.</Sheet.Description>
+      <Sheet.Description class="hidden">Création ou modification des factures du club.</Sheet.Description>
     </Sheet.Header>
 
     <form onsubmit={onSubmit} class="flex flex-col flex-1 overflow-hidden">
@@ -62,7 +62,7 @@
           <h4 class="text-sm font-bold text-primary uppercase tracking-wider border-b border-border pb-1">Informations Client</h4>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField id="clientName" label="Nom du Client *">
-              <Input type="text" id="clientName" bind:value={clientName} placeholder="Ex: Mairie de Nozay ou Nom d'entreprise" required disabled={isClosed} />
+              <Input type="text" id="clientName" bind:value={clientName} placeholder="Ex: Mairie ou nom d'entreprise" required disabled={isClosed} />
             </FormField>
             <FormField id="clientEmail" label="Email du Client">
             <Input type="email" id="clientEmail" bind:value={clientEmail} placeholder="client@domaine.com" disabled={isClosed} icon={Mail} />

@@ -28,10 +28,15 @@ export function signatureMimeType(base64: string): string {
   return signatureKind(base64) === 'png' ? 'image/png' : 'image/jpeg';
 }
 
+/**
+ * Valeurs servies quand la ligne manque : vides. La migration sème la ligne réelle ;
+ * une base sans elle imprime une attestation sans signataire plutôt que celle d'un
+ * autre club.
+ */
 export const DEFAULT_ATTESTATION_CONFIG = {
-  signatoryName: 'Robert THAI',
-  signatoryEmail: 'president@nozaybad.fr',
-  websiteUrl: 'www.nozaybad.fr'
+  signatoryName: '',
+  signatoryEmail: '',
+  websiteUrl: ''
 } as const;
 
 /**

@@ -54,7 +54,7 @@ const CACHED_READS = new Map<string, number>([
 ]);
 
 /** Hôte fictif des clés, comme `cache.nozaybad.fr` côté site public. */
-const CACHE_HOST = 'https://api-cache.nozaybad.fr';
+const CACHE_HOST = 'https://api-cache.local';
 
 /** Sous-ensemble de l'API Cache réellement utilisé — ce qu'un test doit fournir. */
 export interface ResponseCache {

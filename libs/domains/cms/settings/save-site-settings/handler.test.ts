@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { setupMockDb } from '@nba/db/test-utils';
+import { sql } from 'drizzle-orm';
 import { type Db } from '@nba/db';
 import { saveSiteSettings } from './handler';
 import { getSiteSettings, SITE_SETTINGS_DEFAULTS } from '../get-site-settings/handler';
@@ -51,8 +52,12 @@ describe('saveSiteSettings', () => {
     ).rejects.toThrow(/http/);
   });
 
-  it('sert des valeurs par défaut tant que rien n’a été enregistré', async () => {
-    // Une base montée sans la migration de semis ne doit pas vider le pied de page.
+  it('sert des valeurs par défaut — vides — quand la ligne manque', async () => {
+    // Une base montée sans la migration de semis ne doit pas faire échouer le rendu ;
+    // et rien n'y nomme un club : le pied de page d'un club neuf est vide, pas celui
+    // d'un autre.
+    await db.run(sql`DELETE FROM cms_site_settings`);
     expect(await getSiteSettings(db)).toEqual(SITE_SETTINGS_DEFAULTS);
+    expect(SITE_SETTINGS_DEFAULTS.footerDescription).toBe('');
   });
 });

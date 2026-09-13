@@ -61,7 +61,7 @@ self.addEventListener('push', (event) => {
   // L'icône sans suffixe est utilisée dans tous les environnements : le SW est
   // servi à la racine et ne connaît pas la variante DEV/TEST du build.
   event.waitUntil(
-    self.registration.showNotification(payload.title || 'Nozay Bad', {
+    self.registration.showNotification(payload.title || 'Notification du club', {
       body: payload.body || '',
       icon: '/pwa/icon-192.png',
       badge: '/pwa/icon-192.png',

@@ -35,7 +35,7 @@ const session = Astro.locals.session;
     <a href="/" class="flex items-center gap-2 group min-h-[44px]">
       <img src="/logo.png" alt="Logo" class="h-7 w-7 shrink-0 object-contain transition-all duration-200" />
       <div>
-        <span class="font-bold text-sm text-foreground tracking-tight block">Nozay Bad</span>
+        <span class="font-bold text-sm text-foreground tracking-tight block">{Astro.locals.club?.settings.shortName || "Espace adhérent"}</span>
         <span class="text-[10px] sm:text-[11px] text-muted-foreground uppercase tracking-wider font-semibold block -mt-0.5">Adhérents</span>
       </div>
     </a>
@@ -74,6 +74,7 @@ const session = Astro.locals.session;
         members={session.members}
         activeMemberId={session.activeMemberId}
         currentPath={currentPath}
+        features={Astro.locals.club?.features ?? {}}
       />
     )}
   </div>

@@ -1,3 +1,4 @@
+import { clubNameVariants, getClubSettings } from '@nba/club/settings';
 import { type Db } from '@nba/db';
 import { AnalyzeBankStatementLinesRepository } from './repository';
 import { cleanName } from '../../shared/helpers';
@@ -37,6 +38,8 @@ function dedupeByPerson<T extends { personId?: number | null }>(members: T[]): T
 }
 
 export async function analyzeBankStatementLines(db: Db, ai: any, input: AnalyzeBankStatementLinesInput): Promise<AnalyzeBankStatementLinesOutput> {
+  const club = await getClubSettings(db);
+  const clubForms = clubNameVariants(club);
   const repo = new AnalyzeBankStatementLinesRepository();
   const pendingTxs = await repo.getPendingTransactions(db, input.seasonId, input.singleId);
   const members = await repo.getMembersBySeason(db, input.seasonId);
@@ -136,17 +139,14 @@ export async function analyzeBankStatementLines(db: Db, ai: any, input: AnalyzeB
      * s'écrit en deux jambes, que cette route ne sait pas produire — elle le signale donc, et
      * renvoie le trésorier vers le grand livre plutôt que d'écrire une moitié de vérité.
      */
+    // Le club lui-même comme émetteur ou bénéficiaire (« DE: NOZAY BADMINTON »,
+    // « POUR: NBA ») : sous chacune des formes que la banque et le club emploient.
     const looksLikeInternalTransfer =
       /\b\d{20,}\b/.test(textToLower) ||
       textToLower.includes('virement interne') ||
       textToLower.includes('virmt interne') ||
-      textToLower.includes('de: nozay badminton') ||
-      textToLower.includes('de: nozay bad') ||
-      textToLower.includes('de: nba') ||
-      textToLower.includes('pour: nozay badminton') ||
-      textToLower.includes('pour: nozay bad') ||
-      textToLower.includes('pour: nba') ||
-      (textToLower.includes('nozay badminton') && textToLower.includes('recharge'));
+      clubForms.some((form) => textToLower.includes(`de: ${form}`) || textToLower.includes(`pour: ${form}`)) ||
+      (clubForms.some((form) => textToLower.includes(form)) && textToLower.includes('recharge'));
 
     if (looksLikeInternalTransfer) {
       /* La catégorie reste celle du repli : elle ne sera pas utilisée, `kind` prend le pas. */
@@ -193,14 +193,10 @@ export async function analyzeBankStatementLines(db: Db, ai: any, input: AnalyzeB
       (textToLower.includes('tournoi') && !textToLower.includes('jeune'))
     ) {
       suggestedCategory = catMap.tournoisSenior;
-    } else if (textToLower.includes('larde')) {
-      if (textToLower.includes('cordage')) {
-        suggestedCategory = catMap.cordage;
-      } else if (textToLower.includes('volant')) {
-        suggestedCategory = catMap.volants;
-      } else {
-        suggestedCategory = catMap.materiel;
-      }
+    } else if (textToLower.includes('cordage')) {
+      suggestedCategory = catMap.cordage;
+    } else if (textToLower.includes('volant')) {
+      suggestedCategory = catMap.volants;
     } else if (textToLower.includes('ligue') || textToLower.includes('badminton')) {
       suggestedCategory = textToLower.includes('licence') ? catMap.licences : catMap.championnats;
     } else if (
@@ -334,7 +330,7 @@ export async function analyzeBankStatementLines(db: Db, ai: any, input: AnalyzeB
     };
 
     if (candidates.length > 0 && !looksLikeInternalTransfer) {
-      const prompt = `Tu es l'assistant comptable du club Nozay Badminton.
+      const prompt = `Tu es l'assistant comptable du club ${club.name}.
 Opération bancaire à rapprocher :
 - Libellé : "${tx.name}"
 - Détails : "${tx.memo || 'Aucun'}"

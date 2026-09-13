@@ -1,5 +1,19 @@
 import { describe, it, expect } from 'vitest';
-import { pageTitle, homeTitle, pageDescription, absoluteUrl, SITE_NAME, SITE_REGION } from './seo';
+import { pageTitle, homeTitle, pageDescription, absoluteUrl, siteIdentityOf, type SiteIdentity } from './seo';
+
+/** Le club de test : l'identité que le middleware tirerait de sa configuration. */
+const SITE: SiteIdentity = siteIdentityOf({
+  settings: { name: 'Nozay Badminton Association', shortName: 'NBA 91', tagline: "Plus qu'une Tribu !", city: 'Nozay', postalCode: '91620', region: 'Essonne', department: '91' }
+});
+const SITE_NAME = SITE.name;
+const SITE_REGION = SITE.region;
+/** Les réglages de pied de page du club de test. */
+const SITE_SETTINGS = {
+  footerDescription: "Plus qu'une Tribu !",
+  footerAddress: 'Place de la Mairie, 91620 Nozay',
+  instagramUrl: 'https://www.instagram.com/nozaybad/',
+  facebookUrl: 'https://www.facebook.com/nozaybad/'
+};
 import { readFile } from 'node:fs/promises';
 import {
   serialiseJsonLd,
@@ -13,24 +27,23 @@ import {
   place
 } from './jsonld';
 import { socialLinks } from './social';
-import { SITE_SETTINGS_FALLBACK } from './cms';
 import { applySecurityHeaders } from './security-headers';
 import type { BlockPayload } from '@nba/cms/public';
 
 describe('pageTitle', () => {
   it('suffixe du nom du club quand la place le permet', () => {
-    expect(pageTitle(null, 'Présentation')).toBe(`Présentation — ${SITE_NAME}`);
+    expect(pageTitle(null, 'Présentation', SITE)).toBe(`Présentation — ${SITE_NAME}`);
   });
 
   it('abandonne le suffixe plutôt que de le tronquer au milieu', () => {
     const long = 'Ecole Française de Badminton et dispositif jeunes du club';
-    const out = pageTitle(null, long);
+    const out = pageTitle(null, long, SITE);
     expect(out.length).toBeLessThanOrEqual(60);
     expect(out).not.toContain('Nozay Badminton Associ—');
   });
 
   it('respecte un titre de référencement saisi', () => {
-    expect(pageTitle('Créneaux 2026', 'Créneaux')).toBe('Créneaux 2026');
+    expect(pageTitle('Créneaux 2026', 'Créneaux', SITE)).toBe('Créneaux 2026');
   });
 });
 
@@ -41,14 +54,14 @@ describe('homeTitle', () => {
     c'est là que le département doit apparaître, et en toutes lettres — pas « 91 ».
   */
   it('situe le club en Essonne, en toutes lettres et sous la limite de Google', () => {
-    const out = homeTitle(null);
+    const out = homeTitle(null, SITE);
     expect(out).toContain(SITE_NAME);
     expect(out).toContain(SITE_REGION);
     expect(out.length).toBeLessThanOrEqual(60);
   });
 
   it('respecte un titre de référencement saisi', () => {
-    expect(homeTitle('Accueil du club')).toBe('Accueil du club');
+    expect(homeTitle('Accueil du club', SITE)).toBe('Accueil du club');
   });
 });
 
@@ -58,23 +71,23 @@ describe('pageDescription', () => {
   it('se rabat sur le premier texte de la page', () => {
     // L'ancien site n'avait aucune meta description : ne rien émettre laisserait
     // Google fabriquer son extrait, souvent à partir du menu.
-    const out = pageDescription(null, [richtext('<p>Le club de Nozay a été créé en 1996.</p>')]);
+    const out = pageDescription(null, [richtext('<p>Le club de Nozay a été créé en 1996.</p>')], SITE);
     expect(out).toBe('Le club de Nozay a été créé en 1996.');
   });
 
   it('ignore un bloc vide et prend le suivant', () => {
-    const out = pageDescription(null, [richtext('<p> </p>'), richtext('<p>Contenu réel.</p>')]);
+    const out = pageDescription(null, [richtext('<p> </p>'), richtext('<p>Contenu réel.</p>')], SITE);
     expect(out).toBe('Contenu réel.');
   });
 
   it('tronque sur un mot entier', () => {
-    const out = pageDescription(null, [richtext(`<p>${'mot '.repeat(80)}</p>`)]);
+    const out = pageDescription(null, [richtext(`<p>${'mot '.repeat(80)}</p>`)], SITE);
     expect(out.length).toBeLessThanOrEqual(155);
     expect(out.endsWith('…')).toBe(true);
   });
 
   it('a toujours un repli, même sans contenu, et ce repli situe le club', () => {
-    expect(pageDescription(null, [])).toContain(SITE_REGION);
+    expect(pageDescription(null, [], SITE)).toContain(SITE_REGION);
   });
 });
 
@@ -92,15 +105,15 @@ describe('JSON-LD', () => {
   });
 
   it('ancre le club sur un identifiant stable', () => {
-    expect(sportsClub('https://nozaybad.fr', [])['@id']).toBe('https://nozaybad.fr/#club');
+    expect(sportsClub('https://nozaybad.fr', SITE, [])['@id']).toBe('https://nozaybad.fr/#club');
   });
 
   it('déclare les comptes du club en sameAs', () => {
     // Le pied de page et le balisage lisent la même liste : ajouter un réseau à l'un
     // sans l'autre est l'oubli que ce cas rend impossible.
-    const links = socialLinks(SITE_SETTINGS_FALLBACK);
+    const links = socialLinks(SITE_SETTINGS);
     expect(links.length).toBeGreaterThan(0);
-    expect(sportsClub('https://nozaybad.fr', links.map((l) => l.href)).sameAs).toEqual(
+    expect(sportsClub('https://nozaybad.fr', SITE, links.map((l) => l.href)).sameAs).toEqual(
       links.map((l) => l.href)
     );
   });
@@ -109,13 +122,13 @@ describe('JSON-LD', () => {
     // Les deux nœuds sont émis côte à côte sur l'accueil. Si `publisher` cessait de
     // viser l'ancre du club, Google verrait deux entités sans lien là où il doit en
     // voir une seule — exactement ce que le balisage est là pour éviter.
-    expect(webSite('https://nozaybad.fr').publisher['@id']).toBe(
-      sportsClub('https://nozaybad.fr', [])['@id']
+    expect(webSite('https://nozaybad.fr', SITE).publisher['@id']).toBe(
+      sportsClub('https://nozaybad.fr', SITE, [])['@id']
     );
   });
 
   it('donne un logo d’au moins 112 px, seuil en deçà duquel Google l’écarte', async () => {
-    const { logo } = sportsClub('https://nozaybad.fr', []);
+    const { logo } = sportsClub('https://nozaybad.fr', SITE, []);
     // Le petit `logo.webp` fait 108 px : la seule relecture ne distingue pas les deux
     // fichiers, la mesure si.
     const file = new URL(logo).pathname;
@@ -130,7 +143,7 @@ describe('JSON-LD', () => {
   });
 
   it('situe le club en Essonne, ce que le code postal seul ne dit pas à un moteur', () => {
-    const club = sportsClub('https://nozaybad.fr', []);
+    const club = sportsClub('https://nozaybad.fr', SITE, []);
     expect(club.address.addressRegion).toBe('Essonne');
     expect(club.address.postalCode).toBe('91620');
     expect(club.areaServed.name).toBe('Essonne');
@@ -139,11 +152,11 @@ describe('JSON-LD', () => {
   it('ne retient en alternateName que des formes réellement employées', () => {
     // « NBA » seul serait noyé par la ligue de basket, et ne distinguerait pas plus
     // les deux Nozay.
-    expect(sportsClub('https://nozaybad.fr', []).alternateName).not.toContain('NBA');
+    expect(sportsClub('https://nozaybad.fr', SITE, []).alternateName).not.toContain('NBA');
   });
 
   it('liste les gymnases avec leur adresse, et leurs coordonnées quand elles existent', () => {
-    const club = sportsClub('https://nozaybad.fr', [], { venues: [DUPUIS, HALLE] });
+    const club = sportsClub('https://nozaybad.fr', SITE, [], { venues: [DUPUIS, HALLE] });
     expect(club.location).toHaveLength(2);
     expect(club.location?.[0]).toMatchObject({
       '@type': 'Place',
@@ -157,15 +170,15 @@ describe('JSON-LD', () => {
   });
 
   it('tait la liste des lieux quand il n’y en a pas, plutôt que d’émettre un tableau vide', () => {
-    expect(sportsClub('https://nozaybad.fr', [])).not.toHaveProperty('location');
-    expect(sportsClub('https://nozaybad.fr', [])).not.toHaveProperty('openingHoursSpecification');
+    expect(sportsClub('https://nozaybad.fr', SITE, [])).not.toHaveProperty('location');
+    expect(sportsClub('https://nozaybad.fr', SITE, [])).not.toHaveProperty('openingHoursSpecification');
   });
 
   it('rattache les horaires au même club, par le même identifiant', () => {
     // La page « Créneaux » émettait un second `SportsClub` sans `@id` ni adresse : un
     // club de plus, anonyme, à confondre avec l'homonyme de Loire-Atlantique.
-    const hours = clubOpeningHours('https://nozaybad.fr', [{ weekday: 1, startTime: '20:00', endTime: '22:00' }]);
-    expect(hours['@id']).toBe(sportsClub('https://nozaybad.fr', [])['@id']);
+    const hours = clubOpeningHours('https://nozaybad.fr', SITE, [{ weekday: 1, startTime: '20:00', endTime: '22:00' }]);
+    expect(hours['@id']).toBe(sportsClub('https://nozaybad.fr', SITE, [])['@id']);
     expect(hours.openingHoursSpecification[0].dayOfWeek).toBe('https://schema.org/Monday');
   });
 
@@ -181,18 +194,18 @@ describe('JSON-LD', () => {
 
 describe('comptes sociaux', () => {
   it('ignore un réseau non renseigné plutôt que de produire un lien mort', () => {
-    const links = socialLinks({ ...SITE_SETTINGS_FALLBACK, instagramUrl: null, facebookUrl: '  ' });
+    const links = socialLinks({ ...SITE_SETTINGS, instagramUrl: null, facebookUrl: '  ' });
     expect(links).toEqual([]);
   });
 
   it('conserve l’ordre d’affichage, indépendant de l’ordre des réglages', () => {
-    expect(socialLinks(SITE_SETTINGS_FALLBACK).map((l) => l.name)).toEqual(['Instagram', 'Facebook']);
+    expect(socialLinks(SITE_SETTINGS).map((l) => l.name)).toEqual(['Instagram', 'Facebook']);
   });
 
   it('ne retient que des URL de profil canoniques dans les valeurs de repli', () => {
     // `?locale=fr_FR` traîne sur toute page Facebook copiée depuis un navigateur :
     // c'est un réglage d'affichage, et il n'affirme aucune identité.
-    for (const { href } of socialLinks(SITE_SETTINGS_FALLBACK)) {
+    for (const { href } of socialLinks(SITE_SETTINGS)) {
       const url = new URL(href);
       expect(url.protocol).toBe('https:');
       expect(url.search).toBe('');
@@ -236,27 +249,27 @@ const HALLE = { name: 'Halle des Sports', streetAddress: null, postalCode: null,
 
 describe('matchVenue', () => {
   it('reconnaît un gymnase par son nom, en entier ou en partie', () => {
-    expect(matchVenue([DUPUIS, HALLE], 'Gymnase Pierre Dupuis')).toBe(DUPUIS);
-    expect(matchVenue([DUPUIS, HALLE], '  pierre DUPUIS ')).toBe(DUPUIS);
-    expect(matchVenue([DUPUIS, HALLE], 'Halle des sports')).toBe(HALLE);
+    expect(matchVenue([DUPUIS, HALLE], 'Gymnase Pierre Dupuis', SITE)).toBe(DUPUIS);
+    expect(matchVenue([DUPUIS, HALLE], '  pierre DUPUIS ', SITE)).toBe(DUPUIS);
+    expect(matchVenue([DUPUIS, HALLE], 'Halle des sports', SITE)).toBe(HALLE);
     // La forme que porte l'agenda : le nom suivi de la commune.
-    expect(matchVenue([DUPUIS, HALLE], 'Gymnase Pierre Dupuis, Nozay')).toBe(DUPUIS);
-    expect(matchVenue([DUPUIS, HALLE], 'Halle des Sports (Nozay)')).toBe(HALLE);
+    expect(matchVenue([DUPUIS, HALLE], 'Gymnase Pierre Dupuis, Nozay', SITE)).toBe(DUPUIS);
+    expect(matchVenue([DUPUIS, HALLE], 'Halle des Sports (Nozay)', SITE)).toBe(HALLE);
   });
 
   it('ne devine rien pour un lieu qui n’est pas un gymnase du club', () => {
     // Un match à l'extérieur ne doit pas hériter d'une adresse à Nozay.
-    expect(matchVenue([DUPUIS, HALLE], 'Gymnase de Marcoussis')).toBeNull();
-    expect(matchVenue([DUPUIS, HALLE], 'Halle des Sports de Marcoussis')).toBeNull();
-    expect(matchVenue([DUPUIS, HALLE], null)).toBeNull();
-    expect(matchVenue([DUPUIS, HALLE], 'de')).toBeNull();
+    expect(matchVenue([DUPUIS, HALLE], 'Gymnase de Marcoussis', SITE)).toBeNull();
+    expect(matchVenue([DUPUIS, HALLE], 'Halle des Sports de Marcoussis', SITE)).toBeNull();
+    expect(matchVenue([DUPUIS, HALLE], null, SITE)).toBeNull();
+    expect(matchVenue([DUPUIS, HALLE], 'de', SITE)).toBeNull();
   });
 });
 
 describe('place', () => {
   it('retombe sur la commune du siège quand le gymnase n’en porte pas', () => {
-    expect(place(HALLE).address).toMatchObject({ addressLocality: 'Nozay', postalCode: '91620', addressRegion: 'Essonne' });
-    expect(place(HALLE).address).not.toHaveProperty('streetAddress');
+    expect(place(HALLE, SITE).address).toMatchObject({ addressLocality: 'Nozay', postalCode: '91620', addressRegion: 'Essonne' });
+    expect(place(HALLE, SITE).address).not.toHaveProperty('streetAddress');
   });
 });
 
@@ -273,11 +286,11 @@ describe('clubEvent', () => {
   };
 
   it('choisit le type schema.org selon la catégorie', () => {
-    expect(clubEvent('https://x.fr', base)['@type']).toBe('SocialEvent');
-    expect(clubEvent('https://x.fr', { ...base, category: 'interclubs' })['@type']).toBe('SportsEvent');
-    expect(clubEvent('https://x.fr', { ...base, category: 'assemblee' })['@type']).toBe('BusinessEvent');
+    expect(clubEvent('https://x.fr', SITE, base)['@type']).toBe('SocialEvent');
+    expect(clubEvent('https://x.fr', SITE, { ...base, category: 'interclubs' })['@type']).toBe('SportsEvent');
+    expect(clubEvent('https://x.fr', SITE, { ...base, category: 'assemblee' })['@type']).toBe('BusinessEvent');
     // Une catégorie ajoutée en base sans passer par ici reste un événement valide.
-    expect(clubEvent('https://x.fr', { ...base, category: 'inconnue' })['@type']).toBe('Event');
+    expect(clubEvent('https://x.fr', SITE, { ...base, category: 'inconnue' })['@type']).toBe('Event');
   });
 
   it('date le rendez-vous dans le fuseau de Paris, heure d’été comprise', () => {
@@ -295,13 +308,13 @@ describe('clubEvent', () => {
     le garde-fou de cette décision — la rebrancher demande d'abord de l'afficher.
   */
   it('n’émet jamais de description, ni d’offre', () => {
-    const json = clubEvent('https://x.fr', base);
+    const json = clubEvent('https://x.fr', SITE, base);
     expect(json).not.toHaveProperty('description');
     expect(json).not.toHaveProperty('offers');
   });
 
   it('tait ce que le rendez-vous n’a pas, plutôt que de l’inventer', () => {
-    const json = clubEvent('https://x.fr', base);
+    const json = clubEvent('https://x.fr', SITE, base);
     expect(json).not.toHaveProperty('image');
     expect(json).not.toHaveProperty('endDate');
     expect(json).not.toHaveProperty('performer');
@@ -309,12 +322,12 @@ describe('clubEvent', () => {
 
   it('situe un rendez-vous dans un gymnase du club, et seulement là', () => {
     // `location` est conditionnel dans le type de retour : on interroge l'objet entier.
-    const home = clubEvent('https://x.fr', { ...base, venueLabel: 'Pierre Dupuis', venue: DUPUIS });
+    const home = clubEvent('https://x.fr', SITE, { ...base, venueLabel: 'Pierre Dupuis', venue: DUPUIS });
     expect(home).toMatchObject({ location: { name: 'Gymnase Pierre Dupuis', address: { addressRegion: 'Essonne' } } });
     expect(home).toHaveProperty('location.geo');
     // Sans gymnase reconnu, le lieu reste un nom et un pays : c'est peut-être la salle
     // d'un club adverse, et une adresse à Nozay serait fausse.
-    const away = clubEvent('https://x.fr', { ...base, venueLabel: 'Gymnase de Marcoussis' });
+    const away = clubEvent('https://x.fr', SITE, { ...base, venueLabel: 'Gymnase de Marcoussis' });
     expect(away).toHaveProperty('location', {
       '@type': 'Place',
       name: 'Gymnase de Marcoussis',
@@ -323,7 +336,7 @@ describe('clubEvent', () => {
   });
 
   it('rend l’adresse de la page qui décrit, en absolu', () => {
-    expect(clubEvent('https://x.fr', { ...base, url: '/actualites/raclette/' }).url).toBe(
+    expect(clubEvent('https://x.fr', SITE, { ...base, url: '/actualites/raclette/' }).url).toBe(
       'https://x.fr/actualites/raclette/'
     );
   });

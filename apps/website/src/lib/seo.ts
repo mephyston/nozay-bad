@@ -10,25 +10,43 @@ import type { BlockPayload } from '@nba/cms/public';
  * une image de partage, même si le rédacteur n'a rien saisi.
  */
 
-export const SITE_NAME = 'Nozay Badminton Association';
-export const SITE_TAGLINE = "Plus qu'une Tribu !";
-
 /**
- * Où est le club, en toutes lettres.
+ * Ce que le référencement dit du club : son nom, son slogan, où il est.
  *
- * Deux communes s'appellent Nozay, et l'autre — en Loire-Atlantique — a aussi son club
- * de badminton. Le site sort en tête sur « nozay badminton » quel que soit le lieu de
- * la recherche, et des habitants du 44 nous écrivent en croyant s'adresser à leur club.
- * Le mot « Essonne » n'apparaissait nulle part : « 91620 » et « (91) » ne parlent
- * qu'à qui connaît déjà la réponse.
- *
- * Constantes pour ce que le rédacteur ne voit pas — titre d'accueil par défaut, replis
- * de description, données structurées. Le pied de page, lui, se règle depuis
- * l'administration (phrase de présentation et adresse) : c'est le choix de David, ces
- * champs existent pour ça.
+ * Tout vient de la configuration du club (`club_settings`), lue par le middleware.
+ * La région en toutes lettres compte : deux communes peuvent porter le même nom — deux
+ * « Nozay », et l'autre a aussi son club de badminton — et un code postal seul ne
+ * parle qu'à qui connaît déjà la réponse. « Nozay, Essonne (91) » situe avant de nommer.
  */
-export const SITE_REGION = 'Essonne';
-export const SITE_LOCALITY = 'Nozay, Essonne (91)';
+export interface SiteIdentity {
+  name: string;
+  shortName: string;
+  tagline: string;
+  city: string;
+  postalCode: string;
+  region: string;
+  /** « Nozay, Essonne (91) » — ville, région et numéro de département. */
+  locality: string;
+  /** Fuseau du club, pour dater ses événements avec le bon décalage. */
+  timezone: string;
+}
+
+export function siteIdentityOf(club: { settings: { name: string; shortName: string; tagline: string; city: string; postalCode: string; region: string; department: string; timezone?: string } } | undefined): SiteIdentity {
+  const s = club?.settings;
+  const city = s?.city ?? '';
+  const region = s?.region ?? '';
+  const department = s?.department ?? '';
+  return {
+    name: s?.name ?? '',
+    shortName: s?.shortName ?? '',
+    tagline: s?.tagline ?? '',
+    city,
+    postalCode: s?.postalCode ?? '',
+    region,
+    locality: [city, region ? `${region}${department ? ` (${department})` : ''}` : ''].filter(Boolean).join(', '),
+    timezone: s?.timezone || 'Europe/Paris'
+  };
+}
 
 /** Google tronque au-delà ; couper nous-mêmes évite une ellipse au milieu d'un mot. */
 const TITLE_MAX = 60;
@@ -42,11 +60,11 @@ function truncate(text: string, max: number): string {
   return `${(lastSpace > max / 2 ? cut.slice(0, lastSpace) : cut).trimEnd()}…`;
 }
 
-export function pageTitle(seoTitle: string | null, title: string): string {
+export function pageTitle(seoTitle: string | null, title: string, site: SiteIdentity): string {
   if (seoTitle) return truncate(seoTitle, TITLE_MAX);
   // Le nom du club n'est ajouté que s'il reste de la place : un titre tronqué au
   // milieu du suffixe est pire que pas de suffixe du tout.
-  const suffixed = `${title} — ${SITE_NAME}`;
+  const suffixed = site.name ? `${title} — ${site.name}` : title;
   return suffixed.length <= TITLE_MAX ? suffixed : truncate(title, TITLE_MAX);
 }
 
@@ -58,9 +76,10 @@ export function pageTitle(seoTitle: string | null, title: string): string {
  * résultat de recherche sur « nozay badminton ». La forme fixe tient sous `TITLE_MAX`
  * avec le nom complet, le sport et le département.
  */
-export function homeTitle(seoTitle: string | null): string {
+export function homeTitle(seoTitle: string | null, site: SiteIdentity): string {
   if (seoTitle) return truncate(seoTitle, TITLE_MAX);
-  return `${SITE_NAME} — Badminton à Nozay (${SITE_REGION})`;
+  const where = site.city ? ` à ${site.city}${site.region ? ` (${site.region})` : ''}` : '';
+  return truncate(`${site.name} — Badminton${where}`, TITLE_MAX);
 }
 
 /**
@@ -69,7 +88,7 @@ export function homeTitle(seoTitle: string | null): string {
  * Se rabattre sur le contenu vaut mieux que de ne rien émettre — Google fabrique
  * alors son propre extrait, souvent à partir du menu.
  */
-export function pageDescription(seoDescription: string | null, blocks: BlockPayload[]): string {
+export function pageDescription(seoDescription: string | null, blocks: BlockPayload[], site: SiteIdentity): string {
   if (seoDescription) return truncate(seoDescription, DESCRIPTION_MAX);
 
   for (const block of blocks) {
@@ -81,7 +100,7 @@ export function pageDescription(seoDescription: string | null, blocks: BlockPayl
   }
   // Le repli situe le club avant de le nommer : la description est le second texte du
   // résultat de recherche, et c'est là qu'un lecteur du 44 voit qu'il n'est pas chez lui.
-  return `Club de badminton à ${SITE_LOCALITY}. ${SITE_TAGLINE}`;
+  return `Club de badminton${site.locality ? ` à ${site.locality}` : ''}.${site.tagline ? ` ${site.tagline}` : ''}`;
 }
 
 /** URL absolue, seule forme acceptée en canonique et en Open Graph. */

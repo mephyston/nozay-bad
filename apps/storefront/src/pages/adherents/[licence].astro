@@ -71,7 +71,17 @@ const season = displaySeason(await listSeasons(env), session?.seasonCode);
 let member: any = null;
 let card: { teams: any[]; rankings: any; referenceEloDate: string | null } | null = null;
 
+/*
+  L'annuaire entre adhérents est un choix du club (« Annuaire des adhérents » dans sa
+  configuration). Éteint, chacun ne consulte que les fiches de son foyer : la fiche d'un
+  autre adhérent est introuvable, pas refusée — elle n'existe pas pour lui.
+*/
+const householdLicences = new Set((session?.members ?? []).map((m) => normalise(m.licence)));
+const directoryOpen = featureOn(Astro.locals.club, 'member_directory');
+const canView = isMe || householdLicences.has(licence) || directoryOpen;
+
 try {
+  if (!canView) throw new Error('hors annuaire');
   const memberRes = await api.fetch(
     `http://localhost/members/${licence}${season?.code ? `?season=${encodeURIComponent(season.code)}` : ''}`
   );
@@ -137,7 +147,7 @@ const frenchDate = (iso: string) =>
   });
 ---
 
-<Layout title={member ? `${fullName} - Nozay Bad` : 'Fiche adhérent - Nozay Bad'}>
+<Layout title={member ? fullName : 'Fiche adhérent'}>
   <Header currentPath="/adherents" />
 
   <main class="flex-1 p-3 sm:p-6 w-full pb-24 md:pb-6">
@@ -241,10 +251,10 @@ const frenchDate = (iso: string) =>
     </div>
   </main>
 
-  <MobileNav currentPath="/adherents" client:load />
+  <MobileNav features={Astro.locals.club?.features ?? {}} currentPath="/adherents" client:load />
 
   <footer class="hidden md:block border-t border-border mt-12 py-8 bg-card/20 text-center text-xs text-muted-foreground md:pb-8">
-    <p>© {new Date().getFullYear()} Nozay Badminton Association. Tous droits réservés.</p>
+    <p>© {new Date().getFullYear()} {Astro.locals.club?.settings.name}. Tous droits réservés.</p>
     <p class="mt-2"><a href="/confidentialite" class="hover:underline">Politique de confidentialité</a> · <a href="/mentions-legales" class="hover:underline">Mentions légales</a></p>
   </footer>
 </Layout>

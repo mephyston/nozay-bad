@@ -1,6 +1,5 @@
 import { PDFDocument, PDFFont, StandardFonts, rgb } from 'pdf-lib';
 import {
-  BRAND,
   CONTENT_W,
   GREY,
   INK,
@@ -11,7 +10,8 @@ import {
   formatFrenchDate,
   loadLetterhead
 } from '@nba/pdf';
-import { CLUB_BANK } from '../../shared/club-bank';
+import type { LetterheadSpec } from '@nba/pdf';
+import type { BankDetails } from '@nba/club/settings';
 
 export type DepositSlipCheck = {
   number: string;
@@ -70,25 +70,31 @@ const CELL_PAD = 4;
  * Une remise longue tient sur plusieurs feuilles, toutes à l'en-tête du club, l'en-tête
  * du tableau repris à chaque page.
  */
-export async function generateDepositSlipPdf(data: DepositSlipData): Promise<Uint8Array> {
+export async function generateDepositSlipPdf(
+  data: DepositSlipData,
+  spec: LetterheadSpec,
+  bank: BankDetails,
+  city: string
+): Promise<Uint8Array> {
   const doc = await PDFDocument.create();
   doc.setTitle(`Bordereau de remise ${data.reference}`);
-  doc.setCreator('Nozay Badminton Association');
+  doc.setCreator(spec.clubName);
 
   const font = await doc.embedFont(StandardFonts.Helvetica);
   const bold = await doc.embedFont(StandardFonts.HelveticaBold);
-  const letterhead = await loadLetterhead(doc);
+  const letterhead = await loadLetterhead(doc, spec);
+  const BRAND = letterhead.brand;
 
   const rightEdge = PAGE_W - MARGIN;
   const bottomLimit = letterhead.bodyBottom + 14;
 
   let page = doc.addPage([PAGE_W, PAGE_H]);
-  drawLetterhead(page, letterhead, font);
+  drawLetterhead(page, letterhead, font, bold);
   let y = letterhead.bodyTop - 16;
 
   function addBlankPage() {
     page = doc.addPage([PAGE_W, PAGE_H]);
-    drawLetterhead(page, letterhead, font);
+    drawLetterhead(page, letterhead, font, bold);
     y = letterhead.bodyTop - 20;
   }
   function ensureSpace(needed: number) {
@@ -124,13 +130,13 @@ export async function generateDepositSlipPdf(data: DepositSlipData): Promise<Uin
   y = blockTop;
   page.drawText('Compte à créditer', { x: bankX, y, size: 9, font: bold, color: GREY });
   y -= 14;
-  page.drawText(CLUB_BANK.titulaire, { x: bankX, y, size: 11, font: bold, color: INK });
+  page.drawText(bank.holder, { x: bankX, y, size: 11, font: bold, color: INK });
   y -= 13;
-  page.drawText(CLUB_BANK.nom, { x: bankX, y, size: 10, font, color: INK });
+  page.drawText(bank.bank, { x: bankX, y, size: 10, font, color: INK });
   y -= 13;
-  page.drawText(`IBAN ${CLUB_BANK.iban}`, { x: bankX, y, size: 9.5, font, color: INK });
+  page.drawText(`IBAN ${bank.iban}`, { x: bankX, y, size: 9.5, font, color: INK });
   y -= 13;
-  page.drawText(`BIC ${CLUB_BANK.bic}`, { x: bankX, y, size: 9.5, font, color: INK });
+  page.drawText(`BIC ${bank.bic}`, { x: bankX, y, size: 9.5, font, color: INK });
 
   y = Math.min(leftBottom, y) - 30;
 
@@ -209,7 +215,7 @@ export async function generateDepositSlipPdf(data: DepositSlipData): Promise<Uin
     borderColor: RULE_GREY,
     borderWidth: 0.8
   });
-  page.drawText('Fait à Nozay, le ____ / ____ / ________', { x: MARGIN + 12, y, size: 9.5, font, color: INK });
+  page.drawText(`Fait à ${city || '________'}, le ____ / ____ / ________`, { x: MARGIN + 12, y, size: 9.5, font, color: INK });
   page.drawText('Signature du trésorier :', { x: MARGIN + CONTENT_W * 0.55, y, size: 9.5, font, color: INK });
 
   // ---------- PAGINATION (si plusieurs feuilles) ----------

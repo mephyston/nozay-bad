@@ -24,7 +24,7 @@ import {
   type PostRow
 } from '../lib/cms';
 import { resolveEnv } from '../lib/request-context';
-import { pageTitle, homeTitle, pageDescription, absoluteUrl, SITE_NAME, SITE_LOCALITY } from '../lib/seo';
+import { pageTitle, homeTitle, pageDescription, absoluteUrl, siteIdentityOf } from '../lib/seo';
 import {
   sportsClub,
   webSite,
@@ -41,6 +41,7 @@ import { HTML_CACHE_CONTROL } from '../lib/cache';
 
 const env = resolveEnv(Astro.locals);
 const siteUrl = env.SITE_URL ?? import.meta.env.PUBLIC_SITE_URL ?? Astro.url.origin;
+const site = siteIdentityOf(Astro.locals.club);
 
 const path = normalisePath(Astro.url.pathname);
 
@@ -192,7 +193,7 @@ const dateFormatter = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'long' });
 // --- Vue « actualité » --------------------------------------------------------
 const postPublished = post?.publishedAt ? new Date(post.publishedAt).toISOString() : null;
 const postDescription = post
-  ? (post.seoDescription ?? post.excerpt ?? `${post.title} — ${SITE_NAME}, ${SITE_LOCALITY}`)
+  ? (post.seoDescription ?? post.excerpt ?? `${post.title} — ${site.name}${site.locality ? `, ${site.locality}` : ''}`)
   : '';
 const postJsonLd = post
   ? [
@@ -225,7 +226,7 @@ const firstBlock = blocks[0];
 const openingIsVisual =
   firstBlock?.type === 'carousel' ||
   (firstBlock?.type === 'cta_grid' && Boolean(firstBlock.backgroundMediaId));
-const pageDescriptionText = page ? pageDescription(page.seoDescription, blocks) : '';
+const pageDescriptionText = page ? pageDescription(page.seoDescription, blocks, site) : '';
 const pageJsonLd: unknown[] = [];
 if (page) {
   const trail = [{ name: 'Accueil', path: '/' }];
@@ -239,10 +240,11 @@ if (page) {
   // par son `@id`, et la lire décrite avant d'être citée épargne un aller-retour à qui
   // relit la source. L'ordre n'a pas de sens pour un analyseur — il en a pour nous.
   if (isHome && homeSettings) {
-    pageJsonLd.unshift(webSite(siteUrl));
+    pageJsonLd.unshift(webSite(siteUrl, site));
     pageJsonLd.unshift(
       sportsClub(
         siteUrl,
+        site,
         socialLinks(homeSettings).map((l) => l.href),
         // Les horaires entrent dans la fiche elle-même quand l'accueil affiche la
         // grille : un second nœud pour le même club serait un club de trop.
@@ -276,7 +278,7 @@ if (page) {
       */
       const announcement = announcementPostByEvent.get(event.id);
       pageJsonLd.push(
-        clubEvent(siteUrl, {
+        clubEvent(siteUrl, site, {
           title: event.title,
           category: event.category,
           startsAt: event.startsAt,
@@ -286,7 +288,7 @@ if (page) {
           status: event.status,
           url: announcement?.path ?? page.path,
           image: announcement?.cover ? absoluteUrl(siteUrl, mediaPath(announcement.cover.key)) : null,
-          venue: matchVenue(venues, event.venueLabel)
+          venue: matchVenue(venues, event.venueLabel, site)
         })
       );
     }
@@ -295,13 +297,13 @@ if (page) {
   // Les horaires rendent la page « Créneaux » exploitable par une machine. Sur
   // l'accueil, ils sont déjà dans la fiche du club ; ailleurs, le nœud porte le même
   // `@id` qu'elle pour que ce soit le même club.
-  if (slots.length > 0 && !isHome) pageJsonLd.push(clubOpeningHours(siteUrl, slots));
+  if (slots.length > 0 && !isHome) pageJsonLd.push(clubOpeningHours(siteUrl, site, slots));
 }
 ---
 
 {post && (
   <BaseLayout
-    title={pageTitle(post.seoTitle, post.title)}
+    title={pageTitle(post.seoTitle, post.title, site)}
     description={postDescription}
     canonical={absoluteUrl(siteUrl, post.path)}
     ogType="article"
@@ -361,7 +363,7 @@ if (page) {
 
 {page && (
   <BaseLayout
-    title={isHome ? homeTitle(page.seoTitle) : pageTitle(page.seoTitle, page.title)}
+    title={isHome ? homeTitle(page.seoTitle, site) : pageTitle(page.seoTitle, page.title, site)}
     description={pageDescriptionText}
     canonical={absoluteUrl(siteUrl, page.path)}
     noindex={page.noindex || isPreview}

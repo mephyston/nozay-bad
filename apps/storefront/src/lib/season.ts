@@ -1,3 +1,4 @@
+import { localDate, DEFAULT_TIMEZONE } from '@nba/club-ui';
 import { createApiClient } from '@nba/api-client';
 
 /**
@@ -22,16 +23,11 @@ export interface Season {
  * Date du jour à Paris, en `YYYY-MM-DD`. Le worker tourne en UTC : s'en remettre à lui
  * ferait basculer la saison deux heures trop tard, le 31 août au soir.
  *
- * Volontairement dupliqué de `lookup-household/repository.ts` : le storefront ne doit pas
- * tirer un domaine entier (routes Hono + accès D1) dans son bundle pour six lignes.
+ * Le jour civil du club, dans son fuseau (`club_settings.timezone`) ; la métropole par
+ * défaut. Nom historique gardé pour ses appelants.
  */
-export function parisToday(now: Date = new Date()): string {
-  return new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Europe/Paris',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit'
-  }).format(now);
+export function parisToday(now: Date = new Date(), timeZone: string = DEFAULT_TIMEZONE): string {
+  return localDate(now, timeZone);
 }
 
 // Mémo à l'échelle de l'isolate, pour ne pas relire KV à chaque page. Daté lui aussi :

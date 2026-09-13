@@ -55,3 +55,11 @@ describe('créneaux dérivés', () => {
     expect(formatWindow({ index: 1, startTime: '19:30', endTime: '20:00' })).toBe('19h30-20h00');
   });
 });
+
+describe('isIndivEligibleGroup — mot réglé par le club', () => {
+  it('cherche le mot du club, sans accent ni casse', () => {
+    expect(isIndivEligibleGroup('Élite jeunes', 'elite')).toBe(true);
+    expect(isIndivEligibleGroup('Compétiteurs adultes', 'élite')).toBe(false);
+    expect(isIndivEligibleGroup('Compétiteurs adultes', '')).toBe(false);
+  });
+});

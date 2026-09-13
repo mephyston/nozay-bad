@@ -14,7 +14,7 @@ describe('Generate Deposit Slip Route', () => {
     const { mockD1 } = await setupMockDb();
     const res = await generateDepositSlipRoute.request('http://localhost/check-deposits/not-a-number/deposit-slip.pdf', {
       method: 'GET'
-    }, { DB: mockD1 as any });
+    }, { DB: mockD1 as any, MEDIA: {} as any });
     expect(res.status).toBe(400);
   });
 
@@ -24,12 +24,12 @@ describe('Generate Deposit Slip Route', () => {
 
     const res = await generateDepositSlipRoute.request('http://localhost/check-deposits/1/deposit-slip.pdf', {
       method: 'GET'
-    }, { DB: mockD1 as any });
+    }, { DB: mockD1 as any, MEDIA: {} as any });
 
     expect(res.status).toBe(200);
     expect(res.headers.get('content-type')).toBe('application/pdf');
     expect(res.headers.get('content-disposition')).toBe('inline; filename="Bordereau-REMISE-1.pdf"');
     expect(res.headers.get('cache-control')).toBe('no-store');
-    expect(vi.mocked(generateDepositSlip)).toHaveBeenCalledWith(expect.anything(), 1);
+    expect(vi.mocked(generateDepositSlip)).toHaveBeenCalledWith(expect.anything(), expect.anything(), 1);
   });
 });

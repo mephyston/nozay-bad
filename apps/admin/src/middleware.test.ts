@@ -20,7 +20,7 @@ vi.mock('jose', async (importOriginal) => {
  * `GET /iam/me`, en affirmant l'identité par l'en-tête `x-user-email`.
  */
 const ACCOUNTS: Record<string, { roles: string[]; permissions: string[] }> = {
-  'admin@nozaybad.fr': { roles: ['super_admin'], permissions: [] },
+  'admin@example.invalid': { roles: ['super_admin'], permissions: [] },
   'prod-user@nozay-bad.fr': { roles: ['super_admin'], permissions: [] }
 };
 
@@ -107,7 +107,7 @@ describe('Astro Auth Middleware', () => {
     const response = await handleAuth(context, next);
 
     expect(response.status).toBe(200);
-    expect(context.locals.user).toMatchObject({ email: 'admin@nozaybad.fr' });
+    expect(context.locals.user).toMatchObject({ email: 'admin@example.invalid' });
     expect(next).toHaveBeenCalled();
   });
 

@@ -18,7 +18,7 @@ describe('clé de cache', () => {
 
   it('intègre la version du contenu — c’est ce qui remplace la purge', () => {
     expect(cacheKeyFor('/presentation/', 4, '', LUNDI).url)
-      .toBe('https://cache.nozaybad.fr/v4/d2026-09-07/presentation/');
+      .toBe('https://cache.local/v4/d2026-09-07/presentation/');
   });
 
   it('rend inatteignable tout ce qui précède un changement de version', () => {
@@ -51,12 +51,12 @@ describe('clé de cache', () => {
   */
   it('ne date pas un chemin empreinté', () => {
     expect(cacheKeyFor('/media/abc/400.webp', null, '', LUNDI).url)
-      .toBe('https://cache.nozaybad.fr/media/abc/400.webp');
+      .toBe('https://cache.local/media/abc/400.webp');
   });
 
   it('ne dépend pas de l’hôte servi', () => {
     // Sinon l'apex et la préproduction rempliraient deux caches pour un même contenu.
-    expect(cacheKeyFor('/a/', 1).url.startsWith('https://cache.nozaybad.fr/')).toBe(true);
+    expect(cacheKeyFor('/a/', 1).url.startsWith('https://cache.local/')).toBe(true);
   });
 });
 
@@ -195,7 +195,7 @@ describe('withPageCache — ce qui est rangé', () => {
 
     // Une seule entrée, hors espace de version : republier un article ne doit pas
     // vider la médiathèque du bord, la clé portant déjà l'empreinte du fichier.
-    expect([...entries.keys()]).toEqual(['https://cache.nozaybad.fr/media/abc/400.webp']);
+    expect([...entries.keys()]).toEqual(['https://cache.local/media/abc/400.webp']);
     expect(reads, 'la seconde demande vient du cache malgré la republication').toBe(1);
   });
 
@@ -212,7 +212,7 @@ describe('withPageCache — ce qui est rangé', () => {
     );
     // `d2026-08-30` est le jour du rendu, second terme de la clé après la version : c'est
     // la date où `vitest.setup.clock.ts` fige la suite.
-    expect([...entries.keys()]).toEqual(['https://cache.nozaybad.fr/v3/d2026-08-30/rss.xml']);
+    expect([...entries.keys()]).toEqual(['https://cache.local/v3/d2026-08-30/rss.xml']);
   });
 
   it('ne range pas une réponse qui ne déclare rien', async () => {
@@ -409,7 +409,7 @@ describe('chemins empreintés', () => {
   it('range les médias hors de tout espace de version', () => {
     expect(isFingerprintedPath('/media/abc/400.webp')).toBe(true);
     expect(isFingerprintedPath('/actualites/')).toBe(false);
-    expect(cacheKeyFor('/media/abc/400.webp', null).url).toBe('https://cache.nozaybad.fr/media/abc/400.webp');
+    expect(cacheKeyFor('/media/abc/400.webp', null).url).toBe('https://cache.local/media/abc/400.webp');
   });
 });
 

@@ -73,7 +73,7 @@ const openSection = nav.findIndex((item) => item.children.length > 0 && isActive
       nom du club — deviendrait illisible sur mobile.
 
       `alt` vide sur les deux : le nom qui suit dit déjà où mène ce lien, et le
-      dupliquer ferait annoncer « Nozay Badminton Association » deux fois de suite au
+      dupliquer ferait annoncer le nom du club deux fois de suite au
       lecteur d'écran.
     */}
     <a href="/" class="font-display flex shrink-0 items-center gap-2">
@@ -105,7 +105,7 @@ const openSection = nav.findIndex((item) => item.children.length > 0 && isActive
         en accessibilité et en navigation agentique. Visuellement hidden et sr-only
         reviennent au même ; seul le lecteur d'écran voit la différence.
       */}
-      <span class="sr-only sm:not-sr-only">Nozay Badminton Association</span>
+      <span class="sr-only sm:not-sr-only">{Astro.locals.club?.settings.name}</span>
     </a>
 
     {/* Les sous-menus s'ouvrent au survol **et** au focus clavier : un `:hover` seul

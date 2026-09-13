@@ -48,6 +48,8 @@ export const clubSettingsTable = sqliteTable('club_settings', {
 
   // — Mentions légales —
   legalSeat: text('legal_seat').notNull().default(''),
+  /** Directeur de la publication (mentions légales) : le représentant légal, en général. */
+  publicationDirector: text('publication_director').notNull().default(''),
   rna: text('rna').notNull().default(''),
   siret: text('siret').notNull().default(''),
   ddjsApproval: text('ddjs_approval').notNull().default(''),

@@ -118,7 +118,7 @@ const directory = players.map((p: any) => ({
 
 ---
 
-<Layout title="Mon club - Nozay Bad">
+<Layout title="Mon club">
   <Header currentPath="/equipes" />
 
   <main class="flex-1 p-3 sm:p-6 w-full pb-24 md:pb-6 max-w-5xl mx-auto space-y-6">
@@ -248,5 +248,5 @@ const directory = players.map((p: any) => ({
     ))}
   </main>
 
-  <MobileNav currentPath="/equipes" client:load />
+  <MobileNav features={Astro.locals.club?.features ?? {}} currentPath="/equipes" client:load />
 </Layout>

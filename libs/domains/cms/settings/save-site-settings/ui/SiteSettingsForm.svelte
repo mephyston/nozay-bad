@@ -97,7 +97,7 @@
           bind:value={description}
           maxlength={200}
           disabled={!canWrite}
-          placeholder="Plus qu'une Tribu !"
+          placeholder="Le slogan du club"
         />
       </FormField>
 
@@ -108,7 +108,7 @@
           maxlength={200}
           rows={2}
           disabled={!canWrite}
-          placeholder="Place de la Mairie, 91620 Nozay"
+          placeholder="Adresse du siège"
         />
       </FormField>
     </Card.Content>
@@ -131,7 +131,7 @@
           bind:value={instagram}
           maxlength={500}
           disabled={!canWrite}
-          placeholder="https://www.instagram.com/nozaybad/"
+          placeholder="https://www.instagram.com/…"
         />
       </FormField>
 
@@ -141,7 +141,7 @@
           bind:value={facebook}
           maxlength={500}
           disabled={!canWrite}
-          placeholder="https://www.facebook.com/nozaybad/"
+          placeholder="https://www.facebook.com/…"
         />
       </FormField>
     </Card.Content>

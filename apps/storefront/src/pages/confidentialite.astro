@@ -3,19 +3,26 @@ import Layout from '../layouts/Layout.astro';
 import MobileNav from '../components/MobileNav.svelte';
 
 // Page publique (accessible sans connexion — voir l'allow-list du middleware).
-const lastUpdate = 'août 2026';
+const lastUpdate = 'septembre 2026';
+
+// Tout ce qui nomme le club vient de sa configuration : cette page est la même pour
+// tous les clubs, seules les valeurs changent. L'adresse est découpée en deux attributs
+// assemblés côté client (anti-moissonnage), comme avant.
+const club = Astro.locals.club?.settings;
+const nom = club?.name ?? '';
+const [mailUser = '', mailDomain = ''] = (club?.contactEmail ?? '').split('@');
 
 // La barre de navigation n'est posée que pour un visiteur connecté : elle pointe
 // vers des écrans authentifiés, qui renverraient un visiteur anonyme vers le login.
 const session = Astro.locals.session;
 ---
 
-<Layout title="Politique de confidentialité - Nozay Badminton Association" description="Politique de confidentialité de l'association Nozay Badminton, détaillant la collecte et le traitement des données personnelles des adhérents.">
+<Layout title="Politique de confidentialité" description={`Politique de confidentialité de ${nom}, détaillant la collecte et le traitement des données personnelles des adhérents.`}>
   <main class="flex-1 w-full">
     <div class="max-w-3xl mx-auto px-4 sm:px-6 py-10 pb-28 md:pb-10">
       <a href="/" class="inline-flex items-center gap-2 mb-6">
         <img src="/logo.png" alt="Logo" class="h-7 w-7 object-contain" />
-        <span class="font-bold text-sm text-foreground tracking-tight">Nozay Badminton Association</span>
+        <span class="font-bold text-sm text-foreground tracking-tight">{nom}</span>
       </a>
 
       <h1 class="text-2xl font-bold text-foreground">Politique de confidentialité</h1>
@@ -25,9 +32,9 @@ const session = Astro.locals.session;
         <section class="space-y-2">
           <h2 class="text-lg font-semibold">1. Responsable du traitement</h2>
           <p class="text-muted-foreground">
-            Le responsable du traitement des données est <strong class="text-foreground">Nozay Badminton Association</strong>,
-            association loi 1901, dont le siège est situé <strong class="text-foreground">Mairie de Nozay, 91620 NOZAY</strong>.
-            Pour toute question relative à vos données : <a class="email-protect text-primary hover:underline" data-u="tresorier" data-d="nozaybad.fr" href="#">notre adresse email</a>.
+            Le responsable du traitement des données est <strong class="text-foreground">{nom}</strong>,
+            association loi 1901{club?.legalSeat && <Fragment>, dont le siège est situé <strong class="text-foreground">{club.legalSeat}</strong></Fragment>}.
+            Pour toute question relative à vos données : <a class="email-protect text-primary hover:underline" data-u={mailUser} data-d={mailDomain} href="#">notre adresse email</a>.
           </p>
         </section>
 
@@ -104,7 +111,7 @@ const session = Astro.locals.session;
             Conformément au Règlement général sur la protection des données (RGPD), vous disposez d'un droit d'<strong class="text-foreground">accès</strong>,
             de <strong class="text-foreground">rectification</strong>, d'<strong class="text-foreground">effacement</strong>, de <strong class="text-foreground">limitation</strong>,
             d'<strong class="text-foreground">opposition</strong> et de <strong class="text-foreground">portabilité</strong> de vos données.
-            Pour les exercer, écrivez à <a class="email-protect text-primary hover:underline" data-u="tresorier" data-d="nozaybad.fr" href="#">notre adresse email</a>.
+            Pour les exercer, écrivez à <a class="email-protect text-primary hover:underline" data-u={mailUser} data-d={mailDomain} href="#">notre adresse email</a>.
           </p>
           <p class="text-muted-foreground">
             Vous pouvez également introduire une réclamation auprès de la <strong class="text-foreground">CNIL</strong> (Commission nationale de l'informatique et des libertés) — <a href="https://www.cnil.fr" target="_blank" rel="noopener" class="text-primary hover:underline">www.cnil.fr</a>.
@@ -123,12 +130,12 @@ const session = Astro.locals.session;
         {!session && (
           <p class="mb-2"><a href="/" class="text-primary hover:underline">Retour à l'accueil</a></p>
         )}
-        <p>© {new Date().getFullYear()} Nozay Badminton Association. Tous droits réservés.</p>
+        <p>© {new Date().getFullYear()} {Astro.locals.club?.settings.name}. Tous droits réservés.</p>
       </footer>
     </div>
   </main>
 
-  {session && <MobileNav currentPath="/confidentialite" />}
+  {session && <MobileNav features={Astro.locals.club?.features ?? {}} currentPath="/confidentialite" />}
 
   <script is:inline>
     // Assemble l'email côté client : l'adresse n'apparaît pas dans le HTML statique

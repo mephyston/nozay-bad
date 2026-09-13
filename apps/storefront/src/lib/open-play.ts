@@ -91,7 +91,7 @@ export function formatSessionDate(date: string): string {
     weekday: 'long',
     day: 'numeric',
     month: 'long',
-    timeZone: 'Europe/Paris'
+    timeZone: 'UTC'
   }).format(new Date(`${date}T12:00:00Z`));
 }
 

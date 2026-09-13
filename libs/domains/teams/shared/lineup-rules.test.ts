@@ -218,7 +218,7 @@ describe('règles d’historique', () => {
 
       const issue = withHistory(past).warnings.find((w) => w.code === 'W5');
       expect(issue).toBeDefined();
-      expect(issue!.message).toContain('NBA91-1');
+      expect(issue!.message).toContain("titulaire de l'équipe 1");
     });
 
     it('se tait sous trois rencontres', () => {

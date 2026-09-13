@@ -33,6 +33,7 @@ CREATE TABLE `club_settings` (
 	`sender_name` text NOT NULL,
 	`ffbad_membership_url` text DEFAULT '' NOT NULL,
 	`legal_seat` text DEFAULT '' NOT NULL,
+	`publication_director` text DEFAULT '' NOT NULL,
 	`rna` text DEFAULT '' NOT NULL,
 	`siret` text DEFAULT '' NOT NULL,
 	`ddjs_approval` text DEFAULT '' NOT NULL,
@@ -73,7 +74,7 @@ CREATE TABLE `club_features` (
 INSERT OR IGNORE INTO `club_settings` (
 	`id`, `name`, `short_name`, `slug`, `tagline`, `city`, `postal_code`, `department`, `region`, `address_lines`,
 	`contact_email`, `treasurer_email`, `president_email`, `sender_name`, `ffbad_membership_url`,
-	`legal_seat`, `rna`, `siret`, `ddjs_approval`, `ffbad_affiliation`,
+	`legal_seat`, `publication_director`, `rna`, `siret`, `ddjs_approval`, `ffbad_affiliation`,
 	`bank_holder`, `bank_name`, `iban`, `bic`,
 	`team_prefix`, `invoice_prefix`, `championship_committee`, `league`,
 	`brand_color`, `email_signature`, `updated_at`
@@ -81,7 +82,7 @@ INSERT OR IGNORE INTO `club_settings` (
 	1, 'Nozay Badminton Association', 'NBA 91', 'nozay', 'Plus qu''une Tribu !', 'Nozay', '91620', '91', 'Essonne', 'Place de la Mairie
 91620 Nozay',
 	'tresorier@nozaybad.fr', 'tresorier@nozaybad.fr', 'president@nozaybad.fr', 'Nozay Badminton Association', 'https://www.myffbad.fr/adherer/NBA91',
-	'Mairie de Nozay, 91620 NOZAY', '0913011863', '433 218 716 00010', '91 S 744', 'LIFB.91.96.018',
+	'Mairie de Nozay, 91620 NOZAY', 'Fabien LE BLEVEC', '0913011863', '433 218 716 00010', '91 S 744', 'LIFB.91.96.018',
 	'Nozay Badminton', 'Société Générale', 'FR76 3000 3008 4600 0500 0784 720', 'SOGEFRPP',
 	'NBA91', 'NBA91', 'CD91', 'LIFB',
 	'#23B8E9', 'Nozay Badminton Association', CAST(strftime('%s','now') AS INTEGER)

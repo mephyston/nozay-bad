@@ -15,6 +15,7 @@ import { announcementsByEvent } from '@nba/cms/public';
 import { fetchUpcomingEvents } from '../lib/agenda';
 import { fetchOpenPlaySessions, OPEN_PLAY_HORIZON_DAYS } from '../lib/open-play';
 import { fetchNextIndivSession } from '../lib/indiv';
+import { featureOn } from '@nba/club/context';
 import { resolveEnv } from '../lib/request-context';
 import { fetchTodayBirthdays } from '../lib/birthdays';
 import { fetchMyFixtures, normalizeLicence } from '../lib/my-fixtures';
@@ -39,7 +40,10 @@ const status = await getActiveMemberStatus(env, session);
 // la prochaine — l'agenda porte les suivantes.
 const licence = normalizeLicence(active?.licence);
 
-const runtimeEnv = resolveEnv<{ OPEN_PLAY_ENABLED?: string; INDIV_ENABLED?: string }>(Astro.locals);
+// Le jeu libre suit la configuration du club ; les indiv restent en plus derrière le
+// drapeau de livraison `INDIV_ENABLED` de cette application (voir .env.example).
+const openPlayEnabled = featureOn(Astro.locals.club, 'open_play');
+const indivEnabled = resolveEnv<{ INDIV_ENABLED?: string }>(Astro.locals).INDIV_ENABLED === 'true' && featureOn(Astro.locals.club, 'indiv');
 
 /*
  * Deux lectures d'actualités, et non plus une : trois articles à afficher, et l'index des
@@ -52,7 +56,7 @@ const [{ posts: latestPosts }, annonces, events, birthdays, fixtures, openPlay, 
   fetchUpcomingEvents(env, 1, session?.activeMemberId),
   fetchTodayBirthdays(env),
   fetchMyFixtures(env, status.seasonCode ?? null, licence, 1),
-  runtimeEnv.OPEN_PLAY_ENABLED === 'true'
+  openPlayEnabled
     ? fetchOpenPlaySessions(env, {
         memberId: session?.activeMemberId,
         licence: licence ?? undefined,
@@ -61,7 +65,7 @@ const [{ posts: latestPosts }, annonces, events, birthdays, fixtures, openPlay, 
     : Promise.resolve({ sessions: [], canOpen: false }),
   // La prochaine soirée d'indiv, une seule, et seulement pour un groupe compétiteur :
   // l'API répond `eligible` d'après le type d'adhésion lu à l'instant.
-  runtimeEnv.INDIV_ENABLED === 'true'
+  indivEnabled
     ? fetchNextIndivSession(env, { memberId: session?.activeMemberId, group: status.membershipType })
     : Promise.resolve({ session: null, eligible: false })
 ]);
@@ -98,7 +102,7 @@ const nextEvent = sessionComesFirst ? null : firstEvent;
 const nextSession = sessionComesFirst ? firstSession : null;
 ---
 
-<Layout title="Espace adhérent - Nozay Bad">
+<Layout title="Espace adhérent">
   <Header currentPath="/" />
 
   <main class="flex-1 p-3 sm:p-6 w-full pb-24 md:pb-6">
@@ -175,10 +179,10 @@ const nextSession = sessionComesFirst ? firstSession : null;
     </div>
   </main>
 
-  <MobileNav currentPath="/" />
+  <MobileNav features={Astro.locals.club?.features ?? {}} currentPath="/" />
 
   <footer class="hidden md:block border-t border-border mt-12 py-8 bg-card/20 text-center text-xs text-muted-foreground md:pb-8">
-    <p>© {new Date().getFullYear()} Nozay Badminton Association. Tous droits réservés.</p>
+    <p>© {new Date().getFullYear()} {Astro.locals.club?.settings.name}. Tous droits réservés.</p>
     <p class="mt-2"><a href="/confidentialite" class="hover:underline">Politique de confidentialité</a> · <a href="/mentions-legales" class="hover:underline">Mentions légales</a></p>
   </footer>
 </Layout>

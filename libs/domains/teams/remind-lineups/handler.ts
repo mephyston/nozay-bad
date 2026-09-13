@@ -1,6 +1,7 @@
 import { type Db } from '@nba/db';
 import { getContactEmailsForMembers, getMembersBySeason } from '@nba/members-api';
 import { enqueueNotification } from '@nba/notifications-api';
+import { getClubSettings } from '@nba/club/settings';
 import { CHAMPIONSHIP_RULES, teamName } from '../shared/championship';
 import { normalizeLicence } from '../shared/ranking';
 import { shiftIsoDate } from '../shared/ranking-resolution';
@@ -79,6 +80,7 @@ export async function remindMissingLineups(
   const reminded: RemindLineupsOutput['reminded'] = [];
 
   const teams = await findActiveTeams(db, input.seasonCode);
+  const { teamPrefix } = await getClubSettings(db);
   const byChampionship = new Map<string, ReminderTeam[]>();
   for (const team of teams) {
     const list = byChampionship.get(team.championship) ?? [];
@@ -160,13 +162,13 @@ export async function remindMissingLineups(
         .map((licence) => memberByLicence.get(normalizeLicence(licence)))
         .filter((member) => member !== undefined);
       if (staff.length === 0) {
-        console.log(`[push] rappel compo : ${teamName(team.number)} sans staff joignable, ignorée`);
+        console.log(`[push] rappel compo : ${teamName(teamPrefix, team.number)} sans staff joignable, ignorée`);
         continue;
       }
       const emails = await getContactEmailsForMembers(db, staff.map((m) => m!.id));
       if (emails.length === 0) continue;
 
-      const name = teamName(team.number);
+      const name = teamName(teamPrefix, team.number);
       const dayLabel = day.label ?? `J${day.number}`;
       const when =
         deadline.kind === 'match'

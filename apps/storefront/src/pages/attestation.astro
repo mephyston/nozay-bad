@@ -39,7 +39,7 @@ const pdfHref = selected ? `/api/attestation.pdf?memberId=${selected.id}` : '';
 const showPdf = Boolean(selected && attestable(selected));
 ---
 
-<Layout title="Attestation CSE - Nozay Bad">
+<Layout title="Attestation CSE">
   <Header currentPath="/attestation" />
 
   <!-- Sur mobile, la page est verrouillée à la hauteur de l'écran et seul le cadre du PDF
@@ -136,7 +136,7 @@ const showPdf = Boolean(selected && attestable(selected));
     </div>
   </main>
 
-  <MobileNav currentPath="/attestation" />
+  <MobileNav features={Astro.locals.club?.features ?? {}} currentPath="/attestation" />
 
   <style is:global>
     /* Mobile seulement : hauteur de l'écran, sans défilement du document ni rebond
@@ -179,7 +179,7 @@ const showPdf = Boolean(selected && attestable(selected));
   </script>
 
   <footer class="hidden md:block border-t border-border mt-12 py-8 bg-card/20 text-center text-xs text-muted-foreground md:pb-8">
-    <p>© {new Date().getFullYear()} Nozay Badminton Association. Tous droits réservés.</p>
+    <p>© {new Date().getFullYear()} {Astro.locals.club?.settings.name}. Tous droits réservés.</p>
     <p class="mt-2"><a href="/confidentialite" class="hover:underline">Politique de confidentialité</a> · <a href="/mentions-legales" class="hover:underline">Mentions légales</a></p>
   </footer>
 </Layout>

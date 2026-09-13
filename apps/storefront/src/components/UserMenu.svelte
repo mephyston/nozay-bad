@@ -29,8 +29,15 @@
   let {
     members = [],
     activeMemberId,
-    currentPath = ''
-  }: { members: Member[]; activeMemberId: number; currentPath?: string } = $props();
+    currentPath = '',
+    features = {}
+  }: {
+    members: Member[];
+    activeMemberId: number;
+    currentPath?: string;
+    /** Fonctionnalités du club ; une clé absente vaut « allumée ». */
+    features?: Partial<Record<string, boolean>>;
+  } = $props();
 
   let open = $state(false);
   let busy = $state(false);
@@ -61,9 +68,9 @@
       { href: '/mon-compte', label: 'Mon compte', icon: User },
       { href: `/adherents/${licence8}`, label: 'Ma fiche', icon: IdCard },
       { href: '/mon-compte#cotisation', label: 'Ma cotisation', icon: Wallet },
-      { href: '/attestation', label: 'Mon attestation CSE', icon: FileText },
-      { href: '/notifications', label: 'Notifications', icon: Bell },
-      ...(active?.expenseAuthorized
+      ...(features.attestations !== false ? [{ href: '/attestation', label: 'Mon attestation CSE', icon: FileText }] : []),
+      ...(features.push !== false ? [{ href: '/notifications', label: 'Notifications', icon: Bell }] : []),
+      ...(active?.expenseAuthorized && features.expenses !== false
         ? [{ href: '/note-de-frais', label: 'Notes de frais', icon: Receipt }]
         : [])
     ]

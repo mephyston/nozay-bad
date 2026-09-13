@@ -4,6 +4,11 @@ import { getBirthdaysForActiveSeason } from '../shared/queries';
 
 vi.mock('@nba/db', () => ({ createDb: vi.fn(() => ({})) }));
 vi.mock('../shared/queries', () => ({ getBirthdaysForActiveSeason: vi.fn().mockResolvedValue([]) }));
+// Le club de test vit en métropole : c'est le fuseau que les cas ci-dessous supposent.
+vi.mock('@nba/club/settings', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@nba/club/settings')>()),
+  getClubSettings: vi.fn().mockResolvedValue({ timezone: 'Europe/Paris' })
+}));
 
 const call = () => listBirthdaysRoute.request('/birthdays', {}, { DB: {} as any });
 

@@ -9,7 +9,7 @@ order: 3
 
 Ces créneaux sont **la source unique** des horaires. Ils alimentent le site public dès qu'ils changent, sans qu'aucune page ait à être modifiée : chaque page qui porte un bloc **Créneaux** les affiche à jour. Voir [Les blocs de contenu](/admin/help/site-blocs).
 
-Ils remplacent la feuille Google de l'ancien site, que les moteurs de recherche ne voyaient pas : « horaires badminton Nozay » ne ramenait rien. Le tableau est désormais du texte indexable, lisible aussi par un lecteur d'écran.
+Ils remplacent la feuille Google de l'ancien site, que les moteurs de recherche ne voyaient pas : « horaires badminton + votre ville » ne ramenait rien. Le tableau est désormais du texte indexable, lisible aussi par un lecteur d'écran.
 
 ## La saison
 

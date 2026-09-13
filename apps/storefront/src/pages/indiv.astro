@@ -1,4 +1,5 @@
 ---
+import { featureOn } from '@nba/club/context';
 import { resolveEnv } from '../lib/request-context';
 
 /*
@@ -12,7 +13,7 @@ import { resolveEnv } from '../lib/request-context';
   lit tout le fichier comme du balisage et casse le build sur la première accolade.
 */
 const flags = resolveEnv<{ INDIV_ENABLED?: string }>(Astro.locals);
-const enabled = flags.INDIV_ENABLED === 'true';
+const enabled = flags.INDIV_ENABLED === 'true' && featureOn(Astro.locals.club, 'indiv');
 
 return enabled ? Astro.redirect('/agenda#indiv', 302) : new Response(null, { status: 404 });
 ---

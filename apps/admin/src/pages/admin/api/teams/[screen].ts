@@ -66,6 +66,7 @@ export const ECRANS: Record<string, Ecran> = {
         seasons,
         seasonCode,
         daysChampionship,
+        teamPrefix: locals.club?.settings.teamPrefix ?? '',
         canWrite: can(locals, 'teams:teams:write'),
         canDelete: can(locals, 'teams:teams:delete')
       };

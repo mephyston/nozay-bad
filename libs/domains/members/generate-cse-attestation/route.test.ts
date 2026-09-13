@@ -12,7 +12,7 @@ describe('Generate CSE Attestation Route', () => {
     const { mockD1 } = await setupMockDb();
     const res = await generateCseAttestationRoute.request('http://localhost/not-a-number/cse-attestation.pdf', {
       method: 'GET'
-    }, { DB: mockD1 as any });
+    }, { DB: mockD1 as any, MEDIA: {} as any });
     expect(res.status).toBe(400);
   });
 });

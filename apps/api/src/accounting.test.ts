@@ -2352,14 +2352,16 @@ VERSION:102
     expect(updatedCheck.amountCents).toBe(25000);
 
     // 6c. Le bordereau s'imprime en PDF sur le papier à lettre du club.
-    const pdfRes = await app.request(`http://localhost/accounting/check-deposits/${depositId}/deposit-slip.pdf`, undefined, { DB: mockD1 as any });
+    // Le papier à lettre lit les images du club dans R2 : un magasin vide suffit, le PDF sort sans image.
+    const MEDIA = { head: async () => null, get: async () => null, put: async () => {} } as any;
+    const pdfRes = await app.request(`http://localhost/accounting/check-deposits/${depositId}/deposit-slip.pdf`, undefined, { DB: mockD1 as any, MEDIA });
     expect(pdfRes.status).toBe(200);
     expect(pdfRes.headers.get('content-type')).toBe('application/pdf');
     expect(pdfRes.headers.get('content-disposition')).toBe('inline; filename="Bordereau-REMISE-DE-TEST.pdf"');
     const pdfBytes = new Uint8Array(await pdfRes.arrayBuffer());
     expect(new TextDecoder().decode(pdfBytes.slice(0, 4))).toBe('%PDF');
 
-    const pdfMissing = await app.request('http://localhost/accounting/check-deposits/424242/deposit-slip.pdf', undefined, { DB: mockD1 as any });
+    const pdfMissing = await app.request('http://localhost/accounting/check-deposits/424242/deposit-slip.pdf', undefined, { DB: mockD1 as any, MEDIA });
     expect(pdfMissing.status).toBe(404);
 
     // 7. Simuler le rapprochement avec une transaction de relevé bancaire (id: 999)

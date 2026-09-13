@@ -9,6 +9,9 @@ import {
   looksLikeClub
 } from './extraction';
 
+/** Les formes du club de test, telles que `clubNameVariants` les produirait. */
+const FORMES = ['nozay badminton association', 'nozay badminton', 'nba 91', 'nba', 'nba91'];
+
 const TODAY = new Date('2026-09-08T12:00:00Z');
 
 describe('normaliseCheckNumber', () => {
@@ -104,19 +107,21 @@ describe('normaliseIssueDate', () => {
 
 describe('pickEmitter', () => {
   it('retient le titulaire imprimé, jamais le club bénéficiaire', () => {
-    expect(pickEmitter('M OU MME JEAN DUPONT', 'Nozay Badminton')).toBe('M OU MME JEAN DUPONT');
-    expect(pickEmitter('Nozay Badminton Association', 'Nozay Badminton')).toBe('');
-    expect(pickEmitter('NBA 91', null)).toBe('');
+    expect(pickEmitter('M OU MME JEAN DUPONT', 'Nozay Badminton', FORMES)).toBe('M OU MME JEAN DUPONT');
+    expect(pickEmitter('Nozay Badminton Association', 'Nozay Badminton', FORMES)).toBe('');
+    expect(pickEmitter('NBA 91', null, FORMES)).toBe('');
   });
 
   it('reprend le bénéficiaire quand le modèle a interverti les deux : le club est toujours le bénéficiaire', () => {
-    expect(pickEmitter('Nozay Badminton', 'Marie Durand')).toBe('Marie Durand');
-    expect(pickEmitter('', 'Nozay Badminton')).toBe('');
+    expect(pickEmitter('Nozay Badminton', 'Marie Durand', FORMES)).toBe('Marie Durand');
+    expect(pickEmitter('', 'Nozay Badminton', FORMES)).toBe('');
     expect(pickEmitter('', '')).toBe('');
   });
 
-  it('reconnaît les formes du club', () => {
+  it('reconnaît les formes du club, génériques ou propres au club', () => {
     expect(looksLikeClub('ASSOCIATION NOZAY BAD')).toBe(true);
-    expect(looksLikeClub('Jean Dupont')).toBe(false);
+    expect(looksLikeClub('NBA 91', FORMES)).toBe(true);
+    expect(looksLikeClub('NBA 91')).toBe(false); // sans les formes du club, le sigle seul ne dit rien
+    expect(looksLikeClub('Jean Dupont', FORMES)).toBe(false);
   });
 });

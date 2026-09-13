@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { setupMockDb } from '@nba/db/test-utils';
 import { seasonsTable } from '@nba/accounting/schema';
-import { LookupHouseholdRepository, licenceCandidates, parisToday } from './repository';
+import { LookupHouseholdRepository, licenceCandidates } from './repository';
 import { insertMemberFixture, insertMemberFixtures } from '@nba/members/test-fixtures';
 
 // Date figée à l'intérieur de la saison 25-26 : les tests ne doivent rien devoir à
@@ -296,15 +296,6 @@ describe('LookupHouseholdRepository', () => {
     it('ne complète pas ce qui n’est pas un numéro', () => {
       expect(licenceCandidates('ABC123')).toEqual(['ABC123']);
       expect(licenceCandidates('123456789')).toEqual(['123456789']);
-    });
-  });
-
-  describe('parisToday', () => {
-    it('rend la date parisienne, pas la date UTC', () => {
-      // 31 août 22h00 UTC = 1er septembre 00h00 à Paris : c'est exactement l'heure à
-      // laquelle la saison doit basculer.
-      expect(parisToday(new Date('2026-08-31T22:00:00Z'))).toBe('2026-09-01');
-      expect(parisToday(new Date('2026-08-31T21:00:00Z'))).toBe('2026-08-31');
     });
   });
 });

@@ -2,7 +2,7 @@
   import { Check, Banknote, Landmark, Copy } from '@lucide/svelte';
   import { Dialog, Button, Amount } from '@nba/ui';
   import type { OrderConfirmation } from './catalog-types';
-  import { CLUB_BANK_DETAILS, paymentMethodLabel, requiresBankTransfer, requiresCashHandover } from './catalog-utils';
+  import { paymentMethodLabel, requiresBankTransfer, requiresCashHandover, type ClubBankDetails } from './catalog-utils';
 
   /**
    * Accusé de réception d'une commande, en boîte modale.
@@ -16,7 +16,8 @@
   let {
     confirmation = $bindable(null),
     onAcknowledge,
-    historyHref = null
+    historyHref = null,
+    bankDetails = { holder: '', iban: '', bic: '' }
   }: {
     /** Commande à confirmer ; `null` ferme la boîte. */
     confirmation: OrderConfirmation | null;
@@ -24,6 +25,8 @@
     onAcknowledge: () => void;
     /** Adresse de l'historique des commandes, proposée en sortie de boîte ; `null` la tait. */
     historyHref?: string | null;
+    /** Le compte du club à créditer, depuis sa configuration. */
+    bankDetails?: ClubBankDetails;
   } = $props();
 
   const open = $derived(confirmation !== null);
@@ -128,9 +131,9 @@
             </p>
             <dl class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-xs">
               {#each [
-                { field: 'holder', label: 'Titulaire', value: CLUB_BANK_DETAILS.holder, mono: false },
-                { field: 'iban', label: 'IBAN', value: CLUB_BANK_DETAILS.iban, mono: true },
-                { field: 'bic', label: 'BIC', value: CLUB_BANK_DETAILS.bic, mono: true },
+                { field: 'holder', label: 'Titulaire', value: bankDetails.holder, mono: false },
+                { field: 'iban', label: 'IBAN', value: bankDetails.iban, mono: true },
+                { field: 'bic', label: 'BIC', value: bankDetails.bic, mono: true },
                 { field: 'reference', label: 'Motif', value: confirmation.transferReference, mono: false }
               ] as item (item.field)}
                 <dt class="self-center text-muted-foreground">{item.label}</dt>

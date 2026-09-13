@@ -97,7 +97,7 @@ export default defineConfig({
         échouait à chaque lancement. Le déclarer d'avance évite la ré-optimisation.
       */
       include: ['astro/assets/services/noop', 'astro/app/manifest', '@astrojs/svelte/server.js'],
-      exclude: ['astro:transitions', '@astrojs/cloudflare', '@nba/ui', '@nba/cms-ui']
+      exclude: ['astro:transitions', '@astrojs/cloudflare', '@nba/ui', '@nba/cms-ui', '@nba/club-ui']
     },
     ssr: { external: ['@astrojs/cloudflare'] }
   },

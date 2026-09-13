@@ -71,7 +71,7 @@ describe('formats de rencontre', () => {
 
 describe('nom des équipes', () => {
   it('dérive du numéro, jamais saisi', () => {
-    expect(teamName(1)).toBe('NBA91-1');
-    expect(teamName(3)).toBe('NBA91-3');
+    expect(teamName('CLUB', 1)).toBe('CLUB-1');
+    expect(teamName('XYZ12', 3)).toBe('XYZ12-3');
   });
 });

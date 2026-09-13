@@ -85,7 +85,7 @@ try {
 const activeSeasonId = displaySeason(seasons, session?.seasonCode)?.code ?? '';
 ---
 
-<Layout title="Boutique Adhérents - NBA 91">
+<Layout title="Boutique Adhérents">
   <Header currentPath="/boutique" />
 
   <main class="flex-1 p-3 sm:p-6 w-full pb-24 md:pb-6">
@@ -103,13 +103,18 @@ const activeSeasonId = displaySeason(seasons, session?.seasonCode)?.code ?? '';
       lockToMembers={true}
       initialMemberId={initialMemberId}
       historyHref="/mon-compte#commandes"
+      bankDetails={{
+        holder: Astro.locals.club?.settings.bankHolder ?? '',
+        iban: Astro.locals.club?.settings.iban ?? '',
+        bic: Astro.locals.club?.settings.bic ?? ''
+      }}
     />
   </main>
 
-  <MobileNav currentPath="/boutique" />
+  <MobileNav features={Astro.locals.club?.features ?? {}} currentPath="/boutique" />
 
   <footer class="hidden md:block border-t border-border mt-12 py-8 bg-card/20 text-center text-xs text-muted-foreground md:pb-8">
-    <p>© {new Date().getFullYear()} Nozay Badminton Association. Tous droits réservés.</p>
+    <p>© {new Date().getFullYear()} {Astro.locals.club?.settings.name}. Tous droits réservés.</p>
     <p class="mt-2"><a href="/confidentialite" class="hover:underline">Politique de confidentialité</a> · <a href="/mentions-legales" class="hover:underline">Mentions légales</a></p>
     <p class="mt-1">Les commandes passées via la boutique sont soumises à la validation du trésorier.</p>
   </footer>

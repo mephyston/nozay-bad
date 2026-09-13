@@ -10,6 +10,8 @@ export default defineConfig({
       'astro:transitions/client': path.resolve(__dirname, '../../libs/shared/ui/src/mocks/astro-transitions.ts'),
       '@nba/ui': path.resolve(__dirname, '../../libs/shared/ui/src/index.ts'),
       '@nba/api-client': path.resolve(__dirname, '../../libs/shared/api-client/src/index.ts'),
+      '@nba/club/context': path.resolve(__dirname, '../../libs/domains/club/shared/context.ts'),
+      '@nba/club-ui': path.resolve(__dirname, '../../libs/domains/club/shared/ui.ts'),
       '@nba/security-headers': path.resolve(__dirname, '../../libs/shared/security-headers/src/index.ts'),
       '@nba/runtime-env': path.resolve(__dirname, '../../libs/shared/runtime-env/src/index.ts'),
     },

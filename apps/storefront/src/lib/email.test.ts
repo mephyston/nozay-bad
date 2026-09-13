@@ -1,6 +1,16 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { sendOtpEmail, sendRenewalEmail, sendUpcomingAccessEmail, sendPaymentPendingEmail, FFBAD_MEMBERSHIP_URL } from './email';
+import { sendOtpEmail, sendRenewalEmail, sendUpcomingAccessEmail, sendPaymentPendingEmail, type ClubMailIdentity } from './email';
+
+/** Le club de test, tel que `clubMailIdentity` le composerait depuis la configuration. */
+const CLUB: ClubMailIdentity = {
+  name: 'Nozay Badminton',
+  senderName: 'Nozay Badminton Association',
+  contactEmail: 'tresorier@nozaybad.fr',
+  membershipUrl: 'https://www.myffbad.fr/adherer/NBA91',
+  signature: 'Nozay Badminton Association'
+};
+const FFBAD_MEMBERSHIP_URL = CLUB.membershipUrl;
 
 const KEY = 're_test_key';
 
@@ -17,26 +27,25 @@ describe('sendOtpEmail — garde-fou anti-envoi', () => {
   });
 
   it('n’envoie RIEN sans clé API (dry-run)', async () => {
-    const res = await sendOtpEmail({}, 'adherent@reel.fr', '123456');
+    const res = await sendOtpEmail({}, CLUB, 'adherent@reel.fr', '123456');
     expect(res.ok).toBe(true);
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it('n’envoie RIEN en mode dry-run même avec une clé', async () => {
-    const res = await sendOtpEmail({ RESEND_API_KEY: KEY, EMAIL_MODE: 'dry-run' }, 'adherent@reel.fr', '123456');
+    const res = await sendOtpEmail({ RESEND_API_KEY: KEY, EMAIL_MODE: 'dry-run' }, CLUB, 'adherent@reel.fr', '123456');
     expect(res.ok).toBe(true);
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it('n’envoie RIEN pour une valeur de mode inconnue (fail-closed)', async () => {
-    const res = await sendOtpEmail({ RESEND_API_KEY: KEY, EMAIL_MODE: 'staging' }, 'adherent@reel.fr', '123456');
+    const res = await sendOtpEmail({ RESEND_API_KEY: KEY, EMAIL_MODE: 'staging' }, CLUB, 'adherent@reel.fr', '123456');
     expect(res.ok).toBe(true);
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it('mode allowlist : ignore un destinataire hors liste', async () => {
-    const res = await sendOtpEmail(
-      { RESEND_API_KEY: KEY, EMAIL_MODE: 'allowlist', EMAIL_ALLOWLIST: 'moi@test.fr' },
+    const res = await sendOtpEmail({ RESEND_API_KEY: KEY, EMAIL_MODE: 'allowlist', EMAIL_ALLOWLIST: 'moi@test.fr' }, CLUB,
       'adherent@reel.fr',
       '123456'
     );
@@ -45,8 +54,7 @@ describe('sendOtpEmail — garde-fou anti-envoi', () => {
   });
 
   it('mode allowlist : envoie à un destinataire autorisé (insensible à la casse)', async () => {
-    await sendOtpEmail(
-      { RESEND_API_KEY: KEY, EMAIL_MODE: 'allowlist', EMAIL_ALLOWLIST: 'Moi@Test.fr, autre@test.fr' },
+    await sendOtpEmail({ RESEND_API_KEY: KEY, EMAIL_MODE: 'allowlist', EMAIL_ALLOWLIST: 'Moi@Test.fr, autre@test.fr' }, CLUB,
       'moi@test.fr',
       '123456'
     );
@@ -56,8 +64,7 @@ describe('sendOtpEmail — garde-fou anti-envoi', () => {
   });
 
   it('mode redirect : envoie vers la boîte de test, jamais à l’adhérent', async () => {
-    await sendOtpEmail(
-      { RESEND_API_KEY: KEY, EMAIL_MODE: 'redirect', EMAIL_TEST_INBOX: 'test@boite.fr' },
+    await sendOtpEmail({ RESEND_API_KEY: KEY, EMAIL_MODE: 'redirect', EMAIL_TEST_INBOX: 'test@boite.fr' }, CLUB,
       'adherent@reel.fr',
       '123456'
     );
@@ -67,13 +74,13 @@ describe('sendOtpEmail — garde-fou anti-envoi', () => {
   });
 
   it('mode redirect sans boîte de test : n’envoie rien', async () => {
-    const res = await sendOtpEmail({ RESEND_API_KEY: KEY, EMAIL_MODE: 'redirect' }, 'adherent@reel.fr', '123456');
+    const res = await sendOtpEmail({ RESEND_API_KEY: KEY, EMAIL_MODE: 'redirect' }, CLUB, 'adherent@reel.fr', '123456');
     expect(res.ok).toBe(true);
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it('mode live : envoie au destinataire réel', async () => {
-    await sendOtpEmail({ RESEND_API_KEY: KEY, EMAIL_MODE: 'live' }, 'adherent@reel.fr', '123456');
+    await sendOtpEmail({ RESEND_API_KEY: KEY, EMAIL_MODE: 'live' }, CLUB, 'adherent@reel.fr', '123456');
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const body = JSON.parse((fetchMock.mock.calls[0][1] as any).body);
     expect(body.to).toEqual(['adherent@reel.fr']);
@@ -95,19 +102,18 @@ describe('emails d’adhésion — mêmes garde-fous que l’OTP', () => {
   });
 
   it('sendRenewalEmail n’envoie RIEN sans clé API (dry-run)', async () => {
-    const res = await sendRenewalEmail({}, 'ancien@reel.fr', 'Saison 26-27');
+    const res = await sendRenewalEmail({}, CLUB, 'ancien@reel.fr', 'Saison 26-27');
     expect(res.ok).toBe(true);
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it('sendRenewalEmail n’envoie RIEN pour un mode inconnu (fail-closed)', async () => {
-    await sendRenewalEmail({ RESEND_API_KEY: KEY, EMAIL_MODE: 'staging' }, 'ancien@reel.fr', 'Saison 26-27');
+    await sendRenewalEmail({ RESEND_API_KEY: KEY, EMAIL_MODE: 'staging' }, CLUB, 'ancien@reel.fr', 'Saison 26-27');
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it('sendRenewalEmail redirige vers la boîte de test, jamais à l’ex-adhérent', async () => {
-    await sendRenewalEmail(
-      { RESEND_API_KEY: KEY, EMAIL_MODE: 'redirect', EMAIL_TEST_INBOX: 'test@boite.fr' },
+    await sendRenewalEmail({ RESEND_API_KEY: KEY, EMAIL_MODE: 'redirect', EMAIL_TEST_INBOX: 'test@boite.fr' }, CLUB,
       'ancien@reel.fr',
       'Saison 26-27'
     );
@@ -116,7 +122,7 @@ describe('emails d’adhésion — mêmes garde-fous que l’OTP', () => {
   });
 
   it('sendRenewalEmail porte le lien de réadhésion FFBad', async () => {
-    await sendRenewalEmail({ RESEND_API_KEY: KEY, EMAIL_MODE: 'live' }, 'ancien@reel.fr', 'Saison 26-27');
+    await sendRenewalEmail({ RESEND_API_KEY: KEY, EMAIL_MODE: 'live' }, CLUB, 'ancien@reel.fr', 'Saison 26-27');
     const body = JSON.parse((fetchMock.mock.calls[0][1] as any).body);
     expect(body.html).toContain(FFBAD_MEMBERSHIP_URL);
     expect(body.text).toContain(FFBAD_MEMBERSHIP_URL);
@@ -124,14 +130,13 @@ describe('emails d’adhésion — mêmes garde-fous que l’OTP', () => {
   });
 
   it('sendUpcomingAccessEmail n’envoie RIEN sans clé API (dry-run)', async () => {
-    const res = await sendUpcomingAccessEmail({}, 'nouveau@reel.fr', 'Saison 26-27', '2026-09-01');
+    const res = await sendUpcomingAccessEmail({}, CLUB, 'nouveau@reel.fr', 'Saison 26-27', '2026-09-01');
     expect(res.ok).toBe(true);
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it('sendUpcomingAccessEmail annonce la date d’ouverture en clair', async () => {
-    await sendUpcomingAccessEmail(
-      { RESEND_API_KEY: KEY, EMAIL_MODE: 'live' },
+    await sendUpcomingAccessEmail({ RESEND_API_KEY: KEY, EMAIL_MODE: 'live' }, CLUB,
       'nouveau@reel.fr',
       'Saison 26-27',
       '2026-09-01'
@@ -173,7 +178,7 @@ describe('plafonds d’envoi Resend', () => {
     fetchMock = failWith('daily_quota_exceeded');
     vi.stubGlobal('fetch', fetchMock);
 
-    const res = await sendOtpEmail(live, 'adherent@club.fr', '123456');
+    const res = await sendOtpEmail(live, CLUB, 'adherent@club.fr', '123456');
 
     expect(res.ok).toBe(false);
     expect(res.quotaReached).toBe(true);
@@ -183,14 +188,14 @@ describe('plafonds d’envoi Resend', () => {
   it('traite le plafond mensuel comme un quota atteint', async () => {
     vi.stubGlobal('fetch', failWith('monthly_quota_exceeded'));
 
-    const res = await sendOtpEmail(live, 'adherent@club.fr', '123456');
+    const res = await sendOtpEmail(live, CLUB, 'adherent@club.fr', '123456');
     expect(res.quotaReached).toBe(true);
   });
 
   it('distingue le débit par seconde, qui se réessaie tout de suite', async () => {
     vi.stubGlobal('fetch', failWith('rate_limit_exceeded'));
 
-    const res = await sendOtpEmail(live, 'adherent@club.fr', '123456');
+    const res = await sendOtpEmail(live, CLUB, 'adherent@club.fr', '123456');
 
     expect(res.ok).toBe(false);
     // Réessayer a du sens ici, contrairement au quota : ne pas le confondre.
@@ -201,7 +206,7 @@ describe('plafonds d’envoi Resend', () => {
   it('garde un message générique pour le reste', async () => {
     vi.stubGlobal('fetch', failWith('application_error', 500));
 
-    const res = await sendOtpEmail(live, 'adherent@club.fr', '123456');
+    const res = await sendOtpEmail(live, CLUB, 'adherent@club.fr', '123456');
 
     expect(res.ok).toBe(false);
     expect(res.quotaReached).toBeUndefined();
@@ -223,9 +228,9 @@ describe('l’adresse de contact des mails d’adhésion', () => {
 
   // `contact@nozaybad.fr` n'existe pas : une réponse d'adhérent y serait perdue.
   it('renvoie vers le trésorier, et jamais vers contact@ qui n’existe pas', async () => {
-    await sendPaymentPendingEmail({ RESEND_API_KEY: KEY, EMAIL_MODE: 'live' }, 'adherent@reel.fr', 'Saison 2026-2027');
-    await sendUpcomingAccessEmail({ RESEND_API_KEY: KEY, EMAIL_MODE: 'live' }, 'adherent@reel.fr', 'Saison 2026-2027', '2026-09-01');
-    await sendRenewalEmail({ RESEND_API_KEY: KEY, EMAIL_MODE: 'live' }, 'ancien@reel.fr', 'Saison 2026-2027');
+    await sendPaymentPendingEmail({ RESEND_API_KEY: KEY, EMAIL_MODE: 'live' }, CLUB, 'adherent@reel.fr', 'Saison 2026-2027');
+    await sendUpcomingAccessEmail({ RESEND_API_KEY: KEY, EMAIL_MODE: 'live' }, CLUB, 'adherent@reel.fr', 'Saison 2026-2027', '2026-09-01');
+    await sendRenewalEmail({ RESEND_API_KEY: KEY, EMAIL_MODE: 'live' }, CLUB, 'ancien@reel.fr', 'Saison 2026-2027');
     expect(fetchMock).toHaveBeenCalledTimes(3);
     for (const call of fetchMock.mock.calls) {
       const body = JSON.parse((call[1] as any).body);
@@ -236,7 +241,7 @@ describe('l’adresse de contact des mails d’adhésion', () => {
   });
 
   it('part de la boîte du trésorier quand EMAIL_FROM n’est pas réglé', async () => {
-    await sendOtpEmail({ RESEND_API_KEY: KEY, EMAIL_MODE: 'live' }, 'adherent@reel.fr', '123456');
+    await sendOtpEmail({ RESEND_API_KEY: KEY, EMAIL_MODE: 'live' }, CLUB, 'adherent@reel.fr', '123456');
     const body = JSON.parse((fetchMock.mock.calls[0][1] as any).body);
     expect(body.from).toBe('Nozay Badminton Association <tresorier@nozaybad.fr>');
   });

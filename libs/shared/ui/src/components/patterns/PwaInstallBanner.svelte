@@ -125,7 +125,7 @@
       {:else if target === 'android-other'}
         <span>Ce navigateur ne peut pas installer l'application : ouvrez le site dans Chrome pour le faire.</span>
       {:else}
-        <span>Ajoutez NBA à votre écran d'accueil pour une meilleure expérience.</span>
+        <span>Ajoutez l'application à votre écran d'accueil pour une meilleure expérience.</span>
       {/if}
     </div>
 

@@ -19,8 +19,10 @@ export interface VapidEnv {
 export function resolveVapid(env: VapidEnv | undefined): VapidKeys | null {
   const publicKey = env?.VAPID_PUBLIC_KEY?.trim();
   const privateKey = env?.VAPID_PRIVATE_KEY?.trim();
-  const subject = env?.VAPID_SUBJECT?.trim() || 'mailto:contact@nozaybad.fr';
-  if (!publicKey || !privateKey) return null;
+  // Sans sujet, pas d'envoi : le sujet VAPID est un contact que les services push
+  // peuvent joindre, et celui d'un autre club n'en est pas un.
+  const subject = env?.VAPID_SUBJECT?.trim() || '';
+  if (!publicKey || !privateKey || !subject) return null;
   return { subject, publicKey, privateKey };
 }
 

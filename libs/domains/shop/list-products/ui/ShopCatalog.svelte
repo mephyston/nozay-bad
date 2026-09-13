@@ -18,7 +18,8 @@
     activeSeasonId = '',
     lockToMembers = false,
     initialMemberId = '',
-    historyHref = null
+    historyHref = null,
+    bankDetails = { holder: '', iban: '', bic: '' }
   }: {
     products: Product[];
     members: Member[];
@@ -30,6 +31,8 @@
      * l'espace adhérent l'a — c'est son compte —, un écran qui commande pour autrui non.
      */
     historyHref?: string | null;
+    /** Le compte du club à créditer (configuration du club). */
+    bankDetails?: import('./catalog-utils').ClubBankDetails;
   } = $props();
 
   // Les articles en rupture ne sont pas proposés à la commande : inutile de les
@@ -289,7 +292,7 @@
       les espèces, notamment. Seul l'échec reste annoncé sur place, à côté du bouton
       qu'il faudra presser de nouveau.
     -->
-    <ShopCatalogConfirmation bind:confirmation onAcknowledge={resetOrderForm} {historyHref} />
+    <ShopCatalogConfirmation bind:confirmation onAcknowledge={resetOrderForm} {historyHref} {bankDetails} />
 
     {#if errorMessage}
       <Alert.Root variant="destructive">

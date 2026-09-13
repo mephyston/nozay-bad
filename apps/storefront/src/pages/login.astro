@@ -16,9 +16,9 @@ if (session) {
 }
 ---
 
-<Layout title="Connexion - Nozay Bad">
+<Layout title="Connexion">
   <main class="flex-1 flex flex-col items-center justify-center gap-6 p-6">
-    <LoginForm client:load />
+    <LoginForm client:load membershipUrl={Astro.locals.club?.settings.ffbadMembershipUrl || 'https://www.myffbad.fr/'} />
     <div class="flex gap-3 text-xs text-muted-foreground"><a href="/confidentialite" class="hover:underline">Politique de confidentialité</a><a href="/mentions-legales" class="hover:underline">Mentions légales</a></div>
   </main>
 </Layout>

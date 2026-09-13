@@ -1,4 +1,5 @@
 import { type DbOrTx } from '@nba/db';
+import { getClubSettings } from '@nba/club/settings';
 import { CHAMPIONSHIPS, CHAMPIONSHIP_RULES, getDivision, teamName } from '../shared/championship';
 import { loadPlayerDirectory, identityOf } from '../shared/members-lookup';
 import { normalizeLicence } from '../shared/ranking';
@@ -24,6 +25,7 @@ export async function listTeams(
   viewerLicence?: string | null
 ): Promise<ListTeamsOutput> {
   const teams = await repo.listBySeason(db, seasonCode);
+  const { teamPrefix } = await getClubSettings(db);
   const teamIds = teams.map((team) => team.id);
   const viewer = viewerLicence ? normalizeLicence(viewerLicence) : '';
 
@@ -67,7 +69,7 @@ export async function listTeams(
         // l'écran : on retombe sur le code brut, qui reste lisible.
         divisionLabel: division?.label ?? team.division,
         number: team.number,
-        name: teamName(team.number),
+        name: teamName(teamPrefix, team.number),
         poolLabel: team.poolLabel,
         active: team.active,
         captain: identityOf(directory, assigned.captain),

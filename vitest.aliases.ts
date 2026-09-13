@@ -49,6 +49,7 @@ export const workspaceAliases: Record<string, string> = {
   '@nba/schedules/schema': path.resolve(__dirname, './libs/domains/schedules/shared/schema.ts'),
   '@nba/events-api': path.resolve(__dirname, './libs/domains/events/index.ts'),
   '@nba/club/settings': path.resolve(__dirname, 'libs/domains/club/shared/settings-api.ts'),
+  '@nba/club/context': path.resolve(__dirname, 'libs/domains/club/shared/context.ts'),
   '@nba/club/schema': path.resolve(__dirname, 'libs/domains/club/shared/schema.ts'),
   '@nba/club-ui': path.resolve(__dirname, 'libs/domains/club/shared/ui.ts'),
   '@nba/club': path.resolve(__dirname, 'libs/domains/club/index.ts'),

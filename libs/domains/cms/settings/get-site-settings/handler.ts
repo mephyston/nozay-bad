@@ -6,14 +6,14 @@ import type { GetSiteSettingsOutput } from './dto';
  * Valeurs servies quand la ligne manque.
  *
  * La migration la sème, mais une base montée autrement — un environnement neuf, un
- * jeu de test — ne doit pas faire disparaître le pied de page du site. Ce sont les
- * valeurs qui étaient écrites en dur avant que ces réglages existent.
+ * jeu de test — ne doit pas faire échouer le rendu du pied de page. Vides : le site
+ * d'un club ne montre jamais la phrase ni l'adresse d'un autre.
  */
 export const SITE_SETTINGS_DEFAULTS: GetSiteSettingsOutput = {
-  footerDescription: "Plus qu'une Tribu !",
-  footerAddress: 'Place de la Mairie, 91620 Nozay',
-  instagramUrl: 'https://www.instagram.com/nozaybad/',
-  facebookUrl: 'https://www.facebook.com/nozaybad/'
+  footerDescription: '',
+  footerAddress: '',
+  instagramUrl: null,
+  facebookUrl: null
 };
 
 /** Une chaîne vide en base vaut « non renseigné » : un lien vide serait un lien mort. */

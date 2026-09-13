@@ -515,7 +515,7 @@
     <Input
       id="ev-venue"
       bind:value={venueLabel}
-      placeholder="Halle des Sports, ou le gymnase du club adverse"
+      placeholder="Un gymnase du club, ou celui du club adverse"
       maxlength={200}
     />
   </FormField>

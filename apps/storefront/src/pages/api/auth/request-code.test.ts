@@ -27,7 +27,8 @@ vi.mock('../../../lib/email', () => ({
   sendOtpEmail: (...a: any[]) => sendOtpEmail(...(a as [])),
   sendRenewalEmail: (...a: any[]) => sendRenewalEmail(...(a as [])),
   sendUpcomingAccessEmail: (...a: any[]) => sendUpcomingAccessEmail(...(a as [])),
-  sendPaymentPendingEmail: (...a: any[]) => sendPaymentPendingEmail(...(a as []))
+  sendPaymentPendingEmail: (...a: any[]) => sendPaymentPendingEmail(...(a as [])),
+  clubMailIdentity: () => ({ name: 'Club', senderName: 'Club', contactEmail: '', membershipUrl: '', signature: '' })
 }));
 
 // Évite d'avoir à résoudre le module virtuel `cloudflare:workers` dans les tests.
@@ -134,7 +135,7 @@ describe('request-code — aiguillage des emails', () => {
   it('licence non renouvelée → invitation à réadhérer, jamais de code', async () => {
     lookupReturns(LAPSED);
     await requestCode();
-    expect(sendRenewalEmail).toHaveBeenCalledWith(expect.anything(), 'qui@ex.fr', 'Saison 25-26');
+    expect(sendRenewalEmail).toHaveBeenCalledWith(expect.anything(), expect.anything(), 'qui@ex.fr', 'Saison 25-26');
     expect(sendOtpEmail).not.toHaveBeenCalled();
   });
 
@@ -142,6 +143,7 @@ describe('request-code — aiguillage des emails', () => {
     lookupReturns(UPCOMING);
     await requestCode();
     expect(sendUpcomingAccessEmail).toHaveBeenCalledWith(
+      expect.anything(),
       expect.anything(),
       'qui@ex.fr',
       'Saison 26-27',
@@ -156,7 +158,7 @@ describe('request-code — aiguillage des emails', () => {
     lookupReturns(UNKNOWN);
     const unknown = await requestCode();
     expect(unpaid).toEqual(unknown);
-    expect(sendPaymentPendingEmail).toHaveBeenCalledWith(expect.anything(), 'qui@ex.fr', 'Saison 25-26');
+    expect(sendPaymentPendingEmail).toHaveBeenCalledWith(expect.anything(), expect.anything(), 'qui@ex.fr', 'Saison 25-26');
     expect(sendOtpEmail).not.toHaveBeenCalled();
   });
 

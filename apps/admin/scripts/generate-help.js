@@ -13,7 +13,7 @@ const articles = [
     description: "Comprendre et utiliser le tableau de bord de l'association.",
     category: 'Général',
     order: 1,
-    content: `Le **Tableau de bord** est votre point d'entrée principal. Il regroupe toutes les statistiques importantes de la saison en cours pour Nozay Bad Association.
+    content: `Le **Tableau de bord** est votre point d'entrée principal. Il regroupe toutes les statistiques importantes de la saison en cours pour le club.
 
 ## Vue d'ensemble
 
@@ -164,7 +164,7 @@ Si la commande n'a pas été payée en ligne via Wero ou Carte Bancaire, vous po
     description: "Paramètres globaux du club (saisons, infos légales).",
     category: 'Réglages',
     order: 9,
-    content: `L'écran de **Configuration** permet de modifier les informations fondamentales de Nozay Bad Association.
+    content: `L'écran de **Configuration** permet de modifier les informations fondamentales du club.
 
 ## Informations de l'association
 Vous pouvez y mettre à jour :

@@ -1,4 +1,5 @@
 import { type DbOrTx } from '@nba/db';
+import { getClubSettings } from '@nba/club/settings';
 import { CHAMPIONSHIP_RULES, getDivision, teamName } from '../shared/championship';
 import { loadPlayerDirectory } from '../shared/members-lookup';
 import { normalizeLicence, isDouble, DISCIPLINE_RANKING } from '../shared/ranking';
@@ -56,6 +57,7 @@ export async function loadLineup(
 ): Promise<GetLineupOutput> {
   const team = await memo(cache, `team:${input.teamId}`, () => repo.findTeam(db, input.teamId));
   if (!team) throw new TeamNotFoundError();
+  const { teamPrefix } = await memo(cache, 'club', () => getClubSettings(db));
 
   const rules = CHAMPIONSHIP_RULES[team.championship];
   const division = getDivision(team.championship, team.division);
@@ -141,8 +143,8 @@ export async function loadLineup(
     for (const sl of weekSlots) {
       const owner = weekFixtures.find((w) => w.fixture.id === sl.fixtureId);
       if (!owner) continue;
-      busy.set(sl.licence1, teamName(owner.team.number));
-      if (sl.licence2) busy.set(sl.licence2, teamName(owner.team.number));
+      busy.set(sl.licence1, teamName(teamPrefix, owner.team.number));
+      if (sl.licence2) busy.set(sl.licence2, teamName(teamPrefix, owner.team.number));
     }
     return busy;
   };
@@ -199,7 +201,7 @@ export async function loadLineup(
     teamNumber: team.number,
     history,
     upperTeamValue,
-    upperTeamName: upper ? teamName(upper.number) : null,
+    upperTeamName: upper ? teamName(teamPrefix, upper.number) : null,
     busyThisWeek
   });
 
@@ -287,7 +289,7 @@ export async function loadLineup(
 
   return {
     teamId: team.id,
-    teamName: teamName(team.number),
+    teamName: teamName(teamPrefix, team.number),
     championship: team.championship,
     championshipLabel: rules.label,
     divisionLabel: division.label,
@@ -313,7 +315,7 @@ export async function loadLineup(
     value: verdict.value.value,
     errors: verdict.errors as LineupIssue[],
     warnings: verdict.warnings as LineupIssue[],
-    upperTeamName: upper ? teamName(upper.number) : null,
+    upperTeamName: upper ? teamName(teamPrefix, upper.number) : null,
     upperTeamValue,
     referenceEloDate: reference.date,
     /*

@@ -12,8 +12,7 @@ import type { ScheduledNotificationView } from '@nba/notifications-api';
  * la seule vue que le bureau a de ce qui part tout seul. `scheduled-registry.test.ts`
  * vérifie la correspondance avec les sources émises par le cron.
  *
- * Les horaires sont exprimés en heure de Paris ; les crons du Worker tournent en UTC
- * (7h UTC = 8h ou 9h à Paris selon la saison), d'où les libellés « vers ».
+ * Les horaires sont ceux que le club a réglés, dans son fuseau (voir `scheduled.ts`).
  */
 import type { Feature, FeatureState } from '@nba/club/settings';
 
@@ -25,10 +24,20 @@ import type { Feature, FeatureState } from '@nba/club/settings';
 export type RegistryContext = {
   sendsEnabled: boolean;
   features: FeatureState;
+  /** Heures et jour réglés par le club (`club_settings`), pour dire quand ça part. */
+  dailySendHour?: number;
+  weeklySendDay?: string;
+  weeklySendHour?: number;
+};
+
+const WEEKDAY_LABELS: Record<string, string> = {
+  MON: 'lundi', TUE: 'mardi', WED: 'mercredi', THU: 'jeudi', FRI: 'vendredi', SAT: 'samedi', SUN: 'dimanche'
 };
 
 export function listScheduledNotifications(ctx: RegistryContext): ScheduledNotificationView[] {
   const on = (feature: Feature) => ctx.sendsEnabled && ctx.features[feature] === true;
+  const daily = `Tous les jours à ${ctx.dailySendHour ?? 8} h`;
+  const weekly = `Le ${WEEKDAY_LABELS[ctx.weeklySendDay ?? 'MON'] ?? 'lundi'} à ${ctx.weeklySendHour ?? 9} h`;
 
   return [
     // ── Récurrentes (cron du Worker API) ─────────────────────────────────────
@@ -36,7 +45,7 @@ export function listScheduledNotifications(ctx: RegistryContext): ScheduledNotif
       id: 'birthday:daily',
       title: 'Anniversaire(s) du jour',
       body: 'Bon anniversaire à … ! Annonce à tout le club quand au moins un adhérent est concerné.',
-      schedule: 'Tous les jours vers 8-9h',
+      schedule: daily,
       trigger: 'cron',
       category: 'birthday',
       enabled: on('birthdays'),
@@ -46,7 +55,7 @@ export function listScheduledNotifications(ctx: RegistryContext): ScheduledNotif
       id: 'reminder:unpaid',
       title: 'Cotisation en attente',
       body: "Votre cotisation n'est pas encore soldée. Envoyée aux foyers dont la cotisation reste due.",
-      schedule: 'Le lundi vers 9-10h',
+      schedule: weekly,
       trigger: 'cron',
       category: 'reminder',
       enabled: on('reminder_unpaid'),
@@ -56,7 +65,7 @@ export function listScheduledNotifications(ctx: RegistryContext): ScheduledNotif
       id: 'reminder:order-awaiting-payment',
       title: 'Commande à régler',
       body: 'Une commande boutique validée attend votre règlement. Commandes validées depuis plus de 7 jours.',
-      schedule: 'Le lundi vers 9-10h',
+      schedule: weekly,
       trigger: 'cron',
       category: 'reminder',
       enabled: on('reminder_unpaid'),
@@ -76,7 +85,7 @@ export function listScheduledNotifications(ctx: RegistryContext): ScheduledNotif
       id: 'schedules:open-play-opener-reminder',
       title: 'Créneaux de jeu libre à pourvoir',
       body: "Séances des sept prochains jours qui ont assez de joueurs mais personne pour ouvrir. Envoyée aux ouvreurs désignés, en un seul message agrégé.",
-      schedule: 'Chaque jour à 7 h, si au moins une séance cherche un ouvreur',
+      schedule: `${daily}, si au moins une séance cherche un ouvreur`,
       trigger: 'cron',
       category: 'open_play',
       enabled: on('reminder_open_play'),

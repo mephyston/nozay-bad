@@ -7,6 +7,7 @@ import OpenPlayRow from '../components/OpenPlayRow.astro';
 import IndivCard from '../components/IndivCard.astro';
 import { EventSignup } from '@nba/events-ui';
 import { OpenPlaySignup, OpenPlayOpenerButton, OpenPlayAttendees } from '@nba/schedules-ui';
+import { featureOn } from '@nba/club/context';
 import { resolveEnv } from '../lib/request-context';
 import { fetchOpenPlaySessions, OPEN_PLAY_HORIZON_DAYS } from '../lib/open-play';
 import { fetchNextIndivSession } from '../lib/indiv';
@@ -74,7 +75,7 @@ if (Astro.request.method === 'POST') {
     if (body.indivId !== undefined) {
       // Drapeau baissé : la fonctionnalité n'existe pas, y compris pour qui forgerait la
       // requête. 404 et non 403, comme l'API — une fonctionnalité en bêta ne s'annonce pas.
-      if (resolveEnv<{ INDIV_ENABLED?: string }>(Astro.locals).INDIV_ENABLED !== 'true') {
+      if (resolveEnv<{ INDIV_ENABLED?: string }>(Astro.locals).INDIV_ENABLED !== 'true' || !featureOn(Astro.locals.club, 'indiv')) {
         return new Response(JSON.stringify({ success: false, error: 'Ressource introuvable.' }), {
           status: 404,
           headers: { 'Content-Type': 'application/json' }
@@ -240,9 +241,8 @@ const active = session?.members.find((m) => m.id === session.activeMemberId);
  * catégorie « interclubs » : c'est le même rendez-vous, il n'a pas à s'afficher deux
  * fois de deux façons.
  */
-const runtimeEnv = resolveEnv<{ OPEN_PLAY_ENABLED?: string; INDIV_ENABLED?: string }>(Astro.locals);
-const openPlayEnabled = runtimeEnv.OPEN_PLAY_ENABLED === 'true';
-const indivEnabled = runtimeEnv.INDIV_ENABLED === 'true';
+const openPlayEnabled = featureOn(Astro.locals.club, 'open_play');
+const indivEnabled = resolveEnv<{ INDIV_ENABLED?: string }>(Astro.locals).INDIV_ENABLED === 'true' && featureOn(Astro.locals.club, 'indiv');
 
 const [events, myFixtures, annonces, openPlay, indiv] = await Promise.all([
   fetchUpcomingEvents(env, 50, session?.activeMemberId),
@@ -313,7 +313,7 @@ const rows: Row[] = [
 const today = new Date().toISOString().slice(0, 10);
 ---
 
-<Layout title="Calendrier - Nozay Bad">
+<Layout title="Calendrier">
   <Header currentPath="/agenda" />
 
   <main class="w-full flex-1 p-3 pb-24 sm:p-6 md:pb-6">
@@ -444,10 +444,10 @@ const today = new Date().toISOString().slice(0, 10);
     </div>
   </main>
 
-  <MobileNav currentPath="/agenda" />
+  <MobileNav features={Astro.locals.club?.features ?? {}} currentPath="/agenda" />
 
   <footer class="mt-12 hidden border-t border-border bg-card/20 py-8 text-center text-xs text-muted-foreground md:block md:pb-8">
-    <p>© {new Date().getFullYear()} Nozay Badminton Association. Tous droits réservés.</p>
+    <p>© {new Date().getFullYear()} {Astro.locals.club?.settings.name}. Tous droits réservés.</p>
     <p class="mt-2"><a href="/confidentialite" class="hover:underline">Politique de confidentialité</a> · <a href="/mentions-legales" class="hover:underline">Mentions légales</a></p>
   </footer>
 </Layout>

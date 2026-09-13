@@ -1,4 +1,5 @@
 import { type DbOrTx } from '@nba/db';
+import { getClubSettings } from '@nba/club/settings';
 import { CHAMPIONSHIP_RULES, teamName, type Championship } from '../shared/championship';
 import { loadPlayerDirectory } from '../shared/members-lookup';
 import { loadLineup } from '../get-lineup/handler';
@@ -32,6 +33,7 @@ export async function listDayValues(
   if (!day) throw new ChampionshipDayNotFoundError();
 
   const teams = await repo.teamsOf(db, input.seasonCode, input.championship);
+  const { teamPrefix } = await getClubSettings(db);
 
   /*
    * Un cache par requête, partagé par les six chargements d'équipe.
@@ -76,7 +78,7 @@ export async function listDayValues(
 
       return {
         teamId: team.id,
-        name: teamName(team.number),
+        name: teamName(teamPrefix, team.number),
         number: team.number,
         divisionLabel: lineup.divisionLabel,
         value: lineup.value,
@@ -115,7 +117,7 @@ export async function listDayValues(
     const teamsById = byLicence.get(a.licence) ?? new Map<number, string>();
     teamsById.set(
       a.team.id,
-      `${teamName(a.team.number)} (${CHAMPIONSHIP_RULES[a.team.championship].label})`
+      `${teamName(teamPrefix, a.team.number)} (${CHAMPIONSHIP_RULES[a.team.championship].label})`
     );
     byLicence.set(a.licence, teamsById);
   }

@@ -27,6 +27,7 @@
     days,
     daysChampionship,
     seasonCode,
+    teamPrefix,
     canWrite = false,
     canDelete = false,
     endpoint = '/admin/api/teams/teams'
@@ -36,6 +37,8 @@
     days: ChampionshipDayItem[];
     daysChampionship: Championship;
     seasonCode: string;
+    /** Préfixe des équipes du club, transmis au formulaire. */
+    teamPrefix: string;
     canWrite?: boolean;
     canDelete?: boolean;
     /**
@@ -260,7 +263,7 @@
   {/snippet}
 </DataTable>
 
-<TeamFormSheet bind:open={formOpen} team={editing} {seasonCode} onSaved={() => reload()} />
+<TeamFormSheet bind:open={formOpen} team={editing} {seasonCode} {teamPrefix} onSaved={() => reload()} />
 <TeamRosterSheet bind:open={rosterOpen} {detail} {members} canWrite={canWrite} onSaved={() => reload()} />
 <TeamFixturesSheet bind:open={fixturesOpen} {detail} canWrite={canWrite} onSaved={() => reload()} />
 <ChampionshipDaysSheet

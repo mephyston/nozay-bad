@@ -52,7 +52,7 @@
   const selectedTotal = $derived(Object.values(assignments).filter((s) => s !== null).length);
 
   const dateLabel = $derived(
-    new Intl.DateTimeFormat('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Europe/Paris' }).format(new Date(`${session.date}T12:00:00Z`))
+    new Intl.DateTimeFormat('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' }).format(new Date(`${session.date}T12:00:00Z`))
   );
 
   function assign(requestId: number, slot: number | null) {

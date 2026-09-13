@@ -28,6 +28,7 @@ export {
   isClubAsset,
   settingsFromRow,
   parsePartnerLogoKeys,
+  clubNameVariants,
   type ClubSettings,
   type ClubAsset,
   type SettingsSection,
@@ -41,3 +42,6 @@ export {
   CLUB_SETTINGS_ID
 } from './repository';
 export { clubAssetPath } from './assets';
+export { clubLetterhead, legalLines, bankDetails, type BankDetails } from './letterhead';
+export { r2ClubAssetStore, type ClubAssetStore } from './assets';
+export { localClock, localDate, DEFAULT_TIMEZONE, type LocalClock, type Weekday } from './clock';

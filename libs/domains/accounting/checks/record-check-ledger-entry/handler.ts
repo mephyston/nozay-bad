@@ -1,3 +1,4 @@
+import { clubNameVariants, getClubSettings } from '@nba/club/settings';
 import { RecordCheckTransactionRepository } from './repository';
 import { AppError, type Db, type Tx } from '@nba/db';
 import { cleanName } from '../../shared/helpers';
@@ -166,7 +167,7 @@ export async function analyzeCheckImage(
   }
 
   const transcript = readTranscript(aiRes);
-  const emitter = pickEmitter(transcript.titulaire, transcript.beneficiaire);
+  const emitter = pickEmitter(transcript.titulaire, transcript.beneficiaire, clubNameVariants(await getClubSettings(db)));
 
   const repo = new RecordCheckTransactionRepository();
   let matchedMember = null;

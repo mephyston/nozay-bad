@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { PDFArray, PDFDocument, PDFName, PDFRawStream } from 'pdf-lib';
 import { generateSeasonReportPdf } from './generate-report-pdf';
 import type { AccountClass, DbCategory } from './ui/report-types';
+import { bareLetterhead } from '@nba/pdf';
 
 /*
  * Pagination du compte de résultat.
@@ -82,7 +83,7 @@ describe('generateSeasonReportPdf — compte de résultat', () => {
   it("tient sur une seule page dès qu'un interligne plus serré le permet", async () => {
     // À l'interligne aéré ce rapport déborde ; resserré, il tient. Une page, donc.
     const { report, categories } = scenario(6, 4);
-    const textes = await textesParPage(await generateSeasonReportPdf('income-statement', report, categories, CLASSES));
+    const textes = await textesParPage(await generateSeasonReportPdf('income-statement', report, categories, CLASSES, [], bareLetterhead('Club Test')));
     expect(textes).toHaveLength(1);
     expect(textes[0]).toContain('CHARGES');
     expect(textes[0]).toContain('PRODUITS');
@@ -92,7 +93,7 @@ describe('generateSeasonReportPdf — compte de résultat', () => {
     // Le cas vécu : un exercice fourni dont la barre « TOTAL GÉNÉRAL » des charges
     // basculait seule en tête de la deuxième page.
     const { report, categories } = scenario(18, 16);
-    const textes = await textesParPage(await generateSeasonReportPdf('income-statement', report, categories, CLASSES));
+    const textes = await textesParPage(await generateSeasonReportPdf('income-statement', report, categories, CLASSES, [], bareLetterhead('Club Test')));
     expect(textes).toHaveLength(2);
     expect(textes[0]).toContain('CHARGES');
     expect(textes[0]).toContain('TOTAL G');
@@ -103,7 +104,7 @@ describe('generateSeasonReportPdf — compte de résultat', () => {
 
   it('pagine sans se bloquer un rapport trop long pour tenir en deux pages', async () => {
     const { report, categories } = scenario(60, 60);
-    const textes = await textesParPage(await generateSeasonReportPdf('income-statement', report, categories, CLASSES));
+    const textes = await textesParPage(await generateSeasonReportPdf('income-statement', report, categories, CLASSES, [], bareLetterhead('Club Test')));
     expect(textes.length).toBeGreaterThanOrEqual(3);
     expect(textes.at(-1)).toContain('TOTAL G');
   });

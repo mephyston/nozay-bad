@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { SETTINGS_SECTIONS, NEUTRAL_CLUB_SETTINGS, CLUB_ASSET_COLUMNS, settingsFromRow, parsePartnerLogoKeys } from './settings';
+import { SETTINGS_SECTIONS, NEUTRAL_CLUB_SETTINGS, CLUB_ASSET_COLUMNS, settingsFromRow, parsePartnerLogoKeys, clubNameVariants } from './settings';
 import { clubSettingsTable } from './schema';
 import { getTableColumns } from 'drizzle-orm';
 
@@ -40,5 +40,17 @@ describe('sections de la configuration', () => {
   it('retire l’identifiant de la ligne lue', () => {
     const row = { ...NEUTRAL_CLUB_SETTINGS, id: 1, partnerLogoKeys: '[]' } as any;
     expect(settingsFromRow(row)).not.toHaveProperty('id');
+  });
+});
+
+describe('clubNameVariants', () => {
+  it('donne le nom, le sigle et leurs abréviations, en minuscules et sans doublon', () => {
+    expect(clubNameVariants({ name: 'Club Test Association', shortName: 'CTA 99' })).toEqual([
+      'club test association',
+      'club test',
+      'cta 99',
+      'cta',
+      'cta99'
+    ]);
   });
 });

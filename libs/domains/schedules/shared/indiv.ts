@@ -25,25 +25,30 @@ export const MAX_CAPACITY_PER_SLOT = 4;
 /** Un mot pour l'entraîneur, pas une lettre. */
 export const MAX_INDIV_NOTE_LENGTH = 200;
 
+/** Sans accent ni casse : « Compétiteur » et « competiteur » sont le même mot. */
+function fold(value: string): string {
+  return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+}
+
 /**
  * Le groupe d'adhésion ouvre-t-il les séances individuelles ?
  *
  * Le club n'a pas de liste de compétiteurs : il a des libellés de tarif Poona, bruts et
  * non normalisés — « Compétiteurs adultes », « Compétiteur adulte 1 entrainement /semaine ».
- * La règle retenue est la plus simple qui les couvre tous : le mot « compétiteur » dans le
- * libellé, sans égard à la casse ni aux accents. Elle est assumée comme approximative ;
- * « Elite Jeunes (Collège) » n'y répond pas, et c'est un choix connu, pas un oubli.
+ * La règle retenue est la plus simple qui les couvre tous : un mot, cherché dans le
+ * libellé sans égard à la casse ni aux accents. Le mot est celui que le club a réglé
+ * (`club_settings.indiv_eligibility_keyword`, « compétiteur » par défaut) : un autre club
+ * dit « élite » ou « loisir avancé ». Elle est assumée comme approximative ; « Elite Jeunes
+ * (Collège) » n'y répond pas à Nozay, et c'est un choix connu, pas un oubli.
  *
  * Le domaine ne connaît pas les adhérents : c'est l'appelant qui lui présente le libellé,
  * et c'est ici, dans le handler, que le refus est rendu — pas dans un écran contournable.
  */
-export function isIndivEligibleGroup(label: string | null | undefined): boolean {
+export function isIndivEligibleGroup(label: string | null | undefined, keyword = 'compétiteur'): boolean {
   if (!label) return false;
-  return label
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .includes('competiteur');
+  const word = fold(keyword);
+  if (!word) return false;
+  return fold(label).includes(word);
 }
 
 /**

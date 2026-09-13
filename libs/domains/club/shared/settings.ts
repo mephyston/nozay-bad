@@ -25,6 +25,7 @@ export interface ClubSettings {
   ffbadMembershipUrl: string;
 
   legalSeat: string;
+  publicationDirector: string;
   rna: string;
   siret: string;
   ddjsApproval: string;
@@ -72,7 +73,7 @@ export interface ClubSettings {
 export const SETTINGS_SECTIONS = {
   identity: ['name', 'shortName', 'tagline', 'city', 'postalCode', 'department', 'region', 'addressLines'],
   contacts: ['contactEmail', 'treasurerEmail', 'presidentEmail', 'senderName', 'ffbadMembershipUrl'],
-  legal: ['legalSeat', 'rna', 'siret', 'ddjsApproval', 'ffbadAffiliation'],
+  legal: ['legalSeat', 'publicationDirector', 'rna', 'siret', 'ddjsApproval', 'ffbadAffiliation'],
   bank: ['bankHolder', 'bankName', 'iban', 'bic'],
   competition: ['teamPrefix', 'invoicePrefix', 'championshipCommittee', 'league'],
   branding: ['brandColor'],
@@ -162,6 +163,7 @@ export const NEUTRAL_CLUB_SETTINGS: ClubSettings = {
   senderName: 'Club de badminton',
   ffbadMembershipUrl: '',
   legalSeat: '',
+  publicationDirector: '',
   rna: '',
   siret: '',
   ddjsApproval: '',
@@ -191,3 +193,23 @@ export const NEUTRAL_CLUB_SETTINGS: ClubSettings = {
   updatedByEmail: null,
   updatedAt: new Date(0)
 };
+
+/**
+ * Les formes sous lesquelles le club apparaît sur un relevé ou un chèque.
+ *
+ * Le nom complet, le sigle, le sigle sans son numéro (« NBA 91 » → « nba ») et le nom
+ * sans le mot « association » : ce que la banque abrège et ce que les gens écrivent à
+ * l'ordre du club. En minuscules, sans doublon, pour des comparaisons `includes`.
+ */
+export function clubNameVariants(settings: Pick<ClubSettings, 'name' | 'shortName'>): string[] {
+  const forms = [
+    settings.name,
+    settings.name.replace(/\bassociation\b/gi, ''),
+    settings.shortName,
+    settings.shortName.replace(/[\s-]*\d+$/, ''),
+    settings.shortName.replace(/\s+/g, '')
+  ]
+    .map((f) => f.trim().toLowerCase().replace(/\s+/g, ' '))
+    .filter((f) => f.length >= 3);
+  return [...new Set(forms)];
+}

@@ -19,6 +19,8 @@ declare namespace App {
       /** Saison (code) au titre de laquelle l'accès a été accordé — voir `lib/season.ts`. */
       seasonCode: string;
     };
+    /** L'identité du club et ses fonctionnalités, posées par le middleware sur chaque page. */
+    club?: import('@nba/club/context').ClubContext;
     runtime: import('@astrojs/cloudflare').Runtime<Env>;
   }
 }

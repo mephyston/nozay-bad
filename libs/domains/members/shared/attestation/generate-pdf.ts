@@ -1,18 +1,16 @@
 import { PDFDocument, StandardFonts } from 'pdf-lib';
 import {
-  BRAND,
   CONTENT_W,
   GREY,
   INK,
   MARGIN,
   PAGE_H,
   PAGE_W,
-  assets,
   drawImageAtHeight,
   drawLetterhead,
   drawParagraph,
-  embed,
-  loadLetterhead
+  loadLetterhead,
+  type LetterheadSpec
 } from '@nba/pdf';
 import type { AttestationConfig } from './config';
 import { signatureKind } from './config';
@@ -30,32 +28,38 @@ export type AttestationData = {
   season: string;
 };
 
-export async function generateCseAttestationPdf(data: AttestationData, config: AttestationConfig): Promise<Uint8Array> {
+export async function generateCseAttestationPdf(
+  data: AttestationData,
+  config: AttestationConfig,
+  spec: LetterheadSpec,
+  city: string
+): Promise<Uint8Array> {
   const doc = await PDFDocument.create();
   doc.setTitle(`Attestation d'adhésion – ${data.firstName} ${data.lastName}`);
-  doc.setCreator('Nozay Badminton Association');
+  doc.setCreator(spec.clubName);
   const page = doc.addPage([PAGE_W, PAGE_H]);
 
   const font = await doc.embedFont(StandardFonts.Helvetica);
   const bold = await doc.embedFont(StandardFonts.HelveticaBold);
 
-  const stamp = await embed(doc, assets.stamp);
   /*
    * La signature configurée peut être un PNG ou un JPEG : on choisit l'intégration
    * d'après ses octets. `embedJpg` sur un PNG ne dégrade pas l'image, il lève — la
    * génération entière échouait donc, pour un format que rien n'obligeait à refuser.
    *
-   * Sans signature configurée, celle qui est empaquetée avec l'application sert de
-   * repli, avec son propre format.
+   * Sans signature configurée, l'attestation sort sans image : plus aucune signature
+   * n'est empaquetée avec l'application, ce serait celle d'un autre club.
    */
   const configured = config.signatureBase64;
   const signature = configured
     ? await (signatureKind(configured) === 'png' ? doc.embedPng(configured) : doc.embedJpg(configured))
-    : await embed(doc, assets.defaultSignature);
+    : null;
 
   // ---------- PAPIER À LETTRE (club, partagé) ----------
-  const letterhead = await loadLetterhead(doc);
-  drawLetterhead(page, letterhead, font);
+  const letterhead = await loadLetterhead(doc, spec);
+  drawLetterhead(page, letterhead, font, bold);
+  const BRAND = letterhead.brand;
+  const stamp = letterhead.stamp;
 
   // ---------- TITRES ----------
   const titleY = letterhead.bodyTop - 30;
@@ -78,7 +82,7 @@ export async function generateCseAttestationPdf(data: AttestationData, config: A
 
   y = drawParagraph(
     page,
-    `Je soussigné, ${config.signatoryName}, représentant NOZAY BADMINTON ASSOCIATION, association sportive affiliée à la FFBaD (Fédération Française de Badminton), certifie que :`,
+    `Je soussigné, ${config.signatoryName}, représentant ${spec.clubName.toUpperCase()}, association sportive affiliée à la FFBaD (Fédération Française de Badminton), certifie que :`,
     { x: MARGIN, y, maxWidth: CONTENT_W, font, size: bodySize, lineHeight: lineH }
   );
 
@@ -124,17 +128,19 @@ export async function generateCseAttestationPdf(data: AttestationData, config: A
   const rightX = MARGIN + CONTENT_W * 0.55;
   const leftColW = rightX - leftColLeft;
 
-  // Colonne gauche : « Nozay, le … » + tampon, centrés dans la colonne.
-  const dateLine = `Nozay, le ${dateStr}`;
+  // Colonne gauche : « Ville, le … » + tampon, centrés dans la colonne.
+  const dateLine = `${city || spec.clubName}, le ${dateStr}`;
   const dateW = font.widthOfTextAtSize(dateLine, 11);
   page.drawText(dateLine, { x: leftColLeft + (leftColW - dateW) / 2, y: sigTop, size: 11, font, color: INK });
-  const stampH = 52;
-  const stampW = (stamp.width / stamp.height) * stampH;
-  page.drawImage(stamp, { x: leftColLeft + (leftColW - stampW) / 2, y: sigTop - 14 - stampH, width: stampW, height: stampH });
+  if (stamp) {
+    const stampH = 52;
+    const stampW = (stamp.width / stamp.height) * stampH;
+    page.drawImage(stamp, { x: leftColLeft + (leftColW - stampW) / 2, y: sigTop - 14 - stampH, width: stampW, height: stampH });
+  }
 
   // Colonne droite : Signature → image → Mail → Site web.
   page.drawText('Signature', { x: rightX, y: sigTop, size: 11, font: bold, color: INK });
-  drawImageAtHeight(page, signature, rightX, sigTop - 16, 58);
+  if (signature) drawImageAtHeight(page, signature, rightX, sigTop - 16, 58);
   let ry = sigTop - 16 - 58 - 14;
   page.drawText(`Mail : ${config.signatoryEmail}`, { x: rightX, y: ry, size: 9, font, color: GREY });
   ry -= 13;

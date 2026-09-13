@@ -321,11 +321,12 @@ export interface SiteSettingsView {
   facebookUrl: string | null;
 }
 
+/** Repli quand l'API ne répond pas : un pied de page vide plutôt que celui d'un autre club. */
 export const SITE_SETTINGS_FALLBACK: SiteSettingsView = {
-  footerDescription: "Plus qu'une Tribu !",
-  footerAddress: 'Place de la Mairie, 91620 Nozay',
-  instagramUrl: 'https://www.instagram.com/nozaybad/',
-  facebookUrl: 'https://www.facebook.com/nozaybad/'
+  footerDescription: '',
+  footerAddress: '',
+  instagramUrl: null,
+  facebookUrl: null
 };
 
 export async function getSiteSettings(env: WebsiteEnv): Promise<SiteSettingsView> {

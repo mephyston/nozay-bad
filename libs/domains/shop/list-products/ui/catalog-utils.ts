@@ -55,12 +55,11 @@ export function requiresBankTransfer(paymentMethod: string): boolean {
 /**
  * Coordonnées bancaires du club, affichées à l'adhérent qui commande par virement.
  *
- * En dur, comme sur les factures (`accounting/invoices/shared/generate-invoice-pdf.ts`) :
- * elles changent rarement, et le domaine boutique n'importe pas la compta. Les deux
- * copies sont à modifier ensemble en cas de changement de banque.
+ * Elles viennent de la configuration du club (`club_settings`), passées par la page :
+ * la boutique n'en connaît pas d'autre, et les factures lisent les mêmes.
  */
-export const CLUB_BANK_DETAILS = {
-  holder: 'NOZAY BADMINTON',
-  iban: 'FR76 3000 3008 4600 0500 0784 720',
-  bic: 'SOGEFRPP'
-} as const;
+export interface ClubBankDetails {
+  holder: string;
+  iban: string;
+  bic: string;
+}

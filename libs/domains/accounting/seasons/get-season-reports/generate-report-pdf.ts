@@ -1,6 +1,5 @@
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 import {
-  BRAND,
   CONTENT_W,
   GREY,
   INK,
@@ -9,7 +8,8 @@ import {
   PAGE_W,
   drawLetterhead,
   formatFrenchDate,
-  loadLetterhead
+  loadLetterhead,
+  type LetterheadSpec
 } from '@nba/pdf';
 import type { GetSeasonReportsOutput } from './dto';
 import type { AccountClass, DbCategory, ReportData } from './ui/report-types';
@@ -69,7 +69,8 @@ export async function generateSeasonReportPdf(
   reportRaw: GetSeasonReportsOutput,
   categories: DbCategory[],
   accountClasses: AccountClass[],
-  budget: BudgetRow[] = []
+  budget: BudgetRow[],
+  spec: LetterheadSpec
 ): Promise<Uint8Array> {
   const report = reportRaw as unknown as ReportData;
   const title = REPORT_TITLES[type];
@@ -77,7 +78,7 @@ export async function generateSeasonReportPdf(
 
   const doc = await PDFDocument.create();
   doc.setTitle(`${title} — ${seasonLabel}`);
-  doc.setCreator('Nozay Badminton Association');
+  doc.setCreator(spec.clubName);
 
   const font = await doc.embedFont(StandardFonts.Helvetica);
   const bold = await doc.embedFont(StandardFonts.HelveticaBold);
@@ -85,7 +86,8 @@ export async function generateSeasonReportPdf(
   const rightEdge = PAGE_W - MARGIN;
 
   // --- papier à lettre (club, partagé), embarqué une fois pour tout le document ---
-  const letterhead = await loadLetterhead(doc);
+  const letterhead = await loadLetterhead(doc, spec);
+  const BRAND = letterhead.brand;
   // Le corps s'arrête au-dessus du bas de page pré-imprimé.
   const bottomLimit = letterhead.bodyBottom;
 

@@ -313,7 +313,7 @@ describe('ShopCatalog Component', () => {
       document.body.appendChild(target);
 
       // Le virement est le mode de paiement proposé par défaut.
-      await mountOrderable(target);
+      await mountOrderable(target, { bankDetails: { holder: 'NOZAY BADMINTON', iban: 'FR76 3000 3008 4600 0500 0784 720', bic: 'SOGEFRPP' } });
 
       const dialog = await submit(target);
       expect(dialog.textContent).toContain('NOZAY BADMINTON');
@@ -328,7 +328,7 @@ describe('ShopCatalog Component', () => {
       const target = document.createElement('div');
       document.body.appendChild(target);
 
-      await mountOrderable(target);
+      await mountOrderable(target, { bankDetails: { holder: 'NOZAY BADMINTON', iban: 'FR76 3000 3008 4600 0500 0784 720', bic: 'SOGEFRPP' } });
       const dialog = await submit(target);
 
       const copyIban = dialog.querySelector('button[aria-label="Copier : IBAN"]') as HTMLButtonElement;

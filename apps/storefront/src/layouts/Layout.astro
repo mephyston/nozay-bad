@@ -13,6 +13,9 @@ interface Props {
 }
 
 const { title, description } = Astro.props;
+// Le club suffixe le titre de l'onglet ; en son absence (repli), le titre reste nu.
+const club = Astro.locals.club?.settings;
+const titreOnglet = club?.shortName ? `${title} - ${club.shortName}` : title;
 // Suffixe d'icône selon l'environnement (inliné au build) : bandeau DEV / TEST.
 const APP_ENV = import.meta.env.PUBLIC_APP_ENV || 'production';
 const ICON_SUFFIX = APP_ENV === 'development' ? '-dev' : APP_ENV === 'staging' ? '-test' : '';
@@ -25,12 +28,12 @@ const ICON_SUFFIX = APP_ENV === 'development' ? '-dev' : APP_ENV === 'staging' ?
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="Nozay Bad" />
+    <meta name="apple-mobile-web-app-title" content={club?.shortName || "Espace adhérent"} />
     <link rel="icon" type="image/png" href="/pwa/favicon.png" />
     <link rel="apple-touch-icon" sizes="180x180" href={`/pwa/apple-touch-icon${ICON_SUFFIX}.png`} />
     {pwaInfo && <Fragment set:html={pwaInfo.webManifest.linkTag} />}
     {description && <meta name="description" content={description} />}
-    <title>{title}</title>
+    <title>{titreOnglet}</title>
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" is:inline async defer></script>
     <script>
       /*

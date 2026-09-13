@@ -35,6 +35,7 @@ export const SECTION_SCHEMAS: Record<SettingsSection, TSchema> = {
   }),
   legal: Type.Object({
     legalSeat: Line(300),
+    publicationDirector: Line(120),
     rna: Type.String({ pattern: '^$|^W?[0-9A-Za-z]{9,10}$' }),
     siret: Type.String({ pattern: '^$|^[0-9 ]{14,17}$' }),
     ddjsApproval: Line(60),

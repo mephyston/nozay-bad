@@ -1,4 +1,5 @@
 import { type Db } from '@nba/db';
+import { bankDetails, clubLetterhead, getClubSettings, type ClubAssetStore } from '@nba/club/settings';
 import { zipSync, strToU8, type Zippable } from 'fflate';
 import { generateInvoicePdf } from '../../invoices/shared/generate-invoice-pdf';
 import { listInvoices } from '../../invoices/list-invoices/handler';
@@ -8,16 +9,18 @@ import { listLedgerEntries } from '../../ledger/list-ledger-entries/handler';
 import { listAccounts } from '../../config/queries';
 import { accountLabelOf } from '../../shared/account-labels';
 
-export async function exportSeasonArchive(db: Db, season: string, type: 'all' | 'ledger' | 'expenses' | 'invoices' = 'all'): Promise<{ data: Uint8Array, filename: string, mimeType: string }> {
+export async function exportSeasonArchive(db: Db, store: ClubAssetStore, season: string, type: 'all' | 'ledger' | 'expenses' | 'invoices' = 'all'): Promise<{ data: Uint8Array, filename: string, mimeType: string }> {
   const zipData: Record<string, Uint8Array> = {};
   
   // 1. Invoices
   if (type === 'all' || type === 'invoices') {
     const invoicesList = await listInvoices(db, { seasonId: season } as any);
+    // Le papier à lettre est chargé une fois pour toutes les factures de l'archive.
+    const [spec, bank] = await Promise.all([clubLetterhead(db, store), getClubSettings(db).then(bankDetails)]);
     for (const inv of invoicesList) {
       try {
         const fullInvoice = await getInvoice(db, inv.id as any);
-        const pdfBytes = await generateInvoicePdf(fullInvoice as any, (fullInvoice as any).items);
+        const pdfBytes = await generateInvoicePdf(fullInvoice as any, (fullInvoice as any).items, spec, bank);
         zipData[`Facture_${fullInvoice.invoiceNumber}.pdf`] = pdfBytes;
       } catch (e) {
         zipData[`Facture_${inv.invoiceNumber}_erreur.txt`] = strToU8(`Erreur lors de la génération de la facture: ${String(e)}`);

@@ -154,7 +154,9 @@ export const handleAuth = async (context: APIContext, next: MiddlewareNext) => {
     // l'autorisation : le chemin d'application est identique à la production. C'est
     // précisément parce que l'ancien mode DEV court-circuitait tout — avec un repli
     // sur tous les droits — que des pages sans garde sont passées inaperçues.
-    email = readCookie(request, 'impersonate_email') || env.DEV_EMAIL || 'admin@nozaybad.fr';
+    // Sans cookie ni `DEV_EMAIL`, une adresse qui n'existe dans aucune base : le refus
+    // « aucun compte » dit alors quoi régler, plutôt qu'une identité empruntée à un club.
+    email = readCookie(request, 'impersonate_email') || env.DEV_EMAIL || 'admin@example.invalid';
   } else {
     const token = request.headers.get('Cf-Access-Jwt-Assertion');
     if (!token) {

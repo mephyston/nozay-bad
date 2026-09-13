@@ -21,9 +21,9 @@ export type IndivBindings = { DB: D1Database };
 
 export const indivRouter = new Hono<{ Bindings: IndivBindings }>();
 
-/** « mardi 17 mars », comme l'espace adhérent l'écrit. */
+/** « mardi 17 mars », comme l'espace adhérent l'écrit. Date naïve : formatée en UTC à midi, elle ne bouge dans aucun fuseau. */
 function dateLabel(date: string): string {
-  return new Intl.DateTimeFormat('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Europe/Paris' }).format(
+  return new Intl.DateTimeFormat('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' }).format(
     new Date(`${date}T12:00:00Z`)
   );
 }

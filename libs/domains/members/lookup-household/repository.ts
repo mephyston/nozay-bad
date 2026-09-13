@@ -69,21 +69,6 @@ export function licenceCandidates(raw: string): string[] {
   return [...candidates];
 }
 
-/**
- * Date du jour à Paris, en `YYYY-MM-DD`. Le worker tourne en UTC : s'en remettre à lui
- * ferait basculer la saison deux heures trop tard, le 31 août au soir.
- *
- * `en-CA` rend la date en ISO — un découpage sûr, là où l'ordre des parties d'un format
- * localisé ne se lit pas par position (même idiome que `list-birthdays/route.ts`).
- */
-export function parisToday(now: Date = new Date()): string {
-  return new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Europe/Paris',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit'
-  }).format(now);
-}
 
 export class LookupHouseholdRepository {
   // Tous les adhérents d'une saison dont l'email OU un email de parent/contact correspond
@@ -170,7 +155,8 @@ export class LookupHouseholdRepository {
     };
   }
 
-  async lookup(db: DbOrTx, identifier: string, today: string = parisToday()): Promise<HouseholdLookupResult> {
+  /** `today` : le jour civil du club (voir `handler.ts`), jamais celui du worker. */
+  async lookup(db: DbOrTx, identifier: string, today: string): Promise<HouseholdLookupResult> {
     const raw = identifier.trim();
     const { current, next, previous } = await this.resolveSeasons(db, today);
 

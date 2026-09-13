@@ -1,4 +1,5 @@
 import { AppError, type Db } from '@nba/db';
+import { bankDetails, clubLetterhead, getClubSettings, type ClubAssetStore } from '@nba/club/settings';
 import { GenerateDepositSlipRepository } from './repository';
 import { generateDepositSlipPdf } from './generate-deposit-slip-pdf';
 
@@ -18,12 +19,13 @@ function safeFilename(reference: string): string {
   return `${base}.pdf`;
 }
 
-export async function generateDepositSlip(db: Db, id: number): Promise<GenerateDepositSlipOutput> {
+export async function generateDepositSlip(db: Db, store: ClubAssetStore, id: number): Promise<GenerateDepositSlipOutput> {
   const repo = new GenerateDepositSlipRepository();
   const data = await repo.getDepositWithChecks(db, id);
   if (!data) {
     throw new AppError('Remise de chèques non trouvée.', 404);
   }
-  const pdf = await generateDepositSlipPdf(data);
+  const [spec, settings] = await Promise.all([clubLetterhead(db, store), getClubSettings(db)]);
+  const pdf = await generateDepositSlipPdf(data, spec, bankDetails(settings), settings.city);
   return { pdf, filename: safeFilename(data.reference) };
 }

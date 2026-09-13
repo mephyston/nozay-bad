@@ -1,4 +1,4 @@
-import { SITE_NAME, SITE_REGION } from './seo';
+import type { SiteIdentity } from './seo';
 
 /**
  * Données structurées.
@@ -14,9 +14,6 @@ export function clubId(siteUrl: string): string {
   return new URL('/#club', siteUrl).toString();
 }
 
-/** Commune et code postal du siège : l'identité du club, pas un réglage. */
-const CLUB_CITY = 'Nozay';
-const CLUB_POSTAL_CODE = '91620';
 
 /** Un gymnase, avec ce qu'il faut pour le situer. */
 export interface VenueLike {
@@ -40,7 +37,7 @@ export interface VenueLike {
  * `geo` seulement si les deux coordonnées sont renseignées : un `GeoCoordinates` à
  * moitié vide est une erreur de validation, pas une information partielle.
  */
-export function place(venue: VenueLike) {
+export function place(venue: VenueLike, site: SiteIdentity) {
   const geo =
     venue.latitude && venue.longitude
       ? { geo: { '@type': 'GeoCoordinates', latitude: venue.latitude, longitude: venue.longitude } }
@@ -51,9 +48,9 @@ export function place(venue: VenueLike) {
     address: {
       '@type': 'PostalAddress',
       ...(venue.streetAddress ? { streetAddress: venue.streetAddress } : {}),
-      addressLocality: venue.city ?? CLUB_CITY,
-      postalCode: venue.postalCode ?? CLUB_POSTAL_CODE,
-      addressRegion: SITE_REGION,
+      addressLocality: venue.city ?? site.city,
+      postalCode: venue.postalCode ?? site.postalCode,
+      addressRegion: site.region,
       addressCountry: 'FR'
     },
     ...geo
@@ -68,7 +65,12 @@ const normalise = (text: string) => text.toLowerCase().replace(/\s+/g, ' ').trim
  * Seule la commune du siège est retirée, et seulement en fin de libellé : « Halle des
  * Sports de Marcoussis » garde sa ville, et ne sera reconnu par rien.
  */
-const withoutClubCity = (label: string) => label.replace(/[\s,(-]*nozay\)?$/, '').trim();
+const withoutClubCity = (label: string, city: string) => {
+  const c = normalise(city);
+  if (!c) return label;
+  const escaped = c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return label.replace(new RegExp(`[\\s,(-]*${escaped}\\)?$`), '').trim();
+};
 
 /**
  * Le gymnase du club que désigne un libellé de lieu d'agenda, s'il y en a un.
@@ -78,9 +80,9 @@ const withoutClubCity = (label: string) => label.replace(/[\s,(-]*nozay\)?$/, ''
  * contenu dedans, désigne ce gymnase. Rien d'autre n'est deviné : un match à
  * l'extérieur ne doit surtout pas hériter de l'adresse de Nozay.
  */
-export function matchVenue<T extends VenueLike>(venues: readonly T[], label: string | null): T | null {
+export function matchVenue<T extends VenueLike>(venues: readonly T[], label: string | null, site: SiteIdentity): T | null {
   if (!label) return null;
-  const wanted = withoutClubCity(normalise(label));
+  const wanted = withoutClubCity(normalise(label), site.city);
   if (wanted.length < 3) return null;
   return venues.find((venue) => {
     const name = normalise(venue.name);
@@ -109,6 +111,7 @@ export function matchVenue<T extends VenueLike>(venues: readonly T[], label: str
  */
 export function sportsClub(
   siteUrl: string,
+  site: SiteIdentity,
   sameAs: readonly string[],
   details: { venues?: readonly VenueLike[]; openingHours?: readonly unknown[] } = {}
 ) {
@@ -117,8 +120,8 @@ export function sportsClub(
     '@context': 'https://schema.org',
     '@type': 'SportsClub',
     '@id': clubId(siteUrl),
-    name: SITE_NAME,
-    alternateName: ['NBA 91', 'Nozay Bad'],
+    name: site.name,
+    ...(site.shortName ? { alternateName: [site.shortName] } : {}),
     sport: 'Badminton',
     url: siteUrl,
     // `logo-large.webp` et non `logo.webp` : Google écarte un logo sous 112 px, et le
@@ -127,13 +130,13 @@ export function sportsClub(
     sameAs: [...sameAs],
     address: {
       '@type': 'PostalAddress',
-      addressLocality: CLUB_CITY,
-      postalCode: CLUB_POSTAL_CODE,
-      addressRegion: SITE_REGION,
+      addressLocality: site.city,
+      postalCode: site.postalCode,
+      addressRegion: site.region,
       addressCountry: 'FR'
     },
-    areaServed: { '@type': 'AdministrativeArea', name: SITE_REGION },
-    ...(venues.length > 0 ? { location: venues.map(place) } : {}),
+    areaServed: { '@type': 'AdministrativeArea', name: site.region },
+    ...(venues.length > 0 ? { location: venues.map((v) => place(v, site)) } : {}),
     ...(details.openingHours?.length ? { openingHoursSpecification: [...details.openingHours] } : {})
   };
 }
@@ -145,12 +148,12 @@ export function sportsClub(
  * sont ceux du même club. Sans lui, la page « Créneaux » décrivait un second
  * `SportsClub` anonyme, sans adresse — un club de plus à confondre avec l'homonyme.
  */
-export function clubOpeningHours(siteUrl: string, slots: { weekday: number; startTime: string; endTime: string }[]) {
+export function clubOpeningHours(siteUrl: string, site: SiteIdentity, slots: { weekday: number; startTime: string; endTime: string }[]) {
   return {
     '@context': 'https://schema.org',
     '@type': 'SportsClub',
     '@id': clubId(siteUrl),
-    name: SITE_NAME,
+    name: site.name,
     openingHoursSpecification: openingHours(slots)
   };
 }
@@ -171,13 +174,13 @@ export function clubOpeningHours(siteUrl: string, slots: { weekday: number; star
  *
  * Ce champ nomme, il ne référence pas : n'y mettre qu'une forme réellement employée.
  */
-export function webSite(siteUrl: string) {
+export function webSite(siteUrl: string, site: SiteIdentity) {
   return {
     '@context': 'https://schema.org',
     '@type': 'WebSite',
     '@id': new URL('/#site', siteUrl).toString(),
-    name: SITE_NAME,
-    alternateName: 'NBA 91',
+    name: site.name,
+    ...(site.shortName ? { alternateName: site.shortName } : {}),
     url: siteUrl,
     inLanguage: 'fr-FR',
     publisher: { '@id': clubId(siteUrl) }
@@ -304,12 +307,12 @@ const EVENT_TYPES: Record<string, string> = {
  * trouve : l'erreur possible se limite aux deux heures qui suivent la bascule d'un
  * dernier dimanche de mars ou d'octobre, à 2 h du matin.
  */
-function parisOffset(local: string): string {
+function localOffset(local: string, timeZone: string): string {
   const label = new Intl.DateTimeFormat('en-GB', {
-    timeZone: 'Europe/Paris',
+    timeZone,
     timeZoneName: 'longOffset'
   }).format(new Date(`${local.slice(0, 16)}:00Z`));
-  return /GMT([+-]\d{2}:\d{2})/.exec(label)?.[1] ?? '+01:00';
+  return /GMT([+-]\d{2}:\d{2})/.exec(label)?.[1] ?? '+00:00';
 }
 
 /**
@@ -318,10 +321,10 @@ function parisOffset(local: string): string {
  * Une journée entière sort en date seule : « 2026-09-05T00:00 » annoncerait un
  * rendez-vous à minuit, et c'est exactement ce qu'un moteur en ferait.
  */
-export function eventDate(local: string, allDay: boolean): string {
+export function eventDate(local: string, allDay: boolean, timeZone = 'Europe/Paris'): string {
   const day = local.slice(0, 10);
   if (allDay || local.length < 16) return day;
-  return `${day}T${local.slice(11, 16)}:00${parisOffset(local)}`;
+  return `${day}T${local.slice(11, 16)}:00${localOffset(local, timeZone)}`;
 }
 
 /**
@@ -349,6 +352,7 @@ export function eventDate(local: string, allDay: boolean): string {
  */
 export function clubEvent(
   siteUrl: string,
+  site: SiteIdentity,
   event: {
     title: string;
     category: string;
@@ -367,8 +371,8 @@ export function clubEvent(
     '@context': 'https://schema.org',
     '@type': EVENT_TYPES[event.category] ?? 'Event',
     name: event.title,
-    startDate: eventDate(event.startsAt, event.allDay),
-    ...(event.endsAt ? { endDate: eventDate(event.endsAt, event.allDay) } : {}),
+    startDate: eventDate(event.startsAt, event.allDay, site.timezone),
+    ...(event.endsAt ? { endDate: eventDate(event.endsAt, event.allDay, site.timezone) } : {}),
     // La route ne sert que les événements publiés : un annulé n'arrive pas jusqu'ici.
     // La correspondance est conservée pour rester juste si cette règle change — c'est
     // le vocabulaire attendu par Google, pas une décision de ce fichier.
@@ -378,7 +382,7 @@ export function clubEvent(
     // Un gymnase du club sort avec son adresse et ses coordonnées ; tout autre lieu
     // reste un nom et un pays — c'est peut-être la salle d'un club adverse.
     ...(event.venue
-      ? { location: place(event.venue) }
+      ? { location: place(event.venue, site) }
       : event.venueLabel
         ? { location: { '@type': 'Place', name: event.venueLabel, address: { '@type': 'PostalAddress', addressCountry: 'FR' } } }
         : {}),

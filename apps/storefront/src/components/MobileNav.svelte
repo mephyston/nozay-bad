@@ -2,7 +2,7 @@
   import { Home, ShoppingCart, Newspaper, CalendarDays } from '@lucide/svelte';
   import ShuttlecockIcon from './ShuttlecockIcon.svelte';
 
-  let { currentPath = '' }: { currentPath?: string } = $props();
+  let { currentPath = '', features = {} }: { currentPath?: string; features?: Partial<Record<string, boolean>> } = $props();
 
   // Cinq cases, la limite de ce qu'une barre d'onglets supporte avant que les
   // libellés ne deviennent illisibles.
@@ -15,13 +15,16 @@
   // entier. Les deux écrans qui y étaient relégués — « Notes de frais » et
   // « Mon attestation CSE » — sont passés dans le menu « Mon compte » de l'en-tête,
   // toujours à portée, y compris en PWA où le pied de page est masqué.
+  //
+  // Une rubrique que le club a éteinte (boutique, interclubs) disparaît de la barre ;
+  // une clé absente des fonctionnalités vaut « allumée ».
   const items = [
     { href: '/', label: 'Accueil', icon: Home },
     { href: '/actualites', label: 'Actualités', icon: Newspaper },
     { href: '/agenda', label: 'Calendrier', icon: CalendarDays },
-    { href: '/boutique', label: 'Boutique', icon: ShoppingCart },
-    { href: '/equipes', label: 'Mon club', icon: ShuttlecockIcon }
-  ];
+    { href: '/boutique', label: 'Boutique', icon: ShoppingCart, feature: 'shop' },
+    { href: '/equipes', label: 'Mon club', icon: ShuttlecockIcon, feature: 'teams' }
+  ].filter((item) => !item.feature || features[item.feature] !== false);
 </script>
 
 <nav

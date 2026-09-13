@@ -272,7 +272,7 @@ function checkHistory(ctx: LineupContext): LineupIssue[] {
         issues.push(
           warn(
             'W5',
-            `${fullName(player)} est titulaire de NBA91-${holding.number} (${holding.count} rencontres) : il ne peut plus être aligné dans une équipe inférieure.`,
+            `${fullName(player)} est titulaire de l'équipe ${holding.number} (${holding.count} rencontres) : il ne peut plus être aligné dans une équipe inférieure.`,
             '6.3.2',
             { licence }
           )

@@ -1,7 +1,7 @@
 ---
 import { resolveEnv } from '../lib/request-context';
 import { listNavItems, getSiteSettings, type NavItemView } from '../lib/cms';
-import { SITE_NAME } from '../lib/seo';
+const SITE_NAME = Astro.locals.club?.settings.name ?? '';
 import { socialLinks } from '../lib/social';
 
 /**

@@ -79,31 +79,31 @@ export default tseslint.config(
             },
             {
               sourceTag: 'scope:accounting',
-              onlyDependOnLibsWithTags: ['scope:accounting', 'scope:members', 'scope:shared']
+              onlyDependOnLibsWithTags: ['scope:accounting', 'scope:members', 'scope:shared', 'scope:club']
             },
             {
               sourceTag: 'scope:members',
-              onlyDependOnLibsWithTags: ['scope:members', 'scope:shared']
+              onlyDependOnLibsWithTags: ['scope:members', 'scope:shared', 'scope:club']
             },
             {
               sourceTag: 'scope:expenses',
               // Notifications: outbound only (an approved expense report notifies its member).
-              onlyDependOnLibsWithTags: ['scope:expenses', 'scope:members', 'scope:accounting', 'scope:notifications', 'scope:shared']
+              onlyDependOnLibsWithTags: ['scope:expenses', 'scope:members', 'scope:accounting', 'scope:notifications', 'scope:shared', 'scope:club']
             },
             {
               sourceTag: 'scope:shop',
               // Cross-domain access: read-only for member names and categories, except order approval which inserts a transaction.
-              onlyDependOnLibsWithTags: ['scope:shop', 'scope:shared', 'scope:members', 'scope:accounting', 'scope:notifications']
+              onlyDependOnLibsWithTags: ['scope:shop', 'scope:shared', 'scope:members', 'scope:accounting', 'scope:notifications', 'scope:club']
             },
             {
               sourceTag: 'scope:schedules',
               // Feuille : les créneaux ne dépendent d'aucun autre domaine. C'est le
               // site — et demain le storefront — qui composent.
-              onlyDependOnLibsWithTags: ['scope:schedules', 'scope:shared']
+              onlyDependOnLibsWithTags: ['scope:schedules', 'scope:shared', 'scope:club']
             },
             {
               sourceTag: 'scope:events',
-              onlyDependOnLibsWithTags: ['scope:events', 'scope:shared']
+              onlyDependOnLibsWithTags: ['scope:events', 'scope:shared', 'scope:club']
             },
             {
               sourceTag: 'scope:teams',
@@ -115,15 +115,21 @@ export default tseslint.config(
                 'scope:teams',
                 'scope:members',
                 'scope:notifications',
-                'scope:shared'
+                'scope:shared',
+                'scope:club'
               ]
+            },
+            {
+              sourceTag: 'scope:club',
+              // Feuille : l'identité du club ne dépend de personne, et tout le monde la lit.
+              onlyDependOnLibsWithTags: ['scope:club', 'scope:shared']
             },
             {
               sourceTag: 'scope:cms',
               // Feuille : le CMS ne dépend d'aucun autre domaine. Les créneaux et
               // l'agenda seront composés par apps/website, pas importés ici — un bloc
               // `schedule` porte une requête, jamais des lignes.
-              onlyDependOnLibsWithTags: ['scope:cms', 'scope:shared']
+              onlyDependOnLibsWithTags: ['scope:cms', 'scope:shared', 'scope:club']
             },
             {
               sourceTag: 'scope:notifications',

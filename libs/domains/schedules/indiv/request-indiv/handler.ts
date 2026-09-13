@@ -1,3 +1,4 @@
+import { getClubSettings } from '@nba/club/settings';
 import { type Db } from '@nba/db';
 import { isUpcomingDate } from '../../shared/open-play';
 import { isIndivEligibleGroup } from '../../shared/indiv';
@@ -34,7 +35,7 @@ export async function requestIndiv(
   if (session.status === 'cancelled') throw new IndivSessionCancelledError();
   if (session.status === 'announced') throw new IndivSessionAnnouncedError();
   if (!isUpcomingDate(session.date, now)) throw new IndivSessionPassedError();
-  if (!isIndivEligibleGroup(input.memberGroup)) throw new NotIndivEligibleError();
+  if (!isIndivEligibleGroup(input.memberGroup, (await getClubSettings(db)).indivEligibilityKeyword)) throw new NotIndivEligibleError();
 
   const preferredSlot = input.preferredSlot ?? null;
   if (preferredSlot !== null && (preferredSlot < 1 || preferredSlot > session.slotCount)) {

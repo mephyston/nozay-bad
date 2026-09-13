@@ -93,6 +93,7 @@ export const SECTION_SPECS: SectionSpec[] = [
     usedIn: 'Bas de page des factures, bordereaux et attestations ; page « Mentions légales » de l’espace adhérent.',
     fields: [
       { key: 'legalSeat', label: 'Siège social', kind: 'text', maxlength: 300, placeholder: 'Mairie de …, 00000 VILLE', wide: true },
+      { key: 'publicationDirector', label: 'Directeur de la publication', kind: 'text', maxlength: 120, help: 'Le représentant légal, en général la présidence.', wide: true },
       { key: 'rna', label: 'Numéro RNA (association déclarée)', kind: 'text', maxlength: 12, placeholder: 'W091000000' },
       { key: 'siret', label: 'SIRET', kind: 'text', maxlength: 17, placeholder: '000 000 000 00000' },
       { key: 'ddjsApproval', label: 'Agrément jeunesse et sports', kind: 'text', maxlength: 60 },

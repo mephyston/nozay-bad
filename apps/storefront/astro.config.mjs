@@ -124,7 +124,8 @@ export default defineConfig({
         '@nba/iam-ui',
         '@nba/events-ui',
         '@nba/teams-ui',
-        '@nba/schedules-ui'
+        '@nba/schedules-ui',
+        '@nba/club-ui'
       ]
     },
     ssr: {

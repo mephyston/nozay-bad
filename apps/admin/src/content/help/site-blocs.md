@@ -297,7 +297,7 @@ Insère une vidéo YouTube, une feuille de calcul ou un agenda Google dans la pa
 
 On n'enregistre jamais une adresse complète, mais un service pris dans une liste fermée et un identifiant. C'est ce qui empêche qu'un écran d'administration devienne un moyen d'insérer n'importe quel contenu extérieur dans le site.
 
-La forme attendue dépend du service : un **jeton** pour YouTube et Sheets (lettres, chiffres, tirets et soulignés, huit caractères au minimum), une **adresse** pour Google Agenda — `nozaybad@gmail.com`, ou `…@group.calendar.google.com` pour un agenda partagé. Dans les deux cas, coller l'adresse d'intégration complète est refusé, avec un message qui le dit.
+La forme attendue dépend du service : un **jeton** pour YouTube et Sheets (lettres, chiffres, tirets et soulignés, huit caractères au minimum), une **adresse** pour Google Agenda — `monclub@gmail.com`, ou `…@group.calendar.google.com` pour un agenda partagé. Dans les deux cas, coller l'adresse d'intégration complète est refusé, avec un message qui le dit.
 
 **Choisir le format.** Le 16/9 convient à une vidéo. Un **agenda mensuel** ou une grande feuille de calcul y seraient illisibles : prenez une **hauteur fixe**, environ 600 pixels pour un agenda. Le cadre réserve sa place avant de charger, quel que soit le choix — sans quoi le reste de la page sauterait à l'arrivée du contenu.
 

@@ -14,6 +14,7 @@
     open = $bindable(false),
     team = null,
     seasonCode,
+    teamPrefix,
     onSaved,
     endpoint = '/admin/api/teams/teams'
   }: {
@@ -29,6 +30,8 @@
      * et hors de la contrainte d'unicité qui porte la hiérarchie des numéros.
      */
     seasonCode: string;
+    /** Préfixe des équipes du club (`club_settings.team_prefix`), pour annoncer le nom dérivé. */
+    teamPrefix: string;
     onSaved: () => void;
     /**
      * Destination des écritures : le relais du domaine, et non la page hôte.
@@ -107,7 +110,7 @@
         const payload = (await response.json()) as { error?: string };
         if (!response.ok) throw new Error(payload.error || "L'enregistrement a échoué.");
       },
-      success: team ? 'Équipe mise à jour.' : `Équipe ${teamName(number)} créée.`,
+      success: team ? 'Équipe mise à jour.' : `Équipe ${teamName(teamPrefix, number)} créée.`,
       close: () => {
         open = false;
         onSaved();
@@ -154,7 +157,7 @@
     <p class="text-xs text-muted-foreground mt-1">
       1 = équipe 1. Ce numéro définit la hiérarchie : la valeur de l'équipe n doit rester
       inférieure ou égale à celle de l'équipe n−1. L'équipe s'appellera
-      <strong>{teamName(Number.isInteger(number) && number > 0 ? number : 1)}</strong>.
+      <strong>{teamName(teamPrefix, Number.isInteger(number) && number > 0 ? number : 1)}</strong>.
     </p>
   </FormField>
 

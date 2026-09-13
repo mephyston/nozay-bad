@@ -8,11 +8,12 @@ export const CONTENT_W = PAGE_W - MARGIN * 2;
 
 export const INK = rgb(0.09, 0.11, 0.17);
 export const GREY = rgb(0.37, 0.37, 0.37);
-/** Cyan de la marque, relevé sur le papier à lettre (« www.nozaybad.fr »). */
-export const BRAND = rgb(35 / 255, 184 / 255, 233 / 255);
 
-export const embed = (doc: PDFDocument, a: EmbeddedImage): Promise<PDFImage> =>
-  a.kind === 'png' ? doc.embedPng(a.base64) : doc.embedJpg(a.base64);
+/** Embarque une image, qu'elle arrive en octets (R2) ou en base64 (colonne D1). */
+export const embed = (doc: PDFDocument, a: EmbeddedImage): Promise<PDFImage> => {
+  const data = 'bytes' in a ? a.bytes : a.base64;
+  return a.kind === 'png' ? doc.embedPng(data) : doc.embedJpg(data);
+};
 
 /** Découpe un texte en lignes qui tiennent dans `maxWidth`. */
 export function wrapLines(text: string, font: PDFFont, size: number, maxWidth: number): string[] {

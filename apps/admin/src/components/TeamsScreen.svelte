@@ -58,6 +58,7 @@
         days={d.days}
         daysChampionship={d.daysChampionship}
         seasonCode={d.seasonCode}
+        teamPrefix={d.teamPrefix}
         canWrite={d.canWrite}
         canDelete={d.canDelete}
       />

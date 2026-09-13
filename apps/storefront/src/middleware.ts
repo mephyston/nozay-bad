@@ -13,6 +13,8 @@ import {
   type SessionMember
 } from './lib/auth';
 import { resolveEnv, IS_DEV, COOKIE_SECURE } from './lib/request-context';
+import { loadClubContext, featureOn } from '@nba/club/context';
+import type { Feature } from '@nba/club-ui';
 import { applySecurityHeaders, withMutableHeaders } from './lib/security-headers';
 import { listSeasons, isSeasonOpen, parisToday } from './lib/season';
 
@@ -31,6 +33,28 @@ const OPTIONAL_SESSION_PAGES = ['/confidentialite', '/mentions-legales'];
 // Fichiers statiques servis depuis public/ (favicon, logo, robots, manifest, polices...).
 // Volontairement SANS .pdf : /api/attestation.pdf doit rester protégé (voir exclusion /api/).
 const STATIC_FILE = /\.(ico|png|jpe?g|svg|webp|gif|avif|txt|xml|webmanifest|json|woff2?|ttf|otf|eot|css|js|map|mp4|webm)$/i;
+
+/**
+ * Les pages qui n'existent que si le club utilise la fonctionnalité.
+ *
+ * Préfixes de chemin, segment complet. Une page éteinte répond introuvable, avant même la
+ * session : elle n'a pas à s'annoncer. L'agenda reste, c'est un calendrier ; ce sont ses
+ * encarts qui suivent chacun sa fonctionnalité.
+ */
+const FEATURE_PAGES: [string, Feature][] = [
+  ['/boutique', 'shop'],
+  ['/note-de-frais', 'expenses'],
+  ['/indiv', 'indiv'],
+  ['/jeu-libre', 'open_play'],
+  ['/equipes', 'teams'],
+  ['/notifications', 'push'],
+  ['/attestation', 'attestations'],
+  ['/api/attestation', 'attestations']
+];
+
+function featureOf(path: string): Feature | undefined {
+  return FEATURE_PAGES.find(([prefix]) => path === prefix || path.startsWith(`${prefix}/`) || path.startsWith(`${prefix}.`))?.[1];
+}
 
 /**
  * Renseigne `locals.session` si un cookie valide accompagne la requête, sans jamais
@@ -99,11 +123,18 @@ const handleRequest = async (
   const url = new URL(request.url);
   const path = url.pathname;
 
-  if (
-    path.startsWith('/_') ||
-    (!path.startsWith('/api/') && STATIC_FILE.test(path)) ||
-    PUBLIC_PREFIXES.some((p) => path === p || path.startsWith(p))
-  ) {
+  const isStatic = path.startsWith('/_') || (!path.startsWith('/api/') && STATIC_FILE.test(path));
+
+  // Le club, pour toute page et tout point d'entrée : titre, pied de page, expéditeur
+  // des mails, fonctionnalités éteintes. Pas pour les fichiers statiques.
+  if (!isStatic) locals.club = await loadClubContext(resolveEnv(locals) as never, 'storefront');
+
+  const feature = featureOf(path);
+  if (feature && !featureOn(locals.club, feature)) {
+    return new Response('Page introuvable', { status: 404, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
+  }
+
+  if (isStatic || PUBLIC_PREFIXES.some((p) => path === p || path.startsWith(p))) {
     if (OPTIONAL_SESSION_PAGES.some((p) => path === p || path.startsWith(p))) {
       await attachSessionIfAny(context);
     }
@@ -149,7 +180,7 @@ const handleRequest = async (
   }
 
   if (session) {
-    const today = parisToday();
+    const today = parisToday(new Date(), locals.club?.settings.timezone);
     const seasons = await listSeasons(env, today);
     // Liste vide = API injoignable. On ne coupe personne sur une panne : la licence sera
     // revérifiée à la requête suivante.

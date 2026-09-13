@@ -1,4 +1,5 @@
 import { defineMiddleware } from 'astro:middleware';
+import { loadClubContext, featureOn } from '@nba/club/context';
 import { waitUntil } from 'cloudflare:workers';
 import { verifyPreviewToken } from '@nba/preview';
 import { applySecurityHeaders } from './lib/security-headers';
@@ -48,8 +49,17 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
   // La préproduction ne doit jamais entrer dans un index, quoi qu'il arrive : le
   // `robots.txt` le dit déjà, l'en-tête le répète pour les pages atteintes en direct.
-  const render = async () =>
-    applySecurityHeaders(await next(), { noindex: appEnv === 'staging' });
+  const render = async () => {
+    // Le club n'est lu qu'au rendu — jamais pour une page servie depuis le cache —
+    // et une minute d'isolate suffit à ne pas le relire à chaque défaut de cache.
+    context.locals.club = await loadClubContext(runtimeEnv as never, 'website');
+    // Un club qui n'utilise pas le site public : rien ne répond, hors les médias que
+    // l'administration et l'espace adhérent servent depuis ce même Worker.
+    if (!featureOn(context.locals.club, 'website') && !url.pathname.startsWith('/media/')) {
+      return applySecurityHeaders(new Response('Site non ouvert', { status: 404 }), { noindex: true });
+    }
+    return applySecurityHeaders(await next(), { noindex: appEnv === 'staging' });
+  };
 
   /*
     Cache de page, ici et pas dans les pages elles-mêmes.

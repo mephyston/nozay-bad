@@ -1,4 +1,5 @@
 import { type Db } from '@nba/db';
+import { clubLetterhead, getClubSettings, type ClubAssetStore } from '@nba/club/settings';
 import { getMemberCseData } from '../get-member-cse-data/handler';
 import { getEffectiveConfig } from '../shared/attestation/repository';
 import { generateCseAttestationPdf } from '../shared/attestation/generate-pdf';
@@ -20,11 +21,11 @@ function safeFilename(firstName: string, lastName: string, season: string): stri
   return `${base}.pdf`;
 }
 
-export async function generateCseAttestation(db: Db, id: number): Promise<GenerateCseAttestationOutput> {
+export async function generateCseAttestation(db: Db, store: ClubAssetStore, id: number): Promise<GenerateCseAttestationOutput> {
   // Réutilise la logique existante : lève MemberNotFoundError / MemberNothingPaidError.
   const data = await getMemberCseData(db, id);
-  const config = await getEffectiveConfig(db);
-  const pdf = await generateCseAttestationPdf(data, config);
+  const [config, spec, settings] = await Promise.all([getEffectiveConfig(db), clubLetterhead(db, store), getClubSettings(db)]);
+  const pdf = await generateCseAttestationPdf(data, config, spec, settings.city);
   return {
     pdf,
     filename: safeFilename(data.firstName, data.lastName, formatSeason(data.season))

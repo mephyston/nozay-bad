@@ -3,7 +3,14 @@ import Layout from '../layouts/Layout.astro';
 import MobileNav from '../components/MobileNav.svelte';
 
 // Page publique (accessible sans connexion — voir l'allow-list du middleware).
-const lastUpdate = 'août 2026';
+const lastUpdate = 'septembre 2026';
+
+// Tout ce qui nomme le club vient de sa configuration : cette page est la même pour
+// tous les clubs, seules les valeurs changent. L'adresse est découpée en deux attributs
+// assemblés côté client (anti-moissonnage), comme avant.
+const club = Astro.locals.club?.settings;
+const nom = club?.name ?? '';
+const [mailUser = '', mailDomain = ''] = (club?.contactEmail ?? '').split('@');
 
 // La barre de navigation n'est posée que pour un visiteur connecté : elle pointe
 // vers des écrans authentifiés, qui renverraient un visiteur anonyme vers le login.
@@ -11,14 +18,14 @@ const session = Astro.locals.session;
 ---
 
 <Layout
-  title="Mentions légales - Nozay Badminton Association"
-  description="Mentions légales de l'espace adhérent de l'association Nozay Badminton : éditeur, directeur de la publication et hébergeur."
+  title="Mentions légales"
+  description={`Mentions légales de l'espace adhérent de ${nom} : éditeur, directeur de la publication et hébergeur.`}
 >
   <main class="flex-1 w-full">
     <div class="max-w-3xl mx-auto px-4 sm:px-6 py-10 pb-28 md:pb-10">
       <a href="/" class="inline-flex items-center gap-2 mb-6">
         <img src="/logo.png" alt="Logo" class="h-7 w-7 object-contain" />
-        <span class="font-bold text-sm text-foreground tracking-tight">Nozay Badminton Association</span>
+        <span class="font-bold text-sm text-foreground tracking-tight">{nom}</span>
       </a>
 
       <h1 class="text-2xl font-bold text-foreground">Mentions légales</h1>
@@ -28,22 +35,24 @@ const session = Astro.locals.session;
         <section class="space-y-2">
           <h2 class="text-lg font-semibold">1. Éditeur du site</h2>
           <p class="text-muted-foreground">
-            Le présent espace adhérent est édité par <strong class="text-foreground">Nozay Badminton Association</strong>,
+            Le présent espace adhérent est édité par <strong class="text-foreground">{nom}</strong>,
             association sportive régie par la loi du 1<sup>er</sup> juillet 1901, affiliée à la Fédération Française de Badminton (FFBaD).
           </p>
           <ul class="list-disc pl-5 space-y-1 text-muted-foreground">
-            <li>Siège social : <strong class="text-foreground">Mairie de Nozay, 91620 NOZAY</strong></li>
-            <li>Association déclarée n° <strong class="text-foreground">0913011863</strong></li>
-            <li>SIRET : <strong class="text-foreground">433 218 716 00010</strong></li>
-            <li>Agrément DDJS : 91 S 744 — Affiliation FFBaD : LIFB.91.96.018</li>
-            <li>Contact : <a class="email-protect text-primary hover:underline" data-u="tresorier" data-d="nozaybad.fr" href="#">notre adresse email</a></li>
+            {club?.legalSeat && <li>Siège social : <strong class="text-foreground">{club.legalSeat}</strong></li>}
+            {club?.rna && <li>Association déclarée n° <strong class="text-foreground">{club.rna}</strong></li>}
+            {club?.siret && <li>SIRET : <strong class="text-foreground">{club.siret}</strong></li>}
+            {(club?.ddjsApproval || club?.ffbadAffiliation) && (
+              <li>{[club.ddjsApproval && `Agrément ${club.ddjsApproval}`, club.ffbadAffiliation && `Affiliation FFBaD : ${club.ffbadAffiliation}`].filter(Boolean).join(' — ')}</li>
+            )}
+            {mailDomain && <li>Contact : <a class="email-protect text-primary hover:underline" data-u={mailUser} data-d={mailDomain} href="#">notre adresse email</a></li>}
           </ul>
         </section>
 
         <section class="space-y-2">
           <h2 class="text-lg font-semibold">2. Directeur de la publication</h2>
           <p class="text-muted-foreground">
-            <strong class="text-foreground">Fabien LE BLEVEC</strong>, en qualité de président de l'association et représentant légal.
+            <strong class="text-foreground">{club?.publicationDirector || 'La présidence'}</strong>, en qualité de représentant légal de l'association.
           </p>
         </section>
 
@@ -76,12 +85,12 @@ const session = Astro.locals.session;
         {!session && (
           <p class="mb-2"><a href="/" class="text-primary hover:underline">Retour à l'accueil</a></p>
         )}
-        <p>© {new Date().getFullYear()} Nozay Badminton Association. Tous droits réservés.</p>
+        <p>© {new Date().getFullYear()} {Astro.locals.club?.settings.name}. Tous droits réservés.</p>
       </footer>
     </div>
   </main>
 
-  {session && <MobileNav currentPath="/mentions-legales" />}
+  {session && <MobileNav features={Astro.locals.club?.features ?? {}} currentPath="/mentions-legales" />}
 
   <script is:inline>
     // Assemble l'email côté client (anti-moissonnage bots).

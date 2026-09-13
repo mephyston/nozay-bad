@@ -73,7 +73,7 @@ if (active) {
   } catch {}
 }
 
-const renewUrl = 'https://www.myffbad.fr/adherer/NBA91';
+const renewUrl = Astro.locals.club?.settings.ffbadMembershipUrl || 'https://www.myffbad.fr/';
 const lapsedNames = lapsedMembers.map((m) => `${m.firstName} ${m.lastName}`);
 
 const due = cotisation?.amountDueCents ?? 0;
@@ -82,7 +82,7 @@ const remaining = cotisation?.amountRemainingCents ?? Math.max(0, due - received
 const isPaid = Boolean(cotisation?.paid);
 ---
 
-<Layout title="Mon compte - Nozay Bad">
+<Layout title="Mon compte">
   <Header currentPath="/mon-compte" />
 
   <main class="flex-1 p-3 sm:p-6 w-full pb-24 md:pb-6">
@@ -302,10 +302,10 @@ const isPaid = Boolean(cotisation?.paid);
     </div>
   </main>
 
-  <MobileNav currentPath="/mon-compte" />
+  <MobileNav features={Astro.locals.club?.features ?? {}} currentPath="/mon-compte" />
 
   <footer class="hidden md:block border-t border-border mt-12 py-8 bg-card/20 text-center text-xs text-muted-foreground md:pb-8">
-    <p>© {new Date().getFullYear()} Nozay Badminton Association. Tous droits réservés.</p>
+    <p>© {new Date().getFullYear()} {Astro.locals.club?.settings.name}. Tous droits réservés.</p>
     <p class="mt-2"><a href="/confidentialite" class="hover:underline">Politique de confidentialité</a> · <a href="/mentions-legales" class="hover:underline">Mentions légales</a></p>
   </footer>
 </Layout>

@@ -18,7 +18,7 @@ import '@fontsource/yellowtail/latin-400.css';
 import SiteHeader from '../components/SiteHeader.astro';
 import SiteFooter from '../components/SiteFooter.astro';
 import { serialiseJsonLd } from '../lib/jsonld';
-import { SITE_NAME } from '../lib/seo';
+const SITE_NAME = Astro.locals.club?.settings.name ?? '';
 
 interface Props {
   title: string;
@@ -111,7 +111,7 @@ const image = ogImage ?? new URL('/og-default.jpg', Astro.site ?? canonical).toS
 
       En fin de corps et non dans l'en-tête : le script ne fait que retoucher du texte
       déjà affiché, et n'a aucune raison de retarder le premier rendu. Avant son
-      exécution, la page montre « contact [arobase] nozaybad.fr » — lisible, et sans
+      exécution, la page montre « contact [arobase] domaine.fr » — lisible, et sans
       rien à moissonner pour un robot qui n'exécute pas de JavaScript.
     */}
     <script is:inline>

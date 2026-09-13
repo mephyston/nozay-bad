@@ -1,4 +1,5 @@
 import { type DbOrTx } from '@nba/db';
+import { getClubSettings } from '@nba/club/settings';
 import { CHAMPIONSHIP_RULES, getDivision, teamName } from '../shared/championship';
 import { normalizeLicence } from '../shared/ranking';
 import { lineLabel } from '../shared/team-value';
@@ -37,6 +38,7 @@ export async function listMyFixtures(
 
   const teams = await repo.teamsOf(db, input.seasonCode, licence);
   if (teams.length === 0) return { fixtures: [] };
+  const { teamPrefix } = await getClubSettings(db);
 
   const today = now.toISOString().slice(0, 10);
   const championships = [...new Set(teams.map((team) => team.championship))];
@@ -81,7 +83,7 @@ export async function listMyFixtures(
 
     withLineups.push({
       teamId: team.id,
-      teamName: teamName(team.number),
+      teamName: teamName(teamPrefix, team.number),
       championshipLabel: rules.label,
       divisionLabel: division?.label ?? team.division,
       dayNumber: day.number,

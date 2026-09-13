@@ -155,7 +155,7 @@ export function cacheKeyFor(
   now: Date = new Date()
 ): Request {
   const prefix = version === null ? '' : `/v${version}/d${jourDeRendu(now)}`;
-  return new Request(`https://cache.nozaybad.fr${prefix}${pathname}${query}`, { method: 'GET' });
+  return new Request(`https://cache.local${prefix}${pathname}${query}`, { method: 'GET' });
 }
 
 /**
@@ -207,7 +207,7 @@ function jourDeRendu(now: Date): string {
  */
 const VERSION_TTL_SECONDS = 60;
 
-const VERSION_KEY = 'https://cache.nozaybad.fr/__content-version';
+const VERSION_KEY = 'https://cache.local/__content-version';
 
 /**
  * Version de contenu, relue au plus une fois toutes les dix secondes par centre de
@@ -393,7 +393,7 @@ export const DATA_CACHE_SECONDS = 86_400;
 
 /** Clé d'une lecture d'API. Espace séparé : jamais le chemin d'une page servie. */
 export function dataCacheKey(path: string, version: number): Request {
-  return new Request(`https://cache.nozaybad.fr/data/v${version}${path}`, { method: 'GET' });
+  return new Request(`https://cache.local/data/v${version}${path}`, { method: 'GET' });
 }
 
 /**

@@ -1,4 +1,5 @@
 import { type DbOrTx } from '@nba/db';
+import { getClubSettings } from '@nba/club/settings';
 import { CHAMPIONSHIP_RULES, getDivision, teamName } from '../shared/championship';
 import { TeamNotFoundError, UnknownChampionshipError, TeamNumberTakenError } from '../shared/errors';
 import { SaveTeamRepository } from './repository';
@@ -28,6 +29,7 @@ export async function saveTeam(
     );
   }
 
+  const { teamPrefix } = await getClubSettings(db);
   const conflict = await repo.findConflict(db, {
     seasonCode: input.seasonCode,
     championship: input.championship,
@@ -47,12 +49,12 @@ export async function saveTeam(
 
   if (input.id === undefined) {
     const created = await repo.insert(db, { ...values, createdAt: now });
-    return { id: created.id, name: teamName(created.number) };
+    return { id: created.id, name: teamName(teamPrefix, created.number) };
   }
 
   const existing = await repo.findById(db, input.id);
   if (!existing) throw new TeamNotFoundError();
 
   const updated = await repo.update(db, input.id, values);
-  return { id: updated.id, name: teamName(updated.number) };
+  return { id: updated.id, name: teamName(teamPrefix, updated.number) };
 }

@@ -1,3 +1,4 @@
+import { getClubSettings } from '@nba/club/settings';
 import { type Db } from '@nba/db';
 import { isIndivEligibleGroup, sessionEndTime, slotWindows } from '../../shared/indiv';
 import { ListIndivSessionsRepository } from './repository';
@@ -53,5 +54,5 @@ export async function listIndivSessions(
     })
     .slice(0, input.limit ?? 300);
 
-  return { sessions: items, eligible: isIndivEligibleGroup(input.group) };
+  return { sessions: items, eligible: isIndivEligibleGroup(input.group, (await getClubSettings(db)).indivEligibilityKeyword) };
 }

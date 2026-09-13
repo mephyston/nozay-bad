@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { createDb } from '@nba/db';
+import { clubLetterhead, r2ClubAssetStore } from '@nba/club/settings';
 import { tbValidator } from '@hono/typebox-validator';
 import { getSeasonReports } from './handler';
 import { getSeasonReportsParamSchema } from './validator';
@@ -10,6 +11,7 @@ import { getSeasonBudget } from '../get-season-budget/handler';
 
 export type Bindings = {
   DB: D1Database;
+  MEDIA: R2Bucket;
 };
 
 const REPORT_PDF_TYPES: ReportPdfType[] = ['income-statement', 'analytics', 'cash-flow'];
@@ -27,18 +29,20 @@ getSeasonReportsRoute.get('/:seasonId/reports/pdf', async (c) => {
   if (!REPORT_PDF_TYPES.includes(type)) {
     return c.json({ success: false, error: `Type de rapport invalide : ${type}` }, 400);
   }
+  if (!c.env.MEDIA) return c.json({ success: false, error: 'Bucket binding MEDIA is missing' }, 500);
   const arretedAu = c.req.query('arretedAu');
   const db = createDb(c.env.DB);
 
   try {
-    const [report, categories, accountClasses, budget] = await Promise.all([
+    const [report, categories, accountClasses, budget, spec] = await Promise.all([
       getSeasonReports(db, { seasonId, arretedAu }),
       listCategories(db),
       listAccountClasses(db),
       // Le prévisionnel n'apparaît que dans le compte de résultat.
-      type === 'income-statement' ? getSeasonBudget(db, seasonId) : Promise.resolve([])
+      type === 'income-statement' ? getSeasonBudget(db, seasonId) : Promise.resolve([]),
+      clubLetterhead(db, r2ClubAssetStore(c.env.MEDIA))
     ]);
-    const pdf = await generateSeasonReportPdf(type, report, categories as any, accountClasses as any, budget as any);
+    const pdf = await generateSeasonReportPdf(type, report, categories as any, accountClasses as any, budget as any, spec);
     const filename = `rapport-${type}-${seasonId}.pdf`;
     return new Response(pdf as any, {
       headers: {

@@ -1,3 +1,4 @@
+import { getClubSettings, localDate } from '@nba/club/settings';
 import { Hono } from 'hono';
 import { createDb } from '@nba/db';
 import { tbValidator } from '@hono/typebox-validator';
@@ -12,15 +13,6 @@ const querySchema = Type.Object({
   season: Type.String({ minLength: 1 })
 });
 
-/** Jour civil à Paris — le serveur tourne en UTC, la saison se juge en heure locale. */
-function parisToday(): string {
-  return new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Europe/Paris',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit'
-  }).format(new Date());
-}
 
 export const listClubFunctionsRoute = new Hono<{ Bindings: Bindings }>();
 
@@ -31,7 +23,9 @@ listClubFunctionsRoute.get('/club-functions/status', async (c) => {
     return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
   }
   const db = createDb(c.env.DB);
-  return c.json({ success: true, data: await getClubFunctionsStatus(db, parisToday()) });
+  // Jour civil du club — le serveur tourne en UTC, la saison se juge en heure locale.
+  const today = localDate(new Date(), (await getClubSettings(db)).timezone);
+  return c.json({ success: true, data: await getClubFunctionsStatus(db, today) });
 });
 
 // GET /members/club-functions?season=25-26 — fonctions au club attribuées sur la saison.

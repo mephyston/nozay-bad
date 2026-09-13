@@ -1,5 +1,5 @@
 import { createDb } from '@nba/db';
-import { getClubFeatures, type FeatureState } from '@nba/club/settings';
+import { getClubFeatures, getClubSettings, localClock, type FeatureState } from '@nba/club/settings';
 import { getSeasonAtDate, type SeasonRow } from '@nba/accounting-api';
 import {
   getBirthdaysForActiveSeason,
@@ -50,13 +50,17 @@ export type ScheduledBindings = {
  * l'hebdomadaire vident aussi ce qu'ils viennent d'y écrire.
  */
 export const DISPATCH_CRON = '*/5 * * * *';
-export const DAILY_CRON = '0 7 * * *';
 /*
- * `MON` et non `1` : chez Cloudflare le jour de la semaine va de 1 = dimanche à 7 = samedi,
- * à rebours du cron Unix. Écrit `1`, ce rappel est parti le dimanche 30/08/2026 à 8 h UTC
- * alors que le registre annonce le lundi.
+ * Un tic par heure, et non plus un cron quotidien à 7 h UTC et un hebdomadaire le lundi
+ * à 8 h : l'heure des envois est réglée par le club (`club_settings.daily_send_hour`,
+ * `weekly_send_day`, `weekly_send_hour`) dans **son** fuseau. À chaque tic, le handler
+ * regarde quelle heure il est chez le club et déroule ce qui est dû. Deux crons au lieu
+ * de trois, sur les cinq que le plan gratuit accorde au compte.
+ *
+ * `MON` et non `1` reste la règle pour ce qui est écrit en jours : chez Cloudflare le jour
+ * de la semaine va de 1 = dimanche à 7 = samedi, à rebours du cron Unix.
  */
-export const WEEKLY_CRON = '0 8 * * MON';
+export const HOURLY_CRON = '0 * * * *';
 
 /** Rétention de l'historique des notifications, en jours. */
 const HISTORY_RETENTION_DAYS = 90;
@@ -110,9 +114,10 @@ async function sendUnpaidReminders(db: ReturnType<typeof createDb>, now: Date): 
  */
 export async function sendAwaitingPaymentOrderReminders(
   db: ReturnType<typeof createDb>,
-  now: Date
+  now: Date,
+  afterDays: number = ORDER_REMINDER_AFTER_DAYS
 ): Promise<void> {
-  const cutoff = new Date(now.getTime() - ORDER_REMINDER_AFTER_DAYS * 24 * 60 * 60 * 1000)
+  const cutoff = new Date(now.getTime() - afterDays * 24 * 60 * 60 * 1000)
     .toISOString()
     .split('T')[0];
 
@@ -142,27 +147,6 @@ export async function sendAwaitingPaymentOrderReminders(
   if (!result.skipped) {
     console.log(`[push] relance commandes : ${result.queued} appareil(s) en file`);
   }
-}
-
-/**
- * Instant courant en heure de Paris, `YYYY-MM-DDTHH:mm`.
- *
- * Le cron tourne en UTC ; les dates du domaine interclubs (`week_start`, `played_at`)
- * sont des heures locales naïves. `en-CA` rend la date en ISO, un découpage sûr —
- * même recette que `parisCalendarDay` dans `members/list-birthdays/route.ts`.
- */
-function parisNow(now: Date): string {
-  const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Europe/Paris',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    hourCycle: 'h23'
-  }).formatToParts(now);
-  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? '00';
-  return `${get('year')}-${get('month')}-${get('day')}T${get('hour')}:${get('minute')}`;
 }
 
 /**
@@ -334,57 +318,63 @@ export async function handleScheduled(
   const now = new Date(event.scheduledTime || Date.now());
 
   // Le déclencheur est reconnu à sa chaîne exacte. Un cron modifié à la main dans le
-  // dashboard (« */30 * * * * » à la place du quotidien, 09/2026) n'entre dans aucune
+  // dashboard (« */30 * * * * » à la place de l'horaire, 09/2026) n'entre dans aucune
   // branche et tout se tait sans rien dire : le drain tourne, les envois programmés non.
-  if (![DISPATCH_CRON, DAILY_CRON, WEEKLY_CRON].includes(event.cron)) {
+  if (![DISPATCH_CRON, HOURLY_CRON].includes(event.cron)) {
     console.warn(`[push] cron inconnu « ${event.cron} » : aucune branche programmée, file drainée seulement`);
   }
 
   // Les envois programmés : ce que le club a gardé, sur un environnement qui a le
-  // droit d'envoyer. Le drain, lui, tourne toujours — il ne crée rien, il expédie ce
-  // qu'une action métier a déjà mis en file.
+  // droit d'envoyer, à l'heure qu'il a réglée dans son fuseau. Le drain, lui, tourne
+  // toujours — il ne crée rien, il expédie ce qu'une action métier a déjà mis en file.
   const sendsEnabled = env.SCHEDULED_SENDS_ENABLED === 'true';
-  const features: FeatureState | null = sendsEnabled ? await getClubFeatures(db) : null;
-  const on = (feature: keyof FeatureState) => features?.[feature] === true;
+  if (event.cron === HOURLY_CRON && sendsEnabled) {
+    const [features, settings] = await Promise.all([getClubFeatures(db), getClubSettings(db)]);
+    const on = (feature: keyof FeatureState) => features[feature] === true;
+    const clock = localClock(now, settings.timezone);
+    const dailyDue = clock.hour === settings.dailySendHour;
+    const weeklyDue = clock.weekday === settings.weeklySendDay && clock.hour === settings.weeklySendHour;
 
-  if (event.cron === DAILY_CRON && features) {
-    if (on('birthdays')) {
-      await sendBirthdayAnnouncements(db, now);
-    }
+    if (dailyDue) {
+      if (on('birthdays')) {
+        // Le jour civil du club, recalé en UTC : `getBirthdaysForActiveSeason` lit le
+        // mois et le jour en UTC.
+        const [y, m, d] = clock.date.split('-').map(Number);
+        await sendBirthdayAnnouncements(db, new Date(Date.UTC(y, m - 1, d)));
+      }
 
-    const paris = parisNow(now);
-    const parisToday = paris.slice(0, 10);
-    // La saison se résout par la date, pas par le drapeau `active` : celui-ci est un
-    // outil comptable, basculé quand la clôture l'arrange (cf. seasons/queries.ts).
-    const season = await getSeasonAtDate(db, parisToday);
-    if (season) {
-      if (on('reminder_rankings')) {
-        await sendRankingUpdateReminders(db, season, now, parisToday);
-      }
-      if (on('reminder_open_play')) {
-        await sendOpenPlayOpenerReminders(db, season, now, parisToday);
-      }
-      if (on('reminder_lineups')) {
-        const { reminded } = await remindMissingLineups(
-          db,
-          { seasonCode: season.code, parisNow: paris },
-          now
-        );
-        if (reminded.length > 0) {
-          console.log(`[push] rappel compo : ${reminded.length} équipe(s) relancée(s)`);
+      // La saison se résout par la date, pas par le drapeau `active` : celui-ci est un
+      // outil comptable, basculé quand la clôture l'arrange (cf. seasons/queries.ts).
+      const season = await getSeasonAtDate(db, clock.date);
+      if (season) {
+        if (on('reminder_rankings')) {
+          await sendRankingUpdateReminders(db, season, now, clock.date);
+        }
+        if (on('reminder_open_play')) {
+          await sendOpenPlayOpenerReminders(db, season, now, clock.date);
+        }
+        if (on('reminder_lineups')) {
+          const { reminded } = await remindMissingLineups(
+            db,
+            { seasonCode: season.code, parisNow: clock.dateTime },
+            now
+          );
+          if (reminded.length > 0) {
+            console.log(`[push] rappel compo : ${reminded.length} équipe(s) relancée(s)`);
+          }
         }
       }
     }
-  }
 
-  if (event.cron === WEEKLY_CRON) {
-    if (on('reminder_unpaid')) {
-      await sendUnpaidReminders(db, now);
-      await sendAwaitingPaymentOrderReminders(db, now);
-    }
-    const purged = await purgeNotificationHistory(db, HISTORY_RETENTION_DAYS, now);
-    if (purged > 0) {
-      console.log(`[push] historique purgé : ${purged} message(s)`);
+    if (weeklyDue) {
+      if (on('reminder_unpaid')) {
+        await sendUnpaidReminders(db, now);
+        await sendAwaitingPaymentOrderReminders(db, now, settings.unpaidReminderDelayDays);
+      }
+      const purged = await purgeNotificationHistory(db, HISTORY_RETENTION_DAYS, now);
+      if (purged > 0) {
+        console.log(`[push] historique purgé : ${purged} message(s)`);
+      }
     }
   }
 

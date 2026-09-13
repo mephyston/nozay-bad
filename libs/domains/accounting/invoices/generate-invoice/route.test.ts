@@ -7,7 +7,7 @@ describe('Generate Invoice Route', () => {
     const { mockD1 } = await setupMockDb();
     const res = await generateInvoiceRoute.request('http://localhost/invoices/not-a-number/invoice.pdf', {
       method: 'GET'
-    }, { DB: mockD1 as any });
+    }, { DB: mockD1 as any, MEDIA: {} as any });
     expect(res.status).toBe(400);
   });
 });

@@ -1,4 +1,5 @@
 import { type DbOrTx } from '@nba/db';
+import { getClubSettings } from '@nba/club/settings';
 import { CHAMPIONSHIP_RULES, getDivision, teamName } from '../shared/championship';
 import { loadPlayerDirectory, identityOf } from '../shared/members-lookup';
 import { checkEligibility, describeEligibility } from '../shared/eligibility';
@@ -41,6 +42,7 @@ function unranked(licence: string, gender: 'M' | 'F'): PlayerRanking {
 export async function getTeam(db: DbOrTx, id: number): Promise<GetTeamOutput> {
   const team = await repo.findTeam(db, id);
   if (!team) throw new TeamNotFoundError();
+  const { teamPrefix } = await getClubSettings(db);
 
   const rules = CHAMPIONSHIP_RULES[team.championship];
   const division = getDivision(team.championship, team.division);
@@ -189,7 +191,7 @@ export async function getTeam(db: DbOrTx, id: number): Promise<GetTeamOutput> {
     division: team.division,
     divisionLabel: division.label,
     number: team.number,
-    name: teamName(team.number),
+    name: teamName(teamPrefix, team.number),
     poolLabel: team.poolLabel,
     active: team.active,
     matchCount: division.format.length,

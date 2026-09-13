@@ -9,6 +9,9 @@
   const siteKey =
     (import.meta.env.PUBLIC_TURNSTILE_SITE_KEY as string) || '1x00000000000000000000AA';
 
+  /** Page de prise de licence du club (configuration), passée par la page. */
+  let { membershipUrl = 'https://www.myffbad.fr/' }: { membershipUrl?: string } = $props();
+
   let step = $state<'identifier' | 'code' | 'profile'>('identifier');
   let identifier = $state('');
   let code = $state('');
@@ -276,7 +279,7 @@
         <p class="text-center text-[11px] text-muted-foreground">
           Pas encore adhérent ?
           <a
-            href="https://www.myffbad.fr/adherer/NBA91"
+            href={membershipUrl}
             target="_blank"
             rel="noopener noreferrer"
             class="underline hover:text-foreground">Prenez votre licence</a
