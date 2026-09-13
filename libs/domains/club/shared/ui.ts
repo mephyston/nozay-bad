@@ -30,3 +30,7 @@ export {
   type SectionValues
 } from './settings';
 export { clubAssetPath } from './assets';
+export { SECTION_SPECS, sectionSpec, type SectionSpec, type FieldSpec } from './ui-sections';
+export { default as ClubSectionForm } from './ui/ClubSectionForm.svelte';
+export { default as ClubFeaturesForm } from './ui/ClubFeaturesForm.svelte';
+export { default as ClubAssetsForm } from './ui/ClubAssetsForm.svelte';

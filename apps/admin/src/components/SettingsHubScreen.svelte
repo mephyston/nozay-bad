@@ -16,6 +16,12 @@
    */
   const DESTINATIONS: { href: string; title: string; description: string; permission: Permission }[] = [
     {
+      href: '/admin/settings/club',
+      title: 'Configuration du club',
+      description: 'Identité, contacts, mentions légales, banque, images des documents et fonctionnalités utilisées.',
+      permission: 'settings:club:read'
+    },
+    {
       href: '/admin/settings/attestation',
       title: 'Attestation CSE',
       description: "Signataire, mail, site web et signature du modèle d'attestation.",
@@ -40,13 +46,18 @@
       permission: 'shop:products:read'
     },
     {
-      href: '/admin/settings/plateforme',
-      title: 'Consommation de la plateforme',
-      description:
-        'Requêtes Workers, temps CPU et lignes D1 du jour, rapportés aux quotas du plan gratuit.',
-      permission: 'settings:platform:read'
+      href: '/admin/settings/gymnases',
+      title: 'Gymnases',
+      description: 'Les salles du club : nom, adresse et position, pour le site et les convocations.',
+      permission: 'schedules:slots:write'
     }
   ];
+
+  /*
+    La consommation de la plateforme n'est plus une carte de ce hub : c'est le compte
+    Cloudflare qu'elle mesure, pas le club. Elle reste joignable à son adresse par
+    qui porte `settings:platform:read` — en pratique la plateforme elle-même.
+  */
 
   let droits = $state<string[]>(derniereIdentite()?.permissions ?? []);
   $effect(() => {

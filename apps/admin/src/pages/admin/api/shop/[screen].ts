@@ -14,6 +14,7 @@ const TRANSITIONS = ['validate', 'pay', 'reject', 'cancel', 'unpay'] as const;
 
 export const ECRANS: Record<string, Ecran> = {
   orders: {
+    feature: 'shop',
     permission: 'shop:orders:read',
     charger: async (lire, locals, params) => {
       /*
@@ -91,6 +92,7 @@ export const ECRANS: Record<string, Ecran> = {
    * puisque c'est à elles qu'on rattache chaque catégorie de la boutique.
    */
   categories: {
+    feature: 'shop',
     permission: 'shop:products:read',
     charger: async (lire) => {
       const [comptables, produits] = await Promise.all([
@@ -127,6 +129,7 @@ export const ECRANS: Record<string, Ecran> = {
   },
 
   products: {
+    feature: 'shop',
     permission: 'shop:products:read',
     charger: async (lire, locals) => ({
       products: (await lire('/shop/products')) ?? [],

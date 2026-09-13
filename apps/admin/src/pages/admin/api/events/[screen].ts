@@ -14,6 +14,7 @@ import { creerRelais, identifiant, type Ecran } from '../../../../lib/relais';
 
 export const ECRANS: Record<string, Ecran> = {
   events: {
+    feature: 'events',
     permission: 'events:events:read',
     charger: async (lire, locals) => ({
       // `past=1` : l'administration voit aussi l'historique, contrairement au site.

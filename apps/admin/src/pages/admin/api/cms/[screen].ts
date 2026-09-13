@@ -25,6 +25,7 @@ import { creerRelais, identifiant, Refus, type Ecran } from '../../../../lib/rel
 
 export const ECRANS: Record<string, Ecran> = {
   menus: {
+    feature: 'website',
     permission: 'cms:pages:read',
     charger: async (lire, locals) => {
       const [header, footer, legal, pages] = await Promise.all([
@@ -65,6 +66,7 @@ export const ECRANS: Record<string, Ecran> = {
   },
 
   footer: {
+    feature: 'website',
     permission: 'cms:pages:read',
     charger: async (lire, locals) => ({
       settings: (await lire('/cms/settings')) ?? {},
@@ -88,6 +90,7 @@ export const ECRANS: Record<string, Ecran> = {
   },
 
   pages: {
+    feature: 'website',
     permission: 'cms:pages:read',
     charger: async (lire, locals) => ({
       pages: (await lire('/cms/pages')) ?? [],
@@ -116,6 +119,7 @@ export const ECRANS: Record<string, Ecran> = {
    * cette préparation reste ici plutôt que dans l'îlot.
    */
   page: {
+    feature: 'website',
     permission: 'cms:pages:read',
     charger: async (lire, locals, params) => {
       const id = identifiant(params.get('id'), 'de page');
@@ -231,6 +235,7 @@ export const ECRANS: Record<string, Ecran> = {
   },
 
   redirects: {
+    feature: 'website',
     permission: 'cms:nav:read',
     charger: async (lire, locals) => ({
       redirects: (await lire('/cms/redirects/all')) ?? [],
@@ -373,6 +378,7 @@ export const ECRANS: Record<string, Ecran> = {
   },
 
   media: {
+    feature: 'website',
     permission: 'cms:media:read',
     charger: async (lire, locals) => ({
       media: (await lire('/cms/media')) ?? [],

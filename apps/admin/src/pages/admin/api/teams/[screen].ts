@@ -57,6 +57,7 @@ const presents = <T extends string>(data: any, cles: readonly T[]) =>
 
 export const ECRANS: Record<string, Ecran> = {
   teams: {
+    feature: 'teams',
     permission: 'teams:teams:read',
     charger: async (lire, locals, params) => {
       const { seasons, seasonCode, errorMsg } = await saison(locals, params);
@@ -183,6 +184,7 @@ export const ECRANS: Record<string, Ecran> = {
   },
 
   classements: {
+    feature: 'teams',
     permission: 'teams:rankings:read',
     charger: async (lire, locals, params) => {
       const { seasons, seasonCode, errorMsg } = await saison(locals, params);
@@ -255,6 +257,7 @@ export const ECRANS: Record<string, Ecran> = {
   },
 
   journees: {
+    feature: 'teams',
     permission: 'teams:lineups:read',
     charger: async (lire, locals, params) => {
       const { seasons, seasonCode, errorMsg } = await saison(locals, params);
@@ -296,6 +299,7 @@ export const ECRANS: Record<string, Ecran> = {
   },
 
   reglements: {
+    feature: 'teams',
     permission: 'teams:rankings:read',
     charger: async (lire, locals, params) => {
       const { seasons, seasonCode, errorMsg } = await saison(locals, params);
@@ -330,6 +334,7 @@ export const ECRANS: Record<string, Ecran> = {
 
   import: {
     // L'écran n'existe que pour importer : le droit de lecture est celui de l'import.
+    feature: 'teams',
     permission: 'teams:rankings:import',
     charger: async (_lire: Lecteur, locals, params) => {
       const { seasons, seasonCode, errorMsg } = await saison(locals, params);

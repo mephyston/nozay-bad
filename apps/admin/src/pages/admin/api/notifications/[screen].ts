@@ -9,6 +9,7 @@ import { creerRelais, type Ecran } from '../../../../lib/relais';
  */
 export const ECRANS: Record<string, Ecran> = {
   overview: {
+    feature: 'push',
     permission: 'notifications:messages:read',
     charger: async (lire, locals) => {
       const [etat, audiences, programmes] = await Promise.all([

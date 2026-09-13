@@ -40,11 +40,18 @@ const VIDE: Identite = { email: '', name: undefined, permissions: [], realEmail:
  * d'adhérent, page en cours d'édition) passent par ici pour ne pas perdre le sigle.
  * Idempotent : un titre déjà suffixé ne l'est pas deux fois.
  */
+let dernierSuffixe = '';
+
 export function poserTitre(titre?: string): void {
   if (typeof document === 'undefined') return;
-  const base = titre ?? document.title;
+  // Le suffixe posé au passage précédent est retiré d'abord : un sigle qui change
+  // (club de secours puis club réel) ne doit pas s'empiler au bout du titre.
+  const courant = document.title;
+  const base =
+    titre ?? (dernierSuffixe && courant.endsWith(dernierSuffixe) ? courant.slice(0, -dernierSuffixe.length) : courant);
   const sigle = derniereIdentite()?.club?.shortName;
   const suffixe = sigle ? ` - ${sigle}` : '';
+  dernierSuffixe = suffixe;
   document.title = suffixe && !base.endsWith(suffixe) ? `${base}${suffixe}` : base;
 }
 

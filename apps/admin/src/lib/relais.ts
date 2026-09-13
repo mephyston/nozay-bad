@@ -1,5 +1,7 @@
 import type { APIRoute } from 'astro';
 import type { Permission } from '@nba/iam-ui';
+import type { Feature } from '@nba/club-ui';
+import { fonctionnaliteActive } from './club';
 import { can } from './guard';
 import { createAdminApiClient } from './api';
 
@@ -80,6 +82,14 @@ export interface Ecran {
    * que la page refuse d'afficher.
    */
   disponible?: (locals: App.Locals) => boolean;
+  /**
+   * Fonctionnalité du club dont dépend l'écran.
+   *
+   * Éteinte, l'écran répond introuvable, lecture comme écriture — comme la page dans le
+   * middleware et la route dans l'API. C'est ce filet qui vaut pour les pages figées,
+   * qui ne passent pas par le middleware : leur coquille demande ses données ici.
+   */
+  feature?: Feature;
   charger: (
     lire: Lecteur,
     locals: App.Locals,
@@ -90,6 +100,14 @@ export interface Ecran {
   ecritures?: Record<string, Ecriture>;
   /** Dépôt de fichier, qui arrive en multipart et n'a donc pas de nom d'action. */
   depot?: { permission: Permission; chemin: string };
+  /**
+   * Appelé après une écriture ou un dépôt qui a réussi.
+   *
+   * Pour ce que le worker garde en mémoire à côté de l'API — l'identité du club, par
+   * exemple, mise en cache une minute : celui qui vient de la modifier doit la voir
+   * changée à la requête suivante, pas soixante secondes plus tard.
+   */
+  apres?: () => void;
 }
 
 const json = (data: unknown, status = 200) =>
@@ -125,6 +143,9 @@ export function creerRelais(ECRANS: Record<string, Ecran>): { GET: APIRoute; POS
     if (ecran.disponible && !ecran.disponible(locals)) {
       return json({ success: false, error: 'Écran inconnu' }, 404);
     }
+    if (ecran.feature && !fonctionnaliteActive(locals, ecran.feature)) {
+      return json({ success: false, error: 'Fonctionnalité éteinte dans la configuration du club' }, 404);
+    }
     if (!can(locals, ecran.permission)) return json({ success: false, error: 'Accès refusé' }, 403);
 
     const api = createAdminApiClient(locals);
@@ -156,6 +177,9 @@ export function creerRelais(ECRANS: Record<string, Ecran>): { GET: APIRoute; POS
     const ecran = ECRANS[params.screen ?? ''];
     if (!ecran) return json({ error: 'Écran inconnu' }, 404);
     if (ecran.disponible && !ecran.disponible(locals)) return json({ error: 'Écran inconnu' }, 404);
+    if (ecran.feature && !fonctionnaliteActive(locals, ecran.feature)) {
+      return json({ error: 'Fonctionnalité éteinte dans la configuration du club' }, 404);
+    }
 
     const api = createAdminApiClient(locals);
 
@@ -164,12 +188,12 @@ export function creerRelais(ECRANS: Record<string, Ecran>): { GET: APIRoute; POS
     if ((request.headers.get('content-type') ?? '').includes('multipart/form-data')) {
       if (!ecran.depot) return json({ error: 'Cet écran ne reçoit pas de fichier.' }, 400);
       if (!can(locals, ecran.depot.permission)) return json({ error: 'Accès refusé' }, 403);
-      return relayer(
-        await api.fetch(`http://localhost${ecran.depot.chemin}`, {
-          method: 'POST',
-          body: await request.formData()
-        })
-      );
+      const res = await api.fetch(`http://localhost${ecran.depot.chemin}`, {
+        method: 'POST',
+        body: await request.formData()
+      });
+      if (res.ok) ecran.apres?.();
+      return relayer(res);
     }
 
     const data = (await request.json()) as any;
@@ -194,13 +218,13 @@ export function creerRelais(ECRANS: Record<string, Ecran>): { GET: APIRoute; POS
       throw e;
     }
 
-    return relayer(
-      await api.fetch(`http://localhost${appel.chemin}`, {
-        method: appel.method,
-        headers: { 'Content-Type': 'application/json' },
-        ...(appel.body ? { body: JSON.stringify(appel.body) } : {})
-      })
-    );
+    const res = await api.fetch(`http://localhost${appel.chemin}`, {
+      method: appel.method,
+      headers: { 'Content-Type': 'application/json' },
+      ...(appel.body ? { body: JSON.stringify(appel.body) } : {})
+    });
+    if (res.ok) ecran.apres?.();
+    return relayer(res);
   };
 
   return { GET, POST };

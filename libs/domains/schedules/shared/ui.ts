@@ -30,3 +30,6 @@ export { default as IndivManager } from '../indiv/list-indiv-sessions/ui/IndivMa
 
 /** Écran de l'entraîneur : les candidats classés, l'affectation aux créneaux, l'annonce. */
 export { default as IndivSelection } from '../indiv/list-indiv-candidates/ui/IndivSelection.svelte';
+
+/** Écran du bureau : les gymnases du club, leur adresse et leur position. */
+export { default as VenuesManager } from '../save-venue/ui/VenuesManager.svelte';

@@ -1,7 +1,7 @@
 import { can } from '../../../../lib/guard';
 import { fetchSeasons, currentSeasonCode } from '../../../../lib/seasons';
 import { createAdminApiClient } from '../../../../lib/api';
-import { creerRelais, identifiant, type Ecran } from '../../../../lib/relais';
+import { creerRelais, Refus, identifiant, type Ecran } from '../../../../lib/relais';
 
 /**
  * Les écrans du domaine « séances », et ce que chacun expose.
@@ -28,7 +28,43 @@ const presents = <T extends string>(data: any, cles: readonly T[]) =>
   Object.fromEntries(cles.filter((cle) => data[cle] !== undefined).map((cle) => [cle, data[cle]]));
 
 export const ECRANS: Record<string, Ecran> = {
+  /**
+   * Les gymnases, sous « Configuration ».
+   *
+   * Même route API que le sélecteur des créneaux (`/schedules/venues`), même droit :
+   * tenir la grille suppose de pouvoir nommer la salle. L'API fait l'upsert par code.
+   */
+  gymnases: {
+    permission: 'schedules:slots:write',
+    charger: async (lire, locals) => ({
+      venues: (await lire('/schedules/venues')) ?? [],
+      canWrite: can(locals, 'schedules:slots:write')
+    }),
+    ecritures: {
+      save: {
+        permission: 'schedules:slots:write',
+        route: (data) => {
+          if (typeof data.code !== 'string' || !/^[a-z0-9-]{1,60}$/.test(data.code)) throw new Refus('Code de gymnase invalide.');
+          const optionnel = (v: unknown) => (typeof v === 'string' && v.trim() !== '' ? v.trim() : undefined);
+          return {
+            chemin: '/schedules/venues',
+            method: 'POST',
+            body: {
+              code: data.code,
+              name: data.name,
+              streetAddress: optionnel(data.streetAddress),
+              postalCode: optionnel(data.postalCode),
+              city: optionnel(data.city),
+              latitude: optionnel(data.latitude),
+              longitude: optionnel(data.longitude)
+            }
+          };
+        }
+      }
+    }
+  },
   schedules: {
+    feature: 'schedules',
     permission: 'schedules:slots:read',
     charger: async (lire, locals) => {
       const [slots, venues] = await Promise.all([lire('/schedules'), lire('/schedules/venues')]);
@@ -67,6 +103,7 @@ export const ECRANS: Record<string, Ecran> = {
   },
 
   'jeu-libre': {
+    feature: 'open_play',
     permission: 'schedules:open-play:read',
     charger: async (lire, locals) => {
       /*
@@ -165,6 +202,7 @@ export const ECRANS: Record<string, Ecran> = {
     compris, comme le jeu libre. Le 404 du drapeau devient un message.
   */
   indiv: {
+    feature: 'indiv',
     permission: 'schedules:indiv:read',
     charger: async (lire, locals) => {
       const [soirees, venues, slots] = await Promise.all([
@@ -225,6 +263,7 @@ export const ECRANS: Record<string, Ecran> = {
     alors « âge inconnu » plutôt que de refuser.
   */
   'indiv-candidats': {
+    feature: 'indiv',
     permission: 'schedules:indiv:read',
     charger: async (lire, locals, params) => {
       const id = Number(params.get('id'));
@@ -295,6 +334,7 @@ export const ECRANS: Record<string, Ecran> = {
   },
 
   ouvreurs: {
+    feature: 'open_play',
     permission: 'schedules:open-play:read',
     charger: async (lire, locals) => {
       /*

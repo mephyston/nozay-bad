@@ -80,6 +80,10 @@ export const PAGE_PERMISSIONS: Record<string, Permission | null> = {
   '/admin/settings/attestation': 'members:attestations:read',
   '/admin/settings/products': 'shop:products:read',
   '/admin/settings/plateforme': 'settings:platform:read',
+  '/admin/settings/club': 'settings:club:read',
+  '/admin/settings/club/[section]': 'settings:club:read',
+  // Gestion des salles : les créneaux, l'agenda et le site y renvoient.
+  '/admin/settings/gymnases': 'schedules:slots:write',
 
   '/admin/iam': 'iam:users:read'
 };

@@ -31,6 +31,7 @@ export const ECRANS: Record<string, Ecran> = {
    * lisent au même endroit que les autres.
    */
   attestation: {
+    feature: 'attestations',
     permission: 'members:attestations:read',
     charger: async (lire) => ({
       config: (await lire('/members/attestation/config')) ?? null

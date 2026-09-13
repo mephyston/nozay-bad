@@ -92,6 +92,7 @@ function code(valeur: unknown, quoi: string): string {
 
 export const ECRANS: Record<string, Ecran> = {
   ledger: {
+    feature: 'accounting',
     permission: 'accounting:ledger:read',
     charger: async (lire, locals, params) => {
       const saisonnier = await saison(lire, params);
@@ -194,6 +195,7 @@ export const ECRANS: Record<string, Ecran> = {
    * lire. C'est ce qui libère la page de son rôle de proxy.
    */
   reports: {
+    feature: 'accounting',
     permission: 'accounting:reports:read',
     charger: async (lire, locals, params) => {
       const saisonnier = await saison(lire, params);
@@ -261,6 +263,7 @@ export const ECRANS: Record<string, Ecran> = {
    * fichier, il vit sur `/admin/api/accounting/upload`.
    */
   cheques: {
+    feature: 'checks',
     permission: 'accounting:checks:read',
     charger: async (lire, locals, params) => {
       const saisonnier = await saison(lire, params);
@@ -346,6 +349,7 @@ export const ECRANS: Record<string, Ecran> = {
    * `accounting:bank:import` que le catalogue déclarait sans que personne l'applique.
    */
   reconciliation: {
+    feature: 'accounting',
     permission: 'accounting:bank:read',
     charger: async (lire, locals, params) => {
       const saisonnier = await saison(lire, params);
@@ -812,6 +816,7 @@ export const ECRANS: Record<string, Ecran> = {
     tout écrire.
   */
   account: {
+    feature: 'accounting',
     permission: 'accounting:ledger:read',
     charger: async (lire, locals, params) => {
       const codeCompte = String(params.get('account') ?? '');
@@ -876,6 +881,7 @@ export const ECRANS: Record<string, Ecran> = {
   },
 
   invoices: {
+    feature: 'invoices',
     permission: 'accounting:invoices:read',
     charger: async (lire, locals, params) => {
       const saisonnier = await saison(lire, params);

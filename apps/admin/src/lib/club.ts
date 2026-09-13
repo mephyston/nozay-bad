@@ -47,7 +47,12 @@ export async function chargerClub(env: Record<string, string>, userEmail: string
  * blanche. Les fonctionnalités sont toutes allumées — un club qui en a éteint une
  * la verrait réapparaître le temps d'une panne, ce qui vaut mieux qu'un menu vide.
  */
-export const CLUB_DE_SECOURS: ClubContexte = { settings: NEUTRAL_CLUB_SETTINGS, features: ALL_FEATURES_ON };
+export const CLUB_DE_SECOURS: ClubContexte = {
+  // Sans nom ni sigle : un « Club » de repli s'afficherait comme un vrai nom, et se
+  // garderait dans le navigateur le temps d'une panne.
+  settings: { ...NEUTRAL_CLUB_SETTINGS, name: '', shortName: '' },
+  features: ALL_FEATURES_ON
+};
 
 /** La fonctionnalité est-elle active pour ce club ? Sans contexte, oui : ne rien cacher par accident. */
 export function fonctionnaliteActive(locals: App.Locals, feature: Feature): boolean {

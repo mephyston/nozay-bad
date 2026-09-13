@@ -1,0 +1,61 @@
+---
+import Layout from '../../../../layouts/Layout.astro';
+import AdminLayout from '../../../../components/AdminLayout.svelte';
+import { PageHeader } from '@nba/ui';
+import { SECTION_SPECS } from '@nba/club-ui';
+
+/**
+ * La configuration du club : tout ce qui, jusqu'ici, était écrit dans le code.
+ *
+ * Page figée : la liste des sections est connue au build.
+ */
+export const prerender = true;
+
+const sections = [
+  {
+    href: '/admin/settings/club/fonctionnalites',
+    title: 'Fonctionnalités',
+    description: 'Ce que le club utilise : boutique, interclubs, jeu libre, rappels… Une rubrique éteinte disparaît des menus.'
+  },
+  ...SECTION_SPECS.map((s) => ({ href: `/admin/settings/club/${s.section}`, title: s.title, description: s.description })),
+  {
+    href: '/admin/settings/club/documents',
+    title: 'Images des documents',
+    description: 'Logo, papier à lettre, tampon et logos partenaires imprimés sur les PDF.'
+  },
+  {
+    href: '/admin/settings/gymnases',
+    title: 'Gymnases',
+    description: 'Les salles du club : nom, adresse et position, pour le site et les convocations.'
+  }
+];
+---
+
+<Layout title="Configuration du club">
+  <AdminLayout client:idle breadcrumb="Configuration / Club">
+    <div class="space-y-6">
+      <a
+        href="/admin/settings"
+        class="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+        Retour à la configuration
+      </a>
+      <PageHeader
+        title="Configuration du club"
+        description="L'identité du club, ses coordonnées, ses documents et ce qu'il utilise. Ces valeurs apparaissent sur les applications, les mails et les PDF."
+      />
+      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {sections.map((s) => (
+          <a
+            href={s.href}
+            class="block rounded-xl border border-border bg-card p-5 shadow-sm transition-colors hover:bg-accent/40"
+          >
+            <h2 class="text-base font-semibold text-foreground">{s.title}</h2>
+            <p class="mt-1 text-sm text-muted-foreground">{s.description}</p>
+          </a>
+        ))}
+      </div>
+    </div>
+  </AdminLayout>
+</Layout>

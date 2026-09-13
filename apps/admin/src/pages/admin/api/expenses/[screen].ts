@@ -19,6 +19,7 @@ async function saison(lire: Lecteur, params: URLSearchParams) {
 
 export const ECRANS: Record<string, Ecran> = {
   list: {
+    feature: 'expenses',
     permission: 'expenses:reports:read',
     charger: async (lire, locals, params) => {
       const saisonnier = await saison(lire, params);
