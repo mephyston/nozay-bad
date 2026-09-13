@@ -53,8 +53,18 @@
   const enters = (tx: AccountEntry) =>
     tx.type === 'recette' || (tx.type === 'transfert' && tx.transferLeg === 'destination');
 
-  const totalIn = $derived(transactions.reduce((sum, tx) => (enters(tx) ? sum + tx.amount : sum), 0));
-  const totalOut = $derived(transactions.reduce((sum, tx) => (!enters(tx) ? sum + tx.amount : sum), 0));
+  /*
+   * Le solde se calcule comme au grand livre : l'à-nouveau, plus les mouvements **datés dans
+   * l'exercice**. Une écriture rattachée à cet exercice mais datée avant son ouverture (une
+   * inscription d'interclubs réglée en août pour la saison suivante) est déjà comptée dans
+   * l'à-nouveau, qui se calcule par date : l'additionner encore la comptait deux fois, et
+   * l'écran du compte ne retombait pas sur le solde du grand livre.
+   */
+  const seasonStart = $derived(currentSeason?.startDate ?? '');
+  const inSeason = (tx: AccountEntry) => !seasonStart || tx.date >= seasonStart;
+
+  const totalIn = $derived(transactions.reduce((sum, tx) => (enters(tx) && inSeason(tx) ? sum + tx.amount : sum), 0));
+  const totalOut = $derived(transactions.reduce((sum, tx) => (!enters(tx) && inSeason(tx) ? sum + tx.amount : sum), 0));
   const currentBalance = $derived(initialBalance + totalIn - totalOut);
 
   let searchTerm = $state('');

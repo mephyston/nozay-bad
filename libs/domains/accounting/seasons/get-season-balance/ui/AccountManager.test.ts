@@ -49,6 +49,26 @@ describe('AccountManager', () => {
     expect(html()).toContain('Achat gobelets');
   });
 
+  it("ne compte pas deux fois une écriture datée avant l'ouverture : elle est déjà dans l'à-nouveau", () => {
+    // Une inscription d'interclubs réglée le 20 août pour la saison suivante : rattachée à
+    // 26-27, datée dans 25-26. L'à-nouveau de 26-27 (calculé par date) la contient déjà ;
+    // le solde de l'écran doit retomber sur celui du grand livre : 808,00 − 60,00 = 748,00.
+    mountWith({
+      account: ACCOUNTS[2],
+      seasonId: '26-27',
+      seasons: [{ id: '26-27', name: 'Saison 2026-2027', active: true, startDate: '2026-09-01', endDate: '2027-08-31' }],
+      initialBalance: 80_800,
+      transactions: [
+        entry({ id: 1, type: 'depense', amount: 17_500, date: '2026-08-20', description: 'ICR équipe 1 26-27' }),
+        entry({ id: 2, type: 'transfert', transferLeg: 'source', counterpartAccountId: 1, amount: 6_000, date: '2026-09-06', description: 'Rendu' })
+      ]
+    });
+    expect(html()).toContain('748,00');
+    expect(html()).not.toContain('573,00');
+    // L'écriture reste listée : c'est bien une pièce de cet exercice.
+    expect(html()).toContain('ICR équipe 1 26-27');
+  });
+
   it("compte un virement dans le sens de sa jambe, et nomme l'autre compte", () => {
     mountWith({
       initialBalance: 100_000,
