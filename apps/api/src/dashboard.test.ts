@@ -36,4 +36,40 @@ describe('GET /dashboard/overview — pyramide des âges', () => {
     expect(byCode.V8.total).toBe(0);
     expect(data.members.ageCategories.reduce((n: number, r: any) => n + r.total, 0)).toBe(data.members.currentTotal);
   });
+
+  it('ventile renouvelés, nouveaux et non renouvelés par groupe, par personne', async () => {
+    const { mockD1, db } = await setupMockDb();
+    await seedTestAdmin(db);
+    const [prev, cur] = await db
+      .insert(seasonsTable)
+      .values([
+        { code: '25-26', name: 'Saison 2025-2026', startDate: '2025-09-01', endDate: '2026-08-31', active: false, createdAt: new Date() },
+        { code: '26-27', name: 'Saison 2026-2027', startDate: '2026-09-01', endDate: '2027-08-31', active: true, createdAt: new Date() }
+      ])
+      .returning()
+      .all();
+    const base = { status: 'valide', paid: true, amountRemainingCents: 0, importedAt: new Date(), gender: 'M', birthDate: '1990-01-01' } as const;
+    await insertMemberFixtures(db, [
+      // n-1 : deux poussins, un loisir.
+      { ...base, seasonId: prev.id, licence: '00000001', lastName: 'A', firstName: 'a', type: 'Poussins' },
+      { ...base, seasonId: prev.id, licence: '00000002', lastName: 'B', firstName: 'b', type: 'Poussins' },
+      { ...base, seasonId: prev.id, licence: '00000003', lastName: 'C', firstName: 'c', type: 'Loisirs' },
+      // n : A monte en Loisirs (renouvelé, pas perdu), B est perdu, C reste, D arrive.
+      { ...base, seasonId: cur.id, licence: '00000001', lastName: 'A', firstName: 'a', type: 'Loisirs' },
+      { ...base, seasonId: cur.id, licence: '00000003', lastName: 'C', firstName: 'c', type: 'Loisirs' },
+      { ...base, seasonId: cur.id, licence: '00000004', lastName: 'D', firstName: 'd', type: 'Poussins' }
+    ]);
+
+    const res = await app.request('http://localhost/dashboard/overview?seasonId=26-27', { headers: ADMIN }, { DB: mockD1 as any, INTERNAL_API_KEY: 'secret123' });
+    const { data } = (await res.json()) as any;
+    expect(data.members.renewalByGroup).toEqual([
+      { group: 'Loisirs', total: 2, renewed: 2, newcomers: 0 },
+      { group: 'Poussins', total: 1, renewed: 0, newcomers: 1 }
+    ]);
+    expect(data.members.lapsedByGroup).toEqual([
+      { group: 'Poussins', previousTotal: 2, lapsed: 1 },
+      { group: 'Loisirs', previousTotal: 1, lapsed: 0 }
+    ]);
+    expect(data.members).toMatchObject({ renewed: 2, newcomers: 1, lapsed: 1 });
+  });
 });

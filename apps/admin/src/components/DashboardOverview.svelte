@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { Users, Banknote, CreditCard, Activity, ArrowUpRight, ArrowDownRight, Package, Receipt, FolderKanban, Building, ChevronRight, Scale, Landmark, ExternalLink, Repeat, UserPlus, UserMinus } from '@lucide/svelte';
-  import { DashboardSummaryCard, DashboardPoleCard, CollapsibleSection, Table } from '@nba/ui';
+  import { Users, Banknote, CreditCard, Activity, ArrowUpRight, ArrowDownRight, Package, Receipt, FolderKanban, Building, ChevronRight, Scale, Landmark, ExternalLink, Repeat, UserPlus, UserMinus, Info } from '@lucide/svelte';
+  import { DashboardSummaryCard, DashboardPoleCard, CollapsibleSection, Table, Dialog } from '@nba/ui';
   import { can } from '@nba/iam-ui';
 
   let { data, permissions = [] }: { data: any; permissions?: string[] } = $props();
@@ -55,6 +55,19 @@
   const adults = $derived(sumOf(ages.filter((r) => !r.youth)));
   const everyone = $derived(sumOf(ages));
   const womenShare = $derived(everyone.total > 0 ? Math.round((everyone.f / everyone.total) * 100) : null);
+
+  /*
+   * Le renouvellement par groupe, derrière une icône d'information : deux tableaux. Les
+   * groupes de la saison affichée disent d'où viennent les effectifs (renouvelés, nouveaux) ;
+   * ceux de la saison n-1 disent où l'on a perdu (non renouvelés, avec le taux) — c'est
+   * là que se décide une relance.
+   */
+  type RenewalRow = { group: string; total: number; renewed: number; newcomers: number };
+  type LapsedRow = { group: string; previousTotal: number; lapsed: number };
+  const renewalByGroup = $derived<RenewalRow[]>(data.members.renewalByGroup ?? []);
+  const lapsedByGroup = $derived<LapsedRow[]>(data.members.lapsedByGroup ?? []);
+  let cohortsOpen = $state(false);
+  const pct = (part: number, whole: number) => (whole > 0 ? `${Math.round((part / whole) * 100)} %` : '—');
 </script>
 
 {#snippet ligne(row: AgeRow)}
@@ -170,7 +183,20 @@
       containerClass="border-border/50 hover:border-primary/30 from-card/80 to-card"
     >
       {#if renewalRate !== null}
-        <div class="text-2xl font-bold font-outfit">{renewalRate}<span class="text-base font-semibold text-muted-foreground"> %</span></div>
+        <div class="flex items-start justify-between gap-2">
+          <div class="text-2xl font-bold font-outfit">{renewalRate}<span class="text-base font-semibold text-muted-foreground"> %</span></div>
+          {#if renewalByGroup.length > 0 || lapsedByGroup.length > 0}
+            <button
+              type="button"
+              class="text-muted-foreground hover:text-foreground transition-colors p-1 -m-1 rounded"
+              aria-label="Détail du renouvellement par groupe"
+              title="Détail par groupe"
+              onclick={() => (cohortsOpen = true)}
+            >
+              <Info size={16} />
+            </button>
+          {/if}
+        </div>
         <p class="text-xs text-muted-foreground mt-1">de l'effectif n-1 revenu cette saison</p>
       {:else}
         <div class="text-2xl font-bold font-outfit text-muted-foreground">—</div>
@@ -451,3 +477,80 @@
     </div>
   </div>
 </div>
+
+<Dialog.Root bind:open={cohortsOpen}>
+  <Dialog.Content class="sm:max-w-2xl p-6 bg-card border-border shadow-xl max-h-[90vh] overflow-y-auto">
+    <Dialog.Header>
+      <Dialog.Title class="text-xl font-bold">Renouvellement par groupe</Dialog.Title>
+      <Dialog.Description class="text-sm text-muted-foreground mt-1">
+        Par personne : un adhérent qui change de groupe d'une saison à l'autre compte comme renouvelé, pas comme perdu.
+      </Dialog.Description>
+    </Dialog.Header>
+
+    <div class="space-y-6 mt-2" data-testid="cohorts-by-group">
+      <section>
+        <h3 class="text-sm font-semibold mb-2">Saison {data.season} — d'où viennent les effectifs</h3>
+        <div class="overflow-x-auto rounded-lg border border-border">
+          <Table.Root>
+            <Table.Header>
+              <Table.Row>
+                <Table.Head>Groupe</Table.Head>
+                <Table.Head class="text-right">Effectif</Table.Head>
+                <Table.Head class="text-right">Renouvelés</Table.Head>
+                <Table.Head class="text-right">Nouveaux</Table.Head>
+              </Table.Row>
+            </Table.Header>
+            <Table.Body>
+              {#each renewalByGroup as r (r.group)}
+                <Table.Row>
+                  <Table.Cell class="py-1.5 whitespace-normal">{r.group}</Table.Cell>
+                  <Table.Cell class="py-1.5 text-right tabular-nums font-semibold">{r.total}</Table.Cell>
+                  <Table.Cell class="py-1.5 text-right tabular-nums">{r.renewed}</Table.Cell>
+                  <Table.Cell class="py-1.5 text-right tabular-nums text-success">{r.newcomers}</Table.Cell>
+                </Table.Row>
+              {/each}
+              <Table.Row class="bg-muted/30 hover:bg-muted/30 font-semibold">
+                <Table.Cell class="py-2">Total</Table.Cell>
+                <Table.Cell class="py-2 text-right tabular-nums">{data.members.currentTotal}</Table.Cell>
+                <Table.Cell class="py-2 text-right tabular-nums">{data.members.renewed}</Table.Cell>
+                <Table.Cell class="py-2 text-right tabular-nums text-success">{data.members.newcomers}</Table.Cell>
+              </Table.Row>
+            </Table.Body>
+          </Table.Root>
+        </div>
+      </section>
+
+      <section>
+        <h3 class="text-sm font-semibold mb-2">Saison n-1 — où l'on a perdu</h3>
+        <div class="overflow-x-auto rounded-lg border border-border">
+          <Table.Root>
+            <Table.Header>
+              <Table.Row>
+                <Table.Head>Groupe en n-1</Table.Head>
+                <Table.Head class="text-right">Effectif n-1</Table.Head>
+                <Table.Head class="text-right">Non renouvelés</Table.Head>
+                <Table.Head class="text-right">Taux de perte</Table.Head>
+              </Table.Row>
+            </Table.Header>
+            <Table.Body>
+              {#each lapsedByGroup as r (r.group)}
+                <Table.Row>
+                  <Table.Cell class="py-1.5 whitespace-normal">{r.group}</Table.Cell>
+                  <Table.Cell class="py-1.5 text-right tabular-nums">{r.previousTotal}</Table.Cell>
+                  <Table.Cell class="py-1.5 text-right tabular-nums font-semibold {r.lapsed > 0 ? 'text-warning' : ''}">{r.lapsed}</Table.Cell>
+                  <Table.Cell class="py-1.5 text-right tabular-nums text-muted-foreground">{pct(r.lapsed, r.previousTotal)}</Table.Cell>
+                </Table.Row>
+              {/each}
+              <Table.Row class="bg-muted/30 hover:bg-muted/30 font-semibold">
+                <Table.Cell class="py-2">Total</Table.Cell>
+                <Table.Cell class="py-2 text-right tabular-nums">{data.members.previousTotal}</Table.Cell>
+                <Table.Cell class="py-2 text-right tabular-nums">{data.members.lapsed ?? 0}</Table.Cell>
+                <Table.Cell class="py-2 text-right tabular-nums text-muted-foreground">{pct(data.members.lapsed ?? 0, data.members.previousTotal)}</Table.Cell>
+              </Table.Row>
+            </Table.Body>
+          </Table.Root>
+        </div>
+      </section>
+    </div>
+  </Dialog.Content>
+</Dialog.Root>

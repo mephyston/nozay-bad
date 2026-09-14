@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { buildMembersDashboardStatsStmt, buildMembersAgePyramidStmt, agePyramid, seasonReferenceYear } from '@nba/members-api';
+import { buildMembersDashboardStatsStmt, buildMembersAgePyramidStmt, buildMembersLapsedByGroupStmt, buildMembersRenewalByGroupStmt, agePyramid, seasonReferenceYear } from '@nba/members-api';
 import { buildAccountingDashboardStatsStmts } from '@nba/accounting-api';
 import { buildExpensesDashboardStatsStmt } from '@nba/expenses-api';
 import { buildShopDashboardStatsStmt } from '@nba/shop-api';
@@ -45,7 +45,9 @@ dashboardRouter.get('/overview', async (c) => {
       buildExpensesDashboardStatsStmt(db, seasonId),
       buildShopDashboardStatsStmt(db, seasonId),
       ...buildAccountingDashboardStatsStmts(db, seasonId),
-      buildMembersAgePyramidStmt(db, seasonId)
+      buildMembersAgePyramidStmt(db, seasonId),
+      // Sans saison précédente, rien à comparer : la lecture est sautée, pas vidée.
+      ...(prevSeasonId === null ? [] : [buildMembersLapsedByGroupStmt(db, seasonId, prevSeasonId), buildMembersRenewalByGroupStmt(db, seasonId, prevSeasonId)])
     ]);
 
     const membersRes = batch[0].results[0] as any;
@@ -56,6 +58,21 @@ dashboardRouter.get('/overview', async (c) => {
     const invoicesRes = batch[5].results[0] as any;
     const polesRes = batch[6].results as any[];
     const agesRes = batch[7].results as { birthYear: number; gender: string; n: number }[];
+    const lapsedByGroup = prevSeasonId === null
+      ? []
+      : (batch[8].results as { groupe: string; previousTotal: number; lapsed: number }[]).map((r) => ({
+          group: r.groupe,
+          previousTotal: r.previousTotal,
+          lapsed: r.lapsed
+        }));
+    const renewalByGroup = prevSeasonId === null
+      ? []
+      : (batch[9].results as { groupe: string; total: number; renewed: number }[]).map((r) => ({
+          group: r.groupe,
+          total: r.total,
+          renewed: r.renewed,
+          newcomers: r.total - r.renewed
+        }));
 
     // La pyramide des âges : catégories fédérales d'après l'année de naissance, F et H séparés.
     const referenceYear = seasonReferenceYear({ startDate: seasonStartDate, code: seasonCode });
@@ -129,7 +146,11 @@ dashboardRouter.get('/overview', async (c) => {
           renewed: membersRes?.renewed || 0,
           newcomers: (membersRes?.currentTotal || 0) - (membersRes?.renewed || 0),
           lapsed: prevSeasonId === null ? null : (membersRes?.previousTotal || 0) - (membersRes?.renewed || 0),
-          ageCategories
+          ageCategories,
+          /** Par groupe de la saison n-1 : effectif d'alors et personnes sans adhésion cette saison. */
+          lapsedByGroup,
+          /** Par groupe de la saison affichée : effectif, renouvelés (présents en n-1) et nouveaux. */
+          renewalByGroup
         },
         accounting: {
           pendingChecks: checksRes?.count || 0,

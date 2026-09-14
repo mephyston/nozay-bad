@@ -21,7 +21,7 @@ Sur mobile, une barre d'actions en bas d'écran donne accès au menu et aux gest
 
 ## Le tableau de bord
 
-Quatre cartes résument la saison : l'effectif et ses règlements, le renouvellement, la trésorerie à traiter, les tâches administratives ; puis le bilan des pôles d'activité. Entre les deux, une section repliée **Effectif par catégorie d'âge** dresse la pyramide des âges de la saison — catégories FFBaD d'après l'année de naissance (minibad à vétéran V8), filles et garçons séparés, sous-totaux jeunes et adultes — tous statuts d'adhésion confondus. C'est le tableau que demandent le comité et la fédération.
+Quatre cartes résument la saison : l'effectif et ses règlements, le renouvellement (l'icône ⓘ ouvre le détail par groupe : d'où viennent les effectifs de la saison — renouvelés, nouveaux — et où l'on a perdu par rapport à la saison précédente, avec le taux de perte), la trésorerie à traiter, les tâches administratives ; puis le bilan des pôles d'activité. Entre les deux, une section repliée **Effectif par catégorie d'âge** dresse la pyramide des âges de la saison — catégories FFBaD d'après l'année de naissance (minibad à vétéran V8), filles et garçons séparés, sous-totaux jeunes et adultes — tous statuts d'adhésion confondus. C'est le tableau que demandent le comité et la fédération.
 
 ## Changer de saison
 

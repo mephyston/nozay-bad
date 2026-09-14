@@ -17,7 +17,7 @@ import { currentSeasonCode, sortSeasons } from '../../../../lib/seasons';
  */
 const VIDE = () => ({
   season: '25-26',
-  members: { currentTotal: 0, previousTotal: 0, partiallyPaid: 0, unpaidCount: 0, renewed: 0, newcomers: 0, lapsed: null, ageCategories: [] },
+  members: { currentTotal: 0, previousTotal: 0, partiallyPaid: 0, unpaidCount: 0, renewed: 0, newcomers: 0, lapsed: null, ageCategories: [], lapsedByGroup: [], renewalByGroup: [] },
   accounting: { pendingChecks: 0, pendingDeposits: 0, pendingInvoices: 0 },
   expenses: { pendingReports: 0 },
   shop: { pendingOrders: 0 },

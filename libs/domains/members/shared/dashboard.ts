@@ -47,3 +47,42 @@ export function buildMembersAgePyramidStmt(db: D1Database, seasonId: number): D1
     GROUP BY birthYear, gender
   `).bind(seasonId);
 }
+
+/**
+ * Les non-renouvelés par groupe de la saison précédente : combien chaque groupe comptait,
+ * et combien de ses personnes n'ont pas d'adhésion sur la saison affichée. Par personne,
+ * comme le renouvellement du tableau de bord — un poussin monté en Loisirs Jeunes est
+ * renouvelé, pas perdu.
+ */
+export function buildMembersLapsedByGroupStmt(db: D1Database, seasonId: number, prevSeasonId: number): D1PreparedStatement {
+  return db.prepare(`
+    SELECT prev.type AS groupe,
+      COUNT(*) AS previousTotal,
+      SUM(CASE WHEN NOT EXISTS (
+        SELECT 1 FROM memberships cur WHERE cur.person_id = prev.person_id AND cur.season_id = ?
+      ) THEN 1 ELSE 0 END) AS lapsed
+    FROM memberships prev
+    WHERE prev.season_id = ?
+    GROUP BY prev.type
+    ORDER BY lapsed DESC, previousTotal DESC
+  `).bind(seasonId, prevSeasonId);
+}
+
+/**
+ * Les renouvelés et les nouveaux par groupe de la saison affichée : l'effectif du groupe,
+ * et combien de ses personnes avaient une adhésion la saison précédente. Les nouveaux
+ * s'en déduisent (effectif − renouvelés).
+ */
+export function buildMembersRenewalByGroupStmt(db: D1Database, seasonId: number, prevSeasonId: number): D1PreparedStatement {
+  return db.prepare(`
+    SELECT cur.type AS groupe,
+      COUNT(*) AS total,
+      SUM(CASE WHEN EXISTS (
+        SELECT 1 FROM memberships prev WHERE prev.person_id = cur.person_id AND prev.season_id = ?
+      ) THEN 1 ELSE 0 END) AS renewed
+    FROM memberships cur
+    WHERE cur.season_id = ?
+    GROUP BY cur.type
+    ORDER BY total DESC
+  `).bind(prevSeasonId, seasonId);
+}
