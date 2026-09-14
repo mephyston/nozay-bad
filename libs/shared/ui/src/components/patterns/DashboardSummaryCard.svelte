@@ -24,7 +24,8 @@
 </script>
 
 <svelte:element this={href ? 'a' : 'div'} href={href} class={cn("relative overflow-hidden block rounded-2xl border bg-gradient-to-b p-6 shadow-sm transition-all hover:shadow-md group", containerClass, className)}>
-  <div class={cn("absolute -right-4 -top-4 opacity-5 group-hover:opacity-10 transition-opacity duration-300", bgIconClass)}>
+  <!-- Décor, jamais cible : posé en coin, il recouvrait les boutons placés en haut à droite du contenu. -->
+  <div class={cn("absolute -right-4 -top-4 opacity-5 group-hover:opacity-10 transition-opacity duration-300 pointer-events-none", bgIconClass)} aria-hidden="true">
     {#if Icon}<Icon size={120} />{/if}
   </div>
   <div class="flex items-center justify-between space-y-0 pb-4">

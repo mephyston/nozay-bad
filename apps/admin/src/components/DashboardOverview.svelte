@@ -188,7 +188,7 @@
           {#if renewalByGroup.length > 0 || lapsedByGroup.length > 0}
             <button
               type="button"
-              class="text-muted-foreground hover:text-foreground transition-colors p-1 -m-1 rounded"
+              class="text-muted-foreground hover:text-foreground transition-colors p-1 -m-1 rounded cursor-pointer"
               aria-label="Détail du renouvellement par groupe"
               title="Détail par groupe"
               onclick={() => (cohortsOpen = true)}
