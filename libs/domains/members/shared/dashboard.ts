@@ -33,3 +33,17 @@ export function buildMembersDashboardStatsStmt(db: D1Database, seasonId: number,
     WHERE m.season_id IN (?, ?)
   `).bind(seasonId, prevSeasonId, seasonId, seasonId, seasonId, prevSeasonId, seasonId, prevSeasonId);
 }
+
+/**
+ * Effectif par année de naissance et genre, sur une saison : la pyramide des âges se
+ * dresse ensuite en mémoire (`agePyramid`), la règle des catégories n'a pas à vivre en SQL.
+ */
+export function buildMembersAgePyramidStmt(db: D1Database, seasonId: number): D1PreparedStatement {
+  return db.prepare(`
+    SELECT CAST(substr(p.birth_date, 1, 4) AS INTEGER) AS birthYear, p.gender AS gender, COUNT(*) AS n
+    FROM memberships m
+    JOIN persons p ON p.id = m.person_id
+    WHERE m.season_id = ?
+    GROUP BY birthYear, gender
+  `).bind(seasonId);
+}

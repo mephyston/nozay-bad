@@ -19,6 +19,10 @@ Le menu latéral regroupe les rubriques par domaine : Adhérents, Comptabilité,
 
 Sur mobile, une barre d'actions en bas d'écran donne accès au menu et aux gestes les plus fréquents selon vos droits : enregistrer un chèque, créer une commande, saisir une note de frais.
 
+## Le tableau de bord
+
+Quatre cartes résument la saison : l'effectif et ses règlements, le renouvellement, la trésorerie à traiter, les tâches administratives ; puis le bilan des pôles d'activité. Entre les deux, une section repliée **Effectif par catégorie d'âge** dresse la pyramide des âges de la saison — catégories FFBaD d'après l'année de naissance (minibad à vétéran V8), filles et garçons séparés, sous-totaux jeunes et adultes — tous statuts d'adhésion confondus. C'est le tableau que demandent le comité et la fédération.
+
 ## Changer de saison
 
 La plupart des écrans comptables et le tableau de bord portent un **sélecteur de saison**. Il change la saison consultée et recharge les données affichées. Les filtres de la liste des adhérents, des factures ou des notes de frais comportent également ce choix.

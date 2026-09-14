@@ -73,6 +73,7 @@ export {
   type MemberSummary
 } from './shared/queries';
 export * from './shared/dashboard';
+export * from './shared/age-categories';
 export { listMembers } from './list-members/handler';
 export { exportMembersEmails } from './export-members/handler';
 export { listClubFunctions } from './list-club-functions/handler';

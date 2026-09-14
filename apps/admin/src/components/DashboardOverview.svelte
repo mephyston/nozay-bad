@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Users, Banknote, CreditCard, Activity, ArrowUpRight, ArrowDownRight, Package, Receipt, FolderKanban, Building, ChevronRight, Scale, Landmark, ExternalLink, Repeat, UserPlus, UserMinus } from '@lucide/svelte';
-  import { DashboardSummaryCard, DashboardPoleCard } from '@nba/ui';
+  import { DashboardSummaryCard, DashboardPoleCard, CollapsibleSection, Table } from '@nba/ui';
   import { can } from '@nba/iam-ui';
 
   let { data, permissions = [] }: { data: any; permissions?: string[] } = $props();
@@ -42,7 +42,39 @@
 
   // Classes écrites en toutes lettres : Tailwind ne génère pas une classe composée à l'exécution.
   const TONS = { warning: 'text-warning', destructive: 'text-destructive' } as const;
+
+  /*
+   * La pyramide des âges : les catégories fédérales d'après l'année de naissance, F et H
+   * séparés, avec un sous-total jeunes / adultes — ce que demandent le comité et la
+   * fédération, et ce que le bureau recompte à la main à chaque AG.
+   */
+  type AgeRow = { code: string; label: string; birthYears: string; youth: boolean; f: number; m: number; total: number };
+  const ages = $derived<AgeRow[]>(data.members.ageCategories ?? []);
+  const sumOf = (rows: AgeRow[]) => rows.reduce((acc, r) => ({ f: acc.f + r.f, m: acc.m + r.m, total: acc.total + r.total }), { f: 0, m: 0, total: 0 });
+  const youth = $derived(sumOf(ages.filter((r) => r.youth)));
+  const adults = $derived(sumOf(ages.filter((r) => !r.youth)));
+  const everyone = $derived(sumOf(ages));
+  const womenShare = $derived(everyone.total > 0 ? Math.round((everyone.f / everyone.total) * 100) : null);
 </script>
+
+{#snippet ligne(row: AgeRow)}
+  <Table.Row class={row.total === 0 ? 'text-muted-foreground' : ''}>
+    <Table.Cell class="py-1.5 pl-4">{row.label}</Table.Cell>
+    <Table.Cell class="py-1.5 hidden sm:table-cell text-xs text-muted-foreground">{row.birthYears}</Table.Cell>
+    <Table.Cell class="py-1.5 text-right tabular-nums">{row.f}</Table.Cell>
+    <Table.Cell class="py-1.5 text-right tabular-nums">{row.m}</Table.Cell>
+    <Table.Cell class="py-1.5 text-right tabular-nums font-semibold pr-4">{row.total}</Table.Cell>
+  </Table.Row>
+{/snippet}
+
+{#snippet sousTotal(label: string, t: { f: number; m: number; total: number })}
+  <Table.Row class="bg-muted/30 hover:bg-muted/30 font-semibold">
+    <Table.Cell colspan={2} class="py-2 pl-4">{label}</Table.Cell>
+    <Table.Cell class="py-2 text-right tabular-nums">{t.f}</Table.Cell>
+    <Table.Cell class="py-2 text-right tabular-nums">{t.m}</Table.Cell>
+    <Table.Cell class="py-2 text-right tabular-nums pr-4">{t.total}</Table.Cell>
+  </Table.Row>
+{/snippet}
 
 {#snippet compteur(label: string, count: number, href: string | undefined, tone: 'warning' | 'destructive' = 'warning', Icon: any = undefined)}
   <!--
@@ -189,6 +221,42 @@
       </div>
     </DashboardSummaryCard>
   </div>
+
+  {#if ages.length > 0 && everyone.total > 0}
+    <!-- Repliée : c'est un tableau de référence, pas une tâche du jour. -->
+    <div class="mt-10" data-testid="age-pyramid">
+      <CollapsibleSection
+        title="Effectif par catégorie d'âge"
+        badge={everyone.total}
+        description={`Catégories FFBaD d'après l'année de naissance, saison ${data.season}, tous statuts${womenShare !== null ? ` · ${womenShare} % de féminines` : ''}`}
+      >
+        <div class="overflow-x-auto -mx-4 -mb-4">
+          <Table.Root>
+            <Table.Header>
+              <Table.Row>
+                <Table.Head class="pl-4">Catégorie</Table.Head>
+                <Table.Head class="hidden sm:table-cell">Nés en</Table.Head>
+                <Table.Head class="text-right">F</Table.Head>
+                <Table.Head class="text-right">H</Table.Head>
+                <Table.Head class="text-right pr-4">Total</Table.Head>
+              </Table.Row>
+            </Table.Header>
+            <Table.Body>
+              {#each ages.filter((r) => r.youth) as row (row.code)}
+                {@render ligne(row)}
+              {/each}
+              {@render sousTotal('Jeunes', youth)}
+              {#each ages.filter((r) => !r.youth) as row (row.code)}
+                {@render ligne(row)}
+              {/each}
+              {@render sousTotal('Adultes', adults)}
+              {@render sousTotal('Total', everyone)}
+            </Table.Body>
+          </Table.Root>
+        </div>
+      </CollapsibleSection>
+    </div>
+  {/if}
 
   <div class="mt-10">
     <h2 class="text-xl font-bold tracking-tight mb-4 flex items-center gap-2"><Activity class="text-primary"/> Bilan des Pôles d'Activité</h2>
