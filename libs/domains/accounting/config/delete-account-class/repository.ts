@@ -5,13 +5,10 @@ import { accountClassesTable } from '../../shared/schema';
 
 export class DeleteAccountClassRepository {
   async isAccountClassUsed(db: DbOrTx, code: string): Promise<boolean> {
-    const numCode = Number(code);
-    const targetCode = !isNaN(numCode) ? String(numCode) : code;
-    
-    // First find the account class ID
+    // Le code est un texte, comparé tel quel.
     const accountClass = await db.select({ id: accountClassesTable.id })
       .from(accountClassesTable)
-      .where(eq(accountClassesTable.code, targetCode))
+      .where(eq(accountClassesTable.code, String(code).trim()))
       .get();
       
     if (!accountClass) return false;
@@ -31,8 +28,6 @@ export class DeleteAccountClassRepository {
   }
 
   async deleteAccountClass(db: DbOrTx, code: string): Promise<any> {
-    const numCode = Number(code);
-    const targetCode = !isNaN(numCode) ? String(numCode) : code;
-    return db.delete(accountClassesTable).where(eq(accountClassesTable.code, targetCode)).returning().get();
+    return db.delete(accountClassesTable).where(eq(accountClassesTable.code, String(code).trim())).returning().get();
   }
 }

@@ -2647,30 +2647,32 @@ describe('Account Classes API Endpoints', () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        code: '63',
-        label: '63 - Impôts et taxes',
+        // Un code absent du seed : « 63 » y figure déjà, et le test ne passait que parce que le
+        // code, converti en nombre, s'enregistrait « 63.0 » — le défaut corrigé le 16/09/2026.
+        code: '66',
+        label: '66 - Charges financières',
         type: 'depense'
       })
     }, { DB: mockD1 as any });
     expect(createRes.status).toBe(200);
     const createJson = await createRes.json() as any;
     expect(createJson.success).toBe(true);
-    expect(String(createJson.data.code)).toContain('63');
+    expect(createJson.data.code).toBe('66');
 
-    const updateRes = await app.request('http://localhost/accounting/account-classes/63', {
+    const updateRes = await app.request('http://localhost/accounting/account-classes/66', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        label: '63 - Impôts, taxes et versements',
+        label: '66 - Charges financières et agios',
         type: 'depense'
       })
     }, { DB: mockD1 as any });
     expect(updateRes.status).toBe(200);
     const updateJson = await updateRes.json() as any;
     expect(updateJson.success).toBe(true);
-    expect(updateJson.data.label).toBe('63 - Impôts, taxes et versements');
+    expect(updateJson.data.label).toBe('66 - Charges financières et agios');
 
-    const deleteRes = await app.request('http://localhost/accounting/account-classes/63', {
+    const deleteRes = await app.request('http://localhost/accounting/account-classes/66', {
       method: 'DELETE'
     }, { DB: mockD1 as any });
     expect(deleteRes.status).toBe(200);
