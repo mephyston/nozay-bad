@@ -6,7 +6,7 @@ import {
   apiMatchLedgerEntry,
   apiCreateAndMatchSplit,
   apiCreateAndMatchSingle,
-  apiCreateMemberTransfer,
+  apiCreateInternalTransfer,
   apiDeleteLedgerEntry
 } from './reconciliation-api';
 import { scrollMemberOptionIntoView, scrollCategoryOptionIntoView } from './reconciliation-dropdowns';
@@ -254,12 +254,13 @@ export function createReconciliationActions(s: ReconciliationStateFields) {
       const season = seasonForDate(s.seasons, line.date);
       const thirdParty = s.thirdPartyAccount;
       if (!thirdParty) throw new Error("Aucun compte d'attente des adhérents n'est actif : réglez les comptes du club.");
-      const { legs } = await apiCreateMemberTransfer({
+      const { legs } = await apiCreateInternalTransfer({
         seasonId: season ? String(season.code ?? season.id) : s.selectedSeason,
         sourceAccountId: thirdParty.code,
         destinationAccountId: String(line.accountId),
         amountCents: cents,
-        date: line.date,
+        sourceDate: line.date,
+        destinationDate: line.date,
         description: description.trim(),
         reference: line.fitid ? `BQ-${line.fitid}` : null
       });
@@ -271,6 +272,86 @@ export function createReconciliationActions(s: ReconciliationStateFields) {
       } catch (err) {
         await apiDeleteLedgerEntry(destination.id).catch(() => undefined);
         throw err;
+      }
+    } catch (err: any) {
+      toast.error(err.message);
+      s.isSubmitting = false;
+    }
+  }
+
+  /**
+   * Un virement entre deux comptes du club, depuis l'une de ses lignes de relevé.
+   *
+   * L'écran renvoyait au grand livre : « cet écran ne produit qu'une écriture, un virement en a
+   * deux ». C'était vrai avant le virement d'adhérente, qui fait déjà les deux appels — créer
+   * le virement, pointer sa jambe. Il ne manquait que le choix du compte en face.
+   *
+   * Le sens se lit sur la ligne : au débit, elle est la jambe `source` ; au crédit, la jambe
+   * `destination`. Quand le relevé de l'autre compte porte la ligne qui répond à celle-ci, et
+   * qu'elle est seule à le faire, l'autre jambe prend sa date de valeur et se pointe dans la
+   * foulée. Sinon elle reste à pointer depuis l'autre compte, par « Associer », comme avant.
+   *
+   * Si le premier pointage échoue, le virement est supprimé — ses deux jambes. Si c'est le
+   * second, le virement reste : il est juste, et sa jambe se pointera plus tard.
+   */
+  async function handleInternalTransfer(line: BankStatementLine, counterpartAccountId: string | number, description: string) {
+    s.isSubmitting = true;
+    try {
+      const cents = (line as any).amountCents ?? line.amount ?? 0;
+      if (cents === 0) throw new Error('Une ligne à zéro ne peut pas porter un virement.');
+      if (!description.trim()) throw new Error('Le virement doit porter un libellé.');
+      const counterpart = s.accountOf(counterpartAccountId);
+      if (!counterpart) throw new Error("Le compte d'en face est inconnu.");
+      const own = s.accountOf(line.accountId);
+      if (own && own.id === counterpart.id) throw new Error("Le compte d'en face doit être différent de celui de la ligne.");
+
+      const isDebit = cents < 0;
+      const other = s.findTransferCounterpartLine(line, counterpart.id);
+      /*
+       * Chaque jambe porte la date de valeur de sa ligne : l'écart entre les deux, c'est
+       * l'argent en transit. L'API refuse un crédit antérieur au débit — une banque peut
+       * pourtant dater ainsi — et dans ce cas les deux jambes prennent la date de la ligne.
+       */
+      let sourceDate = isDebit ? line.date : (other?.date ?? line.date);
+      let destinationDate = isDebit ? (other?.date ?? line.date) : line.date;
+      if (destinationDate < sourceDate) sourceDate = destinationDate = line.date;
+      // L'exercice est celui de la date de la ligne, pas celui que l'écran affiche (cf. handleMemberTransfer).
+      // Un virement dont les deux dates se répartissent sur deux exercices n'a d'exercice nulle part.
+      const season = seasonForDate(s.seasons, line.date);
+      if (season && seasonForDate(s.seasons, sourceDate) !== season) sourceDate = line.date;
+      if (season && seasonForDate(s.seasons, destinationDate) !== season) destinationDate = line.date;
+      const { legs } = await apiCreateInternalTransfer({
+        seasonId: season ? String(season.code ?? season.id) : s.selectedSeason,
+        sourceAccountId: isDebit ? String(line.accountId) : counterpart.code,
+        destinationAccountId: isDebit ? counterpart.code : String(line.accountId),
+        amountCents: Math.abs(cents),
+        sourceDate,
+        destinationDate,
+        description: description.trim(),
+        reference: line.fitid ? `BQ-${line.fitid}` : null
+      });
+      const ownLeg = legs.find((l) => l.transferLeg === (isDebit ? 'source' : 'destination'));
+      const otherLeg = legs.find((l) => l.transferLeg === (isDebit ? 'destination' : 'source'));
+      if (!ownLeg) throw new Error("Le virement a été créé sans la jambe de ce compte : impossible de le pointer.");
+
+      let outcome;
+      try {
+        outcome = await apiMatchLedgerEntry(line.id, ownLeg.id, null);
+      } catch (err) {
+        await apiDeleteLedgerEntry(ownLeg.id).catch(() => undefined);
+        throw err;
+      }
+
+      if (other && otherLeg) {
+        try {
+          patch.applyOutcome(await apiMatchLedgerEntry(other.id, otherLeg.id, null));
+          settle(outcome, `Virement enregistré, les deux lignes sont pointées (${counterpart.label} comprise).`, line.id);
+        } catch (err: any) {
+          settle(outcome, 'Virement enregistré et pointé ici.', line.id);
+          toast.error(`La ligne de ${counterpart.label} n'a pas pu être pointée : ${err.message}`);
+        }
+      } else {
+        settle(outcome, `Virement enregistré et pointé. Reste à associer sa jambe depuis ${counterpart.label}.`, line.id);
       }
     } catch (err: any) {
       toast.error(err.message);
@@ -296,6 +377,6 @@ export function createReconciliationActions(s: ReconciliationStateFields) {
     toggleInvoiceSelection, addSplitRow, removeSplitRow, refreshStatements,
     loadUnpaidInvoices, prefillFromInvoices, validateSuggestion,
     selectMember, handleMemberKeyDown, selectCategory, handleCategoryKeyDown,
-    handleMatch, handleCreateAndMatch, handleMemberTransfer, handleDeletePart
+    handleMatch, handleCreateAndMatch, handleMemberTransfer, handleInternalTransfer, handleDeletePart
   };
 }

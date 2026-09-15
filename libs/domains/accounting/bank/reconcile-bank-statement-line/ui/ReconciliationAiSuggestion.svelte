@@ -40,12 +40,13 @@
 
 {#if sug?.kind === 'internal-transfer'}
   <!--
-    Un mouvement de compte à compte ne se rapproche pas depuis cet écran.
+    Un mouvement de compte à compte ne se saisit pas par le formulaire ci-dessous.
 
-    Il s'écrit en **deux** jambes — une par compte, chacune avec sa date de valeur — et cet écran
-    n'en produit qu'une. C'est d'ailleurs ainsi que la seconde représentation du virement était
-    fabriquée : une recette ou une dépense portant la catégorie « Virements Internes », qui
-    n'apparaissait nulle part comme un virement. Mieux vaut renvoyer au grand livre.
+    Il s'écrit en **deux** jambes — une par compte, chacune avec sa date de valeur — là où le
+    formulaire n'en produit qu'une. C'est d'ailleurs ainsi que la seconde représentation du virement
+    était fabriquée : une recette ou une dépense portant la catégorie « Virements Internes », qui
+    n'apparaissait nulle part comme un virement. Le bouton « Virement » de la ligne fait le geste
+    complet ; le grand livre reste possible.
   -->
   <Alert.Root variant="ai" class="p-4 space-y-2">
     <Alert.Title class="flex items-center gap-2 m-0 p-0 font-semibold text-sm">
@@ -54,9 +55,10 @@
     </Alert.Title>
     <Alert.Description class="text-xs space-y-2 m-0 p-0">
       <p>
-        Un virement entre deux comptes du club s'enregistre depuis le <strong>Grand livre</strong>
-        (« Virement Interne ») : il y écrit deux écritures, une par compte. Revenez ensuite ici pour
-        associer <strong>chacune</strong> des deux lignes de relevé à sa jambe.
+        Un virement entre deux comptes du club se saisit par le bouton <strong>« Virement »</strong>
+        de la ligne : il écrit deux écritures, une par compte, pointe celle-ci — et celle d'en face
+        quand le relevé de l'autre compte porte la ligne qui répond. Sinon, elle reste à
+        <strong>associer</strong> depuis l'autre compte.
       </p>
       <p class="text-muted-foreground">
         Le saisir comme une recette ou une dépense fausserait le compte de résultat.

@@ -27,7 +27,7 @@ La liste de gauche répartit les lignes en trois onglets — **En attente**, **R
 - **Associer** — rattacher la ligne à une écriture **déjà saisie** dans le grand livre (un chèque enregistré, une jambe de virement interne, une note de frais validée…).
 
 > [!IMPORTANT]
-> Un virement entre deux comptes du club apparaît sur **les deux relevés**. Saisissez-le une fois depuis le [grand livre](/admin/help/grand-livre) — il y écrit deux écritures — puis associez **chacune** des deux lignes de relevé à sa jambe. N'en associer qu'une laisse un écart que rien n'explique, et l'écran vous le signale.
+> Un virement entre deux comptes du club apparaît sur **les deux relevés**. Le bouton **Virement** de la ligne le saisit en un geste : choisissez le compte d'en face, il écrit les deux écritures — une par compte — et pointe la ligne. Si le relevé de l'autre compte porte la ligne qui répond (même montant, sens opposé, à quelques jours près), elle est pointée en même temps ; sinon, associez-la depuis cet autre compte. Le [grand livre](/admin/help/grand-livre) reste possible. N'associer qu'une des deux lignes laisse un écart que rien n'explique, et l'écran vous le signale.
 - **Associer facture** — rattacher la ligne à une ou plusieurs **factures en attente de règlement**. Les factures concernées passent automatiquement au statut *Payée*.
 
 Une ligne est marquée **Rapprochée** dès que le total des écritures qui lui sont rattachées atteint son montant. Tant qu'il reste un écart, elle demeure en attente et vous pouvez continuer à la ventiler.

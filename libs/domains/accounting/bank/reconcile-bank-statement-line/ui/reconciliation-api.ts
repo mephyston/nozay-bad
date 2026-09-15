@@ -171,21 +171,20 @@ export async function apiCreateAndMatchSingle(
 }
 
 /**
- * Le virement reçu d'une adhérente, créé depuis sa ligne de relevé.
+ * Un virement interne, créé depuis une ligne de relevé.
  *
- * Deux jambes : le compte d'attente des adhérents (débité, l'argent n'appartient pas au club) et
- * le compte bancaire de la ligne (crédité, c'est la ligne du relevé). La réponse porte les
- * jambes et leurs identifiants : c'est la jambe `destination` que l'écran pointe ensuite contre
- * la ligne.
+ * Deux jambes, une par compte, chacune avec sa date de valeur. La réponse porte les jambes et
+ * leurs identifiants : c'est par eux que l'écran pointe ensuite la jambe de chaque compte contre
+ * sa ligne de relevé. Le virement reçu d'une adhérente en est un cas particulier : sa jambe
+ * `source` est le compte d'attente, qui n'a pas de relevé.
  */
-export async function apiCreateMemberTransfer(input: {
+export async function apiCreateInternalTransfer(input: {
   seasonId: string;
-  /** Le compte d'attente des adhérents (nature `third_party`). */
   sourceAccountId: string;
-  /** Le compte de la ligne de relevé. */
   destinationAccountId: string;
   amountCents: number;
-  date: string;
+  sourceDate: string;
+  destinationDate: string;
   description: string;
   reference?: string | null;
 }): Promise<{ legs: { id: number; transferLeg: 'source' | 'destination' }[] }> {
@@ -196,8 +195,8 @@ export async function apiCreateMemberTransfer(input: {
       sourceAccountId: input.sourceAccountId,
       destinationAccountId: input.destinationAccountId,
       amountCents: input.amountCents,
-      sourceDate: input.date,
-      destinationDate: input.date,
+      sourceDate: input.sourceDate,
+      destinationDate: input.destinationDate,
       description: input.description,
       reference: input.reference ?? null
     },

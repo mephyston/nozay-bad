@@ -47,9 +47,10 @@
   <!--
     L'encart ne subsiste que pour le virement interne.
 
-    Ce n'est pas une proposition mais un refus : cet écran ne sait écrire qu'une jambe là où il en
-    faut deux, et l'explication ne peut donc pas se réduire à un liseré sur un champ. Le reste de
-    la proposition se lit désormais dans les champs eux-mêmes, cerclés de violet tant qu'ils la
+    Ce n'est pas une proposition de saisie mais un renvoi : le formulaire ci-dessous écrit une
+    recette ou une dépense, et un virement n'est ni l'un ni l'autre — il se saisit par le bouton
+    « Virement » de la ligne. L'explication ne peut donc pas se réduire à un liseré sur un champ.
+    Le reste de la proposition se lit dans les champs eux-mêmes, cerclés de violet tant qu'ils la
     portent.
   -->
   {#if sug?.kind === 'internal-transfer'}

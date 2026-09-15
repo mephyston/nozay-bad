@@ -1,6 +1,7 @@
 <script lang="ts">
-  import { Check, ChevronDown, Link2, Sparkles, Pencil, HandCoins } from '@lucide/svelte';
+  import { Check, ChevronDown, Link2, Sparkles, Pencil, HandCoins, ArrowLeftRight } from '@lucide/svelte';
   import MemberTransferDialog from './MemberTransferDialog.svelte';
+  import InternalTransferDialog from './InternalTransferDialog.svelte';
   import { Amount, Badge, Button } from '@nba/ui';
   import { accrualLabel } from '../../../shared/accrual-labels';
   import { parseSuggestion, isOneClickValidatable } from './reconciliation-suggestion';
@@ -68,6 +69,19 @@
     line.status === 'pending' && cents > 0 && !!reconState.thirdPartyAccount && reconState.isBankLine(line)
   );
   let showMemberTransfer = $state(false);
+
+  /*
+   * Un mouvement entre deux comptes du club se saisit d'ici, depuis l'une ou l'autre de ses
+   * lignes : le bouton crée le virement et pointe la jambe de ce compte — et celle d'en face
+   * quand sa ligne est là. Il n'y a rien à choisir tant qu'il n'existe pas d'autre compte.
+   */
+  const canBeInternalTransfer = $derived(
+    line.status === 'pending' && cents !== 0 && reconState.transferCounterpartsFor(line).length > 0
+  );
+  /* Il devient le geste principal quand l'analyse a reconnu un virement ; sinon il reste discret,
+     réduit à son icône : la colonne d'actions a une largeur fixe et déjà trois boutons. */
+  const isTransferPrimary = $derived(canBeInternalTransfer && sug?.kind === 'internal-transfer' && !hasExistingEntry);
+  let showInternalTransfer = $state(false);
 
   /** Ouvrir la ligne mène là où se trouve la décision : pointer, ou saisir. */
   function openOn(tab: 'manual' | 'ledger') {
@@ -163,7 +177,9 @@
         </span>
       {:else if sug?.kind === 'internal-transfer'}
         <span class="text-xs font-medium text-foreground">Virement interne</span>
-        <span class="text-[11px] text-muted-foreground">À saisir au grand livre, en deux jambes.</span>
+        <span class="text-[11px] text-muted-foreground">
+          {canBeInternalTransfer ? 'Le bouton « Virement » l\'écrit en deux jambes.' : 'À saisir au grand livre, en deux jambes.'}
+        </span>
       {:else if sug}
         <div class="flex flex-wrap items-center gap-1.5">
           <Sparkles class="h-3 w-3 shrink-0 text-primary" />
@@ -219,6 +235,21 @@
           >
             <Check class="h-3.5 w-3.5" />
             <span class="hidden sm:inline">Valider</span>
+          </Button>
+        {/if}
+
+        {#if canBeInternalTransfer}
+          <Button
+            size="sm"
+            variant={isTransferPrimary ? 'default' : 'ghost'}
+            class="h-8 gap-1.5 text-xs"
+            data-action="internal-transfer"
+            title="Virement entre deux comptes du club"
+            disabled={reconState.isClosed || reconState.isSubmitting}
+            onclick={() => (showInternalTransfer = true)}
+          >
+            <ArrowLeftRight class="h-3.5 w-3.5" />
+            <span class={isTransferPrimary ? 'hidden sm:inline' : 'sr-only'}>Virement</span>
           </Button>
         {/if}
 
@@ -280,5 +311,14 @@
     {line}
     isSubmitting={reconState.isSubmitting}
     onConfirm={(description) => reconState.handleMemberTransfer(line, description)}
+  />
+{/if}
+
+{#if canBeInternalTransfer}
+  <InternalTransferDialog
+    bind:open={showInternalTransfer}
+    state={reconState}
+    {line}
+    onConfirm={(accountId, description) => reconState.handleInternalTransfer(line, accountId, description)}
   />
 {/if}

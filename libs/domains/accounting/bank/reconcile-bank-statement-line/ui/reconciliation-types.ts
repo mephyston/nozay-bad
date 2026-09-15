@@ -158,7 +158,10 @@ export interface ReconciliationStateFields {
   reconciliationStatements: any[];
   accounts: NonNullable<ReconciliationStateProps['accounts']>;
   thirdPartyAccount: NonNullable<ReconciliationStateProps['accounts']>[number] | undefined;
+  accountOf: (ref: string | number) => NonNullable<ReconciliationStateProps['accounts']>[number] | undefined;
   isBankLine: (line: { accountId: string | number }) => boolean;
+  transferCounterpartsFor: (line: { accountId: string | number }) => NonNullable<ReconciliationStateProps['accounts']>;
+  findTransferCounterpartLine: (line: BankStatementLine, counterpartAccountId: string | number) => BankStatementLine | null;
   bankAccountItems: { label: string; value: string }[];
   displayedTransactions: BankStatementLine[];
   queueTransactions: BankStatementLine[];

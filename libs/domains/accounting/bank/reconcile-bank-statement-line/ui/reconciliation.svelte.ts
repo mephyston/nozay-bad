@@ -39,8 +39,46 @@ export class ReconciliationStore {
     { label: 'Détection automatique depuis le fichier', value: 'auto' },
     ...this.accounts.filter((a) => a.kind === 'bank' && a.active !== false).map((a) => ({ label: a.label, value: a.code }))
   ]);
+  /** Le compte que désigne une référence, qu'elle soit l'identifiant ou le code : les deux circulent. */
+  accountOf = (ref: string | number) => this.accounts.find((a) => String(a.id) === String(ref) || a.code === String(ref));
   /** Vrai si la ligne est sur un compte bancaire — le seul où un virement d'adhérente peut arriver. */
-  isBankLine = (line: { accountId: string | number }) => this.accounts.find((a) => String(a.id) === String(line.accountId) || a.code === String(line.accountId))?.kind === 'bank';
+  isBankLine = (line: { accountId: string | number }) => this.accountOf(line.accountId)?.kind === 'bank';
+
+  /**
+   * Les comptes qu'un virement interne peut viser depuis une ligne de relevé.
+   *
+   * Tous les comptes actifs du club, sauf celui de la ligne. Le compte d'attente des adhérents
+   * en est écarté : le virement d'une adhérente a son propre bouton, qui sait que l'écriture
+   * doit porter un nom — et celui-ci n'aurait aucune ligne de relevé en face.
+   */
+  transferCounterpartsFor = (line: { accountId: string | number }) =>
+    this.accounts.filter(
+      (a) => a.active !== false && a.kind !== 'third_party' && String(a.id) !== String(this.accountOf(line.accountId)?.id ?? line.accountId)
+    );
+
+  /**
+   * La ligne de relevé qui, sur le compte d'en face, répond à celle-ci.
+   *
+   * Un virement courant↔livret laisse une ligne sur chaque relevé : même montant, sens opposé,
+   * à quelques jours près. Quand elle existe et qu'elle est **seule** à correspondre, l'écran
+   * la pointe dans le même geste. Deux candidates, et il n'en choisit aucune : c'est à la
+   * trésorière de trancher, depuis l'autre compte — une jambe pointée sur la mauvaise ligne
+   * ne se voit qu'à la clôture.
+   */
+  findTransferCounterpartLine(line: BankStatementLine, counterpartAccountId: string | number): BankStatementLine | null {
+    const account = this.accountOf(counterpartAccountId);
+    if (!account) return null;
+    const cents = (line as any).amountCents ?? line.amount ?? 0;
+    const time = new Date(line.date).getTime();
+    const candidates = this.bankStatementLines.filter((other) => {
+      if (other.id === line.id || other.status !== 'pending') return false;
+      if (String(this.accountOf(other.accountId)?.id ?? other.accountId) !== String(account.id)) return false;
+      const otherCents = (other as any).amountCents ?? other.amount ?? 0;
+      if (otherCents !== -cents) return false;
+      return Math.abs(new Date(other.date).getTime() - time) / 86400000 <= 7;
+    });
+    return candidates.length === 1 ? candidates[0] : null;
+  }
 
   selectedSeason = $state('');
   selectedTx = $state<BankStatementLine | null>(null);
