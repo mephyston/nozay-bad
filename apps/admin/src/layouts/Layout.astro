@@ -66,10 +66,36 @@ const ORIGINE_MEDIAS = (import.meta.env.PUBLIC_WEBSITE_URL as string | undefined
        * un comportement qui n'existait pas. L'espace adhérent, lui, a bien une invite :
        * son service worker porte les notifications push, il ne doit donc pas être
        * remplacé sous les pieds de quelqu'un.
+       *
+       * « Au prochain chargement » — encore faut-il qu'il y en ait un. Le navigateur ne
+       * revérifie `sw.js` qu'à une vraie navigation ou à un démarrage à froid ; or dans
+       * l'application installée, toutes les navigations passent par le `<ClientRouter />`,
+       * et une fenêtre laissée ouverte des jours tournait sur les scripts d'une version
+       * déployée depuis longtemps, avec des morceaux chargés à la demande qui ne
+       * répondaient plus (le dialogue d'import de relevé, le 16/09/2026). La vérification
+       * est donc demandée là où personne n'est au milieu d'une saisie : au retour de
+       * l'application au premier plan, et à chaque changement de page. Un nouveau service
+       * worker trouvé recharge la page — c'est le comportement d'`autoUpdate`.
        */
       import { registerSW } from 'virtual:pwa-register'
       if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-        registerSW();
+        registerSW({
+          onRegisteredSW(_swUrl, registration) {
+            if (!registration) return;
+            // Pas plus d'une vérification toutes les cinq minutes : changer dix fois de
+            // page en une minute ne doit pas faire dix requêtes vers `sw.js`.
+            let derniere = 0;
+            const verifier = () => {
+              if (Date.now() - derniere < 5 * 60_000) return;
+              derniere = Date.now();
+              registration.update().catch(() => undefined);
+            };
+            document.addEventListener('visibilitychange', () => {
+              if (document.visibilityState === 'visible') verifier();
+            });
+            document.addEventListener('astro:page-load', verifier);
+          }
+        });
       }
     </script>
     <script is:inline>
