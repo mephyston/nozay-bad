@@ -163,25 +163,25 @@
       <RankingsImportReport {report} onDismiss={() => (report = null)} />
     {/if}
 
-    <div
+    <!-- Un label du champ plutôt qu'un `input.click()` programmatique, que certains navigateurs
+         refusent sur un champ en `display: none` : voir `ImportStatementDialog`, même motif. -->
+    <label
+      for="rankings-file"
       class="border-2 border-dashed rounded-lg p-8 text-center flex flex-col items-center justify-center min-h-[160px] cursor-pointer transition-colors
+        focus-within:ring-2 focus-within:ring-ring
         {dragOver ? 'border-primary bg-primary/5' : 'border-muted hover:bg-muted/10'}"
       ondragenter={(e) => { e.preventDefault(); dragOver = true; }}
       ondragover={(e) => { e.preventDefault(); dragOver = true; }}
       ondragleave={() => (dragOver = false)}
       ondrop={onDrop}
-      onclick={() => fileInput?.click()}
-      onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInput?.click(); } }}
-      role="button"
-      tabindex="0"
     >
       <input
         bind:this={fileInput}
+        id="rankings-file"
         type="file"
         accept=".csv"
-        class="hidden"
+        class="sr-only"
         onchange={(e) => { const f = (e.target as HTMLInputElement).files?.[0]; if (f) read(f); }}
-        onclick={(e) => e.stopPropagation()}
       />
       <Upload class="w-9 h-9 text-muted-foreground mb-3" />
       {#if file}
@@ -193,7 +193,7 @@
         <p class="font-semibold text-sm">Sélectionnez un fichier CSV ou glissez-le ici</p>
         <p class="text-xs text-muted-foreground mt-1">Export ELO Poona (.csv)</p>
       {/if}
-    </div>
+    </label>
 
     {#if parsed}
       <!--

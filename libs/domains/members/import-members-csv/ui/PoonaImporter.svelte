@@ -141,26 +141,26 @@
     {/if}
 
     <form method="POST" enctype="multipart/form-data" onsubmit={handleSubmit} bind:this={formElement}>
-      <div
+      <!-- Un label du champ plutôt qu'un `input.click()` programmatique, que certains navigateurs
+           refusent sur un champ en `display: none` : voir `ImportStatementDialog`, même motif. -->
+      <label
+        for="poona-file"
         class="border-2 border-dashed rounded-lg p-8 text-center transition-colors flex flex-col items-center justify-center min-h-[200px] cursor-pointer
+        focus-within:ring-2 focus-within:ring-ring
         {dragOver ? 'border-primary bg-primary/5' : 'border-muted bg-background hover:bg-muted/10'}"
         ondragenter={(e) => { e.preventDefault(); dragOver = true; }}
         ondragover={(e) => { e.preventDefault(); dragOver = true; }}
         ondragleave={() => { dragOver = false; }}
         ondrop={handleDrop}
-        onclick={() => fileInput?.click()}
-        role="button"
-        tabindex="0"
-        onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInput?.click(); } }}
       >
         <input
           bind:this={fileInput}
+          id="poona-file"
           type="file"
           name="file"
           accept=".csv"
-          class="hidden"
+          class="sr-only"
           onchange={handleFileChange}
-          onclick={(e) => e.stopPropagation()}
         />
 
         <Upload class="w-10 h-10 text-muted-foreground mb-4" />
@@ -175,7 +175,7 @@
           <p class="font-semibold text-sm">Sélectionnez un fichier CSV ou Glissez et déposez</p>
           <p class="text-xs text-muted-foreground mt-1">Fichier d'extraction Poona (.csv uniquement)</p>
         {/if}
-      </div>
+      </label>
 
       {#if selectedFile && csvPreview.length > 0 && !localError}
         <PoonaImporterPreview {csvPreview} {separator} />

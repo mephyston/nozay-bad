@@ -67,17 +67,23 @@
     </Dialog.Header>
 
     <form onsubmit={reconState.handleImport} class="space-y-4 mt-4">
-      <div
+      <!--
+        Un `<label>` du champ, et non un `<div role="button">` qui appelle `input.click()`.
+
+        Le clic programmatique sur un champ fichier en `display: none` est refusé sans un mot par
+        certains navigateurs — la zone ne répondait plus qu'au glisser-déposer. Le label ouvre le
+        sélecteur par le mécanisme natif, et le champ, rendu en `sr-only` plutôt que caché, reste
+        atteignable au clavier : Entrée ou Espace dessus ouvrent le sélecteur, sans JavaScript.
+      -->
+      <label
+        for="bank-file"
         class="border-2 border-dashed rounded-lg p-8 text-center transition-colors flex flex-col items-center justify-center min-h-[180px] cursor-pointer
+        focus-within:ring-2 focus-within:ring-ring
         {dragOver ? 'border-primary bg-primary/5' : 'border-muted bg-background hover:bg-muted/10'}"
         ondragenter={(e) => { e.preventDefault(); dragOver = true; }}
         ondragover={(e) => { e.preventDefault(); dragOver = true; }}
         ondragleave={() => { dragOver = false; }}
         ondrop={handleDrop}
-        onclick={() => fileInput?.click()}
-        role="button"
-        tabindex="0"
-        onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInput?.click(); } }}
       >
         <input
           bind:this={fileInput}
@@ -86,9 +92,8 @@
           name="file"
           accept=".ofx,.csv"
           required
-          class="hidden"
+          class="sr-only"
           onchange={handleFileChange}
-          onclick={(e) => e.stopPropagation()}
         />
 
         {#if selectedFile}
@@ -102,7 +107,7 @@
           <p class="font-semibold text-sm">Glissez le relevé ici, ou cliquez pour le choisir</p>
           <p class="text-xs text-muted-foreground mt-1">Export bancaire au format .ofx ou .csv</p>
         {/if}
-      </div>
+      </label>
 
       <FormField id="bank-account" label="Compte bancaire cible">
         <SearchableCombobox
