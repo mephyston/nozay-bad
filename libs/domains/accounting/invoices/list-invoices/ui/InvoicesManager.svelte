@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Plus } from '@lucide/svelte';
-  import { AlertDialog, Button, DataTableToolbar, FormField, SearchableCombobox, softNavigate, submitForm, toast, toSeasonOptions } from '@nba/ui';
+  import { AlertDialog, Button, DataTableToolbar, FormField, SearchableCombobox, softNavigate, openDocument, submitForm, toast, toSeasonOptions } from '@nba/ui';
   import type { Invoice, Season } from './invoices-types';
   import { InvoiceFormState } from './invoices-form-state.svelte';
   import * as api from './invoices-api';
@@ -135,7 +135,7 @@
   }
 
   function handlePrint(id: number) {
-    window.open(`/admin/accounting/invoices/${id}`, '_blank');
+    openDocument(`/admin/accounting/invoices/${id}`);
   }
 </script>
 

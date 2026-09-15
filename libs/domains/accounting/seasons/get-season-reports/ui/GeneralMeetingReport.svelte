@@ -1,7 +1,7 @@
 <script lang="ts">
   import { tick } from 'svelte';
   import { ChevronDown } from '@lucide/svelte';
-  import { Tabs, Button, DropdownMenu, submitForm, uiConfirm, readApiError } from '@nba/ui';
+  import { Tabs, Button, DropdownMenu, submitForm, uiConfirm, readApiError, openDocument } from '@nba/ui';
   import type { ReportData, Season, DbCategory, AccountClass, BudgetRecord } from './report-types';
   import { generatePieSlices } from './report-utils';
   import { defaultChargeClasses, defaultProduitClasses } from './report-constants';
@@ -49,7 +49,8 @@
 
   /*
    * Rapport en PDF (en-tête et pied de page du club), servi « inline » : il s'ouvre dans
-   * un nouvel onglet plutôt que d'être téléchargé.
+   * un nouvel onglet plutôt que d'être téléchargé — dans la même fenêtre en application
+   * installée, où un nouvel onglet n'a pas de retour (`openDocument`).
    *
    * L'adresse était déduite du chemin courant, ce qui liait ce composant à la page qui
    * l'affiche. Elle est désormais nommée — et `pdfDoc` vaut la chaîne vide là où aucun
@@ -59,7 +60,7 @@
   function openPdf() {
     if (!pdfDoc) return;
     const adresse = `/admin/api/accounting/download?doc=${encodeURIComponent(pdfDoc)}&season=${encodeURIComponent(selectedSeason)}`;
-    window.open(adresse, '_blank');
+    openDocument(adresse);
   }
 
   // La classe cible est retirée une fois la boîte d'impression fermée.

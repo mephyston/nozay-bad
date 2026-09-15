@@ -1,6 +1,6 @@
 <script lang="ts">
   import { CheckCircle, Landmark, MoreVertical, FileText, Trash2 } from '@lucide/svelte';
-  import { Button, Badge, Amount, DropdownMenu, DataTable, Table, DataTableToolbar, FormField, SearchableCombobox, Card, softNavigate, toSeasonOptions } from '@nba/ui';
+  import { Button, Badge, Amount, DropdownMenu, DataTable, Table, DataTableToolbar, FormField, SearchableCombobox, Card, softNavigate, openDocument, toSeasonOptions } from '@nba/ui';
   import type { CheckDepositState } from './check-deposit-state.svelte';
   import type { CheckDeposit } from './check-deposit-types';
 
@@ -64,7 +64,7 @@
 
     <DropdownMenu.Content class="w-48" align="end">
       <DropdownMenu.Item
-        onclick={() => window.open(`/admin/accounting/cheques/deposits/${dep.id}`, '_blank')}
+        onclick={() => openDocument(`/admin/accounting/cheques/deposits/${dep.id}`)}
         class="cursor-pointer"
       >
         <FileText class="w-3.5 h-3.5 mr-2" />
