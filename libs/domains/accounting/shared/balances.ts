@@ -34,6 +34,17 @@ export interface AccountRef {
   label?: string;
   /** Code de la classe du plan comptable (`512`, `517`, `530`, `467`…), quand il est connu. */
   classCode?: string | null;
+  /** La nature du compte (`accounts.kind`), quand elle est connue : `voucher` sort des disponibilités. */
+  kind?: string | null;
+}
+
+/**
+ * Un compte de bons et chèques tiers : ce qu'il porte est dû au club par un organisme
+ * (LABAZ, l'ASP du Pass'Sport, la CAF…) et n'est pas disponible tant que le remboursement
+ * n'est pas arrivé en banque. Des valeurs à l'encaissement, présentées à part.
+ */
+export function isReceivableAccount(account: Pick<AccountRef, 'kind'>): boolean {
+  return account.kind === 'voucher';
 }
 
 /**
@@ -81,6 +92,8 @@ export interface AccountBalance {
   accountLabel?: string;
   /** Compte de tiers (classe 4) : hors des totaux de trésorerie, présenté comme une dette. */
   thirdParty: boolean;
+  /** Bons et chèques tiers en attente de remboursement : hors disponibilités, présentés à part. */
+  receivable: boolean;
   initialBalanceCents: number;
   /** À-nouveau + toutes les écritures. Le solde des livres. */
   grossCents: number;
@@ -98,8 +111,10 @@ export interface AccountBalance {
  * Les comptes de tiers n'entrent dans aucun des cinq champs : leur solde brut est rendu à part,
  * signé, pour que l'appelant le présente comme une somme due (négatif) ou une avance (positif).
  */
-export type AccountBalanceTotals = Omit<AccountBalance, 'accountId' | 'accountCode' | 'accountLabel' | 'thirdParty'> & {
+export type AccountBalanceTotals = Omit<AccountBalance, 'accountId' | 'accountCode' | 'accountLabel' | 'thirdParty' | 'receivable'> & {
   thirdPartyGrossCents: number;
+  /** Les valeurs à l'encaissement : ce que les organismes doivent encore rembourser. */
+  receivablesGrossCents: number;
 };
 
 /** Un à-nouveau, tel que `season_balances` le porte. */
@@ -182,6 +197,7 @@ export function computeAccountBalance(
     accountCode: account.code,
     accountLabel: account.label,
     thirdParty: isThirdPartyAccount(account),
+    receivable: isReceivableAccount(account),
     initialBalanceCents,
     grossCents,
     inVaultCents,
@@ -206,16 +222,19 @@ export function sumAccountBalances(balances: AccountBalance[]): AccountBalanceTo
       if (b.thirdParty) {
         return { ...totals, thirdPartyGrossCents: totals.thirdPartyGrossCents + b.grossCents };
       }
+      if (b.receivable) {
+        return { ...totals, receivablesGrossCents: totals.receivablesGrossCents + b.grossCents };
+      }
       return {
+        ...totals,
         initialBalanceCents: totals.initialBalanceCents + b.initialBalanceCents,
         grossCents: totals.grossCents + b.grossCents,
         inVaultCents: totals.inVaultCents + b.inVaultCents,
         pendingDebitCents: totals.pendingDebitCents + b.pendingDebitCents,
-        bankTheoreticalCents: totals.bankTheoreticalCents + b.bankTheoreticalCents,
-        thirdPartyGrossCents: totals.thirdPartyGrossCents
+        bankTheoreticalCents: totals.bankTheoreticalCents + b.bankTheoreticalCents
       };
     },
-    { initialBalanceCents: 0, grossCents: 0, inVaultCents: 0, pendingDebitCents: 0, bankTheoreticalCents: 0, thirdPartyGrossCents: 0 }
+    { initialBalanceCents: 0, grossCents: 0, inVaultCents: 0, pendingDebitCents: 0, bankTheoreticalCents: 0, thirdPartyGrossCents: 0, receivablesGrossCents: 0 }
   );
 }
 

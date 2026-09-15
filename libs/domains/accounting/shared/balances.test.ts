@@ -188,6 +188,27 @@ describe('computeAccountBalances / sumAccountBalances', () => {
     expect(totals.thirdPartyGrossCents).toBe(0);
   });
 
+  it("tient les bons et chèques tiers hors des disponibilités, et rend ce qu'il reste à encaisser à part", () => {
+    // Des bons Labaz reçus pour 300 €, dont 100 € déjà remboursés en banque : 200 € à encaisser,
+    // qui ne sont pas de l'argent disponible tant que l'organisme ne les a pas virés.
+    const LABAZ = { id: 9, code: 'labaz', label: 'Bons Labaz', classCode: '511', kind: 'voucher' };
+    const balances = computeAccountBalances(
+      [CURRENT, LABAZ],
+      [],
+      [
+        entry({ accountId: 9, type: 'recette', amountCents: 30_000, status: 'cleared' }),
+        entry({ accountId: 9, type: 'transfert', transferLeg: 'source', amountCents: 10_000, status: 'cleared', transferId: 1 }),
+        entry({ accountId: 1, type: 'transfert', transferLeg: 'destination', amountCents: 10_000, status: 'cleared', transferId: 1 })
+      ]
+    );
+    const labaz = balances.find((b) => b.accountCode === 'labaz')!;
+    expect(labaz.receivable).toBe(true);
+    expect(labaz.grossCents).toBe(20_000);
+    const totals = sumAccountBalances(balances);
+    expect(totals.grossCents).toBe(10_000);
+    expect(totals.receivablesGrossCents).toBe(20_000);
+  });
+
   it("tient un compte de tiers hors des totaux, et rend sa dette à part", () => {
     /*
      * Le compte d'attente des adhérents (classe 4) reçoit ce qu'une adhérente vire au club

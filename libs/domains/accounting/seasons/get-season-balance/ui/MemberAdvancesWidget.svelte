@@ -6,11 +6,14 @@
   let {
     pending = [],
     totalCents = 0,
+    walletLabel = 'le porte-monnaie',
     onRefund
   }: {
     pending: PendingAdvance[];
     totalCents: number;
-    /** Présent sur l'écran Badnet, d'où l'on rend l'argent ; absent ailleurs. */
+    /** Le porte-monnaie du club, tel qu'il est nommé dans les comptes : c'est là que l'argent se rend. */
+    walletLabel?: string;
+    /** Présent sur l'écran du porte-monnaie, d'où l'on rend l'argent ; absent ailleurs. */
     onRefund?: (advance: PendingAdvance) => void;
   } = $props();
 </script>
@@ -31,7 +34,7 @@
   </Card.Header>
   <Card.Content>
     {#if pending.length === 0}
-      <p class="text-sm text-muted-foreground">Rien à rendre : tous les virements reçus ont été crédités sur Badnet.</p>
+      <p class="text-sm text-muted-foreground">Rien à rendre : tous les virements reçus ont été crédités sur {walletLabel}.</p>
     {:else}
       <ul class="divide-y divide-border text-sm">
         {#each pending as advance (advance.id)}
@@ -41,7 +44,7 @@
             <span class="text-xs text-muted-foreground whitespace-nowrap">{advance.ageDays} j</span>
             <span class="font-semibold whitespace-nowrap"><Amount cents={advance.amountCents} /></span>
             {#if onRefund}
-              <Button size="sm" variant="outline" title="Depuis le porte-monnaie Badnet du club vers le sien" onclick={() => onRefund(advance)}>Créditer son Badnet</Button>
+              <Button size="sm" variant="outline" title="Depuis {walletLabel} du club vers le sien" onclick={() => onRefund(advance)}>Créditer son porte-monnaie</Button>
             {/if}
           </li>
         {/each}

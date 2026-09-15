@@ -151,7 +151,7 @@ export const NAV_GROUPS: NavGroup[] = [
 ];
 
 /** Icône et adresse d'une entrée de menu pour un compte sans relevé (caisse, porte-monnaie). */
-export const ACCOUNT_MENU_ICONS: Record<string, string> = { cash: 'Wallet', wallet: 'CreditCard' };
+export const ACCOUNT_MENU_ICONS: Record<string, string> = { cash: 'Wallet', wallet: 'CreditCard', voucher: 'Ticket' };
 
 export function menuAccountItem(account: { code: string; label: string; kind: string }): NavItem {
   return {

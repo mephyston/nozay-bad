@@ -22,7 +22,7 @@ export const accountClassesTable = sqliteTable('account_classes', {
 });
 
 /** Ce qu'est un compte de trésorerie — c'est la nature, et non le code, qui décide de son usage. */
-export const ACCOUNT_KINDS = ['bank', 'cash', 'wallet', 'third_party'] as const;
+export const ACCOUNT_KINDS = ['bank', 'cash', 'wallet', 'voucher', 'third_party'] as const;
 export type AccountKind = (typeof ACCOUNT_KINDS)[number];
 
 export const accountsTable = sqliteTable('accounts', {
@@ -31,8 +31,10 @@ export const accountsTable = sqliteTable('accounts', {
   label: text('label').notNull(),
   accountClassId: integer('account_class_id').notNull().references(() => accountClassesTable.id),
   /**
-   * `bank` se rapproche par relevé ; `cash` et `wallet` ont chacun leur écran ;
-   * `third_party` est le compte d'attente des adhérents, une dette hors trésorerie.
+   * `bank` se rapproche par relevé ; `cash` et `wallet` ont chacun leur écran ; `voucher`
+   * porte les bons et chèques tiers reçus (Labaz, Pass'Sport, tickets loisir) en attente de
+   * remboursement — des valeurs à l'encaissement, hors disponibilités ; `third_party` est le
+   * compte d'attente des adhérents, une dette hors trésorerie.
    */
   kind: text('kind', { enum: ACCOUNT_KINDS }).notNull().default('bank'),
   /** Inactif : retiré des menus et des formulaires, jamais supprimé — les écritures y renvoient. */

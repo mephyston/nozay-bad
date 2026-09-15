@@ -18,8 +18,15 @@ import ReportAIAnalysis from './ReportAIAnalysis.svelte';
    * trésorerie : ils sortent du tableau et du total, et se lisent à part comme une dette.
    * Le total ne doit ni les compter, ni les compenser avec le compte courant qui a reçu l'argent.
    */
-  const disponibilites = $derived(report.bilanTrésorerie.filter((item) => !item.thirdParty));
+  const disponibilites = $derived(report.bilanTrésorerie.filter((item) => !item.thirdParty && !item.receivable));
   const tiers = $derived(report.bilanTrésorerie.filter((item) => item.thirdParty));
+  /*
+   * Les bons et chèques tiers reçus (Labaz, Pass'Sport, tickets loisir…) attendent le
+   * remboursement de leur organisme : des valeurs à l'encaissement, pas des disponibilités.
+   * À part, comme les tiers, avec leur total — c'est ce que le club a encore à réclamer.
+   */
+  const aEncaisser = $derived(report.bilanTrésorerie.filter((item) => item.receivable));
+  const aEncaisserGross = $derived(aEncaisser.reduce((sum, item) => sum + item.finalBalance, 0));
   const tiersGross = $derived(tiers.reduce((sum, item) => sum + item.finalBalance, 0));
 
   const totalFinal = $derived(disponibilites.reduce((sum, item) => sum + item.finalBalance, 0));
@@ -120,6 +127,21 @@ import ReportAIAnalysis from './ReportAIAnalysis.svelte';
         </Table.Footer>
       </Table.Root>
     </div>
+
+    {#if aEncaisser.length > 0}
+      <div class="rounded-md border border-border bg-muted/30 px-4 py-3 text-sm" data-testid="receivables-block">
+        <div class="flex items-center justify-between font-semibold">
+          <span>Valeurs à l'encaissement</span>
+          <span>{formatAmount(aEncaisserGross)}</span>
+        </div>
+        <ul class="mt-1 space-y-0.5 text-xs text-muted-foreground">
+          {#each aEncaisser as item}
+            <li class="flex justify-between"><span>{item.label || item.accountId}</span><span>{formatAmount(item.finalBalance)}</span></li>
+          {/each}
+        </ul>
+        <p class="mt-1 text-xs text-muted-foreground">Hors disponibilités : bons et chèques tiers reçus, dont le remboursement par l'organisme est à venir.</p>
+      </div>
+    {/if}
 
     {#if tiersGross !== 0}
       <!--

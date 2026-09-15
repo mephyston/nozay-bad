@@ -139,7 +139,7 @@ async function readFeatures(db: DbOrTx): Promise<FeatureState> {
 export interface TreasuryAccount {
   code: string;
   label: string;
-  kind: 'bank' | 'cash' | 'wallet' | 'third_party';
+  kind: 'bank' | 'cash' | 'wallet' | 'voucher' | 'third_party';
 }
 
 /**

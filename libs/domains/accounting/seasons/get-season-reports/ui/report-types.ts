@@ -20,6 +20,8 @@ export interface ReportData {
     label?: string;
     /** Compte de tiers (classe 4) : hors du total, présenté comme une somme due. */
     thirdParty?: boolean;
+    /** Bons et chèques tiers en attente de remboursement : hors disponibilités. */
+    receivable?: boolean;
     initialBalance: number;
     /** Solde COMPTABLE de fin de période. C'est lui qui se reporte à-nouveau. */
     finalBalance: number;

@@ -81,7 +81,7 @@ export async function getSeasonReports(db: Db, input: GetSeasonReportsInput): Pr
    * fermé garde son histoire, et son solde — s'il en reste un — doit se voir. Le rapport
    * n'écarte que les comptes inactifs à zéro, plus bas, une fois les soldes connus.
    */
-  const treasuryAccounts: AccountRef[] = dbAccounts.map((a) => ({ id: a.id, code: a.code, label: a.label, classCode: a.classCode }));
+  const treasuryAccounts: AccountRef[] = dbAccounts.map((a) => ({ id: a.id, code: a.code, label: a.label, classCode: a.classCode, kind: a.kind }));
 
   /*
    * Le solde d'ouverture de chaque compte : le report figé s'il existe, la reconstitution
@@ -134,6 +134,8 @@ export async function getSeasonReports(db: Db, input: GetSeasonReportsInput): Pr
       label: b.accountLabel ?? b.accountCode,
       /** Compte de tiers : à présenter comme une somme due, jamais dans le total de trésorerie. */
       thirdParty: b.thirdParty,
+      /** Bons et chèques tiers à rembourser : des valeurs à l'encaissement, hors disponibilités. */
+      receivable: b.receivable,
       initialBalance: b.initialBalanceCents,
       /** Solde COMPTABLE de fin de période : à-nouveau + écritures, sans correction. */
       finalBalance: b.grossCents,
@@ -208,6 +210,7 @@ export async function getSeasonReports(db: Db, input: GetSeasonReportsInput): Pr
     netAvailableCashCents,
     /* Les comptes de tiers, hors de tout ce qui précède : le brut signé, et la dette qu'il représente. */
     thirdPartyGrossCents: cashTotals.thirdPartyGrossCents,
+    receivablesGrossCents: cashTotals.receivablesGrossCents,
     duesToThirdPartiesCents: duesToThirdPartiesCents(cashTotals),
     deferredRevenues,
     deferredExpenses
@@ -345,7 +348,8 @@ export async function getSeasonReports(db: Db, input: GetSeasonReportsInput): Pr
      * principal (le premier `bank` actif), les autres comptes bancaires réunis, et tout ce qui
      * n'est ni banque ni tiers — caisses et porte-monnaie. Le total suit tout.
      */
-    const treasuryOnly = dbAccounts.filter((a) => a.kind !== 'third_party');
+    // Ni les tiers ni les bons à rembourser : la courbe ne suit que l'argent disponible.
+    const treasuryOnly = dbAccounts.filter((a) => a.kind !== 'third_party' && a.kind !== 'voucher');
     const mainBank = treasuryOnly.find((a) => a.kind === 'bank' && a.active) ?? treasuryOnly.find((a) => a.kind === 'bank');
     const currentAccounts = mainBank ? [mainBank] : [];
     const savingsAccounts = treasuryOnly.filter((a) => a.kind === 'bank' && a !== mainBank);

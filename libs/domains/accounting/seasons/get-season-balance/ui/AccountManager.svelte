@@ -90,6 +90,10 @@
     showsMemberAdvances(account.kind ?? 'bank') ? pendingMemberAdvances(memberAdvanceEntries, accounts, today) : null
   );
   const refundAction = $derived(actions.find((a) => a.refundsPendingAdvance));
+  /** Le porte-monnaie du club, nommé par son libellé : l'écran ne connaît plus « Badnet ». */
+  const walletLabel = $derived(
+    account.kind === 'wallet' ? account.label : (accounts.find((a) => a.kind === 'wallet')?.label ?? 'le porte-monnaie')
+  );
 
   const activeCategories = $derived(
     categories
@@ -192,6 +196,7 @@
     <MemberAdvancesWidget
       pending={advances.pending}
       totalCents={advances.totalCents}
+      walletLabel={walletLabel}
       onRefund={refundAction && canWrite && !isClosed ? refund : undefined}
     />
   {/if}

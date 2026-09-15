@@ -111,7 +111,7 @@ describe('AccountManager', () => {
     const widget = target.querySelector('[data-testid="member-advances"]')!;
     expect(widget.textContent).toContain('Reçu de Mme Dupont');
     // Le crédit se propose ici comme sur l'écran Badnet : c'est le même virement.
-    expect(widget.textContent).toContain('Créditer son Badnet');
+    expect(widget.textContent).toContain('Créditer son porte-monnaie');
   });
 
   it("propose sur l'écran Badnet le crédit d'une avance, pré-rempli", () => {
@@ -121,7 +121,7 @@ describe('AccountManager', () => {
       memberAdvanceEntries: [entry({ id: 9, type: 'transfert', accountId: 5, transferLeg: 'source', counterpartAccountId: 1, amount: 2500, category: null, description: 'Reçu de Mme Dupont', paymentMethod: 'virement_interne' })]
     });
     const widget = target.querySelector('[data-testid="member-advances"]')!;
-    const refund = Array.from(widget.querySelectorAll('button')).find((b) => /Créditer son Badnet/.test(b.textContent || ''))!;
+    const refund = Array.from(widget.querySelectorAll('button')).find((b) => /Créditer son porte-monnaie/.test(b.textContent || ''))!;
     expect(refund).toBeDefined();
     refund.click();
     flushSync();
@@ -146,7 +146,7 @@ describe('AccountManager', () => {
       memberAdvanceEntries: [entry({ id: 9, type: 'transfert', accountId: 5, transferLeg: 'source', counterpartAccountId: 1, amount: 2500, category: null, description: 'Reçu de Mme Dupont', date: '2025-08-20', paymentMethod: 'virement_interne' })]
     });
     const widget = target.querySelector('[data-testid="member-advances"]')!;
-    const refund = Array.from(widget.querySelectorAll('button')).find((b) => /Créditer son Badnet/.test(b.textContent || ''))!;
+    const refund = Array.from(widget.querySelectorAll('button')).find((b) => /Créditer son porte-monnaie/.test(b.textContent || ''))!;
     refund.click();
     flushSync();
 

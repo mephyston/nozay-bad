@@ -26,7 +26,7 @@
     onSubmit: (values: AccountValues) => void;
   } = $props();
 
-  const KINDS = (['bank', 'cash', 'wallet'] as const).map((k) => ({ value: k, label: ACCOUNT_KIND_LABELS[k] }));
+  const KINDS = (['bank', 'cash', 'wallet', 'voucher'] as const).map((k) => ({ value: k, label: ACCOUNT_KIND_LABELS[k] }));
   const treasuryClasses = $derived(
     accountClasses.filter((c) => c.type === 'tresorerie').map((c) => ({ value: c.code, label: `${c.code} · ${c.label}` }))
   );

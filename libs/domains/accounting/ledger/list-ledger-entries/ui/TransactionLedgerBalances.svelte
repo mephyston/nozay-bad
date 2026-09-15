@@ -60,7 +60,9 @@
     }
   }
 
-  const treasury = $derived(balances.filter((b) => !b.thirdParty));
+  const treasury = $derived(balances.filter((b) => !b.thirdParty && !b.receivable));
+  /** Les bons et chèques tiers reçus, remboursement à venir : à encaisser, pas disponibles. */
+  const receivables = $derived(balances.filter((b) => b.receivable));
   const thirdParties = $derived(balances.filter((b) => b.thirdParty));
   /** Les disponibilités : la somme des comptes de trésorerie, hors comptes de tiers. */
   const totalCents = $derived(treasury.reduce((sum, b) => sum + grossCentsOf(b), 0));
@@ -91,6 +93,12 @@
           {#if hasGap(balance)}
             <AlertCircle class="w-3 h-3 text-warning" aria-label="Écart avec le relevé" />
           {/if}
+        </span>
+      {/each}
+      {#each receivables as balance (balance.accountId)}
+        <span class="inline-flex items-center gap-1.5 rounded-full border border-dashed border-border px-2.5 py-0.5 text-xs whitespace-nowrap" title="Bons et chèques tiers reçus, remboursement à venir : hors disponibilités">
+          <span class="text-muted-foreground">{balance.label ?? balance.accountId} · à encaisser</span>
+          <span class="font-semibold text-foreground"><Amount cents={grossCentsOf(balance)} /></span>
         </span>
       {/each}
       {#each thirdParties as balance (balance.accountId)}

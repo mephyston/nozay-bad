@@ -5,7 +5,7 @@ export interface TreasuryAccountRow {
   label: string;
   classCode: string;
   classType: 'recette' | 'depense' | 'tresorerie';
-  kind: 'bank' | 'cash' | 'wallet' | 'third_party';
+  kind: 'bank' | 'cash' | 'wallet' | 'voucher' | 'third_party';
   active: boolean;
   statementAccountNumber: string | null;
 }
@@ -34,13 +34,15 @@ export const ACCOUNT_KIND_LABELS: Record<TreasuryAccountRow['kind'], string> = {
   bank: 'Compte bancaire',
   cash: 'Caisse',
   wallet: 'Porte-monnaie',
+  voucher: 'Bons et chèques tiers',
   third_party: "Compte d'attente"
 };
 
 export const ACCOUNT_KIND_HINTS: Record<Exclude<TreasuryAccountRow['kind'], 'third_party'>, string> = {
   bank: 'Se rapproche par relevé importé : compte courant, livret.',
   cash: 'Des espèces en main : buvette, ventes sur place. Un écran de caisse lui est dédié.',
-  wallet: 'Un compte chez un tiers (Badnet…), alimenté et débité par les inscriptions. Un écran lui est dédié.'
+  wallet: 'Un compte chez un tiers (plateforme de tournois…), alimenté et débité par les inscriptions. Un écran lui est dédié.',
+  voucher: "Les bons reçus d'un dispositif (Labaz, Pass'Sport, tickets loisir…) en attente de remboursement. Son solde est ce que l'organisme doit encore ; hors disponibilités."
 };
 
 export const PAYMENT_KIND_LABELS: Record<PaymentMethodRow['kind'], string> = {

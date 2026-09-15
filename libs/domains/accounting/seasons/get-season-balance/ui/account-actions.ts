@@ -28,7 +28,7 @@ export interface AccountAction {
   /** Compte crédité d'un virement. `'*'` = au choix parmi les autres comptes. */
   destination?: ActionAccountRef;
   /** Nature du moyen de paiement à proposer ; le moyen actif de cette nature est retenu. */
-  paymentKind: 'transfer' | 'cash' | 'internal';
+  paymentKind: 'transfer' | 'cash' | 'voucher' | 'internal';
   /** Début de libellé proposé ; le trésorier complète (le nom de l'adhérente, le tournoi…). */
   descriptionTemplate?: string;
   /** L'action rend une avance en attente : elle se pré-remplit depuis la ligne choisie. */
@@ -42,7 +42,7 @@ export const MAIN_BANK = '*bank';
 /** Le compte d'attente des adhérents (nature `third_party`). */
 export const THIRD_PARTY = '*third_party';
 
-export type AccountKindLike = 'bank' | 'cash' | 'wallet' | 'third_party';
+export type AccountKindLike = 'bank' | 'cash' | 'wallet' | 'voucher' | 'third_party';
 
 const MEMBER_RECEIVED: AccountAction = {
   key: 'member-received',
@@ -81,6 +81,17 @@ const CATALOGUE: Record<AccountKindLike, AccountAction[]> = {
     { key: 'fee-in', label: 'Inscriptions encaissées (tournoi du club)', hint: 'Une recette, catégorie Tournois. Une écriture par tournoi suffit.', panel: 'recette', source: SELF, paymentKind: 'transfer', descriptionTemplate: 'Inscriptions tournoi ' },
     { key: 'fee-out', label: 'Inscription payée ou commission', hint: "Une dépense : l'inscription d'une équipe, ou la commission prélevée par la plateforme.", panel: 'depense', source: SELF, paymentKind: 'transfer' }
   ],
+  /*
+   * Les bons et chèques tiers (Labaz, Pass'Sport, tickets loisir…) : le bon reçu est une
+   * recette à la date où l'adhérent paie ; le remboursement de l'organisme est un virement
+   * vers la banque, hors résultat ; la commission ou le bon refusé, une dépense. Le solde
+   * du compte est ce que l'organisme doit encore.
+   */
+  voucher: [
+    { key: 'voucher-in', label: 'Bon reçu', hint: "Un adhérent règle en bons, papier ou électroniques : une recette à la date du paiement, catégorie de la cotisation ou de l'achat. Le remboursement par l'organisme viendra plus tard.", panel: 'recette', source: SELF, paymentKind: 'voucher' },
+    { key: 'voucher-refund', label: 'Remboursement reçu en banque', hint: "L'organisme a viré le remboursement des bons remis : le montant reçu passe sur le compte bancaire. Hors résultat.", panel: 'transfert', source: SELF, destination: MAIN_BANK, paymentKind: 'internal', descriptionTemplate: 'Remboursement ' },
+    { key: 'voucher-fee', label: 'Commission ou bon refusé', hint: "Ce que l'organisme retient (commission) ou n'a pas remboursé (bon refusé, périmé) : une dépense, catégorie Frais de fonctionnement.", panel: 'depense', source: SELF, paymentKind: 'voucher' }
+  ],
   third_party: [MEMBER_RECEIVED, MEMBER_REFUND],
   bank: [
     { key: 'in', label: 'Entrée', panel: 'recette', source: SELF, paymentKind: 'transfer' },
@@ -106,8 +117,8 @@ export interface PrefillContext {
   self: AccountLike & { kind?: string };
   /** Les comptes connus (actifs), avec leur nature, pour résoudre les comptes d'en face. */
   accounts: (AccountLike & { kind?: string })[];
-  /** Les moyens de paiement actifs, avec leur nature, pour résoudre celui de l'action. */
-  paymentMethods: { code: string; kind: string }[];
+  /** Les moyens de paiement actifs, avec leur nature — et le compte qu'ils créditent, pour préférer celui du compte affiché. */
+  paymentMethods: { code: string; kind: string; defaultAccountCode?: string }[];
   /** L'avance en attente que l'action rend, quand elle en rend une. */
   pending?: { description: string; reference: string | null; amountCents: number } | null;
 }
@@ -136,9 +147,18 @@ export function resolveAccountRef(ref: ActionAccountRef, ctx: Pick<PrefillContex
   }
 }
 
-/** Le moyen de paiement actif de la nature voulue ; le premier disponible à défaut. */
-export function resolvePaymentKind(kind: AccountAction['paymentKind'], methods: PrefillContext['paymentMethods']): string {
-  return methods.find((m) => m.kind === kind)?.code ?? methods.find((m) => m.kind !== 'internal')?.code ?? '';
+/**
+ * Le moyen de paiement actif de la nature voulue ; le premier disponible à défaut.
+ * Parmi plusieurs de même nature — cinq sortes de bons —, celui qui crédite le compte affiché.
+ */
+export function resolvePaymentKind(kind: AccountAction['paymentKind'], methods: PrefillContext['paymentMethods'], selfCode = ''): string {
+  const ofKind = methods.filter((m) => m.kind === kind);
+  return (
+    (selfCode && ofKind.find((m) => m.defaultAccountCode === selfCode)?.code) ||
+    ofKind[0]?.code ||
+    methods.find((m) => m.kind !== 'internal')?.code ||
+    ''
+  );
 }
 
 /** Les valeurs du formulaire du grand livre, prêtes pour l'action choisie. */
@@ -160,7 +180,7 @@ export function prefillAction(action: AccountAction, ctx: PrefillContext): Trans
     formAccountId: source,
     destinationAccountId: destination,
     destinationDate: '',
-    paymentMethod: resolvePaymentKind(action.paymentKind, ctx.paymentMethods),
+    paymentMethod: resolvePaymentKind(action.paymentKind, ctx.paymentMethods, ctx.self.code),
     description,
     reference: pending?.reference ?? '',
     accrualType: 'normal',

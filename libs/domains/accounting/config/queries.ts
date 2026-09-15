@@ -100,6 +100,7 @@ const ACCOUNT_KIND_LABELS: Record<AccountKind, string> = {
   bank: 'compte bancaire',
   cash: 'caisse',
   wallet: 'porte-monnaie',
+  voucher: 'compte de bons et chèques tiers',
   third_party: "compte d'attente"
 };
 

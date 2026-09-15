@@ -43,7 +43,7 @@
         Virement reçu d'une adhérente
       </Dialog.Title>
       <Dialog.Description class="text-sm text-muted-foreground mt-1">
-        Elle a viré <strong><Amount {cents} /></strong> le {line.date} pour que le club crédite son porte-monnaie Badnet.
+        Elle a viré <strong><Amount {cents} /></strong> le {line.date} pour que le club crédite son porte-monnaie.
         Ce n'est pas une recette : l'argent est à lui rendre. Le virement s'écrit du compte d'attente des adhérents
         vers le compte courant, et la ligne du relevé est pointée dans la foulée.
       </Dialog.Description>

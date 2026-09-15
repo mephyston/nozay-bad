@@ -41,6 +41,8 @@ export interface BalanceReport {
   label?: string;
   /** Compte de tiers (classe 4) : son solde est une dette envers les adhérents, pas de la trésorerie. */
   thirdParty?: boolean;
+  /** Bons et chèques tiers en attente de remboursement : à encaisser, hors disponibilités. */
+  receivable?: boolean;
   initialBalance: number;
   /** Solde COMPTABLE : à-nouveau + écritures. Ce n'est pas le solde du relevé. */
   finalBalance: number;

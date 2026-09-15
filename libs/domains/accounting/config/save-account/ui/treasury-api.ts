@@ -7,7 +7,7 @@ export interface AccountValues {
   code: string;
   label: string;
   accountClassCode: string;
-  kind: 'bank' | 'cash' | 'wallet';
+  kind: 'bank' | 'cash' | 'wallet' | 'voucher';
   statementAccountNumber: string;
 }
 

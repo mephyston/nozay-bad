@@ -268,7 +268,7 @@ export function createReconciliationActions(s: ReconciliationStateFields) {
 
       try {
         const outcome = await apiMatchLedgerEntry(line.id, destination.id, null);
-        settle(outcome, 'Virement reçu enregistré et pointé. Pensez à le rendre sur Badnet.', line.id);
+        settle(outcome, 'Virement reçu enregistré et pointé. Pensez à le rendre sur le porte-monnaie de l\'adhérente.', line.id);
       } catch (err) {
         await apiDeleteLedgerEntry(destination.id).catch(() => undefined);
         throw err;

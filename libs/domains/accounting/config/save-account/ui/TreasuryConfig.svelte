@@ -159,7 +159,7 @@
             <div class="font-semibold text-foreground">{account.label}</div>
             <div class="text-xs font-mono text-muted-foreground">{account.code}</div>
           </Table.Cell>
-          <Table.Cell class="p-4"><Badge variant={account.kind === 'third_party' ? 'warning' : 'info'} size="sm">{ACCOUNT_KIND_LABELS[account.kind]}</Badge></Table.Cell>
+          <Table.Cell class="p-4"><Badge variant={account.kind === 'third_party' ? 'warning' : account.kind === 'voucher' ? 'secondary' : 'info'} size="sm">{ACCOUNT_KIND_LABELS[account.kind]}</Badge></Table.Cell>
           <Table.Cell class="p-4 font-mono text-sm">{account.classCode}</Table.Cell>
           <Table.Cell class="p-4 font-mono text-xs text-muted-foreground">{account.statementAccountNumber ?? '—'}</Table.Cell>
           <Table.Cell class="p-4">

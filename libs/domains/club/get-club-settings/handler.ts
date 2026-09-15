@@ -19,5 +19,5 @@ export type GetClubSettingsOutput = {
  */
 export async function getClubSettingsView(db: Db): Promise<GetClubSettingsOutput> {
   const [settings, features, accounts] = await Promise.all([getClubSettings(db), getClubFeatures(db), listTreasuryAccounts(db)]);
-  return { settings, features, menuAccounts: accounts.filter((a) => a.kind === 'cash' || a.kind === 'wallet') };
+  return { settings, features, menuAccounts: accounts.filter((a) => a.kind === 'cash' || a.kind === 'wallet' || a.kind === 'voucher') };
 }

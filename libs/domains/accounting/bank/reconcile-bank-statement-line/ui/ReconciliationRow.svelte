@@ -259,7 +259,7 @@
             variant="ghost"
             class="h-8 gap-1.5 text-xs"
             data-action="member-transfer"
-            title="Virement reçu d'une adhérente pour son porte-monnaie Badnet"
+            title="Virement reçu d'une adhérente pour son porte-monnaie"
             disabled={reconState.isClosed || reconState.isSubmitting}
             onclick={() => (showMemberTransfer = true)}
           >
