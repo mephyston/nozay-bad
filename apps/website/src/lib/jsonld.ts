@@ -14,6 +14,23 @@ export function clubId(siteUrl: string): string {
   return new URL('/#club', siteUrl).toString();
 }
 
+/**
+ * Le club cité depuis un autre nœud — `organizer` d'un événement, `publisher` d'un
+ * article — sur une page qui n'émet pas sa fiche.
+ *
+ * Un `@id` seul ne suffit pas : la fiche `SportsClub` ne vit que sur l'accueil, et
+ * Google lit chaque page pour elle-même. Sur `/agenda/`, un `organizer` réduit à son
+ * `@id` est un organisateur sans nom — c'est ce que la Search Console a signalé. Le
+ * nom et l'adresse voyagent donc avec la référence ; le `@id` reste, et fusionne ces
+ * quelques champs avec la fiche complète là où elle est présente.
+ */
+export function clubRef(siteUrl: string, site: SiteIdentity) {
+  // Extraite de la fiche plutôt que réécrite : les champs cités sont, par
+  // construction, ceux que la fiche complète porte.
+  const { '@type': type, '@id': id, name, url } = sportsClub(siteUrl, site, []);
+  return { '@type': type, '@id': id, name, url };
+}
+
 
 /** Un gymnase, avec ce qu'il faut pour le situer. */
 export interface VenueLike {
@@ -223,6 +240,7 @@ export function serialiseJsonLd(value: unknown): string {
 
 export function article(
   siteUrl: string,
+  site: SiteIdentity,
   params: {
     title: string;
     description: string;
@@ -242,7 +260,7 @@ export function article(
     ...(params.publishedAt ? { datePublished: params.publishedAt } : {}),
     ...(params.updatedAt ? { dateModified: params.updatedAt } : {}),
     author: { '@type': 'Person', name: params.authorName },
-    publisher: { '@id': clubId(siteUrl) },
+    publisher: clubRef(siteUrl, site),
     ...(params.image ? { image: params.image } : {})
   };
 }
@@ -387,7 +405,7 @@ export function clubEvent(
         ? { location: { '@type': 'Place', name: event.venueLabel, address: { '@type': 'PostalAddress', addressCountry: 'FR' } } }
         : {}),
     ...(event.image ? { image: event.image } : {}),
-    organizer: { '@id': clubId(siteUrl) },
+    organizer: clubRef(siteUrl, site),
     url: new URL(event.url, siteUrl).toString()
   };
 }

@@ -340,4 +340,15 @@ describe('clubEvent', () => {
       'https://x.fr/actualites/raclette/'
     );
   });
+
+  /*
+    La fiche du club n'est émise que sur l'accueil, et Google lit chaque page pour
+    elle-même : un `organizer` réduit à son `@id` est un organisateur sans nom sur
+    `/agenda/` — c'est l'avertissement qu'a levé la Search Console. Le `@id` reste
+    pour fusionner avec la fiche complète quand elle est là.
+  */
+  it('nomme l’organisateur sans dépendre de la fiche de l’accueil', () => {
+    const { '@type': type, '@id': id, name, url } = sportsClub('https://x.fr', SITE, []);
+    expect(clubEvent('https://x.fr', SITE, base).organizer).toEqual({ '@type': type, '@id': id, name, url });
+  });
 });

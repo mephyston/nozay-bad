@@ -197,7 +197,7 @@ const postDescription = post
   : '';
 const postJsonLd = post
   ? [
-      article(siteUrl, {
+      article(siteUrl, site, {
         title: post.title,
         description: postDescription,
         path: post.path,
