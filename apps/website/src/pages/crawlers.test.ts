@@ -52,10 +52,19 @@ describe('robots.txt', () => {
     expect(text).toContain('Sitemap: https://nozaybad.fr/sitemap.xml');
   });
 
-  it('ferme la chaîne de requête, dont la combinatoire est sans fond', async () => {
-    // Rubriques × pages, plus les marqueurs de campagne : autant d'adresses pour un
-    // contenu que le sitemap donne déjà, article par article.
-    expect(await body('production')).toContain('Disallow: /*?');
+  it('ferme la chaîne de requête des actualités, dont la combinatoire est sans fond', async () => {
+    // Rubriques × pages : autant d'adresses pour un contenu que le sitemap donne déjà,
+    // article par article.
+    expect(await body('production')).toContain('Disallow: /actualites/?');
+  });
+
+  it('laisse explorer les URL héritées de WordPress, pour qu’elles sortent de l’index', async () => {
+    // Bloquée, une adresse ne peut pas être désindexée : Google ne voit jamais son
+    // 410. `?replytocom=` et `/wp-includes/…?ver=` restaient ainsi « indexées malgré
+    // le blocage » des semaines après la bascule.
+    const text = await body('production');
+    expect(text).not.toContain('Disallow: /*?');
+    expect(text).not.toMatch(/^Disallow: \/wp-/m);
   });
 
   it('écarte les aspirateurs qui ne renvoient aucun visiteur', async () => {

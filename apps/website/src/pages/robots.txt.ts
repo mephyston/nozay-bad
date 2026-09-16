@@ -42,11 +42,15 @@ export const GET: APIRoute = ({ locals, url }) => {
     '',
     // Le filtre par rubrique et la pagination des actualités se combinent : rubriques
     // × pages, pour un contenu qui figure déjà, article par article, dans le sitemap.
-    // Interdire la chaîne de requête évite à un robot d'explorer cette combinatoire —
-    // et écarte du même coup les liens d'aperçu partagés par erreur, ainsi que les
-    // marqueurs de campagne, qui multiplieraient les adresses d'une même page.
-    '# Rien de ce qui suit un « ? » n’a de contenu propre : le sitemap dit tout.',
-    'Disallow: /*?',
+    // Interdire la chaîne de requête de cette page évite à un robot d'explorer cette
+    // combinatoire. Elle seule : la règle valait autrefois pour tout le site
+    // (`/*?`), et Google ne pouvait alors plus constater que les URL héritées de
+    // WordPress — `?replytocom=`, `/wp-includes/…?ver=` — répondent 410 ou 403. Il
+    // les gardait donc dans son index, « indexées malgré le blocage ». Pour sortir de
+    // l'index, une adresse doit rester explorable. Ailleurs, la chaîne de requête ne
+    // change rien au rendu, et la balise canonique règle les marqueurs de campagne.
+    '# Le filtre et la pagination des actualités n’ont pas de contenu propre : le sitemap dit tout.',
+    'Disallow: /actualites/?',
     '',
     // Ignoré par Google, qui règle sa cadence seul et la respecte ; honoré par Bing,
     // Yandex et la plupart des robots de moindre qualité, qui sont précisément ceux
