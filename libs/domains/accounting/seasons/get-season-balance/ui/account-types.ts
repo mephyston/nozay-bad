@@ -23,6 +23,9 @@ export interface AccountEntry {
   paymentMethod: string;
   description: string;
   reference: string | null;
+  /** L'adhérent rattaché à une recette, tel que l'API le nomme ; absent pour une écriture générale. */
+  memberName?: string | null;
+  memberLicence?: string | null;
 }
 
 export interface Season {

@@ -9,6 +9,7 @@
   import TransactionLedgerTable from './TransactionLedgerTable.svelte';
   import TransactionFormSheet from './TransactionFormSheet.svelte';
   import { findAccount, toAccountOptions, type AccountLike } from '../../../shared/account-labels';
+  import type { MemberLike } from './member-options';
 
   let {
     transactions = [],
@@ -23,6 +24,7 @@
     mainAccountId = '',
     activeAccounts = [],
     paymentMethods = [],
+    members = [],
     searchQuery = '',
     month = '',
     limit = '20'
@@ -42,6 +44,8 @@
     activeAccounts?: AccountLike[];
     /** Les moyens de paiement actifs du club. */
     paymentMethods?: { code: string; label: string; kind: string }[];
+    /** L'annuaire des exercices ouverts, pour rattacher une recette à l'adhérent qui paie. */
+    members?: MemberLike[];
     searchQuery?: string;
     month?: string;
     limit?: string;
@@ -189,6 +193,7 @@
   );
 
   let editingId = $state<number | null>(null);
+  let memberId = $state('');
 
   function openPanel(type: 'recette' | 'depense' | 'transfert') {
     showPanel = type;
@@ -213,6 +218,7 @@
     paymentMethod = paymentMethods.find((m) => m.kind === 'transfer')?.code ?? paymentMethods[0]?.code ?? '';
     category = '1';
     date = new Date().toISOString().split('T')[0];
+    memberId = '';
   }
 
   function startEdit(tx: Transaction, e: MouseEvent) {
@@ -228,6 +234,8 @@
     accrualType = (tx as any).accrualType || 'normal';
     accrualNote = (tx as any).accrualNote || '';
     targetSeasonId = tx.seasonId;
+    // L'adhérent déjà rattaché — au rapprochement, par un chèque — se garde à la modification.
+    memberId = tx.memberId ? String(tx.memberId) : '';
     showPanel = tx.type;
   }
 
@@ -236,7 +244,7 @@
     isSubmitting = true;
     errorMsg = '';
 
-    const values = { editingId, showPanel, amount, date, category, formAccountId, destinationAccountId, destinationDate, paymentMethod, description, reference, accrualType, accrualNote, targetSeasonId };
+    const values = { editingId, showPanel, amount, date, category, formAccountId, destinationAccountId, destinationDate, paymentMethod, description, reference, accrualType, accrualNote, targetSeasonId, memberId };
     await submitForm({
       validate: () => validateTransaction(values),
       submit: () => submitTransaction(values),
@@ -433,9 +441,11 @@
     bind:accrualType
     bind:accrualNote
     bind:targetSeasonId
+    bind:memberId
     {seasons}
     accounts={activeAccounts.length > 0 ? activeAccounts : accounts}
     {paymentMethods}
+    {members}
     {activeCategories}
     bind:isSubmitting
     bind:errorMsg

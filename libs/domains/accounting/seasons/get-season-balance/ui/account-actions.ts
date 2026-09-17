@@ -68,29 +68,37 @@ const MEMBER_REFUND: AccountAction = {
 };
 
 const CATALOGUE: Record<AccountKindLike, AccountAction[]> = {
+  /*
+   * La caisse reçoit bien plus que la buvette : une cotisation réglée en espèces y entre
+   * aussi, et c'est le rattachement à l'adhérent qui la fait compter pour son dossier.
+   */
   cash: [
-    { key: 'cash-in', label: "Entrée d'espèces", panel: 'recette', source: SELF, paymentKind: 'cash' },
-    { key: 'cash-out', label: "Sortie d'espèces", panel: 'depense', source: SELF, paymentKind: 'cash' },
-    { key: 'deposit', label: 'Dépôt en banque', hint: 'Les espèces quittent la caisse pour le compte bancaire.', panel: 'transfert', source: SELF, destination: MAIN_BANK, paymentKind: 'internal', descriptionTemplate: 'Dépôt des espèces en banque' }
+    { key: 'cash-in', label: 'Espèces reçues', hint: "Cotisation, buvette, tournoi… payés en espèces : une recette. Quand c'est un adhérent qui paie, rattachez-le, c'est ce qui fait apparaître le règlement sur sa fiche.", panel: 'recette', source: SELF, paymentKind: 'cash' },
+    { key: 'cash-out', label: 'Dépense payée en espèces', hint: 'Un achat réglé avec les espèces de la caisse.', panel: 'depense', source: SELF, paymentKind: 'cash' },
+    { key: 'deposit', label: "Dépôt d'espèces en banque", hint: 'Les espèces quittent la caisse pour le compte bancaire. Hors résultat.', panel: 'transfert', source: SELF, destination: MAIN_BANK, paymentKind: 'internal', descriptionTemplate: 'Dépôt des espèces en banque' }
   ],
   wallet: [
     MEMBER_RECEIVED,
     { ...MEMBER_REFUND, source: SELF },
-    { key: 'topup', label: 'Recharge du porte-monnaie', hint: 'Depuis le compte bancaire. Hors résultat.', panel: 'transfert', source: MAIN_BANK, destination: SELF, paymentKind: 'internal', descriptionTemplate: 'Recharge du porte-monnaie' },
-    { key: 'withdraw', label: 'Rapatriement en banque', hint: 'Après un tournoi du club, les inscriptions encaissées reviennent sur le compte bancaire.', panel: 'transfert', source: SELF, destination: MAIN_BANK, paymentKind: 'internal', descriptionTemplate: 'Rapatriement vers la banque' },
+    { key: 'topup', label: 'Recharge du porte-monnaie depuis la banque', hint: 'Le club alimente son porte-monnaie chez la plateforme. Hors résultat.', panel: 'transfert', source: MAIN_BANK, destination: SELF, paymentKind: 'internal', descriptionTemplate: 'Recharge du porte-monnaie' },
+    { key: 'withdraw', label: 'Rapatriement du porte-monnaie vers la banque', hint: 'Après un tournoi du club, les inscriptions encaissées reviennent sur le compte bancaire. Hors résultat.', panel: 'transfert', source: SELF, destination: MAIN_BANK, paymentKind: 'internal', descriptionTemplate: 'Rapatriement vers la banque' },
     { key: 'fee-in', label: 'Inscriptions encaissées (tournoi du club)', hint: 'Une recette, catégorie Tournois. Une écriture par tournoi suffit.', panel: 'recette', source: SELF, paymentKind: 'transfer', descriptionTemplate: 'Inscriptions tournoi ' },
-    { key: 'fee-out', label: 'Inscription payée ou commission', hint: "Une dépense : l'inscription d'une équipe, ou la commission prélevée par la plateforme.", panel: 'depense', source: SELF, paymentKind: 'transfer' }
+    { key: 'fee-out', label: "Inscription payée ou commission de la plateforme", hint: "Une dépense : l'inscription d'une équipe à un tournoi, ou la commission prélevée par la plateforme.", panel: 'depense', source: SELF, paymentKind: 'transfer' }
   ],
   /*
-   * Les bons et chèques tiers (Labaz, Pass'Sport, tickets loisir…) : le bon reçu est une
-   * recette à la date où l'adhérent paie ; le remboursement de l'organisme est un virement
-   * vers la banque, hors résultat ; la commission ou le bon refusé, une dépense. Le solde
-   * du compte est ce que l'organisme doit encore.
+   * Les bons et chèques tiers (Labaz, Pass'Sport, tickets loisir…) ne sont pas un
+   * porte-monnaie : le club n'y verse rien et ne paie rien avec. L'adhérent présente un code
+   * ou un QR code que le trésorier valide sur le site de l'organisme — ou remet un chèque
+   * papier — et l'organisme rembourse le club plus tard, en un virement pour un lot de
+   * paiements. Trois gestes, pas un de plus : le paiement validé est une recette à la date
+   * où l'adhérent paie, rattachée à lui ; le remboursement est un virement vers la banque,
+   * hors résultat ; la commission ou le paiement refusé, une dépense. Le solde du compte est
+   * ce que l'organisme doit encore.
    */
   voucher: [
-    { key: 'voucher-in', label: 'Bon reçu', hint: "Un adhérent règle en bons, papier ou électroniques : une recette à la date du paiement, catégorie de la cotisation ou de l'achat. Le remboursement par l'organisme viendra plus tard.", panel: 'recette', source: SELF, paymentKind: 'voucher' },
-    { key: 'voucher-refund', label: 'Remboursement reçu en banque', hint: "L'organisme a viré le remboursement des bons remis : le montant reçu passe sur le compte bancaire. Hors résultat.", panel: 'transfert', source: SELF, destination: MAIN_BANK, paymentKind: 'internal', descriptionTemplate: 'Remboursement ' },
-    { key: 'voucher-fee', label: 'Commission ou bon refusé', hint: "Ce que l'organisme retient (commission) ou n'a pas remboursé (bon refusé, périmé) : une dépense, catégorie Frais de fonctionnement.", panel: 'depense', source: SELF, paymentKind: 'voucher' }
+    { key: 'voucher-in', label: "Paiement d'un adhérent validé", hint: "Il a payé avec un code ou QR code (Labaz, Pass'Sport, ticket loisir…) que vous avez validé chez l'organisme, ou remis un chèque papier. Une recette à la date du paiement, catégorie de la cotisation ou de l'achat, rattachée à l'adhérent. Le remboursement viendra plus tard.", panel: 'recette', source: SELF, paymentKind: 'voucher' },
+    { key: 'voucher-refund', label: "Remboursement de l'organisme reçu en banque", hint: "L'organisme a viré au club le remboursement des paiements validés : le montant reçu passe sur le compte bancaire. Hors résultat.", panel: 'transfert', source: SELF, destination: MAIN_BANK, paymentKind: 'internal', descriptionTemplate: 'Remboursement ' },
+    { key: 'voucher-fee', label: 'Commission ou paiement refusé', hint: "Ce que l'organisme retient (commission) ou ne rembourse pas (code refusé, périmé) : une dépense, catégorie Frais de fonctionnement.", panel: 'depense', source: SELF, paymentKind: 'voucher' }
   ],
   third_party: [MEMBER_RECEIVED, MEMBER_REFUND],
   bank: [

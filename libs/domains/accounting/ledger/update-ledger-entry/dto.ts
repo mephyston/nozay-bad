@@ -9,4 +9,6 @@ export interface UpdateTransactionDTO {
   paymentMethod: string;
   description: string;
   reference?: string;
+  /** Adhésion rattachée ; `null` détache, absent laisse tel quel à la modification. */
+  memberId?: number | null;
 }

@@ -42,6 +42,7 @@
         mainAccountId={d.mainAccountId}
         activeAccounts={d.accounts}
         paymentMethods={d.paymentMethods}
+        members={d.members ?? []}
         searchQuery={d.searchQuery}
         month={d.month}
         limit={d.limit}

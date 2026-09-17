@@ -15,7 +15,11 @@ En dessous, l'historique des mouvements, filtrable par recherche libre sur le li
 
 ## Enregistrer un mouvement
 
-Le bouton **Nouveau** propose les trois gestes de la caisse : **Entrée d'espèces** (une recette, par exemple une vente à la buvette), **Sortie d'espèces** (une dépense, par exemple un achat de boissons) et **Dépôt en banque** (voir plus bas). Chacun ouvre le formulaire du grand livre avec le compte et le mode de règlement déjà choisis ; il reste le montant, la date, la catégorie et la description.
+Le bouton **Nouveau** propose les trois gestes de la caisse : **Espèces reçues** (une recette : une cotisation, une vente à la buvette, une inscription), **Dépense payée en espèces** (un achat de boissons, par exemple) et **Dépôt d'espèces en banque** (voir plus bas). Chacun ouvre le formulaire du grand livre avec le compte et le mode de règlement déjà choisis ; il reste le montant, la date, la catégorie et la description.
+
+Quand c'est un adhérent qui paie — une cotisation, une inscription —, choisissez-le dans le champ **Adhérent** : c'est ce rattachement qui fait apparaître le règlement sur sa fiche et dans son attestation. Une vente à la buvette reste une recette générale, sans adhérent. Le formulaire ne propose que les adhésions de l'exercice d'affectation : une cotisation de rentrée encaissée en août se rattache à l'adhésion de la saison qui commence, pas à celle de l'année écoulée.
+
+La caisse s'appelle comme vous voulez : son libellé se change dans *Paramètres → Comptes et moyens de paiement*. Si elle reçoit autre chose que les espèces de la buvette, « Caisse » suffit ; la buvette se distingue par sa **catégorie** de recette, pas par un compte.
 
 ## Déposer les espèces en banque
 

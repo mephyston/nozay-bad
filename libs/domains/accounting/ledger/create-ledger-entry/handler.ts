@@ -15,7 +15,8 @@ export async function createLedgerEntry(db: Db, body: CreateTransactionDTO & { a
     type: body.type,
     date: body.date,
     accrualType: body.accrualType,
-    accrualNote: body.accrualNote
+    accrualNote: body.accrualNote,
+    memberId: body.memberId
   });
 
   /*
@@ -56,6 +57,7 @@ export async function createLedgerEntry(db: Db, body: CreateTransactionDTO & { a
     reference: body.reference || null,
     accrualType: body.accrualType || 'normal',
     accrualNote: body.accrualNote || null,
+    memberId: body.memberId ?? null,
     /*
      * Le statut vient du mode de règlement, il n'est plus forcé à `cleared`.
      *

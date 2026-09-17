@@ -30,19 +30,21 @@ Pour un compte bancaire, le **numéro sur les relevés** est celui que la banque
 
 ### Suivre les bons et chèques tiers, dispositif par dispositif
 
-Un bon Labaz, un Pass'Sport ou un ticket loisir n'est pas de l'argent en banque : c'est une créance sur un organisme, remboursée des semaines plus tard, parfois amputée d'une commission ou d'un bon refusé. Pour savoir à tout moment ce qu'il reste à réclamer, donnez à chaque dispositif son compte :
+Un paiement Labaz, Pass'Sport ou ticket loisir n'est pas de l'argent en banque : l'adhérent présente un code ou un QR code que vous validez sur le site de l'organisme (ou vous remet un chèque papier), et l'organisme rembourse le club des semaines plus tard, en un virement pour un lot de paiements, parfois amputé d'une commission ou d'un paiement refusé. Ce n'est pas un porte-monnaie : le club n'y verse rien et ne paie rien avec. Pour savoir à tout moment ce qu'il reste à réclamer, donnez à chaque dispositif son compte :
 
 1. *Catégories et classes* → une classe de trésorerie **511 · Valeurs à l'encaissement** ;
-2. ici, un compte par dispositif (« Bons Labaz », « Pass'Sport », « Tickets loisir »), nature **Bons et chèques tiers**, classe 511 ;
-3. sur chaque moyen de paiement du dispositif, **compte crédité** = son compte, état de l'écriture **Encaissé aussitôt** (le bon est reçu ; c'est le remboursement qui est à venir).
+2. ici, un compte par dispositif (« Labaz », « Pass'Sport », « Tickets loisir »), nature **Bons et chèques tiers**, classe 511 ;
+3. sur chaque moyen de paiement du dispositif, **compte crédité** = son compte, état de l'écriture **Encaissé aussitôt** (le paiement est validé ; c'est le remboursement qui est à venir).
 
-L'écran du compte propose alors trois gestes, papier ou électronique :
+L'écran du compte propose alors trois gestes, et rien d'autre :
 
 | Ce qui se passe | Geste | Ce que l'application écrit |
 |---|---|---|
-| Un adhérent règle en bons | **Bon reçu** | Une recette à la date du paiement, sur le compte du dispositif |
-| L'organisme rembourse | **Remboursement reçu en banque** | Un virement du compte du dispositif vers la banque, du montant reçu — à pointer sur la ligne de relevé |
-| Commission, bon refusé ou périmé | **Commission ou bon refusé** | Une dépense sur le compte du dispositif |
+| Un adhérent paie par code, QR code ou chèque | **Paiement d'un adhérent validé** | Une recette à la date du paiement, sur le compte du dispositif, **rattachée à l'adhérent** |
+| L'organisme rembourse | **Remboursement de l'organisme reçu en banque** | Un virement du compte du dispositif vers la banque, du montant reçu — à pointer sur la ligne de relevé |
+| Commission, paiement refusé ou périmé | **Commission ou paiement refusé** | Une dépense sur le compte du dispositif |
+
+Rattachez chaque paiement à l'adhérent qui l'a fait, un paiement par écriture : c'est ce rattachement qui fait apparaître le règlement sur sa fiche et dans son attestation. Le remboursement de l'organisme, lui, ne concerne plus les adhérents — il arrive en bloc et ne se rattache à personne.
 
 Le **solde du compte** est ce que l'organisme doit encore. Nul en fin de saison, sinon vous savez quoi réclamer. Les recettes (cotisations, achats) restent constatées au jour où l'adhérent a payé, comme il se doit.
 

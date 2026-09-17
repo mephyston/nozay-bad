@@ -1,8 +1,9 @@
 <script lang="ts">
   import { AlertCircle } from '@lucide/svelte';
-  import { Button, Input, Sheet, Label, Alert, SearchableCombobox, FormField, toSeasonOptions } from '@nba/ui';
+  import { Button, Input, Sheet, Label, Alert, Combobox, SearchableCombobox, FormField, toSeasonOptions } from '@nba/ui';
   import type { Season, Category } from './ledger-types';
   import { toAccountOptions, type AccountLike } from '../../../shared/account-labels';
+  import { membersForSeason, toMemberItems, type MemberLike } from './member-options';
 
   let {
     open = $bindable(false),
@@ -20,9 +21,11 @@
     accrualType = $bindable('normal'),
     accrualNote = $bindable(''),
     targetSeasonId = $bindable(''),
+    memberId = $bindable(''),
     seasons = [],
     accounts = [],
     paymentMethods = [],
+    members = [],
     activeCategories = [],
     isSubmitting = $bindable(false),
     errorMsg = $bindable(''),
@@ -43,11 +46,18 @@
     accrualType: string;
     accrualNote: string;
     targetSeasonId: string;
+    /** L'adhésion rattachée à une recette ; vide = écriture générale. */
+    memberId?: string;
     seasons?: Season[];
     /** Les comptes de trésorerie, lus de la base : un sélecteur par compte, quel qu'en soit le nombre. */
     accounts?: AccountLike[];
     /** Les moyens de paiement actifs du club (configuration), `{ code, label }`. */
     paymentMethods?: { code: string; label: string }[];
+    /**
+     * L'annuaire des exercices ouverts, chaque adhésion marquée de son `seasonCode`. Sans lui,
+     * le champ ne s'affiche pas : les écrans qui ne le chargent pas n'y perdent rien.
+     */
+    members?: MemberLike[];
     activeCategories: { id: string; code: string; name: string }[];
     isSubmitting: boolean;
     errorMsg: string;
@@ -63,6 +73,26 @@
   const accountItems = $derived(toAccountOptions(accounts));
   const destinationItems = $derived(toAccountOptions(accounts.filter((a) => a.code !== formAccountId)));
   const paymentItems = $derived(paymentMethods.map((pm) => ({ label: pm.label, value: pm.code })));
+
+  /*
+   * L'adhérent, sur une recette seulement — c'est le règlement d'une cotisation, d'un tournoi,
+   * d'un achat, et c'est cette écriture que lisent la fiche de l'adhérent et l'attestation. Le
+   * champ manquait ici : une cotisation payée en espèces ou en bons Labaz n'apparaissait donc
+   * jamais comme réglée, seuls le rapprochement et les chèques savaient la rattacher.
+   *
+   * L'annuaire est celui de l'exercice d'affectation, et de lui seul : une adhésion appartient
+   * à un exercice, et le serveur refuse le couple dépareillé. Changer d'exercice écarte donc
+   * l'adhérent qui n'y appartient pas — en le disant, sinon on croirait à un bug.
+   */
+  const memberChoices = $derived(membersForSeason(members, seasons, targetSeasonId));
+  const memberItems = $derived(toMemberItems(memberChoices));
+  let memberDroppedBySeason = $state(false);
+  $effect(() => {
+    if (memberId && memberChoices.length > 0 && !memberChoices.some((m) => String(m.id) === memberId)) {
+      memberId = '';
+      memberDroppedBySeason = true;
+    }
+  });
   const accrualItems = $derived([
     { label: 'Normal (Même exercice comptable)', value: 'normal' },
     ...(showPanel === 'recette'
@@ -158,6 +188,31 @@
           <FormField id="payment-method-select" label="Moyen de paiement">
           <SearchableCombobox id="payment-method-select" items={paymentItems} bind:value={paymentMethod} />
         </FormField>
+      {/if}
+
+      <!-- Ligne 4 bis : l'adhérent qui paie -->
+      {#if showPanel === 'recette' && members.length > 0}
+        <div>
+          <Combobox
+            id="member-select"
+            label="Adhérent (optionnel)"
+            placeholder="Tapez pour rechercher un adhérent..."
+            bind:value={memberId}
+            items={memberItems}
+            allowClear={true}
+            clearLabel="Aucun adhérent (recette générale)"
+            onselect={() => (memberDroppedBySeason = false)}
+          />
+          {#if memberDroppedBySeason}
+            <p class="mt-1 text-xs text-warning">
+              L'adhérent choisi relevait d'un autre exercice : à choisir de nouveau dans celui-ci.
+            </p>
+          {:else}
+            <p class="mt-1 text-xs text-muted-foreground">
+              C'est ce rattachement qui fait apparaître le règlement sur sa fiche et son attestation.
+            </p>
+          {/if}
+        </div>
       {/if}
 
       <!-- Ligne Accrual (Régularisation) -->

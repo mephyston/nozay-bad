@@ -52,6 +52,53 @@ function saisonPrecedente(code: string): string {
   return `${String(a - 1).padStart(2, '0')}-${String(b - 1).padStart(2, '0')}`;
 }
 
+/** Le code d'un exercice tel que l'API le désigne, l'identifiant à défaut. */
+const codeDe = (x: any) => String(x.code || x.id);
+
+/**
+ * Les exercices dans lesquels on peut encore écrire : les non clôturés, plus le consulté.
+ *
+ * C'est la borne du rapprochement, de l'annuaire et des écritures pointables. Auto-limitante :
+ * clôturer un exercice le fait sortir, le coût de lecture ne grandit donc pas sans fin.
+ * `closedAt` et non `closed` : le référentiel rend la colonne telle quelle.
+ */
+function exercicesOuverts(seasons: any[], seasonId: string): string[] {
+  return Array.from(new Set([seasonId, ...seasons.filter((x) => !x.closedAt).map(codeDe)]));
+}
+
+/**
+ * L'annuaire des exercices ouverts, fondu en une liste où chaque adhésion porte SON code.
+ *
+ * `ledger_entries.member_id` désigne une adhésion, pas une personne : la même personne a un
+ * identifiant par exercice, et une écriture doit se rattacher à celle de SON exercice — celui
+ * de sa date, que le formulaire déduit, et non celui qu'on consulte. Une ligne d'août saisie
+ * depuis 26-27 vise 25-26 : il faut donc les deux annuaires, et un marqueur sur chacun. La
+ * convention précédente — pas de code valait « exercice consulté » — rendait une liste vide,
+ * sans un mot, dès que l'exercice visé n'était pas le consulté.
+ *
+ * Chargé pour le rapprochement, et depuis que le formulaire du grand livre rattache une
+ * recette à l'adhérent qui paie, pour le grand livre et l'écran d'un compte — c'est ainsi
+ * qu'une cotisation en espèces ou en bons compte pour son dossier.
+ */
+async function annuaireOuvert(lire: Lecteur, seasons: any[], seasonId: string): Promise<any[]> {
+  const annuaires = await Promise.all(
+    exercicesOuverts(seasons, seasonId).map(async (code) => ({
+      code,
+      membres: ((await lire(`/members?season=${encodeURIComponent(code)}&limit=500`)) ?? []) as any[]
+    }))
+  );
+  const membres: any[] = [];
+  const connus = new Set<unknown>();
+  for (const { code, membres: annuaire } of annuaires) {
+    for (const membre of annuaire) {
+      if (connus.has(membre.id)) continue;
+      connus.add(membre.id);
+      membres.push({ ...membre, seasonCode: code });
+    }
+  }
+  return membres;
+}
+
 /**
  * Rapport de repli, aux huit champs attendus.
  *
@@ -119,11 +166,12 @@ export const ECRANS: Record<string, Ecran> = {
       }
       if (params.get('unreconciledCheques') === 'true') requete.set('unreconciledCheques', 'true');
 
-      const [mouvements, rapport, categories, classes] = await Promise.all([
+      const [mouvements, rapport, categories, classes, membres] = await Promise.all([
         lire.detail(`/accounting/transactions?${requete}`),
         lire(`/accounting/seasons/${encodeURIComponent(saisonnier.seasonId)}/reports`),
         lire('/accounting/categories'),
-        lire('/accounting/account-classes')
+        lire('/accounting/account-classes'),
+        annuaireOuvert(lire, saisonnier.seasons, saisonnier.seasonId)
       ]);
 
       return {
@@ -138,6 +186,7 @@ export const ECRANS: Record<string, Ecran> = {
         mainAccountId: comptePrincipal,
         categories: categories ?? [],
         accountClasses: classes ?? [],
+        members: membres,
         unreconciledChequesOnly: params.get('unreconciledCheques') === 'true',
         accountId: compteDemande,
         searchQuery: params.get('search') || '',
@@ -363,24 +412,9 @@ export const ECRANS: Record<string, Ecran> = {
       const { seasons, seasonId } = saisonnier;
       const s = encodeURIComponent(seasonId);
 
-      /*
-        Les annuaires chargés : ceux de TOUS les exercices ouverts, et non plus « le consulté
-        et le suivant ».
-
-        Une adhésion appartient à un exercice, avec un identifiant différent d'une année sur
-        l'autre. Le formulaire déduit l'exercice de rattachement de la DATE de la ligne : une
-        ligne d'août rapprochée depuis 26-27 vise donc 25-26. On ne chargeait pas cet
-        annuaire-là — seulement le consulté et le suivant — et la liste des adhérents
-        s'affichait **vide**, sans rien dire, exactement quand on en avait besoin.
-
-        « Ouvert » est la même borne que pour l'archive, et c'est la bonne : on ne peut écrire
-        que dans un exercice non clôturé, donc on ne peut viser que ceux-là.
-      */
-      const codeDe = (x: any) => String(x.code || x.id);
-      const exercicesCibles = Array.from(new Set([
-        seasonId,
-        ...seasons.filter((x: any) => !x.closedAt).map(codeDe)
-      ]));
+      // Les écritures pointables et l'annuaire partagent la borne : on ne peut écrire que dans
+      // un exercice non clôturé, donc on ne peut viser que ceux-là (voir `annuaireOuvert`).
+      const exercicesCibles = exercicesOuverts(seasons, seasonId);
 
       /*
         L'intervalle de l'archive : tous les exercices non clôturés, plus celui qu'on consulte
@@ -397,7 +431,7 @@ export const ECRANS: Record<string, Ecran> = {
         fin: bornes.reduce((max: string, x: any) => (x.endDate > max ? x.endDate : max), bornes[0]?.endDate ?? '2999-12-31')
       };
 
-      const [enAttente, delExercice, listesEcritures, annuaires, categories, etats, comptes] = await Promise.all([
+      const [enAttente, delExercice, listesEcritures, membres, categories, etats, comptes] = await Promise.all([
         /*
           Les lignes encore à rapprocher, sans borne d'exercice : une ligne de relevé
           n'appartient à aucune saison, c'est un mouvement daté. Les borner à l'exercice
@@ -443,12 +477,7 @@ export const ECRANS: Record<string, Ecran> = {
             lire(`/accounting/transactions?season=${encodeURIComponent(code)}&page=1&limit=2000&runningBalance=0`)
           )
         ),
-        Promise.all(
-          exercicesCibles.map(async (code) => ({
-            code,
-            membres: (await lire(`/members?season=${encodeURIComponent(code)}&limit=500`)) ?? []
-          }))
-        ),
+        annuaireOuvert(lire, seasons, seasonId),
         lire('/accounting/categories'),
         /*
           L'état de rapprochement ne s'établit que pour les comptes dont un relevé a été
@@ -474,24 +503,6 @@ export const ECRANS: Record<string, Ecran> = {
           if (vues.has(ecriture.id)) continue;
           vues.add(ecriture.id);
           ecritures.push(ecriture);
-        }
-      }
-
-      /*
-        Chaque adhésion porte SON code d'exercice, sans exception.
-
-        La convention précédente — « pas de `seasonCode` » valait « exercice consulté » —
-        était muette et fausse dès que l'exercice visé n'était pas celui qu'on consultait :
-        le filtre cherchait alors un code que personne ne portait, et rendait une liste vide.
-        Un marqueur implicite ne se voit pas quand il manque.
-      */
-      const membres: any[] = [];
-      const connus = new Set<unknown>();
-      for (const { code, membres: annuaire } of annuaires as { code: string; membres: any[] }[]) {
-        for (const membre of annuaire) {
-          if (connus.has(membre.id)) continue;
-          connus.add(membre.id);
-          membres.push({ ...membre, seasonCode: code });
         }
       }
 
@@ -953,22 +964,19 @@ export const ECRANS: Record<string, Ecran> = {
         « en attente » sur 25-26 pendant que son crédit vivait sur 26-27. Même borne que
         l'archive du rapprochement : la clôture, seule chose qui ferme un exercice.
       */
-      const exercicesOuverts = Array.from(new Set([
-        saisonnier.seasonId,
-        ...saisonnier.seasons.filter((x: any) => !x.closedAt).map((x: any) => String(x.code || x.id))
-      ]));
       const lireAvances = () =>
         Promise.all(
-          exercicesOuverts.map((code) =>
+          exercicesOuverts(saisonnier.seasons, saisonnier.seasonId).map((code) =>
             lire(`/accounting/transactions?season=${encodeURIComponent(code)}&accountId=${encodeURIComponent(compteAttente.code)}&limit=200`)
           )
         ).then((listes) => listes.flatMap((l: any) => l ?? []));
 
-      const [soldes, mouvements, categories, avances] = await Promise.all([
+      const [soldes, mouvements, categories, avances, membres] = await Promise.all([
         lire(`/accounting/seasons/${s}/balances`),
         lire(`/accounting/transactions?season=${s}&accountId=${encodeURIComponent(codeCompte)}&limit=200`),
         lire('/accounting/categories'),
-        veutAvances && compteAttente ? lireAvances() : Promise.resolve(null)
+        veutAvances && compteAttente ? lireAvances() : Promise.resolve(null),
+        annuaireOuvert(lire, saisonnier.seasons, saisonnier.seasonId)
       ]);
 
       const solde = (soldes ?? []).find((b: any) => b.accountId === compte.code || b.accountId === compte.id);
@@ -983,6 +991,7 @@ export const ECRANS: Record<string, Ecran> = {
         transactions: ecritures,
         categories: categories ?? [],
         memberAdvanceEntries: veutAvances ? avances ?? [] : [],
+        members: membres,
         canWrite: can(locals, 'accounting:ledger:write'),
         canDelete: can(locals, 'accounting:ledger:delete')
       };

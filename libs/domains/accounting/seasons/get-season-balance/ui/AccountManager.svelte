@@ -8,6 +8,7 @@
   import TransactionFormSheet from '../../../ledger/list-ledger-entries/ui/TransactionFormSheet.svelte';
   import { submitTransaction, validateTransaction, deleteTransaction, type TransactionFormValues } from '../../../ledger/list-ledger-entries/ui/ledger-actions';
   import type { AccountLike } from '../../../shared/account-labels';
+  import type { MemberLike } from '../../../ledger/list-ledger-entries/ui/member-options';
   import { toast, submitForm, uiConfirm, flashAndReload, seasonForDate } from '@nba/ui';
 
   /**
@@ -25,6 +26,7 @@
     transactions = [],
     memberAdvanceEntries = [],
     paymentMethods = [],
+    members = [],
     seasonId,
     seasons = [],
     canWrite = true,
@@ -39,6 +41,8 @@
     memberAdvanceEntries?: AccountEntry[];
     /** Les moyens de paiement actifs du club, avec leur nature. */
     paymentMethods?: { code: string; label: string; kind: string }[];
+    /** L'annuaire des exercices ouverts, pour rattacher une recette à l'adhérent qui paie. */
+    members?: MemberLike[];
     seasonId: string;
     seasons?: Season[];
     canWrite?: boolean;
@@ -117,6 +121,7 @@
   let accrualType = $state('normal');
   let accrualNote = $state('');
   let targetSeasonId = $state('');
+  let memberId = $state('');
   let isSubmitting = $state(false);
   let errorMsg = $state('');
 
@@ -136,6 +141,7 @@
     accrualType = values.accrualType;
     accrualNote = values.accrualNote;
     targetSeasonId = values.targetSeasonId;
+    memberId = '';
     errorMsg = '';
     showPanel = values.showPanel;
   }
@@ -162,7 +168,7 @@
     errorMsg = '';
     const values: TransactionFormValues = {
       editingId: null, showPanel, amount, date, category, formAccountId, destinationAccountId,
-      destinationDate, paymentMethod, description, reference, accrualType, accrualNote, targetSeasonId
+      destinationDate, paymentMethod, description, reference, accrualType, accrualNote, targetSeasonId, memberId
     };
     await submitForm({
       validate: () => validateTransaction(values),
@@ -233,9 +239,11 @@
     bind:accrualType
     bind:accrualNote
     bind:targetSeasonId
+    bind:memberId
     seasons={seasons as any}
     {accounts}
     {paymentMethods}
+    {members}
     {activeCategories}
     bind:isSubmitting
     bind:errorMsg

@@ -225,6 +225,16 @@ describe('comptabilité — le grand livre', () => {
     expect(appel).not.toContain('category=');
     expect(appel).not.toContain('search=');
   });
+
+  /*
+    Le formulaire rattache une recette à l'adhérent qui paie ; sans annuaire, le champ ne
+    s'affiche pas, et une cotisation en espèces ne compte jamais pour son dossier. Même
+    annuaire qu'au rapprochement : les exercices ouverts, chaque adhésion marquée du sien.
+  */
+  it('porte l’annuaire des exercices ouverts, pour rattacher une recette à l’adhérent', async () => {
+    const d = await donnees(await lire('ledger', '?season=24-25'));
+    expect(d.members.map((m: any) => [m.id, m.seasonCode])).toEqual([[10, '24-25'], [11, '25-26']]);
+  });
 });
 
 describe('comptabilité — les soldes initiaux', () => {
@@ -278,6 +288,12 @@ describe('comptabilité — un compte sans relevé', () => {
     expect(avances.some((u) => u.includes('season=24-25'))).toBe(true);
     expect(avances.some((u) => u.includes('season=25-26'))).toBe(true);
     expect(Array.isArray(d.memberAdvanceEntries)).toBe(true);
+  });
+
+  it('porte l’annuaire des exercices ouverts : une cotisation en espèces ou en bons se rattache à qui paie', async () => {
+    const d = await donnees(await lire('account', '?account=cash'));
+    expect(d.members.every((m: any) => typeof m.seasonCode === 'string' && m.seasonCode)).toBe(true);
+    expect(d.members.map((m: any) => m.id)).toEqual([10, 11]);
   });
 
   it('refuse un compte inconnu ou un code mal formé', async () => {

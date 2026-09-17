@@ -102,6 +102,14 @@
           <Table.Cell class="hidden md:table-cell py-3 px-2 text-xs whitespace-nowrap">{tx.date}</Table.Cell>
           <Table.Cell class="py-3 px-2 font-medium">
             <div>{tx.description}</div>
+            {#if tx.memberName}
+              <a
+                href={tx.memberLicence ? `/admin/members/${tx.memberLicence}` : undefined}
+                class="inline-flex items-center px-1.5 py-0.5 rounded bg-primary/15 text-primary text-[10px] font-semibold hover:underline"
+              >
+                Adhérent : {tx.memberName}
+              </a>
+            {/if}
             {#if tx.type === 'transfert'}
               <Badge variant="primary-soft" size="xs" class="uppercase">
                 {tx.transferLeg === 'destination' ? 'depuis' : 'vers'} {accountLabelOf(accounts, tx.counterpartAccountId)}

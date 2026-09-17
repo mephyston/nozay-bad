@@ -26,6 +26,19 @@ export interface TransactionFormValues {
   accrualType: string;
   accrualNote: string;
   targetSeasonId: string;
+  /**
+   * L'adhésion rattachée, en chaîne comme le sélecteur la rend ; vide = écriture générale.
+   * Une recette seulement : c'est elle qui compte pour le dossier de l'adhérent et
+   * l'attestation. Une dépense ou un virement partent sans.
+   */
+  memberId?: string;
+}
+
+/** L'adhésion telle que l'API l'attend : un nombre, ou `null` pour une écriture générale. */
+function memberIdFor(params: TransactionFormValues): number | null {
+  if (params.showPanel !== 'recette' || !params.memberId) return null;
+  const id = Number(params.memberId);
+  return Number.isInteger(id) && id > 0 ? id : null;
 }
 
 export function validateTransaction(params: TransactionFormValues): string | null {
@@ -91,7 +104,8 @@ export async function submitTransaction(params: TransactionFormValues): Promise<
           description: params.description,
           reference: params.reference,
           accrualType: params.accrualType,
-          accrualNote: params.accrualNote
+          accrualNote: params.accrualNote,
+          memberId: memberIdFor(params)
         }
       }
     : {
@@ -106,7 +120,8 @@ export async function submitTransaction(params: TransactionFormValues): Promise<
         description: params.description,
         reference: params.reference,
         accrualType: params.accrualType,
-        accrualNote: params.accrualNote
+        accrualNote: params.accrualNote,
+        memberId: memberIdFor(params)
       };
 
   const res = await fetch(RELAIS, {

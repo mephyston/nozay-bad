@@ -23,7 +23,9 @@ export async function updateLedgerEntry(db: Db, id: number, body: UpdateTransact
     type: body.type,
     date: body.date,
     accrualType: body.accrualType,
-    accrualNote: body.accrualNote
+    accrualNote: body.accrualNote,
+    // Absent du corps, l'adhérent reste celui de l'écriture : c'est lui qu'on contrôle.
+    memberId: body.memberId === undefined ? existing.memberId : body.memberId
   });
 
   /*
@@ -74,6 +76,7 @@ export async function updateLedgerEntry(db: Db, id: number, body: UpdateTransact
     reference: body.reference || null,
     accrualType: body.accrualType || 'normal',
     accrualNote: body.accrualNote || null,
+    ...(body.memberId !== undefined ? { memberId: body.memberId } : {}),
     status
   });
 
