@@ -67,6 +67,7 @@
     "wrangler": "^4.129.0"
   },
   "overrides": {
+    "devalue": "^5.9.2",
     "postcss": {
       "nanoid": "^3.3.18"
     },
