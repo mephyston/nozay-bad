@@ -18,6 +18,12 @@
       "head_sampling_rate": 1
     }
   },
+  "routes": [
+    {
+      "pattern": "admin.nozaybad.fr",
+      "custom_domain": true
+    }
+  ],
   "vars": {
     "APP_ENV": "production"
   },
@@ -30,6 +36,12 @@
   "env": {
     "staging": {
       "name": "nba-admin-staging",
+      "routes": [
+        {
+          "pattern": "staging-admin.nozaybad.fr",
+          "custom_domain": true
+        }
+      ],
       "vars": {
         "APP_ENV": "staging"
       },

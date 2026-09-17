@@ -44,14 +44,13 @@ const ENVS = ['staging', 'production'];
  * Applications dont l'exposition (hostname → Worker) est déclarée dans le dépôt.
  *
  * Tout ce qui n'y figure pas reste attaché à la main dans le tableau de bord
- * Cloudflare : le déploiement ne crée rien et ne vérifie rien. `admin` et
- * `storefront` rejoindront la liste une fois observé un cycle complet sur le site
- * public — un `wrangler deploy` qui retrouve le domaine déjà attaché au même Worker
- * est un no-op, mais c'est sur `website` qu'on veut le constater d'abord. `api` n'y
- * entrera jamais : elle n'a volontairement aucun domaine et n'est joignable que par
- * service binding.
+ * Cloudflare : le déploiement ne crée rien et ne vérifie rien. Les trois applications
+ * Astro y sont depuis que le cycle complet a été observé sur le site public — un
+ * `wrangler deploy` qui retrouve le domaine déjà attaché au même Worker est un no-op.
+ * `api` n'y entrera jamais : elle n'a volontairement aucun domaine et n'est joignable
+ * que par service binding.
  */
-const ROUTED_APPS = new Set(['website']);
+const ROUTED_APPS = new Set(APPS);
 
 /**
  * Clés qu'un bloc `env.<nom>` a le droit de redéfinir. Toute autre clé rencontrée

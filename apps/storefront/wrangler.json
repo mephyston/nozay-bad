@@ -24,6 +24,12 @@
       "id": "281c9992dd914501a709ef8f03fe2ab8"
     }
   ],
+  "routes": [
+    {
+      "pattern": "my.nozaybad.fr",
+      "custom_domain": true
+    }
+  ],
   "vars": {
     "EMAIL_FROM": "Nozay Badminton Association <tresorier@nozaybad.fr>",
     "EMAIL_MODE": "live",
@@ -40,6 +46,12 @@
   "env": {
     "staging": {
       "name": "nba-storefront-staging",
+      "routes": [
+        {
+          "pattern": "staging-my.nozaybad.fr",
+          "custom_domain": true
+        }
+      ],
       "vars": {
         "EMAIL_FROM": "Nozay Badminton Association <tresorier@nozaybad.fr>",
         "EMAIL_MODE": "allowlist",
