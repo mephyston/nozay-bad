@@ -41,6 +41,19 @@ const APPS = ['storefront', 'website', 'admin'];
 const ENVS = ['staging', 'production'];
 
 /**
+ * Applications dont l'exposition (hostname → Worker) est déclarée dans le dépôt.
+ *
+ * Tout ce qui n'y figure pas reste attaché à la main dans le tableau de bord
+ * Cloudflare : le déploiement ne crée rien et ne vérifie rien. `admin` et
+ * `storefront` rejoindront la liste une fois observé un cycle complet sur le site
+ * public — un `wrangler deploy` qui retrouve le domaine déjà attaché au même Worker
+ * est un no-op, mais c'est sur `website` qu'on veut le constater d'abord. `api` n'y
+ * entrera jamais : elle n'a volontairement aucun domaine et n'est joignable que par
+ * service binding.
+ */
+const ROUTED_APPS = new Set(['website']);
+
+/**
  * Clés qu'un bloc `env.<nom>` a le droit de redéfinir. Toute autre clé rencontrée
  * lève : le jour où un binding Queues ou Durable Object est ajouté à un bloc, on veut
  * que la CI le signale plutôt que de le perdre en silence au déploiement.
@@ -138,6 +151,22 @@ function applyEnvBlock(cfg, block, { app, env }) {
 }
 
 /**
+ * Écrit l'exposition depuis le dépôt plutôt que depuis la configuration générée.
+ *
+ * L'adaptateur Astro recopie la racine du `wrangler.json` source dans
+ * `dist/server/wrangler.json`, mais rien ne le contractualise : le jour où il
+ * cesserait de recopier `routes`, le déploiement retirerait silencieusement ses
+ * domaines au Worker. On réécrit donc la clé dans les deux environnements — et on la
+ * **supprime** quand la source n'en déclare pas, pour qu'une application encore
+ * attachée à la main ne se voie pas imposer une exposition venue d'ailleurs.
+ */
+function applyRoutes(cfg, source, { env }) {
+  const routes = env === 'production' ? source.routes : source.env?.[env]?.routes;
+  if (routes) cfg.routes = structuredClone(routes);
+  else delete cfg.routes;
+}
+
+/**
  * Garde-fous sur la configuration résolue. Un déploiement qui pointe la mauvaise base
  * ou le mauvais compartiment ne se voit pas dans les logs : il se voit en production.
  */
@@ -149,6 +178,28 @@ function assertResolved(cfg, { app, env }) {
   }
   for (const kv of cfg.kv_namespaces ?? []) {
     if (!kv.id) fail(`${app}/${env} : KV « ${kv.binding} » sans identifiant.`);
+  }
+
+  if (ROUTED_APPS.has(app) && !cfg.routes?.length) {
+    fail(
+      `${app}/${env} : aucune route résolue alors que l'exposition est déclarée dans ` +
+        `le dépôt. Déployer ainsi détacherait le Worker de ses domaines.`
+    );
+  }
+  for (const route of cfg.routes ?? []) {
+    if (!route.custom_domain) {
+      fail(
+        `${app}/${env} : « ${route.pattern} » n'est pas un Custom Domain. Le dépôt ne ` +
+          `déclare que des Custom Domains, où le Worker est l'origine ; une Worker Route ` +
+          `suppose une origine derrière — c'est le montage de transition qu'on a quitté.`
+      );
+    }
+    if (!/^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/.test(route.pattern)) {
+      fail(
+        `${app}/${env} : « ${route.pattern} » n'est pas un hostname nu — un Custom ` +
+          `Domain n'accepte ni chemin, ni joker.`
+      );
+    }
   }
 
   if (env === 'staging') {
@@ -169,6 +220,11 @@ function assertResolved(cfg, { app, env }) {
         fail(`staging : base D1 de production (${db.database_name}).`);
       }
     }
+    for (const route of cfg.routes ?? []) {
+      if (!route.pattern.startsWith('staging-')) {
+        fail(`staging : domaine de production (${route.pattern}).`);
+      }
+    }
     // Anti-envoi aux adhérents : la configuration générée aplatit EMAIL_MODE=live.
     if (cfg.vars?.EMAIL_MODE === 'live') {
       fail(`staging : EMAIL_MODE=live enverrait de vrais courriels aux adhérents.`);
@@ -184,7 +240,8 @@ function assertResolved(cfg, { app, env }) {
       kv_namespaces: cfg.kv_namespaces,
       r2_buckets: cfg.r2_buckets,
       d1_databases: cfg.d1_databases,
-      vars: cfg.vars
+      vars: cfg.vars,
+      routes: cfg.routes
     });
     if (/staging/i.test(surface)) {
       fail(`production : valeur de préproduction dans la configuration résolue.\n${surface}`);
@@ -200,7 +257,8 @@ function summarize(cfg) {
     kv_namespaces: cfg.kv_namespaces,
     r2_buckets: cfg.r2_buckets,
     d1_databases: cfg.d1_databases,
-    vars: cfg.vars
+    vars: cfg.vars,
+    routes: cfg.routes
   };
 }
 
@@ -241,6 +299,39 @@ function runCheck() {
     const envVars = Object.keys(staging.vars ?? {}).sort();
     if (JSON.stringify(rootVars) !== JSON.stringify(envVars)) {
       console.error(`✗ ${app} : vars — racine [${rootVars}] ≠ env.staging [${envVars}].`);
+      failures += 1;
+    }
+
+    // Les motifs diffèrent par nature d'un environnement à l'autre : on ne compare pas
+    // les valeurs, on vérifie que l'exposition est déclarée des deux côtés et qu'aucun
+    // domaine ne traverse la frontière.
+    const rootRoutes = source.routes ?? [];
+    const stagingRoutes = staging.routes ?? [];
+    if (ROUTED_APPS.has(app)) {
+      if (rootRoutes.length === 0 || stagingRoutes.length === 0) {
+        console.error(
+          `✗ ${app} : routes — racine [${rootRoutes.length}] / env.staging ` +
+            `[${stagingRoutes.length}] : l'exposition doit être déclarée des deux côtés.`
+        );
+        failures += 1;
+      }
+      for (const route of stagingRoutes) {
+        if (!route.pattern.startsWith('staging-')) {
+          console.error(`✗ ${app} : env.staging déclare « ${route.pattern} », un domaine de production.`);
+          failures += 1;
+        }
+      }
+      for (const route of rootRoutes) {
+        if (route.pattern.includes('staging')) {
+          console.error(`✗ ${app} : la racine déclare « ${route.pattern} », un domaine de préproduction.`);
+          failures += 1;
+        }
+      }
+    } else if (rootRoutes.length || stagingRoutes.length) {
+      console.error(
+        `✗ ${app} : des routes sont déclarées alors que l'application ne figure pas ` +
+          `dans ROUTED_APPS — ajoutez-l'y, ou retirez la clé.`
+      );
       failures += 1;
     }
   }
@@ -289,6 +380,8 @@ function main() {
     }
     applyEnvBlock(cfg, block, { app, env });
   }
+
+  applyRoutes(cfg, source, { env });
 
   assertResolved(cfg, { app, env });
 

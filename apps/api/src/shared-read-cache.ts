@@ -55,7 +55,7 @@ const CACHED_READS = new Map<string, number>([
   ['/teams/players', 300]
 ]);
 
-/** Hôte fictif des clés, comme `cache.nozaybad.fr` côté site public. */
+/** Hôte fictif des clés, comme `cache.local` côté site public — aucun DNS derrière. */
 const CACHE_HOST = 'https://api-cache.local';
 
 /** Sous-ensemble de l'API Cache réellement utilisé — ce qu'un test doit fournir. */

@@ -18,6 +18,16 @@
       "head_sampling_rate": 1
     }
   },
+  "routes": [
+    {
+      "pattern": "nozaybad.fr",
+      "custom_domain": true
+    },
+    {
+      "pattern": "www.nozaybad.fr",
+      "custom_domain": true
+    }
+  ],
   "vars": {
     "SITE_URL": "https://nozaybad.fr",
     "APP_ENV": "production"
@@ -31,6 +41,12 @@
   "env": {
     "staging": {
       "name": "nba-website-staging",
+      "routes": [
+        {
+          "pattern": "staging-www.nozaybad.fr",
+          "custom_domain": true
+        }
+      ],
       "vars": {
         "SITE_URL": "https://staging-www.nozaybad.fr",
         "APP_ENV": "staging"
