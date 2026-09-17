@@ -74,6 +74,15 @@ serait ouvrir une surface d'attaque et une seconde porte d'entrée à authentifi
 | `my.nozaybad.fr` | `nba-storefront` | espace adhérent |
 | `admin.nozaybad.fr` | `nba-admin` | administration, derrière Cloudflare Access |
 | `staging-www` / `staging-my` / `staging-admin` | Workers `-staging` | préproduction, `noindex` + `robots.txt` fermé |
+| `anti-bot.nozaybad.fr` | `nba-anti-bot` | **hors dépôt et inutilisé** — voir ci-dessous |
+
+`anti-bot.nozaybad.fr` est le Worker de vérification Turnstile déposé par l'assistant
+d'installation. Il n'a jamais servi : le storefront vérifie le jeton lui-même, en
+appelant `challenges.cloudflare.com/turnstile/v0/siteverify` avec son propre
+`TURNSTILE_SECRET_KEY` (`apps/storefront/src/lib/turnstile.ts`), et l'override
+`PUBLIC_TURNSTILE_SITEVERIFY_URL` n'est émis par aucun build. C'est donc une surface
+publique qui détient un secret et que rien n'appelle : à supprimer, Worker et Custom
+Domain compris.
 
 Le 301 vers l'hôte canonique n'énumère aucun de ces noms : `apps/website/src/middleware.ts`
 redirige *tout* hôte différent de `new URL(SITE_URL).hostname`. Attacher un nouvel alias

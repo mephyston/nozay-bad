@@ -1,9 +1,11 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { mount, flushSync } from 'svelte';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { mount, unmount, flushSync } from 'svelte';
 import ImportResultDialog from './ImportResultDialog.svelte';
 
 const navigate = vi.hoisted(() => vi.fn());
 vi.mock('astro:transitions/client', () => ({ navigate }));
+
+const montes: unknown[] = [];
 
 /*
  * Le dialogue est rendu dans un portail : on lit `document.body`, pas la cible de montage.
@@ -11,7 +13,7 @@ vi.mock('astro:transitions/client', () => ({ navigate }));
 function mounted(props: Record<string, unknown>) {
   const target = document.createElement('div');
   document.body.appendChild(target);
-  mount(ImportResultDialog, { target, props: { open: true, ...props } });
+  montes.push(mount(ImportResultDialog, { target, props: { open: true, ...props } }));
   flushSync();
   return () => document.body.querySelector('[data-import-result]');
 }
@@ -20,6 +22,18 @@ describe('ImportResultDialog', () => {
   beforeEach(() => {
     document.body.innerHTML = '';
     navigate.mockClear();
+  });
+
+  // Un dialogue ouvert verrouille le défilement du corps ; bits-ui ne rend son style
+  // d'origine que 24 ms après la libération du verrou (`scheduleCleanupIfNoNewLocks`).
+  // Sans démontage ni attente, ce minuteur se réveille une fois jsdom démonté et lève
+  // « document is not defined » — une erreur non rattrapée qui fait échouer toute la
+  // suite alors que les tests, eux, passent. Vue seulement sur machine lente : la CI
+  // l'a rencontrée deux fois quand le pre-push local ne la voyait jamais.
+  afterEach(async () => {
+    for (const instance of montes.splice(0)) await unmount(instance as never);
+    flushSync();
+    await new Promise((resolve) => setTimeout(resolve, 50));
   });
 
   it("en succès, « Continuer » mène là où le résultat se lit", () => {
