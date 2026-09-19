@@ -163,5 +163,5 @@ const frenchDate = (iso: string) =>
     )}
   </main>
 
-  <MobileNav features={Astro.locals.club?.features ?? {}} currentPath="/equipes" />
+  <MobileNav client:idle features={Astro.locals.club?.features ?? {}} currentPath="/equipes" />
 </Layout>

@@ -27,5 +27,5 @@ import PushPreferences from '../components/PushPreferences.svelte';
     </div>
   </main>
 
-  <MobileNav features={Astro.locals.club?.features ?? {}} currentPath="/notifications" />
+  <MobileNav client:idle features={Astro.locals.club?.features ?? {}} currentPath="/notifications" />
 </Layout>

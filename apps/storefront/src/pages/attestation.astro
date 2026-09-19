@@ -136,7 +136,7 @@ const showPdf = Boolean(selected && attestable(selected));
     </div>
   </main>
 
-  <MobileNav features={Astro.locals.club?.features ?? {}} currentPath="/attestation" />
+  <MobileNav client:idle features={Astro.locals.club?.features ?? {}} currentPath="/attestation" />
 
   <style is:global>
     /* Mobile seulement : hauteur de l'écran, sans défilement du document ni rebond

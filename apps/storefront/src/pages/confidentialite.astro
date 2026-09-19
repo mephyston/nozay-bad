@@ -135,7 +135,7 @@ const session = Astro.locals.session;
     </div>
   </main>
 
-  {session && <MobileNav features={Astro.locals.club?.features ?? {}} currentPath="/confidentialite" />}
+  {session && <MobileNav client:idle features={Astro.locals.club?.features ?? {}} currentPath="/confidentialite" />}
 
   <script is:inline>
     // Assemble l'email côté client : l'adresse n'apparaît pas dans le HTML statique

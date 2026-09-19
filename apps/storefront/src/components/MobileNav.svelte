@@ -10,6 +10,17 @@
    */
   let { currentPath = '', features = {} }: { currentPath?: string; features?: Partial<Record<string, boolean>> } = $props();
 
+  /*
+    La lentille : un seul surlignage, qui glisse d'un onglet à l'autre.
+
+    Comme la barre d'onglets d'iOS 26, où la sélection est une pastille de verre qui
+    se déplace, et non un fond qui s'allume ici et s'éteint là. Elle part dès le
+    toucher, avant que la page n'arrive : c'est ce qui donne l'impression que la barre
+    répond au doigt, même quand la navigation prend son temps. La page suivante rend sa
+    barre avec la lentille déjà en place : le geste se termine là où il l'avait laissée.
+  */
+  let pressed = $state<number | null>(null);
+
   // Cinq cases, la limite de ce qu'une barre d'onglets supporte avant que les
   // libellés ne deviennent illisibles.
   //
@@ -31,6 +42,13 @@
     { href: '/boutique', label: 'Boutique', icon: ShoppingCart, feature: 'shop' },
     { href: '/equipes', label: 'Mon club', icon: ShuttlecockIcon, feature: 'teams' }
   ].filter((item) => !item.feature || features[item.feature] !== false);
+
+  // La fiche d'équipe et l'écran de composition descendent d'« Équipes » :
+  // l'onglet reste mis en évidence tant qu'on est dans cette branche.
+  const isActive = (href: string) => currentPath === href || (href !== '/' && currentPath.startsWith(`${href}/`));
+  const activeIndex = $derived(items.findIndex((item) => isActive(item.href)));
+  /** Où est la lentille : sur l'onglet touché s'il y en a un, sinon sur la page courante. */
+  const lensIndex = $derived(pressed ?? activeIndex);
 </script>
 
 <!--
@@ -46,16 +64,22 @@
   aria-label="Navigation principale"
   data-mobile-nav
 >
-  {#each items as item (item.href)}
+  {#if lensIndex >= 0}
+    <span
+      class="nav-lens pointer-events-none absolute inset-y-1 left-1 rounded-[1.25rem] bg-primary/12"
+      style="width: calc((100% - 0.5rem) / {items.length}); transform: translateX({lensIndex * 100}%)"
+      aria-hidden="true"
+    ></span>
+  {/if}
+  {#each items as item, i (item.href)}
     {@const Icon = item.icon}
-    <!-- La fiche d'équipe et l'écran de composition descendent d'« Équipes » :
-         l'onglet reste mis en évidence tant qu'on est dans cette branche. -->
-    {@const active = currentPath === item.href || (item.href !== '/' && currentPath.startsWith(`${item.href}/`))}
+    {@const active = isActive(item.href)}
     <a
       href={item.href}
       aria-current={active ? 'page' : undefined}
-      class={`nav-item flex flex-col items-center justify-center flex-1 min-w-0 my-1 py-1.5 gap-0.5 min-h-[48px] rounded-[1.25rem] transition-colors decoration-transparent ${
-        active ? 'text-primary bg-primary/12' : 'text-muted-foreground hover:text-foreground'
+      onclick={() => (pressed = i)}
+      class={`nav-item relative flex flex-col items-center justify-center flex-1 min-w-0 my-1 py-1.5 gap-0.5 min-h-[48px] rounded-[1.25rem] transition-colors decoration-transparent ${
+        lensIndex === i ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
       }`}
     >
       <Icon class="w-6 h-6 shrink-0" />
@@ -78,6 +102,10 @@
     transition: opacity 160ms ease, max-height 200ms ease;
     max-height: 1.25rem;
   }
+  /* Un ressort léger : la lentille dépasse un peu sa cible et s'y pose, comme sur iOS. */
+  .nav-lens {
+    transition: transform 380ms cubic-bezier(0.34, 1.4, 0.64, 1);
+  }
   .nav-pill.is-compact {
     transform: scale(0.82);
   }
@@ -90,7 +118,8 @@
   }
   @media (prefers-reduced-motion: reduce) {
     .nav-pill,
-    .nav-label {
+    .nav-label,
+    .nav-lens {
       transition: none;
     }
   }
