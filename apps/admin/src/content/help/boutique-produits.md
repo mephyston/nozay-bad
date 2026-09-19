@@ -12,11 +12,26 @@ order: 1
 | Champ | Détail |
 |---|---|
 | **Nom** | Le libellé vu par l'adhérent |
-| **Catégorie** | La famille du produit : Volants, Cordages, ou Autre. Elle n'est plus modifiable après création |
+| **Catégorie** | La famille du produit, parmi celles réglées dans [Catégories de produits](/admin/help/categories-produits). Elle se modifie à tout moment |
+| **Description** | Facultative : une ligne lue sous le nom, sur la carte de la boutique (matière, contenu du tube, délai…) |
+| **Image** | Facultative : PNG, JPEG ou WebP, réduite automatiquement. C'est elle qui illustre la carte dans la boutique |
 | **Prix** | En euros |
 | **Gérer le stock** | À cocher pour suivre une quantité ; sinon l'article reste toujours disponible |
 | **Quantité en stock** | Visible uniquement si le suivi de stock est activé |
-| **Produit actif** | Un produit inactif disparaît du catalogue des adhérents |
+| **Produit actif** | Un produit inactif disparaît du catalogue des adhérents, avec toutes ses déclinaisons |
+
+## Les déclinaisons
+
+Un produit qui existe en plusieurs tailles, couleurs ou contenances se crée **une fois**, puis se décline : chaque déclinaison a son libellé (« L », « 12 ans », « Rouge »), son prix, son stock et sa disponibilité. Nom, catégorie, description et image sont ceux du produit et se modifient sur sa fiche.
+
+- Depuis la liste, **⋯ → Ajouter une déclinaison** sur le produit ouvre une fiche déjà rattachée.
+- Un produit existant se rattache à un autre par le champ **Déclinaison de** de sa fiche ; le laisser sur « Aucun » le détache.
+- Dans la boutique, la famille tient sur **une carte** ; l'adhérent y choisit sa déclinaison avant de commander.
+- Un produit qui a des déclinaisons **ne se commande pas lui-même** : ce sont elles qui portent le prix.
+
+## Supprimer un produit
+
+Un produit — ou une déclinaison — **jamais commandé** se supprime depuis **⋯ → Supprimer**. Dès qu'une commande le référence, la suppression n'est plus proposée : les commandes passées et la comptabilité y renvoient. Désactivez-le à la place ; il reste dans l'historique mais disparaît de la boutique.
 
 ## Le stock
 

@@ -3,7 +3,7 @@
   import { Button, Alert, Sheet, Input, FormField } from '@nba/ui';
   import type { Member, Product } from '../../list-products/ui/catalog-types';
   import { formatMemberName } from '../../list-products/ui/catalog-utils';
-  import { isOutOfStock, type PaymentMethodOption } from '../../list-products/ui/catalog-types';
+  import { isOutOfStock, productLabel, type PaymentMethodOption } from '../../list-products/ui/catalog-types';
   import { handleMemberKeyDown } from '../../list-products/ui/catalog-order-action';
   import ShopCatalogProductSelect from '../../list-products/ui/ShopCatalogProductSelect.svelte';
   import ShopCatalogSummary from '../../list-products/ui/ShopCatalogSummary.svelte';
@@ -50,9 +50,9 @@
   let blockingReason = $derived.by(() => {
     if (!selectedMemberId) return "Sélectionnez l'adhérent pour lequel commander.";
     if (!selectedProduct) return 'Sélectionnez un article pour continuer.';
-    if (isOutOfStock(selectedProduct)) return `« ${selectedProduct.name} » est en rupture de stock.`;
+    if (isOutOfStock(selectedProduct)) return `« ${productLabel(selectedProduct)} » est en rupture de stock.`;
     if (selectedProduct.trackStock && selectedQuantity > selectedProduct.stock) {
-      return `Stock insuffisant : il ne reste que ${selectedProduct.stock} « ${selectedProduct.name} ».`;
+      return `Stock insuffisant : il ne reste que ${selectedProduct.stock} « ${productLabel(selectedProduct)} ».`;
     }
     return null;
   });

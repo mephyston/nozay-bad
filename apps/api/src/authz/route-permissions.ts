@@ -190,6 +190,10 @@ export const ROUTE_PERMISSIONS: RouteRule[] = [
   { method: 'GET', path: '/shop/products', permission: 'shop:products:read', service: true, feature: 'shop' },
   { method: 'POST', path: '/shop/products', permission: 'shop:products:write', feature: 'shop' },
   { method: 'PUT', path: '/shop/products/:id', permission: 'shop:products:write', feature: 'shop' },
+  // Supprimer un produit jamais commandé, et l'illustrer : même geste de gestion du catalogue.
+  { method: 'DELETE', path: '/shop/products/:id', permission: 'shop:products:write', feature: 'shop' },
+  { method: 'POST', path: '/shop/products/:id/image', permission: 'shop:products:write', feature: 'shop' },
+  { method: 'DELETE', path: '/shop/products/:id/image', permission: 'shop:products:write', feature: 'shop' },
   { method: 'GET', path: '/shop/product-categories', permission: 'shop:products:read', service: true, feature: 'shop' },
   { method: 'POST', path: '/shop/product-categories', permission: 'shop:categories:write', feature: 'shop' },
   { method: 'PUT', path: '/shop/product-categories/:id', permission: 'shop:categories:write', feature: 'shop' },

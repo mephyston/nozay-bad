@@ -408,6 +408,57 @@ describe('OpenAPI Spec Generator', () => {
                 }
               }
             }
+          },
+          delete: {
+            summary: 'Delete a product that was never ordered and has no variants',
+            tags: ['Shop'],
+            parameters: [
+              { name: 'id', in: 'path', required: true, schema: { type: 'integer' } }
+            ],
+            responses: {
+              200: { description: 'Product deleted' },
+              409: { description: 'Product is referenced by orders or has variants' }
+            }
+          }
+        },
+        '/shop/products/{id}/image': {
+          post: {
+            summary: 'Upload or replace the product image (multipart field `file`)',
+            tags: ['Shop'],
+            parameters: [
+              { name: 'id', in: 'path', required: true, schema: { type: 'integer' } }
+            ],
+            requestBody: {
+              required: true,
+              content: {
+                'multipart/form-data': {
+                  schema: Type.Object({ file: Type.String({ format: 'binary' }) })
+                }
+              }
+            },
+            responses: {
+              200: {
+                description: 'Stored image key',
+                content: {
+                  'application/json': {
+                    schema: Type.Object({
+                      success: Type.Boolean(),
+                      data: Type.Object({ imageKey: Type.String() })
+                    })
+                  }
+                }
+              }
+            }
+          },
+          delete: {
+            summary: 'Remove the product image',
+            tags: ['Shop'],
+            parameters: [
+              { name: 'id', in: 'path', required: true, schema: { type: 'integer' } }
+            ],
+            responses: {
+              200: { description: 'Image removed' }
+            }
           }
         },
         '/shop/orders': {

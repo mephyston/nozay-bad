@@ -1,6 +1,7 @@
 import { type Db } from '@nba/db';
 import { ListOrdersRepository } from './repository';
 import { ListOrdersInput, ListOrdersOutput } from "./dto";
+import { productDisplayName } from '../shared/product';
 
 export async function listOrders(db: Db, filters: ListOrdersInput): Promise<ListOrdersOutput> {
   const repo = new ListOrdersRepository();
@@ -21,6 +22,8 @@ export async function listOrders(db: Db, filters: ListOrdersInput): Promise<List
     p.id,
     {
       ...p,
+      // Une commande se lit avec la taille : « Maillot du club — L », jamais le nom seul.
+      name: productDisplayName(p),
       price: p.priceCents ?? (p as any).price ?? 0,
       priceCents: p.priceCents ?? (p as any).price ?? 0
     }

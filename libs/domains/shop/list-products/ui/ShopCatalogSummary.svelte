@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Amount } from '@nba/ui';
-  import type { Product, Member } from './catalog-types';
+  import { productLabel, type Product } from './catalog-types';
 
   let {
     selectedProduct,
@@ -15,7 +15,7 @@
   <div class="bg-muted/30 border border-border rounded-xl p-4 space-y-2">
     <div class="flex justify-between items-center text-sm font-semibold text-muted-foreground">
       <span>Article sélectionné :</span>
-      <span class="text-foreground">{selectedProduct ? selectedProduct.name : '—'}</span>
+      <span class="text-foreground">{selectedProduct ? productLabel(selectedProduct) : '—'}</span>
     </div>
     <div class="flex justify-between items-center pt-2 border-t border-border/50">
       <span class="text-base font-bold text-foreground">Montant total :</span>

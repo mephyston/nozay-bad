@@ -98,8 +98,14 @@ export interface Ecran {
   ) => Promise<Record<string, unknown>>;
   /** Écritures acceptées, par nom d'action. Une action absente d'ici est refusée. */
   ecritures?: Record<string, Ecriture>;
-  /** Dépôt de fichier, qui arrive en multipart et n'a donc pas de nom d'action. */
-  depot?: { permission: Permission; chemin: string };
+  /**
+   * Dépôt de fichier, qui arrive en multipart et n'a donc pas de nom d'action.
+   *
+   * Le chemin peut se construire d'après les champs du formulaire — l'identifiant de
+   * l'objet illustré, typiquement — ; la fonction lève `Refus` pour rejeter un champ
+   * mal formé, comme la `route` d'une écriture.
+   */
+  depot?: { permission: Permission; chemin: string | ((form: FormData) => string) };
   /**
    * Appelé après une écriture ou un dépôt qui a réussi.
    *
@@ -188,10 +194,15 @@ export function creerRelais(ECRANS: Record<string, Ecran>): { GET: APIRoute; POS
     if ((request.headers.get('content-type') ?? '').includes('multipart/form-data')) {
       if (!ecran.depot) return json({ error: 'Cet écran ne reçoit pas de fichier.' }, 400);
       if (!can(locals, ecran.depot.permission)) return json({ error: 'Accès refusé' }, 403);
-      const res = await api.fetch(`http://localhost${ecran.depot.chemin}`, {
-        method: 'POST',
-        body: await request.formData()
-      });
+      const form = await request.formData();
+      let chemin: string;
+      try {
+        chemin = typeof ecran.depot.chemin === 'function' ? ecran.depot.chemin(form) : ecran.depot.chemin;
+      } catch (e) {
+        if (e instanceof Refus) return json({ error: e.message }, 400);
+        throw e;
+      }
+      const res = await api.fetch(`http://localhost${chemin}`, { method: 'POST', body: form });
       if (res.ok) ecran.apres?.();
       return relayer(res);
     }

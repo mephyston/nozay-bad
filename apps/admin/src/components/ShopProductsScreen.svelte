@@ -12,7 +12,7 @@
 <div class="mt-6">
   <EcranDistant domaine="shop" ecran="products" variante="liste">
     {#snippet pret(d)}
-      <ProductsManager category="all" products={d.products} />
+      <ProductsManager products={d.products} productCategories={d.productCategories} mediaOrigin={d.mediaOrigin} canWrite={d.canWrite} />
     {/snippet}
   </EcranDistant>
 </div>

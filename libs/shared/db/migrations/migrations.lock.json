@@ -39,6 +39,7 @@
     "0035_schedule_slots_indiv.sql": "5be4b006538e1d71",
     "0036_checks_planned_deposit_month.sql": "28614a248cb44304",
     "0037_club_settings.sql": "5323a6fea90f6778",
-    "0038_accounts_and_payment_methods.sql": "10cc5e8203e0b78e"
+    "0038_accounts_and_payment_methods.sql": "10cc5e8203e0b78e",
+    "0039_product_variants_and_images.sql": "7c233aa19005fa5e"
   }
 }

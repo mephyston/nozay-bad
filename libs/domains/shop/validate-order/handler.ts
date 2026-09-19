@@ -1,4 +1,5 @@
 import { type Db } from '@nba/db';
+import { productDisplayName } from '../shared/product';
 import { ValidateOrderRepository } from './repository';
 import { Order } from '../shared/order';
 import {
@@ -51,7 +52,7 @@ export async function validateOrder(db: Db, id: ValidateOrderInput): Promise<Val
 
   // Le stock a pu fondre depuis la demande : on revérifie au moment de le réserver.
   if (product.trackStock && product.stock < order.quantity) {
-    throw new InsufficientStockError(product.name);
+    throw new InsufficientStockError(productDisplayName(product));
   }
 
   // Phase 2 : Décision (en mémoire)
@@ -72,7 +73,7 @@ export async function validateOrder(db: Db, id: ValidateOrderInput): Promise<Val
 
   await notifyContacts(db, await getContactEmailsForMember(db, order.memberId), {
     title: 'Commande en attente de paiement',
-    body: `Votre commande ${product.name} ×${order.quantity} est validée. Il reste ${eur(order.totalAmountCents)} € à régler.`,
+    body: `Votre commande ${productDisplayName(product)} ×${order.quantity} est validée. Il reste ${eur(order.totalAmountCents)} € à régler.`,
     url: '/mon-compte',
     source: 'order:awaiting-payment',
     category: 'order'

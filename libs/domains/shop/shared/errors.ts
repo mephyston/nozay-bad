@@ -70,3 +70,45 @@ export class MemberNotEligibleError extends AppError {
     this.name = 'MemberNotEligibleError';
   }
 }
+
+export class ParentProductNotFoundError extends AppError {
+  constructor(message = 'Produit parent inexistant') {
+    super(message, 400);
+    this.name = 'ParentProductNotFoundError';
+  }
+}
+
+export class VariantNestingError extends AppError {
+  constructor(message = 'Une déclinaison ne peut pas se décliner elle-même : choisissez son produit parent.') {
+    super(message, 400);
+    this.name = 'VariantNestingError';
+  }
+}
+
+export class VariantLabelRequiredError extends AppError {
+  constructor(message = 'Une déclinaison a besoin d’un libellé (taille, couleur…).') {
+    super(message, 400);
+    this.name = 'VariantLabelRequiredError';
+  }
+}
+
+export class ProductHasVariantsError extends AppError {
+  constructor(message = 'Ce produit a des déclinaisons : retirez-les d’abord.') {
+    super(message, 409);
+    this.name = 'ProductHasVariantsError';
+  }
+}
+
+export class ProductHasOrdersError extends AppError {
+  constructor(message = 'Ce produit a été commandé : il ne peut plus être supprimé, désactivez-le plutôt.') {
+    super(message, 409);
+    this.name = 'ProductHasOrdersError';
+  }
+}
+
+export class VariantImageError extends AppError {
+  constructor(message = 'L’image se dépose sur le produit, pas sur sa déclinaison.') {
+    super(message, 400);
+    this.name = 'VariantImageError';
+  }
+}

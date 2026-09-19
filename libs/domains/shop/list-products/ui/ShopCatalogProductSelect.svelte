@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Button, Input, Badge, SearchableCombobox, FormField } from '@nba/ui';
   import type { Product } from './catalog-types';
-  import { categoriesList, type PaymentMethodOption } from './catalog-types';
+  import { isOrderable, productLabel, type PaymentMethodOption } from './catalog-types';
 
   let {
     selectedPaymentMethod = $bindable(''),
@@ -31,16 +31,18 @@
     onDecrementQty: () => void;
   } = $props();
 
-  // Un seul combobox produit : tous les produits, triés par type puis nom, avec le
-  // type préfixé dans le libellé (« Volants · … ») pour les regrouper visuellement.
+  // Un seul combobox produit : tous les articles commandables — un parent qui a des
+  // déclinaisons n'en fait pas partie, ce sont elles qu'on commande —, dans l'ordre
+  // rendu par l'API (famille puis déclinaisons), la catégorie préfixée dans le libellé
+  // (« Volants · … ») pour les regrouper visuellement.
   const productItems = $derived(
-    [...filteredProducts]
-      .sort((a, b) => (a.productCategoryId - b.productCategoryId) || a.name.localeCompare(b.name))
+    filteredProducts
+      .filter(isOrderable)
       .map((p) => {
-        const type = categoriesList.find((c) => c.value === p.productCategoryId)?.label;
+        const type = p.categoryLabel;
         const price = new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format((p.priceCents ?? (p as any).price ?? 0) / 100);
         const stock = p.trackStock ? ` (${p.stock > 0 ? `Stock: ${p.stock}` : 'Rupture'})` : '';
-        return { label: `${type ? `${type} · ` : ''}${p.name} — ${price} €${stock}`, value: p.id };
+        return { label: `${type ? `${type} · ` : ''}${productLabel(p)} — ${price} €${stock}`, value: p.id };
       })
   );
 </script>

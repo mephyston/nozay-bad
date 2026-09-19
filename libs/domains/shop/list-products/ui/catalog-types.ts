@@ -8,13 +8,36 @@ export interface Member {
 export interface Product {
   id: number;
   name: string;
+  /** « Maillot du club — L » pour une déclinaison, le nom seul sinon. Rendu par l'API. */
+  displayName?: string;
   productCategoryId: number;
+  categoryLabel?: string;
   priceCents: number;
   /** Stock restant. Uniquement significatif quand `trackStock` est vrai. */
   stock: number;
   /** Quand c'est faux, le stock n'est pas suivi : l'article reste commandable. */
   trackStock?: boolean;
   active: boolean;
+  /** Produit dont celui-ci est une déclinaison (taille, couleur…). */
+  parentId?: number | null;
+  variantLabel?: string | null;
+  /** Nombre de déclinaisons rattachées : un produit qui en a ne se commande pas lui-même. */
+  variantCount?: number;
+  description?: string | null;
+  /** Clé de la médiathèque, servie par le site public sous `/media/…`. */
+  imageKey?: string | null;
+}
+
+/** Le nom qu'un humain lit, même quand l'API n'a pas composé `displayName`. */
+export function productLabel(product: Pick<Product, 'name' | 'displayName' | 'variantLabel'>): string {
+  if (product.displayName) return product.displayName;
+  const label = product.variantLabel?.trim();
+  return label ? `${product.name} — ${label}` : product.name;
+}
+
+/** Ce qui se commande : tout sauf un parent qui délègue à ses déclinaisons. */
+export function isOrderable(product: Pick<Product, 'variantCount'>): boolean {
+  return !(product.variantCount && product.variantCount > 0);
 }
 
 /** Un article n'est indisponible que si son stock est suivi et épuisé. */
@@ -41,13 +64,6 @@ export interface PaymentMethodOption {
   label: string;
   kind: 'transfer' | 'cheque' | 'cash' | 'card' | 'voucher' | 'internal';
 }
-
-export const categoriesList = [
-  { value: 0, label: 'Toutes les catégories' },
-  { value: 1, label: 'Volants' },
-  { value: 2, label: 'Cordages' },
-  { value: 3, label: 'Textile & Accessoires' }
-];
 
 /**
  * Ce qu'une commande enregistrée rappelle à son auteur.

@@ -134,56 +134,61 @@ export const ECRANS: Record<string, Ecran> = {
   products: {
     feature: 'shop',
     permission: 'shop:products:read',
-    charger: async (lire, locals) => ({
-      products: (await lire('/shop/products')) ?? [],
-      canWrite: can(locals, 'shop:products:write')
-    }),
+    charger: async (lire, locals) => {
+      const [products, categories] = await Promise.all([lire('/shop/products'), lire('/shop/product-categories')]);
+      return {
+        products: products ?? [],
+        // Les catégories du club, actives : plus de liste écrite dans le formulaire.
+        productCategories: (categories ?? []).filter((c: any) => c.active !== false),
+        // Les images sont servies par le site public, jamais par l'administration.
+        mediaOrigin: ORIGINE_MEDIAS,
+        canWrite: can(locals, 'shop:products:write')
+      };
+    },
+    /*
+      Le corps est transmis tel quel, l'API le valide : le relais n'a pas à connaître la
+      liste des champs d'un produit, et une déclinaison en envoie d'autres qu'un parent.
+    */
     ecritures: {
       create: {
         permission: 'shop:products:write',
-        route: (data) => ({
-          chemin: '/shop/products',
-          method: 'POST',
-          body: {
-            name: data.name,
-            productCategoryId: categorie(data.category),
-            priceCents: data.priceCents ?? data.price,
-            stock: data.stock,
-            trackStock: data.trackStock,
-            active: data.active
-          }
-        })
+        route: (data) => ({ chemin: '/shop/products', method: 'POST', body: corps(data) })
       },
       update: {
         permission: 'shop:products:write',
         route: (data) => ({
           chemin: `/shop/products/${identifiant(data.id, 'de produit')}`,
           method: 'PUT',
-          body: {
-            name: data.name,
-            priceCents: data.priceCents ?? data.price,
-            stock: data.stock,
-            trackStock: data.trackStock,
-            active: data.active
-          }
+          body: corps(data)
         })
+      },
+      delete: {
+        permission: 'shop:products:write',
+        route: (data) => ({ chemin: `/shop/products/${identifiant(data.id, 'de produit')}`, method: 'DELETE' })
+      },
+      remove_image: {
+        permission: 'shop:products:write',
+        route: (data) => ({ chemin: `/shop/products/${identifiant(data.id, 'de produit')}/image`, method: 'DELETE' })
       }
+    },
+    /** L'image d'un produit : `id` dans le formulaire, à côté du fichier. */
+    depot: {
+      permission: 'shop:products:write',
+      chemin: (form) => `/shop/products/${identifiant(form.get('id'), 'de produit')}/image`
     }
   }
 };
 
-/**
- * Catégorie de produit, telle que l'API l'attend.
- *
- * Le formulaire envoie tantôt un identifiant, tantôt un nom hérité de l'ancienne
- * boutique. La correspondance vivait dans la page ; elle est reprise telle quelle plutôt
- * que « nettoyée », le jour où l'on changera ces identifiants n'étant pas celui-ci.
- */
-function categorie(valeur: unknown): number {
-  if (typeof valeur === 'number') return valeur;
-  if (valeur === 'shuttlecock') return 1;
-  if (valeur === 'string') return 2;
-  return 3;
+/*
+  L'origine du site public, qui sert les images : inlinée au build, comme dans
+  `media-url.ts` (voir la note qui y explique la forme d'accès).
+*/
+const ORIGINE_MEDIAS = (import.meta.env.PUBLIC_WEBSITE_URL as string | undefined) ?? '';
+
+/** Le corps d'un produit, sans l'action ni l'identifiant qui vivent dans l'URL. */
+function corps(data: any) {
+  const { action: _action, id: _id, ...body } = data;
+  return body;
 }
 
 export const { GET, POST } = creerRelais(ECRANS);

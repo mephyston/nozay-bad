@@ -1,4 +1,5 @@
 import { type Db, AppError } from '@nba/db';
+import { productDisplayName } from '../shared/product';
 import { PayOrderRepository } from './repository';
 import { Order } from '../shared/order';
 import {
@@ -84,7 +85,7 @@ export async function payOrder(db: Db, input: PayOrderInput): Promise<PayOrderOu
     throw new ShopCategoryNotConfiguredError(productCategory?.label);
   }
 
-  const description = `Achat boutique - ${member.lastName} ${member.firstName} - ${product.name} x${order.quantity}`;
+  const description = `Achat boutique - ${member.lastName} ${member.firstName} - ${productDisplayName(product)} x${order.quantity}`;
 
   // Phase 2 : Décision (en mémoire)
   const stmt1 = repo.buildRecetteTransactionStatement(db, {
@@ -113,7 +114,7 @@ export async function payOrder(db: Db, input: PayOrderInput): Promise<PayOrderOu
 
   await notifyContacts(db, await getContactEmailsForMember(db, member.id), {
     title: 'Commande payée',
-    body: `Le règlement de votre commande ${product.name} ×${order.quantity} est enregistré. Merci !`,
+    body: `Le règlement de votre commande ${productDisplayName(product)} ×${order.quantity} est enregistré. Merci !`,
     url: '/mon-compte',
     source: 'order:paid',
     category: 'order'

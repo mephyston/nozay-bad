@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, index, type AnySQLiteColumn } from 'drizzle-orm/sqlite-core';
 
 
 export const productCategoriesTable = sqliteTable('product_categories', {
@@ -19,8 +19,20 @@ export const productsTable = sqliteTable('products', {
   stock: integer('stock').notNull().default(0),
   trackStock: integer('track_stock', { mode: 'boolean' }).notNull().default(false),
   active: integer('active', { mode: 'boolean' }).notNull().default(true),
+  /*
+    Une déclinaison est un produit rattaché à un parent et distingué par un libellé
+    (« L », « 12 ans »). Elle garde son prix, son stock et son état — c'est elle que la
+    commande référence. Le parent porte le nom, la catégorie, la description et l'image ;
+    `name` et `product_category_id` lui sont recopiés sur chaque déclinaison, pour que
+    tout ce qui lit un produit par son identifiant continue d'y trouver un nom.
+  */
+  parentId: integer('parent_id').references((): AnySQLiteColumn => productsTable.id),
+  variantLabel: text('variant_label'),
+  description: text('description'),
+  /** Clé de la médiathèque (`media/<empreinte>/<fichier>`), servie par le site public. */
+  imageKey: text('image_key'),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
-});
+}, (table) => [index('products_parent_id_idx').on(table.parentId)]);
 
 export const ordersTable = sqliteTable('orders', {
   id: integer('id').primaryKey({ autoIncrement: true }),

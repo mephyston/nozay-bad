@@ -3,10 +3,11 @@ import Layout from '../layouts/Layout.astro';
 import Header from '../components/Header.astro';
 import MobileNav from '../components/MobileNav.svelte';
 import { ErrorAlert } from '@nba/ui';
-import { ShopCatalog } from '@nba/shop-ui';
+import { ShopStorefront } from '@nba/shop-ui';
 import { env } from 'cloudflare:workers';
 import { createApiClient } from '@nba/api-client';
 import { listSeasons, displaySeason, type Season } from '../lib/season';
+import { websiteOrigin } from '../lib/media';
 
 const apiService = createApiClient(env);
 
@@ -103,14 +104,14 @@ const activeSeasonId = displaySeason(seasons, session?.seasonCode)?.code ?? '';
       </div>
     )}
 
-    <ShopCatalog
+    <ShopStorefront
       client:load
       products={products}
       members={members}
       activeSeasonId={activeSeasonId}
-      lockToMembers={true}
       initialMemberId={initialMemberId}
       historyHref="/mon-compte#commandes"
+      mediaOrigin={websiteOrigin}
       {paymentMethods}
       bankDetails={{
         holder: Astro.locals.club?.settings.bankHolder ?? '',

@@ -8,8 +8,11 @@ Le domaine **Shop** gère le catalogue des produits (volants, maillots, cordages
 
 | Terme Métier | Définition & Contexte | Type / Exemple |
 |---|---|---|
-| **Produit** | Article en vente dans la boutique du club (ex: Boîte de volants, Maillot officiel). | `Entity` (`id`, `name`, `category`, `price`, `stock`) |
-| **Catégorie Produit** | Famille d'articles (Volants, Cordages, Textiles, Accessoires). | `Enum` / `string` |
+| **Produit** | Article en vente dans la boutique du club (ex: Boîte de volants, Maillot officiel). Porte le nom, la catégorie, la description et l'image. | `Entity` (`id`, `name`, `productCategoryId`, `priceCents`, `stock`, `description`, `imageKey`) |
+| **Déclinaison** | Produit rattaché à un parent (`parentId`) et distingué par un libellé (« L », « 12 ans »). Garde son prix, son stock et son état ; hérite nom et catégorie. C'est elle que la commande référence. Un seul niveau. | `Entity` (`parentId`, `variantLabel`) |
+| **Famille** | Un produit et ses déclinaisons, tels que la vitrine les affiche : une carte. Un produit qui a des déclinaisons ne se commande pas lui-même. | `Value Object` (vitrine) |
+| **Image de produit** | Clé de la médiathèque (`media/<empreinte>/<fichier>`), réduite au dépôt, servie par le site public sous `/media/…`. Portée par le produit, jamais par une déclinaison. | `string` (`imageKey`) |
+| **Catégorie Produit** | Famille d'articles réglée par le club (Volants, Cordages, Textiles…), rattachée à une catégorie comptable. Modifiable sur un produit à tout moment. | `Entity` (`product_categories`) |
 | **Commande** | Ensemble d'articles réservés ou achetés par un adhérent. | `Aggregate` (`id`, `memberId`, `totalAmount`, `status`) |
 | **Ligne de Commande** | Quantité et prix unitaire d'un produit donné au sein d'une commande. | `Value Object` (`productId`, `quantity`, `unitPrice`) |
 | **Statut de Commande** | État du cycle de vie de la commande : `created` (créée), `awaiting_payment` (en attente de paiement), `paid` (payée), `rejected` (refusée), `cancelled` (annulée). | `Enum` |
@@ -26,3 +29,4 @@ Le domaine **Shop** gère le catalogue des produits (volants, maillots, cordages
 - [RF-SHO-001 : Passage et Validation de Commande](./rules/RF-SHO-001-passer-commande.md)
 - [RF-SHO-002 : Gestion du Stock et Alertes Réassort](./rules/RF-SHO-002-gestion-stock.md)
 - [RF-SHO-003 : Cycle de vie et Paiement d'une Commande](./rules/RF-SHO-003-workflow-paiement-commande.md)
+- [RF-SHO-004 : Déclinaisons, image et suppression d'un produit](./rules/RF-SHO-004-declinaisons-et-suppression-produit.md)
