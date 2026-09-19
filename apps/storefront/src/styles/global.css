@@ -80,7 +80,7 @@
   page recopiait — et qui ne tenait pas compte de l'indicateur home des iPhone.
 */
 @utility pb-nav {
-  padding-bottom: calc(4.75rem + env(safe-area-inset-bottom, 0px) + 0.75rem);
+  padding-bottom: calc(4.25rem + env(safe-area-inset-bottom, 0px) + 0.5rem);
 }
 
 @theme {

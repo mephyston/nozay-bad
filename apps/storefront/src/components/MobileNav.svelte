@@ -41,11 +41,17 @@
   Deux replis : un moteur sans `backdrop-filter` reçoit une barre opaque, et le réglage
   d'accessibilité « Réduire la transparence » du système aussi — le respecter, c'est ne
   pas contredire ce que l'utilisateur a demandé à son téléphone.
+
+  Au défilement vers le bas, la barre se rétracte — plus petite, sans libellés — et
+  revient dès qu'on remonte : le contenu reprend la place. C'est `Layout.astro` qui
+  pose la classe `is-compact` (un script sans hydratation, la barre est rendue côté
+  serveur) ; le composant ne connaît que les deux états.
 -->
 <nav
   class="glass-nav md:hidden fixed inset-x-3 z-50 flex items-center justify-around rounded-[1.75rem] px-1"
-  style="bottom: calc(env(safe-area-inset-bottom, 0px) + 0.75rem)"
+  style="bottom: calc(env(safe-area-inset-bottom, 0px) + 0.5rem)"
   aria-label="Navigation principale"
+  data-mobile-nav
 >
   {#each items as item (item.href)}
     {@const Icon = item.icon}
@@ -55,12 +61,12 @@
     <a
       href={item.href}
       aria-current={active ? 'page' : undefined}
-      class={`flex flex-col items-center justify-center flex-1 min-w-0 my-1.5 py-1.5 gap-0.5 min-h-[52px] rounded-[1.25rem] transition-colors decoration-transparent ${
+      class={`nav-item flex flex-col items-center justify-center flex-1 min-w-0 my-1 py-1.5 gap-0.5 min-h-[48px] rounded-[1.25rem] transition-colors decoration-transparent ${
         active ? 'text-primary bg-primary/12' : 'text-muted-foreground hover:text-foreground'
       }`}
     >
-      <Icon class="w-6 h-6" />
-      <span class="text-[11px] font-medium truncate max-w-full px-1">{item.label}</span>
+      <Icon class="w-6 h-6 shrink-0" />
+      <span class="nav-label text-[11px] font-medium truncate max-w-full px-1">{item.label}</span>
     </a>
   {/each}
 </nav>
@@ -87,6 +93,35 @@
   @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
     .glass-nav {
       background: var(--card);
+    }
+  }
+  /*
+    Rétractation : la barre rétrécit depuis le bas et perd ses libellés. `transform`
+    plutôt que la hauteur, pour ne rien recalculer dans la page et ne pas peser dans
+    le CLS ; les libellés s'effacent en largeur nulle pour que la pastille se resserre.
+  */
+  .glass-nav {
+    transform-origin: 50% 100%;
+    transition: transform 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .nav-label {
+    transition: opacity 160ms ease, max-height 200ms ease;
+    max-height: 1.25rem;
+  }
+  .glass-nav.is-compact {
+    transform: scale(0.82);
+  }
+  .glass-nav.is-compact .nav-item {
+    min-height: 40px;
+  }
+  .glass-nav.is-compact .nav-label {
+    opacity: 0;
+    max-height: 0;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .glass-nav,
+    .nav-label {
+      transition: none;
     }
   }
   @media (prefers-reduced-transparency: reduce) {
