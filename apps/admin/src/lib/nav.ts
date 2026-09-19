@@ -15,6 +15,12 @@ export interface NavItem {
    * même source que les droits : une entrée visible mène toujours à une page ouverte.
    */
   feature?: Feature;
+  /**
+   * Mots que la recherche du menu reconnaît en plus du nom : ce qu'on tape quand on
+   * ne connaît pas l'intitulé (« virement » pour le rapprochement, « adhésion » pour la
+   * liste des adhérents). Sans accents ni majuscules, la recherche les neutralise.
+   */
+  keywords?: string[];
 }
 
 export interface NavGroup {
@@ -48,38 +54,38 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: '',
     items: [
-      { name: 'Tableau de bord', icon: 'LayoutDashboard', href: '/', permission: 'dashboard:overview:read' }
+      { name: 'Tableau de bord', icon: 'LayoutDashboard', href: '/', permission: 'dashboard:overview:read', keywords: ['accueil', 'dashboard', 'synthese'] }
     ]
   },
   {
     label: 'Adhérents',
     items: [
-      { name: 'Liste des adhérents', icon: 'Users', href: '/admin/members', permission: 'members:members:read' },
-      { name: 'Dirigeants', icon: 'Landmark', href: '/admin/members/dirigeants', permission: 'members:members:read' }
+      { name: 'Liste des adhérents', icon: 'Users', href: '/admin/members', permission: 'members:members:read', keywords: ['adhesion', 'licence', 'membres', 'inscription', 'import', 'poona'] },
+      { name: 'Dirigeants', icon: 'Landmark', href: '/admin/members/dirigeants', permission: 'members:members:read', keywords: ['bureau', 'president', 'tresorier', 'secretaire', 'fonctions'] }
     ]
   },
   {
     label: 'Comptabilité',
     items: [
-      { name: 'Rapports financiers', icon: 'BarChart3', href: '/admin/accounting/reports', permission: 'accounting:reports:read', feature: 'accounting' },
-      { name: 'Grand Livre', icon: 'BookOpen', href: '/admin/accounting', permission: 'accounting:ledger:read', feature: 'accounting' },
-      { name: 'Factures', icon: 'FileCheck', href: '/admin/accounting/invoices', permission: 'accounting:invoices:read', feature: 'invoices' },
-      { name: 'Rapprochement bancaire', icon: 'Scale', href: '/admin/accounting/reconciliation', permission: 'accounting:bank:read', feature: 'accounting' },
-      { name: 'Remises de chèques', icon: 'Landmark', href: '/admin/accounting/cheques', permission: 'accounting:checks:read', feature: 'checks' },
+      { name: 'Rapports financiers', icon: 'BarChart3', href: '/admin/accounting/reports', permission: 'accounting:reports:read', feature: 'accounting', keywords: ['bilan', 'budget', 'resultat', 'assemblee', 'ag', 'exercice', 'saison'] },
+      { name: 'Grand Livre', icon: 'BookOpen', href: '/admin/accounting', permission: 'accounting:ledger:read', feature: 'accounting', keywords: ['ecritures', 'comptabilite', 'mouvements', 'depenses', 'recettes', 'categories'] },
+      { name: 'Factures', icon: 'FileCheck', href: '/admin/accounting/invoices', permission: 'accounting:invoices:read', feature: 'invoices', keywords: ['facturation', 'devis', 'avoir', 'client'] },
+      { name: 'Rapprochement bancaire', icon: 'Scale', href: '/admin/accounting/reconciliation', permission: 'accounting:bank:read', feature: 'accounting', keywords: ['banque', 'releve', 'virement', 'ofx', 'pointage', 'compte courant', 'livret'] },
+      { name: 'Remises de chèques', icon: 'Landmark', href: '/admin/accounting/cheques', permission: 'accounting:checks:read', feature: 'checks', keywords: ['cheque', 'depot', 'bordereau', 'remise'] },
       /*
         Les caisses et porte-monnaie du club ne sont pas listés ici : ce sont des comptes,
         réglés dans l'administration, et le menu en tire une entrée chacun à cette place
         (`menuAccountItems`, ci-dessous). `page-permissions` connaît leur page par son motif.
       */
-      { name: 'Notes de frais', icon: 'Coins', href: '/admin/expenses', permission: 'expenses:reports:read', feature: 'expenses' }
+      { name: 'Notes de frais', icon: 'Coins', href: '/admin/expenses', permission: 'expenses:reports:read', feature: 'expenses', keywords: ['remboursement', 'depense', 'frais', 'benevole'] }
     ]
   },
   {
     label: 'Boutique',
     feature: 'shop',
     items: [
-      { name: 'Produits', icon: 'Package', href: '/admin/shop/products', permission: 'shop:products:read' },
-      { name: 'Commandes', icon: 'ShoppingCart', href: '/admin/shop/orders', permission: 'shop:orders:read' }
+      { name: 'Produits', icon: 'Package', href: '/admin/shop/products', permission: 'shop:products:read', keywords: ['boutique', 'catalogue', 'article', 'volants', 'cordage', 'maillot', 'stock', 'prix', 'declinaison', 'image'] },
+      { name: 'Commandes', icon: 'ShoppingCart', href: '/admin/shop/orders', permission: 'shop:orders:read', keywords: ['boutique', 'commande', 'achat', 'validation', 'paiement', 'encaissement'] }
     ]
   },
   {
@@ -87,10 +93,10 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       // En tête de la communication, et non sous « Site public » : depuis l'absorption
       // des annonces, une actualité s'adresse aussi bien aux adhérents qu'aux visiteurs.
-      { name: 'Actualités', icon: 'Newspaper', href: '/admin/website/posts', permission: 'cms:posts:read' },
-      { name: 'Notifications', icon: 'Bell', href: '/admin/notifications', permission: 'notifications:messages:read', feature: 'push' },
-      { name: 'Créneaux', icon: 'CalendarClock', href: '/admin/website/schedules', permission: 'schedules:slots:read', feature: 'schedules' },
-      { name: 'Agenda', icon: 'CalendarDays', href: '/admin/website/events', permission: 'events:events:read', feature: 'events' }
+      { name: 'Actualités', icon: 'Newspaper', href: '/admin/website/posts', permission: 'cms:posts:read', keywords: ['article', 'news', 'annonce', 'publication', 'blog'] },
+      { name: 'Notifications', icon: 'Bell', href: '/admin/notifications', permission: 'notifications:messages:read', feature: 'push', keywords: ['push', 'message', 'envoi', 'alerte', 'rappel'] },
+      { name: 'Créneaux', icon: 'CalendarClock', href: '/admin/website/schedules', permission: 'schedules:slots:read', feature: 'schedules', keywords: ['horaires', 'gymnase', 'entrainement', 'planning', 'seances'] },
+      { name: 'Agenda', icon: 'CalendarDays', href: '/admin/website/events', permission: 'events:events:read', feature: 'events', keywords: ['evenement', 'calendrier', 'tournoi', 'date', 'soiree'] }
     ]
   },
   {
@@ -101,8 +107,8 @@ export const NAV_GROUPS: NavGroup[] = [
     feature: 'open_play',
     beta: true,
     items: [
-      { name: 'Séances', icon: 'DoorOpen', href: '/admin/website/jeu-libre', permission: 'schedules:open-play:read' },
-      { name: 'Ouvreurs', icon: 'KeyRound', href: '/admin/website/jeu-libre/ouvreurs', permission: 'schedules:open-play:read' }
+      { name: 'Séances', icon: 'DoorOpen', href: '/admin/website/jeu-libre', permission: 'schedules:open-play:read', keywords: ['jeu libre', 'ouverture', 'gymnase', 'inscription'] },
+      { name: 'Ouvreurs', icon: 'KeyRound', href: '/admin/website/jeu-libre/ouvreurs', permission: 'schedules:open-play:read', keywords: ['jeu libre', 'cle', 'responsable', 'ouverture'] }
     ]
   },
   {
@@ -112,7 +118,7 @@ export const NAV_GROUPS: NavGroup[] = [
     feature: 'indiv',
     beta: true,
     items: [
-      { name: 'Indiv', icon: 'Dumbbell', href: '/admin/entrainement/indiv', permission: 'schedules:indiv:read' }
+      { name: 'Indiv', icon: 'Dumbbell', href: '/admin/entrainement/indiv', permission: 'schedules:indiv:read', keywords: ['individuel', 'entrainement', 'coach', 'seance', 'competiteur'] }
     ]
   },
   {
@@ -120,33 +126,33 @@ export const NAV_GROUPS: NavGroup[] = [
     feature: 'teams',
     beta: true,
     items: [
-      { name: 'Équipes', icon: 'Trophy', href: '/admin/teams', permission: 'teams:teams:read' },
-      { name: 'Contrôle des journées', icon: 'ShieldCheck', href: '/admin/teams/journees', permission: 'teams:lineups:read' },
-      { name: 'Classements', icon: 'ChartNoAxesColumn', href: '/admin/teams/classements', permission: 'teams:rankings:read' },
-      { name: 'Règlements', icon: 'FileText', href: '/admin/teams/reglements', permission: 'teams:rankings:read' }
+      { name: 'Équipes', icon: 'Trophy', href: '/admin/teams', permission: 'teams:teams:read', keywords: ['interclubs', 'championnat', 'equipe', 'capitaine', 'joueurs'] },
+      { name: 'Contrôle des journées', icon: 'ShieldCheck', href: '/admin/teams/journees', permission: 'teams:lineups:read', keywords: ['interclubs', 'journee', 'composition', 'feuille de match', 'controle'] },
+      { name: 'Classements', icon: 'ChartNoAxesColumn', href: '/admin/teams/classements', permission: 'teams:rankings:read', keywords: ['interclubs', 'elo', 'poona', 'classement', 'import'] },
+      { name: 'Règlements', icon: 'FileText', href: '/admin/teams/reglements', permission: 'teams:rankings:read', keywords: ['interclubs', 'regles', 'reglement', 'ffbad'] }
     ]
   },
   {
     label: 'Site public',
     feature: 'website',
     items: [
-      { name: 'Pages', icon: 'FileText', href: '/admin/website/pages', permission: 'cms:pages:read' },
-      { name: 'Médiathèque', icon: 'Image', href: '/admin/website/media', permission: 'cms:media:read' },
-      { name: 'Menus', icon: 'Menu', href: '/admin/website/menus', permission: 'cms:pages:read' },
-      { name: 'Redirections', icon: 'Signpost', href: '/admin/website/redirects', permission: 'cms:nav:read' },
-      { name: 'Pied de page', icon: 'PanelBottom', href: '/admin/website/footer', permission: 'cms:pages:read' }
+      { name: 'Pages', icon: 'FileText', href: '/admin/website/pages', permission: 'cms:pages:read', keywords: ['site', 'contenu', 'page', 'cms', 'brouillon', 'publier'] },
+      { name: 'Médiathèque', icon: 'Image', href: '/admin/website/media', permission: 'cms:media:read', keywords: ['site', 'images', 'photos', 'fichiers', 'medias', 'pdf'] },
+      { name: 'Menus', icon: 'Menu', href: '/admin/website/menus', permission: 'cms:pages:read', keywords: ['site', 'navigation', 'menu', 'liens'] },
+      { name: 'Redirections', icon: 'Signpost', href: '/admin/website/redirects', permission: 'cms:nav:read', keywords: ['site', 'redirection', 'url', 'ancien lien', 'wordpress'] },
+      { name: 'Pied de page', icon: 'PanelBottom', href: '/admin/website/footer', permission: 'cms:pages:read', keywords: ['site', 'footer', 'bas de page', 'mentions'] }
     ]
   },
   {
     label: 'Réglages',
     items: [
-      { name: 'Configuration', icon: 'Settings', href: '/admin/settings', permission: 'settings:hub:read' },
-      { name: 'Accès & Rôles', icon: 'User', href: '/admin/iam', permission: 'iam:users:read' }
+      { name: 'Configuration', icon: 'Settings', href: '/admin/settings', permission: 'settings:hub:read', keywords: ['reglages', 'parametres', 'club', 'comptes', 'moyens de paiement', 'fonctionnalites', 'identite', 'documents', 'logo', 'categories', 'attestation', 'saisons'] },
+      { name: 'Accès & Rôles', icon: 'User', href: '/admin/iam', permission: 'iam:users:read', keywords: ['utilisateurs', 'roles', 'droits', 'permissions', 'acces', 'compte', 'connexion'] }
     ]
   },
   {
     label: 'Assistance',
-    items: [{ name: "Centre d'aide", icon: 'HelpCircle', href: '/admin/help', permission: 'help:docs:read' }]
+    items: [{ name: "Centre d'aide", icon: 'HelpCircle', href: '/admin/help', permission: 'help:docs:read', keywords: ['aide', 'documentation', 'help', 'guide', 'comment faire'] }]
   }
 ];
 
@@ -162,3 +168,57 @@ export function menuAccountItem(account: { code: string; label: string; kind: st
     feature: 'accounting'
   };
 }
+
+/**
+ * Les saisies rapides : un formulaire ouvert d'un geste, depuis la recherche du menu.
+ *
+ * Elles étaient des boutons de la barre du bas (chèque, commande, frais), une par
+ * droit. La barre n'a plus que deux cercles — menu, recherche — : c'est la recherche
+ * qui les propose, à côté de la page qu'elles concernent. La page les reconnaît à
+ * `?action=…` quand on y arrive, et à l'événement `event` quand on y est déjà.
+ */
+export interface QuickAction {
+  name: string;
+  icon: string;
+  href: string;
+  /** Événement que la page écoute quand on s'y trouve déjà : le sheet s'ouvre sans navigation. */
+  event: string;
+  /** Début de chemin qui dit « on y est déjà ». */
+  pathPrefix: string;
+  permission: Permission;
+  feature?: Feature;
+  keywords?: string[];
+}
+
+export const QUICK_ACTIONS: QuickAction[] = [
+  {
+    name: 'Enregistrer un chèque',
+    icon: 'Landmark',
+    href: '/admin/accounting/cheques/list?action=new-cheque',
+    event: 'open-new-cheque',
+    pathPrefix: '/admin/accounting/cheques/list',
+    permission: 'accounting:checks:write',
+    feature: 'checks',
+    keywords: ['cheque', 'nouveau', 'saisie', 'remise']
+  },
+  {
+    name: 'Nouvelle commande',
+    icon: 'ShoppingCart',
+    href: '/admin/shop/orders?action=new-order',
+    event: 'open-new-order',
+    pathPrefix: '/admin/shop/orders',
+    permission: 'shop:orders:write',
+    feature: 'shop',
+    keywords: ['commande', 'boutique', 'nouveau', 'saisie', 'vente']
+  },
+  {
+    name: 'Nouvelle note de frais',
+    icon: 'Receipt',
+    href: '/admin/expenses?action=new-expense',
+    event: 'open-new-expense',
+    pathPrefix: '/admin/expenses',
+    permission: 'expenses:reports:write',
+    feature: 'expenses',
+    keywords: ['frais', 'depense', 'remboursement', 'nouveau', 'saisie']
+  }
+];

@@ -19,7 +19,6 @@
     Settings,
     ChevronDown,
     ChevronUp,
-    ChevronsUpDown,
     X,
     Trophy,
     ChartNoAxesColumn,
@@ -38,10 +37,15 @@
     DoorOpen,
     KeyRound,
     CircleAlert,
-    CreditCard, Dumbbell, Ticket } from "@lucide/svelte";
+    CreditCard, Dumbbell, Ticket, Receipt } from "@lucide/svelte";
   import { DropdownMenu } from "bits-ui";
   import { onMount } from "svelte";
-  import { Sidebar, Breadcrumb, Separator, Avatar, GlobalConfirm, AppVersion, MobileBottomNav, PwaInstallBanner, ThemeToggle, toast } from "@nba/ui";
+  import { Sidebar, Breadcrumb, Separator, Avatar, GlobalConfirm, AppVersion, PwaInstallBanner, ThemeToggle, toast } from "@nba/ui";
+  import AdminMobileDock from './AdminMobileDock.svelte';
+  import MenuSearchField from './MenuSearchField.svelte';
+  import MenuSearchResults from './MenuSearchResults.svelte';
+  import { searchNav, type NavSearchHit } from '../lib/nav-search';
+  import { softNavigate } from '@nba/ui';
 
   let { children, email, name, permissions = [], realEmail = '', club, breadcrumb } = $props<{
     children?: import('svelte').Snippet;
@@ -56,7 +60,7 @@
   }>();
 
   import { can } from '@nba/iam-ui';
-  import { NAV_GROUPS, menuAccountItem } from '../lib/nav';
+  import { NAV_GROUPS, QUICK_ACTIONS, menuAccountItem } from '../lib/nav';
   import { poserTitre, type ClubHabillage } from '../lib/identite';
 
   /** Une fonctionnalité éteinte par le club ; une clé absente vaut « allumée ». */
@@ -78,7 +82,7 @@
   const ICONS: Record<string, any> = {
     LayoutDashboard, Users, BarChart3, BookOpen, FileCheck, Scale,
     Landmark, Wallet, Coins, Package, ShoppingCart, Bell, Megaphone, Image, FileText, Newspaper, CalendarClock, CalendarDays, PanelBottom, Settings, User, HelpCircle,
-    Trophy, ChartNoAxesColumn, ShieldCheck, Signpost, DoorOpen, KeyRound, CreditCard, Dumbbell, Ticket,
+    Trophy, ChartNoAxesColumn, ShieldCheck, Signpost, DoorOpen, KeyRound, CreditCard, Dumbbell, Ticket, Receipt,
     Menu: MenuIcon
   };
 
@@ -94,24 +98,69 @@
     return [...items.slice(0, position), ...comptes, ...items.slice(position)];
   };
 
-  // Le menu dérive de la même table que le contrôle d'accès des pages : une entrée
-  // visible mène donc toujours à une page ouverte.
-  const filteredNavGroups = $derived(
+  /*
+    Le menu dérive de la même table que le contrôle d'accès des pages : une entrée
+    visible mène donc toujours à une page ouverte. Filtré par droits et fonctionnalités,
+    avec les entrées telles que `nav.ts` les écrit : la barre latérale en résout les
+    icônes, la recherche du bas y lit les mots-clés. Une seule source, les deux ne
+    peuvent pas diverger.
+  */
+  const accessibleNavGroups = $derived(
     NAV_GROUPS
       // Un groupe dont le club a éteint la fonctionnalité disparaît en entier.
       .filter(g => !eteinte(g.feature))
       .map(g => ({
         label: g.label,
-        // Recopié explicitement : cette projection reconstruit chaque groupe, et tout
-        // champ non listé ici disparaît en silence.
         beta: g.beta ?? false,
         items: (g.label === 'Comptabilité' ? avecComptes(g.items) : g.items)
           .filter(i => !eteinte(i.feature))
           .filter(i => i.permission === null || can(permissions, i.permission))
-          .map(i => ({ name: i.name, href: i.href, icon: ICONS[i.icon] }))
       }))
       .filter(g => g.items.length > 0)
   );
+
+  const filteredNavGroups = $derived(
+    accessibleNavGroups.map(g => ({
+      label: g.label,
+      // Recopié explicitement : cette projection reconstruit chaque groupe, et tout
+      // champ non listé ici disparaît en silence.
+      beta: g.beta,
+      items: g.items.map(i => ({ name: i.name, href: i.href, icon: ICONS[i.icon] }))
+    }))
+  );
+
+  /** Les saisies rapides ouvertes à ce compte, proposées par la recherche du bas. */
+  const quickActions = $derived(
+    QUICK_ACTIONS.filter(a => !eteinte(a.feature)).filter(a => can(permissions, a.permission))
+  );
+
+  /** Le conteneur qui défile : la barre du bas s'y rétracte. */
+  let scrollContainer = $state<HTMLElement | null>(null);
+
+  /*
+    Recherche dans le menu ouvert (téléphone).
+
+    La pilule occupe le bas du menu, déjà déployée : on tape, et la liste des rubriques
+    laisse place aux résultats — pages et saisies rapides. Refermer le menu efface la
+    saisie, pour qu'il se rouvre entier la fois suivante.
+  */
+  let menuQuery = $state('');
+  const menuHits = $derived<NavSearchHit[]>(menuQuery.trim() ? searchNav(accessibleNavGroups, quickActions, menuQuery) : []);
+  $effect(() => {
+    if (!sidebar.openMobile) menuQuery = '';
+  });
+
+  /** Un résultat choisi, depuis le menu ou la barre du bas : on y va, ou on ouvre la saisie sur place. */
+  function pickHit(hit: NavSearchHit) {
+    menuQuery = '';
+    sidebar.setOpenMobile(false);
+    // Une saisie rapide depuis sa propre page : le sheet s'ouvre sans naviguer.
+    if (hit.kind === 'action' && hit.pathPrefix && window.location.pathname.startsWith(hit.pathPrefix)) {
+      window.dispatchEvent(new CustomEvent(hit.event!));
+      return;
+    }
+    softNavigate(hit.href);
+  }
 
   /**
    * Sections repliées, et position de la barre latérale.
@@ -460,9 +509,13 @@
   </Sidebar.Header>
 
   <!-- Navigation items -->
-  <Sidebar.Content class="p-2 space-y-4" bind:ref={navElement}>
+  <!-- Sur téléphone, la liste passe sous la pilule : d'où le dégagement en bas. -->
+  <Sidebar.Content class={sidebar.isMobile ? 'p-2 pb-28 space-y-4' : 'p-2 space-y-4'} bind:ref={navElement}>
+    {#if sidebar.isMobile && menuQuery.trim()}
+      <MenuSearchResults hits={menuHits} query={menuQuery} icons={ICONS} onPick={pickHit} />
+    {/if}
     {#each filteredNavGroups as group}
-      <Sidebar.Group class="p-0">
+      <Sidebar.Group class={sidebar.isMobile && menuQuery.trim() ? 'hidden' : 'p-0'}>
         {#if group.label}
           {@const open = isGroupOpen(group.label)}
           {@const isActiveGroup = group.label === activeGroupLabel}
@@ -531,87 +584,18 @@
     {/each}
   </Sidebar.Content>
 
-  <!-- Footer with user info -->
-  <Sidebar.Footer class="p-2 border-t border-border">
-    <Sidebar.Menu>
-      <Sidebar.MenuItem>
-        <DropdownMenu.Root onOpenChange={(ouvert) => ouvert && chargerComptesUsurpables()}>
-          <DropdownMenu.Trigger asChild>
-            {#snippet child({ props })}
-              <Sidebar.MenuButton
-                size="lg"
-                class="w-full flex items-center justify-start text-left gap-2 cursor-pointer bg-transparent border-0 data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
-                {...props}
-              >
-                <Avatar.Root class="h-8 w-8 rounded-lg shrink-0">
-                  <Avatar.Fallback class="rounded-lg bg-primary text-primary-foreground font-bold text-xs flex items-center justify-center h-full w-full">
-                    {email.slice(0, 2).toUpperCase()}
-                  </Avatar.Fallback>
-                </Avatar.Root>
-                <div class="grid flex-1 text-left text-xs leading-tight group-data-[collapsible=icon]:hidden overflow-hidden">
-                  <span class="truncate font-semibold text-foreground">{displayName}</span>
-                  <span class="truncate text-[10px] text-muted-foreground">{email}</span>
-                </div>
-                <ChevronsUpDown class="ml-auto size-3.5 text-muted-foreground shrink-0 group-data-[collapsible=icon]:hidden" />
-              </Sidebar.MenuButton>
-            {/snippet}
-          </DropdownMenu.Trigger>
-          <DropdownMenu.Portal>
-            <DropdownMenu.Content
-              class="w-56 rounded-lg bg-card text-card-foreground border border-border p-1 shadow-md z-[100]"
-              side={sidebar.isMobile ? "bottom" : "right"}
-              align="end"
-              sideOffset={4}
-            >
-              <div class="p-2 border-b border-border">
-                <p class="text-xs text-muted-foreground font-bold">{displayName}</p>
-                <p class="text-sm font-semibold truncate text-foreground">{email}</p>
-              </div>
-              <div class="p-1 space-y-0.5">
-                {#if impersonateUsers.length > 0}
-                  <div class="px-2 py-1.5 mt-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-                    Se connecter en tant que
-                  </div>
-                  {#each impersonateUsers as u}
-                    {#if u.email !== email}
-                      <DropdownMenu.Item
-                        class="flex w-full items-center px-2 py-1.5 text-xs font-medium rounded-md hover:bg-accent hover:text-accent-foreground cursor-pointer focus:bg-accent focus:text-accent-foreground focus:outline-none"
-                        onclick={() => setImpersonation(u.email)}
-                      >
-                        {u.name || u.email}
-                      </DropdownMenu.Item>
-                    {/if}
-                  {/each}
-                  <DropdownMenu.Separator />
-                {/if}
-
-                {#if isImpersonating}
-                  <DropdownMenu.Item
-                    class="flex w-full items-center px-2 py-1.5 text-xs font-medium rounded-md text-primary hover:bg-primary/10 cursor-pointer focus:bg-primary/10 focus:outline-none"
-                    onclick={() => setImpersonation(null)}
-                  >
-                    Revenir à mon compte
-                  </DropdownMenu.Item>
-                  <DropdownMenu.Separator />
-                {/if}
-
-                <DropdownMenu.Item
-                  class="flex w-full items-center px-2 py-1.5 text-xs font-medium rounded-md text-destructive hover:bg-destructive/10 hover:text-destructive cursor-pointer focus:bg-destructive/10 focus:text-destructive focus:outline-none"
-                  onclick={() => {
-                    // Point de sortie Cloudflare Access, pas une page Astro : navigation
-                    // dure obligatoire, `softNavigate()` tenterait un échange de DOM.
-                    window.location.href = "/cdn-cgi/access/logout";
-                  }}
-                >
-                  <LogOut class="mr-2 h-3.5 w-3.5" /> Déconnexion
-                </DropdownMenu.Item>
-              </div>
-            </DropdownMenu.Content>
-          </DropdownMenu.Portal>
-        </DropdownMenu.Root>
-      </Sidebar.MenuItem>
-    </Sidebar.Menu>
-    <AppVersion class="group-data-[collapsible=icon]:hidden pb-1" />
+  <!--
+    Pied du menu. Sur téléphone, la pilule de recherche, déjà déployée : le menu s'ouvre
+    prêt à être filtré. Posée **devant** la liste, qui défile derrière le verre, et non
+    en dessous d'elle. Le compte connecté, lui, est monté dans l'en-tête, comme dans
+    l'espace adhérent — le bas du menu est pris.
+  -->
+  <Sidebar.Footer class={sidebar.isMobile ? 'absolute inset-x-0 bottom-0 z-10 p-3 pb-safe border-0 bg-transparent' : 'p-2 border-t border-border'}>
+    {#if sidebar.isMobile}
+      <MenuSearchField bind:query={menuQuery} onClose={() => sidebar.setOpenMobile(false)} onSubmit={() => menuHits[0] && pickHit(menuHits[0])} />
+    {:else}
+      <AppVersion class="group-data-[collapsible=icon]:hidden pb-1" />
+    {/if}
   </Sidebar.Footer>
 </Sidebar.Root>
 
@@ -676,13 +660,86 @@
       </Breadcrumb.Root>
     </div>
 
-    <div class="flex items-center gap-4 pt-2 md:pt-0">
+    <div class="flex items-center gap-3 pt-2 md:pt-0">
       <ThemeToggle />
+      <!-- Le compte connecté : dans l'en-tête, comme dans l'espace adhérent. -->
+        <DropdownMenu.Root onOpenChange={(ouvert) => ouvert && chargerComptesUsurpables()}>
+          <DropdownMenu.Trigger asChild>
+            {#snippet child({ props })}
+              <button
+                type="button"
+                class="flex h-9 items-center gap-1.5 rounded-full border border-border bg-card pl-1 pr-2 cursor-pointer transition-colors hover:bg-accent data-[state=open]:bg-accent"
+                aria-label={`Compte : ${email}`}
+                {...props}
+              >
+                <Avatar.Root class="h-7 w-7 rounded-full shrink-0">
+                  <Avatar.Fallback class="rounded-full bg-primary text-primary-foreground font-bold text-[11px] flex items-center justify-center h-full w-full">
+                    {email.slice(0, 2).toUpperCase()}
+                  </Avatar.Fallback>
+                </Avatar.Root>
+                <span class="hidden lg:block max-w-32 truncate text-xs font-semibold text-foreground">{displayName}</span>
+                <ChevronDown class="size-3.5 text-muted-foreground shrink-0" />
+              </button>
+            {/snippet}
+          </DropdownMenu.Trigger>
+          <DropdownMenu.Portal>
+            <DropdownMenu.Content
+              class="w-56 rounded-lg bg-card text-card-foreground border border-border p-1 shadow-md z-[100]"
+              side="bottom"
+              align="end"
+              sideOffset={4}
+            >
+              <div class="p-2 border-b border-border">
+                <p class="text-xs text-muted-foreground font-bold">{displayName}</p>
+                <p class="text-sm font-semibold truncate text-foreground">{email}</p>
+              </div>
+              <div class="p-1 space-y-0.5">
+                {#if impersonateUsers.length > 0}
+                  <div class="px-2 py-1.5 mt-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                    Se connecter en tant que
+                  </div>
+                  {#each impersonateUsers as u}
+                    {#if u.email !== email}
+                      <DropdownMenu.Item
+                        class="flex w-full items-center px-2 py-1.5 text-xs font-medium rounded-md hover:bg-accent hover:text-accent-foreground cursor-pointer focus:bg-accent focus:text-accent-foreground focus:outline-none"
+                        onclick={() => setImpersonation(u.email)}
+                      >
+                        {u.name || u.email}
+                      </DropdownMenu.Item>
+                    {/if}
+                  {/each}
+                  <DropdownMenu.Separator />
+                {/if}
+
+                {#if isImpersonating}
+                  <DropdownMenu.Item
+                    class="flex w-full items-center px-2 py-1.5 text-xs font-medium rounded-md text-primary hover:bg-primary/10 cursor-pointer focus:bg-primary/10 focus:outline-none"
+                    onclick={() => setImpersonation(null)}
+                  >
+                    Revenir à mon compte
+                  </DropdownMenu.Item>
+                  <DropdownMenu.Separator />
+                {/if}
+
+                <DropdownMenu.Item
+                  class="flex w-full items-center px-2 py-1.5 text-xs font-medium rounded-md text-destructive hover:bg-destructive/10 hover:text-destructive cursor-pointer focus:bg-destructive/10 focus:text-destructive focus:outline-none"
+                  onclick={() => {
+                    // Point de sortie Cloudflare Access, pas une page Astro : navigation
+                    // dure obligatoire, `softNavigate()` tenterait un échange de DOM.
+                    window.location.href = "/cdn-cgi/access/logout";
+                  }}
+                >
+                  <LogOut class="mr-2 h-3.5 w-3.5" /> Déconnexion
+                </DropdownMenu.Item>
+              </div>
+            </DropdownMenu.Content>
+          </DropdownMenu.Portal>
+        </DropdownMenu.Root>
     </div>
   </header>
 
   <!-- Main Content Area -->
-  <div class="flex-1 overflow-y-auto pb-20 md:pb-0">
+  <div class="flex-1 overflow-y-auto pb-24 md:pb-0" bind:this={scrollContainer}>
     <main class="p-4 md:p-6">
       {#if children}
         {@render children()}
@@ -691,16 +748,21 @@
   </div>
 </Sidebar.Inset>
 
-<MobileBottomNav
-  canManageAccounting={can(permissions, 'accounting:checks:write')}
-  canManageShop={can(permissions, 'shop:orders:write')}
-  canManageExpenses={can(permissions, 'expenses:reports:write')}
+<AdminMobileDock
+  groups={accessibleNavGroups}
+  actions={quickActions}
+  icons={ICONS}
+  {scrollContainer}
   onMenuClick={() => sidebar.setOpenMobile(true)}
+  onPick={pickHit}
 />
 <GlobalConfirm />
 
 <style>
   .pt-safe {
     padding-top: env(safe-area-inset-top, 0px);
+  }
+  .pb-safe {
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 0.5rem);
   }
 </style>

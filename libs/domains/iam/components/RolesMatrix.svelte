@@ -442,11 +442,12 @@
 
         <!--
           Barre d'actions collante : la liste fait 64 lignes, sur aucun écran on ne doit
-          la parcourir en entier pour retrouver « Enregistrer ». `bottom-14` la pose
-          au-dessus de MobileBottomNav (56 px), qui disparaît à partir de `md`.
+          la parcourir en entier pour retrouver « Enregistrer ». `bottom-16` la pose
+          au-dessus de la barre du bas (cercles de 56 px, décollés de 8 px), qui
+          disparaît à partir de `md`.
         -->
         <div
-          class="sticky bottom-14 md:bottom-0 z-30 -mx-4 px-4 py-3 bg-card border-t border-border flex flex-wrap items-center gap-2"
+          class="sticky bottom-16 md:bottom-0 z-30 -mx-4 px-4 py-3 bg-card border-t border-border flex flex-wrap items-center gap-2"
         >
           <Button size="sm" onclick={() => save(editing!)} disabled={saving || !dirty(editing)}>
             Enregistrer

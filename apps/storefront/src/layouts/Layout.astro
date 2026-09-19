@@ -50,22 +50,25 @@ const ICON_SUFFIX = APP_ENV === 'development' ? '-dev' : APP_ENV === 'staging' ?
       /*
        * Barre d'onglets qui se rétracte au défilement (`MobileNav`).
        *
-       * Vers le bas, passé le haut de page, la barre se fait petite ; vers le haut,
-       * ou revenu en haut, elle se redéploie. Un seuil de quelques pixels évite qu'elle
-       * ne cligne au moindre tremblement du doigt, et le calcul attend le prochain
-       * rendu : un écouteur de défilement ne doit rien coûter au défilement lui-même.
+       * Tant que la page défile — dans un sens comme dans l'autre —, la barre se fait
+       * petite ; elle se redéploie dès que le doigt s'arrête, ou revenu en haut de page.
+       * Un seuil de quelques pixels évite qu'elle ne cligne au moindre tremblement, et
+       * le calcul attend le prochain rendu : un écouteur de défilement ne doit rien
+       * coûter au défilement lui-même.
        */
       const nav = document.querySelector('[data-mobile-nav]');
       if (nav) {
         let last = window.scrollY;
         let ticking = false;
+        let idle: ReturnType<typeof setTimeout> | undefined;
         const update = () => {
           ticking = false;
           const y = window.scrollY;
-          const delta = y - last;
-          if (y < 24 || delta < -6) nav.classList.remove('is-compact');
-          else if (delta > 6 && y > 80) nav.classList.add('is-compact');
-          if (Math.abs(delta) > 6) last = y;
+          if (Math.abs(y - last) <= 6) return;
+          last = y;
+          nav.classList.toggle('is-compact', y > 24);
+          clearTimeout(idle);
+          idle = setTimeout(() => nav.classList.remove('is-compact'), 350);
         };
         window.addEventListener(
           'scroll',

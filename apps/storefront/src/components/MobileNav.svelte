@@ -42,8 +42,9 @@
   d'accessibilité « Réduire la transparence » du système aussi — le respecter, c'est ne
   pas contredire ce que l'utilisateur a demandé à son téléphone.
 
-  Au défilement vers le bas, la barre se rétracte — plus petite, sans libellés — et
-  revient dès qu'on remonte : le contenu reprend la place. C'est `Layout.astro` qui
+  Tant que la page défile, dans un sens comme dans l'autre, la barre se rétracte —
+  plus petite, sans libellés — et revient dès que le doigt s'arrête : le contenu
+  reprend la place. C'est `Layout.astro` qui
   pose la classe `is-compact` (un script sans hydratation, la barre est rendue côté
   serveur) ; le composant ne connaît que les deux états.
 -->
