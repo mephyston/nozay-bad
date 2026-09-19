@@ -11,6 +11,7 @@ import { eventsRouter } from '@nba/events-api';
 import { teamsRouter } from '@nba/teams-api';
 import { clubRouter } from '@nba/club';
 import { dashboardRouter } from './dashboard';
+import { searchRouter } from './search';
 import { handleScheduled, type ScheduledBindings } from './scheduled';
 import { notificationsSendRouter } from './notifications';
 import { indivRouter } from './indiv';
@@ -99,6 +100,7 @@ app.get('/health', (c) => {
 });
 
 // Mount routers
+app.route('/', searchRouter);
 app.route('/members', membersRouter);
 app.route('/accounting', accountingRouter);
 app.route('/expenses', expensesRouter);

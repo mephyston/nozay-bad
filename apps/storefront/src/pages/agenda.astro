@@ -444,7 +444,7 @@ const today = new Date().toISOString().slice(0, 10);
     </div>
   </main>
 
-  <MobileNav features={Astro.locals.club?.features ?? {}} currentPath="/agenda" />
+  <MobileNav client:idle features={Astro.locals.club?.features ?? {}} currentPath="/agenda" session={Astro.locals.session} />
 
   <footer class="mt-12 hidden border-t border-border bg-card/20 py-8 text-center text-xs text-muted-foreground md:block md:pb-8">
     <p>© {new Date().getFullYear()} {Astro.locals.club?.settings.name}. Tous droits réservés.</p>

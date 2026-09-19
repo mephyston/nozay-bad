@@ -126,5 +126,5 @@ const pillClass = (active: boolean) =>
     </div>
   </main>
 
-  <MobileNav client:idle features={Astro.locals.club?.features ?? {}} currentPath="/actualites" />
+  <MobileNav client:idle features={Astro.locals.club?.features ?? {}} currentPath="/actualites" session={Astro.locals.session} />
 </Layout>

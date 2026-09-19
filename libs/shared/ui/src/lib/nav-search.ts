@@ -1,7 +1,8 @@
-import type { NavGroup, NavItem, QuickAction } from './nav';
-
 /**
  * La recherche dans le menu : ce qu'on tape quand on ne sait plus où est la page.
+ *
+ * Partagée par l'administration et l'espace adhérent : chacun lui donne son menu —
+ * des groupes d'entrées, plus des actions — et reçoit la même liste ordonnée.
  *
  * Elle ne cherche que dans le menu — pages et saisies rapides —, jamais dans les
  * données : « commande » mène à *Boutique › Commandes* et à *Nouvelle commande*, pas
@@ -10,6 +11,27 @@ import type { NavGroup, NavItem, QuickAction } from './nav';
  * resserre au lieu d'élargir. Le nom pèse plus que les mots-clés : *Commandes* passe
  * avant *Produits* quand on tape « commande », même si les deux le connaissent.
  */
+export interface SearchableNavItem {
+  name: string;
+  icon: string;
+  href: string;
+  /** Mots reconnus en plus du nom : ce qu'on tape quand on ne connaît pas l'intitulé. */
+  keywords?: string[];
+}
+
+export interface SearchableNavGroup {
+  label: string;
+  items: SearchableNavItem[];
+}
+
+/** Une action proposée à côté des pages (« Nouvelle commande »), sous sa propre rubrique. */
+export interface SearchableAction extends SearchableNavItem {
+  /** Événement à émettre quand on est déjà sur la page concernée. */
+  event?: string;
+  /** Début de chemin qui dit « on y est déjà ». */
+  pathPrefix?: string;
+}
+
 export interface NavSearchHit {
   kind: 'page' | 'action';
   name: string;
@@ -60,24 +82,26 @@ function candidateOf(hit: NavSearchHit, keywords: string[] | undefined): Candida
 }
 
 export function searchNav(
-  groups: Pick<NavGroup, 'label' | 'items'>[],
-  actions: QuickAction[],
+  groups: SearchableNavGroup[],
+  actions: SearchableAction[],
   query: string,
-  limit = 8
+  limit = 8,
+  /** Rubrique sous laquelle les actions sont rangées. */
+  actionsGroup = 'Saisie rapide'
 ): NavSearchHit[] {
   const words = tokens(query);
   if (words.length === 0) return [];
 
   const candidates: Candidate[] = [];
   for (const group of groups) {
-    for (const item of group.items as NavItem[]) {
+    for (const item of group.items) {
       candidates.push(candidateOf({ kind: 'page', name: item.name, icon: item.icon, href: item.href, group: group.label }, item.keywords));
     }
   }
   for (const action of actions) {
     candidates.push(
       candidateOf(
-        { kind: 'action', name: action.name, icon: action.icon, href: action.href, group: 'Saisie rapide', event: action.event, pathPrefix: action.pathPrefix },
+        { kind: 'action', name: action.name, icon: action.icon, href: action.href, group: actionsGroup, event: action.event, pathPrefix: action.pathPrefix },
         action.keywords
       )
     );

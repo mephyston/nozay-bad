@@ -92,6 +92,10 @@ try {
 // Saison de la session (celle du calendrier), pas la saison comptable : une commande doit
 // s'imputer sur la saison que l'adhérent est en train de jouer.
 const activeSeasonId = displaySeason(seasons, session?.seasonCode)?.code ?? '';
+
+// Un résultat de recherche arrive avec `?produit=` : la carte s'ouvre d'elle-même.
+const requestedProduct = Number(Astro.url.searchParams.get('produit'));
+const initialProductId = Number.isSafeInteger(requestedProduct) && requestedProduct > 0 ? requestedProduct : null;
 ---
 
 <Layout title="Boutique Adhérents">
@@ -112,6 +116,7 @@ const activeSeasonId = displaySeason(seasons, session?.seasonCode)?.code ?? '';
       initialMemberId={initialMemberId}
       historyHref="/mon-compte#commandes"
       mediaOrigin={websiteOrigin}
+      {initialProductId}
       {paymentMethods}
       bankDetails={{
         holder: Astro.locals.club?.settings.bankHolder ?? '',
@@ -121,7 +126,7 @@ const activeSeasonId = displaySeason(seasons, session?.seasonCode)?.code ?? '';
     />
   </main>
 
-  <MobileNav features={Astro.locals.club?.features ?? {}} currentPath="/boutique" />
+  <MobileNav client:idle features={Astro.locals.club?.features ?? {}} currentPath="/boutique" session={Astro.locals.session} />
 
   <footer class="hidden md:block border-t border-border mt-12 py-8 bg-card/20 text-center text-xs text-muted-foreground md:pb-8">
     <p>© {new Date().getFullYear()} {Astro.locals.club?.settings.name}. Tous droits réservés.</p>

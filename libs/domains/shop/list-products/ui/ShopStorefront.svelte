@@ -25,7 +25,8 @@
     historyHref = null,
     bankDetails = { holder: '', iban: '', bic: '' },
     paymentMethods = [],
-    mediaOrigin = ''
+    mediaOrigin = '',
+    initialProductId = null
   }: {
     products: Product[];
     members: Member[];
@@ -36,6 +37,8 @@
     paymentMethods?: PaymentMethodOption[];
     /** Origine du site public, qui sert les images (`/media/…`). */
     mediaOrigin?: string;
+    /** Carte à ouvrir d'emblée — un résultat de recherche mène ici, prêt à commander. */
+    initialProductId?: number | null;
   } = $props();
 
   const member = $derived(members.find((m) => m.id.toString() === initialMemberId) ?? null);
@@ -45,7 +48,10 @@
   let selectedCategory = $state<number | null>(null);
   const shown = $derived(selectedCategory === null ? families : families.filter((f) => f.product.productCategoryId === selectedCategory));
 
-  let ordering = $state<ProductFamily | null>(null);
+  // svelte-ignore state_referenced_locally
+  let ordering = $state<ProductFamily | null>(
+    initialProductId ? (groupFamilies(products).find((f) => f.product.id === initialProductId && !f.soldOut) ?? null) : null
+  );
   let confirmation = $state<OrderConfirmation | null>(null);
 
   function imageUrl(key: string | null | undefined): string | null {

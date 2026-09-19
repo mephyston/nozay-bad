@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { normalize, searchNav } from './nav-search';
+import { normalizeSearchText as normalize, searchNav } from '@nba/ui';
 import { NAV_GROUPS, QUICK_ACTIONS } from './nav';
 
 describe('normalize', () => {

@@ -1,23 +1,35 @@
 <script lang="ts">
-  import { Home, ShoppingCart, Newspaper, CalendarDays } from '@lucide/svelte';
+  import { Home, ShoppingCart, Newspaper, CalendarDays, Search, User, IdCard, Wallet, History, FileText, Bell, Receipt, Trophy, Users, Package, Loader2 } from '@lucide/svelte';
+  import { searchNav, softNavigate, MenuSearchField, MenuSearchResults, type NavSearchHit } from '@nba/ui';
   import ShuttlecockIcon from './ShuttlecockIcon.svelte';
+  import { storefrontNavGroups } from '../lib/nav';
+  import type { SessionPayload } from '../lib/auth';
+  import { searchContent, type ContentSearchGroup } from '../lib/search';
 
-  let { currentPath = '', features = {} }: { currentPath?: string; features?: Partial<Record<string, boolean>> } = $props();
+  /**
+   * La barre du bas de l'espace adhérent : les onglets, et une loupe à part.
+   *
+   * La loupe est un cercle séparé, à droite de la pilule d'onglets — c'est le motif
+   * d'iOS 26, où la recherche n'est pas un onglet. Elle s'étire en champ qui répond à
+   * deux étages : le **menu** (onglets et entrées de « Mon compte »), instantané et
+   * sans réseau, et le **contenu** du club — adhérents, actualités, agenda, équipes,
+   * boutique — demandé à l'API, deux lettres et un temps de latence plus tard. La loupe
+   * n'est jamais muette : le menu répond avant que le réseau ne parle.
+   */
+  let {
+    currentPath = '',
+    features = {},
+    session = null
+  }: {
+    currentPath?: string;
+    features?: Partial<Record<string, boolean>>;
+    session?: Pick<SessionPayload, 'members' | 'activeMemberId'> | null;
+  } = $props();
 
   // Cinq cases, la limite de ce qu'une barre d'onglets supporte avant que les
-  // libellés ne deviennent illisibles.
-  //
-  // « Jeunes » n'a plus d'onglet : c'est devenu une rubrique parmi d'autres du filtre
-  // d'« Actualités », qui réunit désormais toutes les communications du club. La case
-  // ainsi libérée revient à « Agenda », qui n'aurait aucun autre chemin.
-  //
-  // La cinquième case était un menu « Plus » ; « Équipes » la prend désormais en
-  // entier. Les deux écrans qui y étaient relégués — « Notes de frais » et
-  // « Mon attestation CSE » — sont passés dans le menu « Mon compte » de l'en-tête,
-  // toujours à portée, y compris en PWA où le pied de page est masqué.
-  //
-  // Une rubrique que le club a éteinte (boutique, interclubs) disparaît de la barre ;
-  // une clé absente des fonctionnalités vaut « allumée ».
+  // libellés ne deviennent illisibles — d'autant qu'elle laisse désormais sa droite à
+  // la loupe. Une rubrique que le club a éteinte (boutique, interclubs) disparaît ; une
+  // clé absente des fonctionnalités vaut « allumée ».
   const items = [
     { href: '/', label: 'Accueil', icon: Home },
     { href: '/actualites', label: 'Actualités', icon: Newspaper },
@@ -25,83 +37,154 @@
     { href: '/boutique', label: 'Boutique', icon: ShoppingCart, feature: 'shop' },
     { href: '/equipes', label: 'Mon club', icon: ShuttlecockIcon, feature: 'teams' }
   ].filter((item) => !item.feature || features[item.feature] !== false);
+
+  const ICONS: Record<string, any> = { Home, Newspaper, CalendarDays, ShoppingCart, Trophy, Users, User, IdCard, Wallet, History, FileText, Bell, Receipt, Package };
+  const KIND_ICONS: Record<string, any> = { member: User, post: Newspaper, event: CalendarDays, team: Trophy, product: Package };
+
+  let open = $state(false);
+  let query = $state('');
+  let content = $state<ContentSearchGroup[]>([]);
+  let loading = $state(false);
+
+  const groups = $derived(storefrontNavGroups({ features, session }));
+  const pageHits = $derived<NavSearchHit[]>(open ? searchNav(groups, [], query, 5) : []);
+  const contentCount = $derived(content.reduce((n, g) => n + g.hits.length, 0));
+
+  // Le contenu, débouncé et borné à la dernière saisie : une réponse en retard sur une
+  // frappe plus récente est jetée.
+  let ticket = 0;
+  $effect(() => {
+    const q = query.trim();
+    const mine = ++ticket;
+    if (!open || q.length < 2) {
+      content = [];
+      loading = false;
+      return;
+    }
+    loading = true;
+    const timer = setTimeout(async () => {
+      const result = await searchContent(q);
+      if (mine !== ticket) return;
+      content = result;
+      loading = false;
+    }, 250);
+    return () => clearTimeout(timer);
+  });
+
+  function closeSearch() {
+    open = false;
+    query = '';
+  }
+
+  function go(href: string) {
+    closeSearch();
+    softNavigate(href);
+  }
+
+  function submit() {
+    const first = pageHits[0]?.href ?? content.find((g) => g.hits.length > 0)?.hits[0]?.href;
+    if (first) go(first);
+  }
 </script>
 
+{#if open}
+  <button type="button" class="md:hidden fixed inset-0 z-40 bg-black/20 backdrop-blur-[2px]" aria-label="Fermer la recherche" onclick={closeSearch}></button>
+{/if}
+
 <!--
-  Barre flottante, en verre.
-
-  Détachée du bord et arrondie, elle laisse le contenu défiler dessous : c'est le
-  geste commun des barres d'onglets d'iOS 26 comme de Material 3 Expressive. La
-  matière — fond translucide, flou, liseré clair — est celle du Liquid Glass d'iOS,
-  que WebKit n'expose pas au web : on la fabrique avec `backdrop-filter`. Elle reste
-  sobre sur Android, où seule la teinte du fond change ; rien des animations propres
-  à iOS (rétractation au défilement, onglet qui gonfle) n'est repris : fragile en web,
-  et étranger aux adhérents Android.
-
-  Deux replis : un moteur sans `backdrop-filter` reçoit une barre opaque, et le réglage
-  d'accessibilité « Réduire la transparence » du système aussi — le respecter, c'est ne
-  pas contredire ce que l'utilisateur a demandé à son téléphone.
-
-  Tant que la page défile, dans un sens comme dans l'autre, la barre se rétracte —
-  plus petite, sans libellés — et revient dès que le doigt s'arrête : le contenu
-  reprend la place. C'est `Layout.astro` qui
-  pose la classe `is-compact` (un script sans hydratation, la barre est rendue côté
-  serveur) ; le composant ne connaît que les deux états.
+  Barre flottante, en verre — voir `.glass-surface` dans `global.css`. Détachée du bord
+  et arrondie, elle laisse le contenu défiler dessous : le geste commun des barres
+  d'onglets d'iOS 26 comme de Material 3 Expressive. Tant que la page défile, dans un
+  sens comme dans l'autre, elle se rétracte — plus petite, sans libellés — et revient
+  dès que le doigt s'arrête ; c'est `Layout.astro` qui pose la classe `is-compact`.
 -->
-<nav
-  class="glass-nav md:hidden fixed inset-x-3 z-50 flex items-center justify-around rounded-[1.75rem] px-1"
+<div
+  class="md:hidden fixed inset-x-3 z-50 flex items-end {open ? 'gap-0' : 'gap-2'}"
   style="bottom: calc(env(safe-area-inset-bottom, 0px) + 0.5rem)"
-  aria-label="Navigation principale"
   data-mobile-nav
 >
-  {#each items as item (item.href)}
-    {@const Icon = item.icon}
-    <!-- La fiche d'équipe et l'écran de composition descendent d'« Équipes » :
-         l'onglet reste mis en évidence tant qu'on est dans cette branche. -->
-    {@const active = currentPath === item.href || (item.href !== '/' && currentPath.startsWith(`${item.href}/`))}
-    <a
-      href={item.href}
-      aria-current={active ? 'page' : undefined}
-      class={`nav-item flex flex-col items-center justify-center flex-1 min-w-0 my-1 py-1.5 gap-0.5 min-h-[48px] rounded-[1.25rem] transition-colors decoration-transparent ${
-        active ? 'text-primary bg-primary/12' : 'text-muted-foreground hover:text-foreground'
-      }`}
-    >
-      <Icon class="w-6 h-6 shrink-0" />
-      <span class="nav-label text-[11px] font-medium truncate max-w-full px-1">{item.label}</span>
-    </a>
-  {/each}
-</nav>
+  <nav
+    class="glass-surface nav-pill flex min-w-0 flex-1 items-center justify-around rounded-[1.75rem] px-1 transition-[width,opacity] duration-200 {open ? 'hidden' : ''}"
+    aria-label="Navigation principale"
+  >
+    {#each items as item (item.href)}
+      {@const Icon = item.icon}
+      <!-- La fiche d'équipe et l'écran de composition descendent d'« Équipes » :
+           l'onglet reste mis en évidence tant qu'on est dans cette branche. -->
+      {@const active = currentPath === item.href || (item.href !== '/' && currentPath.startsWith(`${item.href}/`))}
+      <a
+        href={item.href}
+        aria-current={active ? 'page' : undefined}
+        class={`nav-item flex flex-col items-center justify-center flex-1 min-w-0 my-1 py-1.5 gap-0.5 min-h-[48px] rounded-[1.25rem] transition-colors decoration-transparent ${
+          active ? 'text-primary bg-primary/12' : 'text-muted-foreground hover:text-foreground'
+        }`}
+      >
+        <Icon class="w-6 h-6 shrink-0" />
+        <span class="nav-label text-[10px] font-medium truncate max-w-full px-0.5">{item.label}</span>
+      </a>
+    {/each}
+  </nav>
+
+  <div class="relative flex min-w-0 justify-end {open ? 'flex-1' : 'shrink-0'}">
+    {#if open}
+      {#if query.trim()}
+        <div class="glass-surface absolute inset-x-0 bottom-full mb-2 max-h-[60dvh] overflow-y-auto rounded-2xl" data-testid="search-results">
+          {#if pageHits.length > 0}
+            <p class="px-4 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Pages</p>
+            <MenuSearchResults hits={pageHits} {query} icons={ICONS} onPick={(hit) => go(hit.href)} />
+          {/if}
+          {#each content as group (group.kind)}
+            {#if group.hits.length > 0}
+              {@const Icon = KIND_ICONS[group.kind]}
+              <p class="px-4 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{group.label}</p>
+              <div class="p-1.5">
+                {#each group.hits as hit (hit.href)}
+                  <button type="button" class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-primary/10" onclick={() => go(hit.href)}>
+                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted text-foreground"><Icon class="h-4 w-4" /></span>
+                    <span class="min-w-0 flex-1">
+                      <span class="block truncate text-sm font-medium text-foreground">{hit.title}</span>
+                      {#if hit.subtitle}<span class="block truncate text-xs text-muted-foreground">{hit.subtitle}</span>{/if}
+                    </span>
+                  </button>
+                {/each}
+              </div>
+            {/if}
+          {/each}
+          {#if pageHits.length === 0 && contentCount === 0}
+            <p class="px-4 py-3 text-sm text-muted-foreground">
+              {#if loading}
+                <Loader2 class="mr-1.5 inline h-4 w-4 animate-spin" /> Recherche…
+              {:else if query.trim().length < 2}
+                Tapez au moins deux lettres.
+              {:else}
+                Rien pour « {query.trim()} ».
+              {/if}
+            </p>
+          {/if}
+        </div>
+      {/if}
+      <MenuSearchField bind:query placeholder="Adhérent, article, équipe, produit…" onClose={closeSearch} onSubmit={submit} />
+    {:else}
+      <button
+        type="button"
+        class="glass-surface nav-loupe flex h-14 w-14 shrink-0 items-center justify-center rounded-full text-foreground"
+        aria-label="Rechercher"
+        onclick={() => (open = true)}
+      >
+        <Search class="h-6 w-6" />
+      </button>
+    {/if}
+  </div>
+</div>
 
 <style>
-  .glass-nav {
-    /* Teinte à 72 % : en dessous, le texte qui défile derrière gêne la lecture des libellés. */
-    background: color-mix(in oklab, var(--card) 72%, transparent);
-    -webkit-backdrop-filter: blur(20px) saturate(160%);
-    backdrop-filter: blur(20px) saturate(160%);
-    border: 1px solid color-mix(in oklab, var(--border) 70%, transparent);
-    /* Le liseré clair du bord supérieur, qui fait le « verre », puis l'ombre portée qui décolle la barre. */
-    box-shadow:
-      inset 0 1px 0 rgb(255 255 255 / 0.35),
-      0 8px 24px rgb(0 0 0 / 0.12),
-      0 1px 2px rgb(0 0 0 / 0.08);
-  }
-  :global(.dark) .glass-nav {
-    box-shadow:
-      inset 0 1px 0 rgb(255 255 255 / 0.1),
-      0 8px 28px rgb(0 0 0 / 0.45),
-      0 1px 2px rgb(0 0 0 / 0.3);
-  }
-  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-    .glass-nav {
-      background: var(--card);
-    }
-  }
   /*
-    Rétractation : la barre rétrécit depuis le bas et perd ses libellés. `transform`
-    plutôt que la hauteur, pour ne rien recalculer dans la page et ne pas peser dans
-    le CLS ; les libellés s'effacent en largeur nulle pour que la pastille se resserre.
+    Rétractation : la pilule et la loupe rétrécissent depuis le bas, la pilule perd
+    ses libellés. `transform` plutôt que la hauteur, pour ne rien recalculer dans la
+    page ; les libellés s'effacent en hauteur nulle pour que la pilule se resserre.
   */
-  .glass-nav {
+  .nav-pill,
+  .nav-loupe {
     transform-origin: 50% 100%;
     transition: transform 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
   }
@@ -109,27 +192,28 @@
     transition: opacity 160ms ease, max-height 200ms ease;
     max-height: 1.25rem;
   }
-  .glass-nav.is-compact {
+  :global([data-mobile-nav].is-compact) .nav-pill,
+  :global([data-mobile-nav].is-compact) .nav-loupe {
     transform: scale(0.82);
   }
-  .glass-nav.is-compact .nav-item {
+  :global([data-mobile-nav].is-compact) .nav-item {
     min-height: 40px;
   }
-  .glass-nav.is-compact .nav-label {
+  :global([data-mobile-nav].is-compact) .nav-label {
     opacity: 0;
     max-height: 0;
   }
-  @media (prefers-reduced-motion: reduce) {
-    .glass-nav,
+  /* Sous 360 px, cinq libellés ne tiennent plus à côté de la loupe : icônes seules. */
+  @media (max-width: 359px) {
     .nav-label {
-      transition: none;
+      display: none;
     }
   }
-  @media (prefers-reduced-transparency: reduce) {
-    .glass-nav {
-      background: var(--card);
-      -webkit-backdrop-filter: none;
-      backdrop-filter: none;
+  @media (prefers-reduced-motion: reduce) {
+    .nav-pill,
+    .nav-loupe,
+    .nav-label {
+      transition: none;
     }
   }
 </style>

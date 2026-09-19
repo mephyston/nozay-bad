@@ -42,10 +42,7 @@
   import { onMount } from "svelte";
   import { Sidebar, Breadcrumb, Separator, Avatar, GlobalConfirm, AppVersion, PwaInstallBanner, ThemeToggle, toast } from "@nba/ui";
   import AdminMobileDock from './AdminMobileDock.svelte';
-  import MenuSearchField from './MenuSearchField.svelte';
-  import MenuSearchResults from './MenuSearchResults.svelte';
-  import { searchNav, type NavSearchHit } from '../lib/nav-search';
-  import { softNavigate } from '@nba/ui';
+  import { searchNav, softNavigate, MenuSearchField, MenuSearchResults, type NavSearchHit } from '@nba/ui';
 
   let { children, email, name, permissions = [], realEmail = '', club, breadcrumb } = $props<{
     children?: import('svelte').Snippet;
@@ -148,6 +145,14 @@
   const menuHits = $derived<NavSearchHit[]>(menuQuery.trim() ? searchNav(accessibleNavGroups, quickActions, menuQuery) : []);
   $effect(() => {
     if (!sidebar.openMobile) menuQuery = '';
+  });
+  /*
+    Les résultats remplacent la liste par le haut : si l'on avait fait défiler le menu
+    jusqu'en bas avant de taper, ils s'écrivaient au-dessus de la ligne d'horizon et
+    l'écran semblait vide. On remonte donc dès que la recherche commence.
+  */
+  $effect(() => {
+    if (menuQuery.trim() && navElement) navElement.scrollTop = 0;
   });
 
   /** Un résultat choisi, depuis le menu ou la barre du bas : on y va, ou on ouvre la saisie sur place. */

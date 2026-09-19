@@ -103,6 +103,7 @@ export { getMedia } from './media/get-media/handler';
 export { imagesTranscoder } from './media/upload-media/route';
 export { listPosts } from './posts/list-posts/handler';
 export { getPost } from './posts/get-post/handler';
+export { listSearchablePosts, type SearchablePost } from './posts/search-posts/handler';
 export { notifyPost } from './posts/notify-post/handler';
 export { listPostCategories } from './categories/list-post-categories/handler';
 export { listNavItems } from './navigation/list-nav-items/handler';

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { ArrowUpLeft, CornerDownLeft } from '@lucide/svelte';
-  import type { NavSearchHit } from '../lib/nav-search';
+  import type { NavSearchHit } from '../../lib/nav-search';
 
   /**
    * Les résultats d'une recherche dans le menu : pages et saisies rapides, la rubrique

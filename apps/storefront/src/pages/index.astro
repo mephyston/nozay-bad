@@ -183,7 +183,7 @@ const nextSession = sessionComesFirst ? firstSession : null;
     </div>
   </main>
 
-  <MobileNav features={Astro.locals.club?.features ?? {}} currentPath="/" />
+  <MobileNav client:idle features={Astro.locals.club?.features ?? {}} currentPath="/" session={Astro.locals.session} />
 
   <footer class="hidden md:block border-t border-border mt-12 py-8 bg-card/20 text-center text-xs text-muted-foreground md:pb-8">
     <p>© {new Date().getFullYear()} {Astro.locals.club?.settings.name}. Tous droits réservés.</p>

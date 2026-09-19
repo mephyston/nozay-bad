@@ -33,6 +33,9 @@ export const ROUTE_PERMISSIONS: RouteRule[] = [
 
   // ── Tableau de bord ────────────────────────────────────────────────────────
   { method: 'GET', path: '/dashboard/overview', permission: 'dashboard:overview:read' },
+  // La recherche de l'espace adhérent : elle ne rend que ce que l'espace affiche déjà,
+  // et chaque rubrique s'éteint avec sa fonctionnalité — l'annuaire compris.
+  { method: 'GET', path: '/search', permission: null, service: true },
 
   // Consommation Cloudflare. Aucune donnée du club, mais un jeton qui voit tout le
   // compte : jamais ouvert aux appelants de service.

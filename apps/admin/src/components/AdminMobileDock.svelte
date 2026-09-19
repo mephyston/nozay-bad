@@ -1,9 +1,7 @@
 <script lang="ts">
   import { Menu as MenuIcon, Search } from '@lucide/svelte';
   import type { NavGroup, QuickAction } from '../lib/nav';
-  import { searchNav, type NavSearchHit } from '../lib/nav-search';
-  import MenuSearchField from './MenuSearchField.svelte';
-  import MenuSearchResults from './MenuSearchResults.svelte';
+  import { searchNav, MenuSearchField, MenuSearchResults, type NavSearchHit } from '@nba/ui';
 
   /**
    * La barre du bas de l'administration, sur téléphone.

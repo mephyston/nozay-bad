@@ -16,6 +16,8 @@ import { manageProductCategoriesRoute } from './manage-product-categories/route'
 export { getUnvalidatedPaidOrders, getOrdersAwaitingPaymentSince, type OrderAwaitingPayment } from './queries';
 export { ORDER_STATUSES, OPEN_ORDER_STATUSES, type OrderStatus } from './shared/order';
 export { productDisplayName, compareVariantLabels } from './shared/product';
+export { listProducts } from './list-products/handler';
+export type { ListedProduct } from './list-products/dto';
 
 export type Bindings = {
   DB: D1Database;
