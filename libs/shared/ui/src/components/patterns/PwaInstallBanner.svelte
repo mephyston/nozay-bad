@@ -17,7 +17,7 @@
   };
 
   let showBanner = $state(false);
-  // Qui sait installer quoi (Safari seul sur iOS, Chrome seul sur Android…) : voir
+  // Qui sait installer quoi (Partager sur iOS, Chrome seul sur Android…) : voir
   // lib/pwa-install.ts. Hors 'default', on n'attend pas `beforeinstallprompt` : on
   // explique la marche à suivre.
   let target = $state<InstallTarget>('default');
@@ -116,12 +116,10 @@
     class="fixed top-0 left-0 right-0 z-[100] bg-primary text-primary-foreground p-3 shadow-md flex items-center justify-between gap-3 animate-in slide-in-from-top-full duration-300"
   >
     <div class="flex-1 text-sm font-medium leading-tight">
-      {#if target === 'ios-safari'}
+      {#if target === 'ios'}
         <span class="flex items-center gap-1 flex-wrap">
           Installer l'application : appuyez sur <Share class="w-4 h-4 inline" /> puis « Sur l'écran d'accueil ».
         </span>
-      {:else if target === 'ios-other'}
-        <span>Pour installer l'application, ouvrez ce site dans Safari puis « Sur l'écran d'accueil ».</span>
       {:else if target === 'android-other'}
         <span>Ce navigateur ne peut pas installer l'application : ouvrez le site dans Chrome pour le faire.</span>
       {:else}

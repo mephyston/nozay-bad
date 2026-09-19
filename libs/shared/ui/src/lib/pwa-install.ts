@@ -2,8 +2,10 @@
  * Où et comment une PWA peut s'installer, d'après le user-agent.
  *
  * Trois familles, trois marches à suivre :
- * - iOS : seul Safari a le menu « Sur l'écran d'accueil » ; les autres navigateurs
- *   n'installent rien.
+ * - iOS : tous les navigateurs installent depuis leur bouton Partager. Seul Safari le
+ *   savait avant iOS 16.4 (mars 2023) ; depuis, Chrome, Firefox et Edge — tous sur
+ *   WebKit — posent la même web app, autonome et avec le push. Le bandeau renvoyait
+ *   vers Safari : un détour inutile, et un iOS plus ancien n'a de toute façon pas le push.
  * - Android hors Chrome : l'installation passe par un WebAPK que le navigateur fait
  *   fabriquer par SON serveur. Celui de Samsung Internet produit des paquets visant une
  *   API trop ancienne : Android 14+ les bloque (« Appli non sécurisée bloquée »,
@@ -16,7 +18,7 @@
  * ils passent par la voie normale.
  */
 
-export type InstallTarget = 'ios-safari' | 'ios-other' | 'android-other' | 'default';
+export type InstallTarget = 'ios' | 'android-other' | 'default';
 
 /** Play Store : de là où Chrome est absent, l'intent y renvoie. */
 const CHROME_PACKAGE = 'com.android.chrome';
@@ -35,9 +37,7 @@ const ANDROID_OTHER_BROWSERS =
 
 export function detectInstallTarget(ua: string, maxTouchPoints = 0): InstallTarget {
   const lower = ua.toLowerCase();
-  if (isIOS(ua, maxTouchPoints)) {
-    return /crios|fxios|edgios|opios|opt\//.test(lower) ? 'ios-other' : 'ios-safari';
-  }
+  if (isIOS(ua, maxTouchPoints)) return 'ios';
   if (/android/.test(lower)) {
     // Un Chrome authentique porte « Chrome/ » sans aucune des marques ci-dessus.
     if (ANDROID_OTHER_BROWSERS.test(lower) || !/chrome\//.test(lower)) return 'android-other';

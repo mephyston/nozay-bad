@@ -70,6 +70,6 @@ Une notification désactivée indique la variable du Worker API qui l'active. C'
 Depuis son espace, chaque adhérent active les notifications sur son appareil, puis choisit les catégories qu'il souhaite recevoir : *Communications du bureau*, *Anniversaires*, *Mes notes de frais*, *Mes commandes boutique*, *Relances* et *Mes équipes interclubs*. Tout est actif par défaut ; il décoche ce qu'il ne veut plus.
 
 > [!NOTE]
-> Sur iPhone et iPad, les notifications ne fonctionnent **que si l'espace adhérent a été ajouté à l'écran d'accueil** depuis Safari. C'est une contrainte d'iOS. Un adhérent qui consulte le site dans un onglet classique voit la marche à suivre à la place du bouton d'activation.
+> Sur iPhone et iPad, les notifications ne fonctionnent **que si l'espace adhérent a été ajouté à l'écran d'accueil** (Partager → Sur l'écran d'accueil, depuis Safari, Chrome ou Firefox). C'est une contrainte d'iOS. Un adhérent qui consulte le site dans un onglet classique voit la marche à suivre à la place du bouton d'activation.
 
 Un appareil devenu injoignable — application désinstallée, autorisation révoquée — est retiré automatiquement de la liste des abonnés.

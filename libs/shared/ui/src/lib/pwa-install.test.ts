@@ -40,15 +40,16 @@ describe('detectInstallTarget', () => {
     expect(detectInstallTarget(ua)).toBe('android-other');
   });
 
-  it('distingue Safari des autres navigateurs sur iOS', () => {
-    expect(detectInstallTarget(UA.safariIOS)).toBe('ios-safari');
-    expect(detectInstallTarget(UA.chromeIOS)).toBe('ios-other');
+  it('donne la même marche à suivre à tous les navigateurs iOS, Chrome compris', () => {
+    // Depuis iOS 16.4, Chrome, Firefox et Edge installent aussi depuis Partager.
+    expect(detectInstallTarget(UA.safariIOS)).toBe('ios');
+    expect(detectInstallTarget(UA.chromeIOS)).toBe('ios');
   });
 
   it("reconnaît l'iPad qui se fait passer pour un Mac grâce au tactile", () => {
     expect(isIOS(UA.ipadOS, 5)).toBe(true);
     expect(isIOS(UA.ipadOS, 0)).toBe(false);
-    expect(detectInstallTarget(UA.ipadOS, 5)).toBe('ios-safari');
+    expect(detectInstallTarget(UA.ipadOS, 5)).toBe('ios');
   });
 
   it('ne touche pas au bureau', () => {

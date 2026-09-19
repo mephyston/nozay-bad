@@ -33,7 +33,7 @@ Un bouton dans l'en-tête bascule entre le thème clair et le thème sombre. Le 
 
 ## Installer l'application
 
-L'administration est une application web installable (PWA). Une bannière propose l'installation sur les appareils compatibles ; sur iPhone et iPad, l'installation passe par le menu **Partager → Sur l'écran d'accueil** de Safari. La bannière réapparaît au bout de trente jours si vous l'avez fermée.
+L'administration est une application web installable (PWA). Une bannière propose l'installation sur les appareils compatibles ; sur iPhone et iPad, l'installation passe par le menu **Partager → Sur l'écran d'accueil** du navigateur (Safari, Chrome ou Firefox). La bannière réapparaît au bout de trente jours si vous l'avez fermée.
 
 ## Les nouveautés
 
