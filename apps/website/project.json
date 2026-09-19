@@ -5,7 +5,8 @@
   "sourceRoot": "apps/website/src",
   "implicitDependencies": [
     "@nba/runtime-env",
-    "@nba/security-headers"
+    "@nba/security-headers",
+    "@nba/ui"
   ],
   "targets": {
     "lint": {

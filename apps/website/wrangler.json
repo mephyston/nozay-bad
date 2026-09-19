@@ -38,6 +38,16 @@
       "service": "nba-api"
     }
   ],
+  "ratelimits": [
+    {
+      "name": "SEARCH_LIMITER",
+      "namespace_id": "1001",
+      "simple": {
+        "limit": 30,
+        "period": 60
+      }
+    }
+  ],
   "env": {
     "staging": {
       "name": "nba-website-staging",
@@ -55,6 +65,16 @@
         {
           "binding": "API_SERVICE",
           "service": "nba-api-staging"
+        }
+      ],
+      "ratelimits": [
+        {
+          "name": "SEARCH_LIMITER",
+          "namespace_id": "1002",
+          "simple": {
+            "limit": 30,
+            "period": 60
+          }
         }
       ],
       "r2_buckets": [

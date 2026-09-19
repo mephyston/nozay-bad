@@ -51,6 +51,8 @@ function getDeclaredVars() {
             if (Array.isArray(obj.r2_buckets)) obj.r2_buckets.forEach(r2 => r2.binding && declared.add(r2.binding));
             if (Array.isArray(obj.queues?.producers)) obj.queues.producers.forEach(q => q.binding && declared.add(q.binding));
             if (Array.isArray(obj.services)) obj.services.forEach(s => s.binding && declared.add(s.binding));
+            // Limiteurs de débit : le binding porte `name`, pas `binding`.
+            if (Array.isArray(obj.ratelimits)) obj.ratelimits.forEach(r => r.name && declared.add(r.name));
             // Bindings déclarés en objet et non en tableau : un seul par worker. Sans
             // eux, `c.env.IMAGES` et `c.env.AI` passent pour des variables oubliées et
             // la vérification échoue alors que la déclaration est bien là.

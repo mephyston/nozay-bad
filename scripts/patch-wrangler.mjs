@@ -65,6 +65,8 @@ const APPLICABLE_KEYS = new Set([
   'r2_buckets',
   'd1_databases',
   'queues',
+  // Non héritables chez wrangler : chaque environnement déclare les siens.
+  'ratelimits',
   'routes',
   'route',
   'triggers',
@@ -293,6 +295,7 @@ function runCheck() {
     compare('kv_namespaces', source.kv_namespaces, staging.kv_namespaces, (kv) => kv.binding);
     compare('r2_buckets', source.r2_buckets, staging.r2_buckets, (r) => r.binding);
     compare('d1_databases', source.d1_databases, staging.d1_databases, (d) => d.binding);
+    compare('ratelimits', source.ratelimits, staging.ratelimits, (r) => r.name);
 
     const rootVars = Object.keys(source.vars ?? {}).sort();
     const envVars = Object.keys(staging.vars ?? {}).sort();

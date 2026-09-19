@@ -106,7 +106,11 @@ const QUERY_RULES: Record<string, (raw: string) => string | null | typeof NOT_CA
   page: (raw) => {
     const value = Number(raw);
     return Number.isSafeInteger(value) && value > 1 ? String(value) : null;
-  }
+  },
+  // Recherche : chaque saisie est un rendu distinct, et aucune ne se range. Sans cette
+  // règle, `?q=` serait ignoré et la première recherche empoisonnerait l'entrée de la
+  // page nue.
+  q: () => NOT_CACHEABLE
 };
 
 /**

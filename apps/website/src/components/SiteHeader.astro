@@ -1,5 +1,6 @@
 ---
 import ThemeToggle from './ThemeToggle.astro';
+import SiteSearch from './SiteSearch.svelte';
 import { resolveEnv } from '../lib/request-context';
 import { listNavItems, type NavItemView } from '../lib/cms';
 
@@ -191,6 +192,8 @@ const openSection = nav.findIndex((item) => item.children.length > 0 && isActive
     </nav>
 
     <div class="ml-auto flex items-center gap-1">
+      {/* Les entrées de premier niveau qui mènent quelque part : les liens rapides de la loupe. */}
+      <SiteSearch client:idle quickLinks={nav.flatMap((item) => (item.href ? [{ label: item.label, href: item.href }] : item.children.filter((c) => c.href).map((c) => ({ label: c.label, href: c.href as string })))).slice(0, 8)} />
       <ThemeToggle />
 
       <button

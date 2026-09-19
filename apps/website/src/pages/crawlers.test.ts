@@ -58,6 +58,12 @@ describe('robots.txt', () => {
     expect(await body('production')).toContain('Disallow: /actualites/?');
   });
 
+  it('tient les robots hors de la recherche, qui calcule à chaque requête', async () => {
+    const text = await body('production');
+    expect(text).toContain('Disallow: /recherche/');
+    expect(text).toContain('Disallow: /api/');
+  });
+
   it('laisse explorer les URL héritées de WordPress, pour qu’elles sortent de l’index', async () => {
     // Bloquée, une adresse ne peut pas être désindexée : Google ne voit jamais son
     // 410. `?replytocom=` et `/wp-includes/…?ver=` restaient ainsi « indexées malgré

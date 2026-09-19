@@ -6,6 +6,8 @@ import { cmsPostsTable } from '../../shared/schema';
 export interface SearchablePost {
   id: number;
   slug: string;
+  /** Chemin sur le site public (`/actualites/<slug>/`). */
+  path: string;
   title: string;
   excerpt: string | null;
   visibility: 'public' | 'private';
@@ -25,6 +27,7 @@ export class SearchPostsRepository {
       .select({
         id: cmsPostsTable.id,
         slug: cmsPostsTable.slug,
+        path: cmsPostsTable.path,
         title: cmsPostsTable.title,
         excerpt: cmsPostsTable.excerpt,
         visibility: cmsPostsTable.visibility,

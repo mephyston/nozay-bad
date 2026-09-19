@@ -51,6 +51,9 @@ export const GET: APIRoute = ({ locals, url }) => {
     // change rien au rendu, et la balise canonique règle les marqueurs de campagne.
     '# Le filtre et la pagination des actualités n’ont pas de contenu propre : le sitemap dit tout.',
     'Disallow: /actualites/?',
+    '# La recherche calcule à chaque requête et n’a rien à indexer.',
+    'Disallow: /recherche/',
+    'Disallow: /api/',
     '',
     // Ignoré par Google, qui règle sa cadence seul et la respecte ; honoré par Bing,
     // Yandex et la plupart des robots de moindre qualité, qui sont précisément ceux
