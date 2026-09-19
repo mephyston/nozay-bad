@@ -151,7 +151,7 @@ const frenchDate = (iso: string) =>
 <Layout title={member ? fullName : 'Fiche adhérent'}>
   <Header currentPath="/adherents" />
 
-  <main class="flex-1 p-3 sm:p-6 w-full pb-24 md:pb-6">
+  <main class="flex-1 p-3 sm:p-6 w-full pb-nav md:pb-6">
     <div class="max-w-3xl mx-auto space-y-6">
       {fromTeam && (
         <a href={`/equipes/${fromTeam.id}`} class="text-sm text-muted-foreground hover:text-foreground no-underline">

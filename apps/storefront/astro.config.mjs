@@ -96,6 +96,35 @@ export default defineConfig({
     },
     plugins: [tailwindcss()],
     optimizeDeps: {
+      /*
+        Même défaut que le site public : le rendu Svelte côté serveur n'est découvert
+        qu'au premier rendu, Vite ré-optimise et renomme ses chunks, et le worker SSR
+        de Cloudflare réclame l'ancien (« The file does not exist at …/deps_ssr/… »).
+        Sous le démon de dev d'Astro 7, le serveur mourait avant d'être prêt.
+      */
+      include: [
+        'astro/assets/services/noop',
+        'astro/app/manifest',
+        'astro/logger/console',
+        '@astrojs/svelte/server.js',
+        // Les dépendances des composants partagés, découvertes tard elles aussi (lues
+        // dans les lignes « dependency optimized » du journal `.astro/dev.log`).
+        'bits-ui',
+        'mode-watcher',
+        'svelte-sonner',
+        'tailwind-merge',
+        'tailwind-variants',
+        'vaul-svelte',
+        '@internationalized/date',
+        'drizzle-orm',
+        'drizzle-orm/sqlite-core',
+        '@lucide/svelte/icons/chevron-left',
+        '@lucide/svelte/icons/chevron-right',
+        '@lucide/svelte/icons/more-horizontal',
+        '@lucide/svelte/icons/panel-left',
+        '@lucide/svelte/icons/search',
+        '@lucide/svelte/icons/x'
+      ],
       exclude: [
         'astro:transitions',
         '@astrojs/cloudflare',

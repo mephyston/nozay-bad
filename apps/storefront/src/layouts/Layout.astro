@@ -143,13 +143,13 @@ const ICON_SUFFIX = APP_ENV === 'development' ? '-dev' : APP_ENV === 'staging' ?
     <slot />
 
     <!--
-      Posé au-dessus de la barre d'onglets en petite largeur (`bottom-[4.5rem]`), qui
+      Posé au-dessus de la barre d'onglets flottante en petite largeur (hauteur + décollement + zone sûre), qui
       occupe le bas de l'écran et masquerait sinon le bandeau. Sur grand écran, il n'y a
       pas de barre : le bandeau se range simplement en bas.
     -->
     <div
       id="sw-update-banner"
-      class="hidden fixed inset-x-0 bottom-[4.5rem] z-50 mx-3 rounded-xl border border-border bg-card px-4 py-3 shadow-lg md:bottom-4 md:mx-auto md:max-w-md"
+      class="hidden fixed inset-x-0 bottom-[calc(5.75rem+env(safe-area-inset-bottom,0px))] z-50 mx-3 rounded-xl border border-border bg-card px-4 py-3 shadow-lg md:bottom-4 md:mx-auto md:max-w-md"
       role="status"
     >
       <div class="flex flex-wrap items-center justify-between gap-2">

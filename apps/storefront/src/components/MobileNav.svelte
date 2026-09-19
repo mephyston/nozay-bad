@@ -27,8 +27,25 @@
   ].filter((item) => !item.feature || features[item.feature] !== false);
 </script>
 
+<!--
+  Barre flottante, en verre.
+
+  Détachée du bord et arrondie, elle laisse le contenu défiler dessous : c'est le
+  geste commun des barres d'onglets d'iOS 26 comme de Material 3 Expressive. La
+  matière — fond translucide, flou, liseré clair — est celle du Liquid Glass d'iOS,
+  que WebKit n'expose pas au web : on la fabrique avec `backdrop-filter`. Elle reste
+  sobre sur Android, où seule la teinte du fond change ; rien des animations propres
+  à iOS (rétractation au défilement, onglet qui gonfle) n'est repris : fragile en web,
+  et étranger aux adhérents Android.
+
+  Deux replis : un moteur sans `backdrop-filter` reçoit une barre opaque, et le réglage
+  d'accessibilité « Réduire la transparence » du système aussi — le respecter, c'est ne
+  pas contredire ce que l'utilisateur a demandé à son téléphone.
+-->
 <nav
-  class="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background border-t border-border flex items-center justify-around pb-safe shadow-[0_-4px_10px_rgba(0,0,0,0.05)] dark:shadow-[0_-4px_10px_rgba(0,0,0,0.2)]"
+  class="glass-nav md:hidden fixed inset-x-3 z-50 flex items-center justify-around rounded-[1.75rem] px-1"
+  style="bottom: calc(env(safe-area-inset-bottom, 0px) + 0.75rem)"
+  aria-label="Navigation principale"
 >
   {#each items as item (item.href)}
     {@const Icon = item.icon}
@@ -38,19 +55,45 @@
     <a
       href={item.href}
       aria-current={active ? 'page' : undefined}
-      class={`flex flex-col items-center justify-center w-full py-2.5 gap-1 min-h-[56px] transition-colors decoration-transparent ${
-        active ? 'text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+      class={`flex flex-col items-center justify-center flex-1 min-w-0 my-1.5 py-1.5 gap-0.5 min-h-[52px] rounded-[1.25rem] transition-colors decoration-transparent ${
+        active ? 'text-primary bg-primary/12' : 'text-muted-foreground hover:text-foreground'
       }`}
     >
       <Icon class="w-6 h-6" />
-      <span class="text-[11px] font-medium">{item.label}</span>
+      <span class="text-[11px] font-medium truncate max-w-full px-1">{item.label}</span>
     </a>
   {/each}
 </nav>
 
 <style>
-  /* env(safe-area-inset-bottom) : encoche/indicateur home iOS */
-  .pb-safe {
-    padding-bottom: env(safe-area-inset-bottom, 0px);
+  .glass-nav {
+    /* Teinte à 72 % : en dessous, le texte qui défile derrière gêne la lecture des libellés. */
+    background: color-mix(in oklab, var(--card) 72%, transparent);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+    backdrop-filter: blur(20px) saturate(160%);
+    border: 1px solid color-mix(in oklab, var(--border) 70%, transparent);
+    /* Le liseré clair du bord supérieur, qui fait le « verre », puis l'ombre portée qui décolle la barre. */
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.35),
+      0 8px 24px rgb(0 0 0 / 0.12),
+      0 1px 2px rgb(0 0 0 / 0.08);
+  }
+  :global(.dark) .glass-nav {
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.1),
+      0 8px 28px rgb(0 0 0 / 0.45),
+      0 1px 2px rgb(0 0 0 / 0.3);
+  }
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .glass-nav {
+      background: var(--card);
+    }
+  }
+  @media (prefers-reduced-transparency: reduce) {
+    .glass-nav {
+      background: var(--card);
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
+    }
   }
 </style>
