@@ -2,6 +2,7 @@
   import type { Snippet } from 'svelte';
   import { tick } from 'svelte';
   import { Search, X } from '@lucide/svelte';
+  import { Portal } from 'bits-ui';
 
   /**
    * La recherche de l'en-tête, à la souris.
@@ -72,7 +73,12 @@
 </button>
 
 {#if open}
-  <!-- Le reste de la page s'estompe ; un clic dessus referme. -->
+  <!--
+    Porté hors de l'en-tête : celui-ci est collant et fait contexte d'empilement, si bien
+    qu'un panneau rendu dedans passerait sous une barre du bas pourtant moins haute.
+    Le reste de la page s'estompe ; un clic dessus referme.
+  -->
+  <Portal>
   <button type="button" class="fixed inset-0 z-[90] cursor-default bg-background/60 backdrop-blur-md animate-in fade-in duration-200" aria-label="Fermer la recherche" onclick={closeSearch}></button>
   <div
     class="fixed inset-x-0 top-0 z-[91] border-b border-border bg-card/95 shadow-xl backdrop-blur-xl animate-in slide-in-from-top-4 fade-in duration-200"
@@ -107,4 +113,5 @@
       </div>
     </div>
   </div>
+  </Portal>
 {/if}

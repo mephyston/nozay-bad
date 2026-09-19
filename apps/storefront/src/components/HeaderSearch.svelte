@@ -5,9 +5,10 @@
   import SearchResults from './SearchResults.svelte';
 
   /**
-   * La loupe de l'en-tête, à la souris : le panneau qui descend du haut, avec les
-   * mêmes deux étages que la loupe du bas. Avant la saisie, les entrées de « Mon
-   * compte » tiennent lieu de liens rapides.
+   * La loupe de l'en-tête — la seule, au doigt comme à la souris : le panneau qui
+   * descend du haut de l'écran, à deux étages (le menu, puis le contenu du club).
+   * Avant la saisie, les entrées de « Mon compte » tiennent lieu de liens rapides.
+   * La barre du bas n'en a pas : deux loupes à l'écran, c'est une de trop.
    */
   let {
     features = {},
@@ -32,7 +33,6 @@
 <HeaderSearch
   bind:this={panel}
   bind:query
-  class="hidden md:inline-flex"
   placeholder="Adhérent, article, équipe, produit…"
   onSubmit={() => firstHref && go(firstHref)}
 >

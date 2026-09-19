@@ -108,7 +108,7 @@ const activeSeasonId = displaySeason(seasons, session?.seasonCode)?.code ?? '';
     )}
   </main>
 
-  <MobileNav client:idle features={Astro.locals.club?.features ?? {}} currentPath="/note-de-frais" session={Astro.locals.session} />
+  <MobileNav features={Astro.locals.club?.features ?? {}} currentPath="/note-de-frais" />
 
   <footer class="hidden md:block border-t border-border mt-12 py-8 bg-card/20 text-center text-xs text-muted-foreground md:pb-8">
     <p>© {new Date().getFullYear()} {Astro.locals.club?.settings.name}. Tous droits réservés.</p>
