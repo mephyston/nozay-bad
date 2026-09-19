@@ -547,8 +547,13 @@ jobs:
 
       # Chaque paquet installé porte la signature du registre npm : un paquet substitué
       # entre le registre et le runner (miroir, cache, proxy) ne la porte pas.
+      #
+      # Une seconde chance après trente secondes : le registre a déjà servi, l'espace
+      # d'un instant, des attestations sans la clé qui les vérifie (EMISSINGSIGNATUREKEY
+      # sur un paquet inchangé, deux fois le 19/09/2026), et un aléa du registre ne
+      # doit pas bloquer un déploiement. Un paquet réellement altéré échoue les deux fois.
       - name: Intégrité des paquets (npm audit signatures)
-        run: npm audit signatures
+        run: npm audit signatures || (sleep 30 && npm audit signatures)
 
       # Les workflows sont une surface d'attaque à part entière : zizmor audite leurs
       # motifs dangereux (injection par gabarit, actions non épinglées, droits trop
