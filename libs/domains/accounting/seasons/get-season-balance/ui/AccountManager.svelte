@@ -6,7 +6,7 @@
   import AccountHistoryTable from './AccountHistoryTable.svelte';
   import MemberAdvancesWidget from './MemberAdvancesWidget.svelte';
   import TransactionFormSheet from '../../../ledger/list-ledger-entries/ui/TransactionFormSheet.svelte';
-  import { submitTransaction, validateTransaction, deleteTransaction, type TransactionFormValues } from '../../../ledger/list-ledger-entries/ui/ledger-actions';
+  import { submitTransaction, validateTransaction, deleteTransaction, editValuesFor, type TransactionFormValues } from '../../../ledger/list-ledger-entries/ui/ledger-actions';
   import type { AccountLike } from '../../../shared/account-labels';
   import type { MemberLike } from '../../../ledger/list-ledger-entries/ui/member-options';
   import { toast, submitForm, uiConfirm, flashAndReload, seasonForDate } from '@nba/ui';
@@ -108,6 +108,8 @@
 
   // L'état du formulaire du grand livre, tel qu'il le lie.
   let open = $state(false);
+  let editingId = $state<number | null>(null);
+  let editingTransferId = $state<number | null>(null);
   let showPanel = $state<'recette' | 'depense' | 'transfert' | null>(null);
   let amount = $state('');
   let date = $state(today);
@@ -129,6 +131,8 @@
   $effect(() => { if (!open) showPanel = null; });
 
   function applyValues(values: TransactionFormValues) {
+    editingId = values.editingId;
+    editingTransferId = values.editingTransferId ?? null;
     amount = values.amount;
     date = values.date;
     category = values.category || (activeCategories[0]?.id ?? '');
@@ -141,7 +145,7 @@
     accrualType = values.accrualType;
     accrualNote = values.accrualNote;
     targetSeasonId = values.targetSeasonId;
-    memberId = '';
+    memberId = values.memberId ?? '';
     errorMsg = '';
     showPanel = values.showPanel;
   }
@@ -162,18 +166,26 @@
     if (refundAction) startAction(refundAction, advance);
   }
 
+  /*
+   * Rouvrir un mouvement pour le corriger. Le formulaire est le même qu'à la saisie, rempli de ce
+   * que l'écriture porte ; un virement s'y rouvre entier, reconstitué depuis la jambe affichée.
+   */
+  function startEdit(tx: AccountEntry) {
+    applyValues(editValuesFor(tx, accounts, { accountId: account.code, seasonId: seasonForForm(tx.date) }));
+  }
+
   async function handleSubmit(e: Event) {
     e.preventDefault();
     isSubmitting = true;
     errorMsg = '';
     const values: TransactionFormValues = {
-      editingId: null, showPanel, amount, date, category, formAccountId, destinationAccountId,
+      editingId, editingTransferId, showPanel, amount, date, category, formAccountId, destinationAccountId,
       destinationDate, paymentMethod, description, reference, accrualType, accrualNote, targetSeasonId, memberId
     };
     await submitForm({
       validate: () => validateTransaction(values),
       submit: () => submitTransaction(values),
-      success: 'Mouvement enregistré.',
+      success: editingId ? 'Mouvement modifié.' : 'Mouvement enregistré.',
       close: () => { showPanel = null; },
       onError: (message) => { errorMsg = message; }
     });
@@ -218,6 +230,7 @@
       {seasons}
       {accounts}
       catalogue={actions}
+      onEdit={startEdit}
       onDelete={handleDelete}
       onAction={(action) => startAction(action)}
     />
@@ -226,7 +239,7 @@
   <TransactionFormSheet
     bind:open
     bind:showPanel
-    editingId={null}
+    {editingId}
     bind:amount
     bind:date
     bind:category

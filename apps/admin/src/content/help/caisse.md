@@ -37,4 +37,10 @@ La ligne du relevé bancaire correspondante sera ensuite associée à la jambe c
 > [!TIP]
 > Le solde affiché doit toujours correspondre à l'argent réellement présent dans la caisse du club. Un écart signale un mouvement oublié : comptez la caisse avant chaque dépôt en banque.
 
-Lorsque la saison est clôturée, l'écran passe en lecture seule et le formulaire est désactivé.
+## Corriger ou supprimer un mouvement
+
+Le menu d'actions de chaque ligne permet de **modifier** ou de **supprimer** le mouvement. La modification rouvre le formulaire rempli de ce que la ligne porte ; c'est le même geste que dans le [grand livre](/admin/help/grand-livre), avec les mêmes droits.
+
+Un virement se corrige et se supprime **entier**, ses deux jambes à la fois, quel que soit le compte depuis lequel on l'ouvre : le formulaire montre le compte source, le compte destinataire et les deux dates. Si l'une des jambes a déjà été pointée au rapprochement, son montant et son compte ne bougent plus — dissociez-la d'abord, puis corrigez. Le libellé, la référence et les dates restent modifiables.
+
+Lorsque la saison est clôturée, l'écran passe en lecture seule : le formulaire est désactivé et le menu des lignes disparaît.

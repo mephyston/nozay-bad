@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { Trash2, Plus } from '@lucide/svelte';
-  import { Button, Badge, Amount, DataTable, DataTableToolbar, DropdownMenu, FormField, SearchableCombobox, Table, softNavigate, toSeasonOptions } from '@nba/ui';
+  import { Edit2, Trash2, Plus } from '@lucide/svelte';
+  import { Button, Badge, Amount, DataTable, DataTableRowActions, DataTableToolbar, DropdownMenu, FormField, SearchableCombobox, Table, softNavigate, toSeasonOptions } from '@nba/ui';
   import type { AccountEntry, Season } from './account-types';
   import type { AccountAction } from './account-actions';
   import { accountLabelOf, type AccountLike } from '../../../shared/account-labels';
@@ -15,6 +15,7 @@
     seasons = [],
     accounts = [],
     catalogue = [],
+    onEdit,
     onDelete,
     onAction
   }: {
@@ -29,6 +30,8 @@
     accounts?: AccountLike[];
     /** Les gestes pré-câblés de ce compte : le bouton « Nouveau » les propose. */
     catalogue?: AccountAction[];
+    /** Rouvre le mouvement dans le formulaire ; un virement s'y rouvre entier. */
+    onEdit?: (tx: AccountEntry) => void;
     onDelete: (id: number) => void;
     onAction?: (action: AccountAction) => void;
   } = $props();
@@ -126,18 +129,22 @@
               <Amount cents={-tx.amount} showSign colored />
             {/if}
           </Table.Cell>
-          <Table.Cell class="py-3 px-2 text-right">
-            <!-- Supprimer une jambe de virement supprime le virement entier, ses deux jambes. -->
-            <Button
-              variant="ghost"
-              size="icon-xs"
-              onclick={() => onDelete(tx.id)}
-              class="text-muted-foreground hover:text-destructive p-1 rounded transition-colors"
-              aria-label="Supprimer"
-              disabled={isClosed || !canDelete}
-            >
-              <Trash2 class="w-4 h-4" />
-            </Button>
+          <Table.Cell class="py-3 px-2 text-right relative">
+            <!-- Modifier ou supprimer une jambe de virement porte sur le virement entier, ses deux jambes. -->
+            {#if !isClosed && ((onEdit && canWrite) || canDelete)}
+              <DataTableRowActions>
+                {#if onEdit && canWrite}
+                  <DropdownMenu.Item onclick={() => onEdit(tx)} class="cursor-pointer">
+                    <Edit2 class="w-3.5 h-3.5 mr-2" /> Modifier
+                  </DropdownMenu.Item>
+                {/if}
+                {#if canDelete}
+                  <DropdownMenu.Item onclick={() => onDelete(tx.id)} class="text-destructive focus:text-destructive cursor-pointer">
+                    <Trash2 class="w-3.5 h-3.5 mr-2" /> Supprimer
+                  </DropdownMenu.Item>
+                {/if}
+              </DataTableRowActions>
+            {/if}
           </Table.Cell>
         </Table.Row>
       {/snippet}

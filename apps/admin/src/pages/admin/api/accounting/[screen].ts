@@ -233,6 +233,24 @@ export const ECRANS: Record<string, Ecran> = {
           body: data.updates
         })
       },
+      // Un virement se corrige entier, par l'identifiant du virement et non celui d'une jambe.
+      'update-transfer': {
+        permission: 'accounting:ledger:write',
+        route: (data) => ({
+          chemin: `/accounting/internal-transfers/${identifiant(data.id, 'de virement')}`,
+          method: 'PUT',
+          body: {
+            seasonId: data.seasonId,
+            sourceAccountId: data.sourceAccountId,
+            destinationAccountId: data.destinationAccountId,
+            amountCents: data.amountCents,
+            sourceDate: data.sourceDate,
+            destinationDate: data.destinationDate,
+            description: data.description,
+            reference: data.reference
+          }
+        })
+      },
       delete: {
         permission: 'accounting:ledger:delete',
         route: (data) => ({

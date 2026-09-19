@@ -1,5 +1,6 @@
 import { softNavigate } from '@nba/ui';
 import type { Transaction } from './ledger-types';
+import { findAccount, type AccountLike } from '../../../shared/account-labels';
 
 /**
  * Destination des écritures : le relais du domaine, et non la page hôte.
@@ -12,6 +13,11 @@ const RELAIS = '/admin/api/accounting/ledger';
 
 export interface TransactionFormValues {
   editingId: number | null;
+  /**
+   * Le virement parent quand on modifie une jambe : c'est lui que l'API corrige, entier. Une
+   * jambe seule ne se modifie pas — un montant changé d'un côté seulement créerait de l'argent.
+   */
+  editingTransferId?: number | null;
   showPanel: 'recette' | 'depense' | 'transfert' | null;
   amount: string;
   date: string;
@@ -32,6 +38,59 @@ export interface TransactionFormValues {
    * l'attestation. Une dépense ou un virement partent sans.
    */
   memberId?: string;
+}
+
+/**
+ * Ce qu'une écriture existante met dans le formulaire pour être modifiée.
+ *
+ * Une recette ou une dépense se recopie champ à champ. Un virement demande plus : la ligne
+ * qu'on a sous la main n'est qu'une de ses deux jambes, et le formulaire veut le virement entier
+ * — compte source, compte destinataire, date du débit, date du crédit. On les reconstitue depuis
+ * la jambe et ce qu'elle sait de sa jumelle (`counterpartAccountId`, `counterpartDate`), que l'on
+ * soit entré par le côté qui sort ou par celui qui reçoit.
+ */
+export function editValuesFor(
+  tx: Pick<Transaction, 'id' | 'type' | 'accountId' | 'amount' | 'date' | 'paymentMethod' | 'description' | 'reference'> &
+    Partial<Pick<Transaction, 'categoryId' | 'accrualType' | 'accrualNote' | 'memberId' | 'transferId' | 'transferLeg' | 'counterpartAccountId' | 'counterpartDate'>> & {
+      // L'API projette l'identifiant numérique ; le grand livre le déclare en chaîne. Les deux passent.
+      seasonId?: string | number | null;
+    },
+  accounts: readonly AccountLike[],
+  fallback: { accountId: string; seasonId: string }
+): TransactionFormValues {
+  const codeOf = (id: number | string | null | undefined) => findAccount(accounts, id)?.code ?? '';
+  const own = codeOf(tx.accountId) || fallback.accountId;
+  const common = {
+    editingId: tx.id,
+    editingTransferId: tx.transferId ?? null,
+    showPanel: tx.type,
+    amount: (tx.amount / 100).toFixed(2),
+    category: tx.categoryId ? String(tx.categoryId) : '1',
+    paymentMethod: tx.paymentMethod,
+    description: tx.description,
+    reference: tx.reference || '',
+    accrualType: tx.accrualType || 'normal',
+    accrualNote: tx.accrualNote || '',
+    targetSeasonId: tx.seasonId !== undefined && tx.seasonId !== null ? String(tx.seasonId) : fallback.seasonId,
+    // L'adhérent déjà rattaché — au rapprochement, par un chèque — se garde à la modification.
+    memberId: tx.memberId ? String(tx.memberId) : ''
+  };
+
+  if (tx.type !== 'transfert') {
+    return { ...common, date: tx.date, formAccountId: own, destinationAccountId: '', destinationDate: '' };
+  }
+
+  const other = codeOf(tx.counterpartAccountId);
+  const otherDate = tx.counterpartDate ?? tx.date;
+  const [sourceDate, destinationDate] = tx.transferLeg === 'destination' ? [otherDate, tx.date] : [tx.date, otherDate];
+  return {
+    ...common,
+    date: sourceDate,
+    // La date de crédit ne s'affiche que distincte : vide, elle vaut celle du débit.
+    destinationDate: destinationDate !== sourceDate ? destinationDate : '',
+    formAccountId: tx.transferLeg === 'destination' ? other : own,
+    destinationAccountId: tx.transferLeg === 'destination' ? own : other
+  };
 }
 
 /** L'adhésion telle que l'API l'attend : un nombre, ou `null` pour une écriture générale. */
@@ -63,29 +122,38 @@ export async function submitTransaction(params: TransactionFormValues): Promise<
   /*
    * Un virement n'emprunte pas la même route qu'une recette : il écrit **deux** écritures, une
    * par compte, chacune avec sa date de valeur et son propre pointage bancaire. La route du grand
-   * livre n'en écrit qu'une et refuse désormais franchement le type `transfert`.
+   * livre n'en écrit qu'une et refuse franchement le type `transfert` ; à la modification comme à
+   * la saisie, c'est le virement entier qui part, désigné par son identifiant à lui.
    */
-  if (params.showPanel === 'transfert' && !params.editingId) {
+  if (params.showPanel === 'transfert') {
+    if (params.editingId && !params.editingTransferId) {
+      throw new Error('Cette jambe ne connaît pas son virement : rechargez la page avant de la modifier.');
+    }
+    const transfer = {
+      seasonId: params.targetSeasonId,
+      sourceAccountId: params.formAccountId,
+      destinationAccountId: params.destinationAccountId,
+      amountCents: Math.round(floatAmount * 100),
+      sourceDate: params.date,
+      destinationDate: params.destinationDate || params.date,
+      description: params.description,
+      reference: params.reference || null
+    };
     const res = await fetch(RELAIS, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'create-transfer',
-        seasonId: params.targetSeasonId,
-        sourceAccountId: params.formAccountId,
-        destinationAccountId: params.destinationAccountId,
-        amountCents: Math.round(floatAmount * 100),
-        sourceDate: params.date,
-        destinationDate: params.destinationDate || params.date,
-        description: params.description,
-        reference: params.reference || null
-      })
+      body: JSON.stringify(
+        params.editingId
+          ? { action: 'update-transfer', id: params.editingTransferId, ...transfer }
+          : { action: 'create-transfer', ...transfer }
+      )
     });
     const json = (await res.json().catch(() => ({}))) as { success?: boolean; error?: string };
     if (!res.ok || json?.success === false) {
-      throw new Error(json?.error || "Le virement n'a pas pu être enregistré.");
+      throw new Error(json?.error || (params.editingId ? "Le virement n'a pas pu être modifié." : "Le virement n'a pas pu être enregistré."));
     }
-    softNavigate(window.location.href);
+    // La liste réaffichée doit se recaler sur la ligne que l'on vient de modifier.
+    if (params.editingId) sessionStorage.setItem('scrollToTx', params.editingId.toString());
     return;
   }
 

@@ -206,6 +206,15 @@ export class ListTransactionsRepository {
           WHERE other.transfer_id = ${ledgerEntriesTable.transferId}
             AND other.id <> ${ledgerEntriesTable.id}
         )`,
+        /*
+         * Et sa date de valeur : modifier un virement depuis l'une de ses jambes doit rouvrir
+         * le formulaire avec les deux dates, celle du débit et celle du crédit.
+         */
+        counterpartDate: sql<string | null>`(
+          SELECT other.date FROM ledger_entries other
+          WHERE other.transfer_id = ${ledgerEntriesTable.transferId}
+            AND other.id <> ${ledgerEntriesTable.id}
+        )`,
         runningBalanceCents: sql<number>`CAST(${trueInitialBalance} + COALESCE(running_balance.cumul, 0) AS INTEGER)`.mapWith(Number)
       };
 

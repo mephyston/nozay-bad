@@ -12,20 +12,31 @@ export interface AccountEntry {
    * dépôt d'espèces, c'est-à-dire dès le geste que le centre d'aide recommande.
    */
   accountId: number;
+  /** L'exercice de rattachement, tel que l'écriture le porte : celui du formulaire à la modification. */
+  seasonId?: number | string;
+  /** Le virement parent d'une jambe ; `null` pour une recette ou une dépense. */
+  transferId?: number | null;
   /** De quel côté du virement se tient cette écriture ; `null` pour une recette ou une dépense. */
   transferLeg: 'source' | 'destination' | null;
   /** Le compte d'en face, lu sur la jambe jumelle. */
   counterpartAccountId: number | null;
+  /** La date de valeur de la jambe jumelle : le formulaire d'un virement porte les deux dates. */
+  counterpartDate?: string | null;
   /** Libellé de la catégorie (l'API projette `categories.admin_label`) ; `null` pour un virement. */
   category: string | null;
+  categoryId?: number | null;
   amount: number;
   date: string;
   paymentMethod: string;
   description: string;
   reference: string | null;
   /** L'adhérent rattaché à une recette, tel que l'API le nomme ; absent pour une écriture générale. */
+  memberId?: number | null;
   memberName?: string | null;
   memberLicence?: string | null;
+  /** Rattachement d'exercice : `normal`, ou l'un des quatre cut-off. */
+  accrualType?: string | null;
+  accrualNote?: string | null;
 }
 
 export interface Season {

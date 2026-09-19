@@ -85,14 +85,75 @@ describe('AccountManager', () => {
     expect(html()).toContain('vers Compte Courant');
   });
 
-  it('désactive la saisie et la suppression sur une saison clôturée', () => {
+  it('désactive la saisie et retire le menu de ligne sur une saison clôturée', () => {
     mountWith({
       seasons: [{ id: '25-26', name: 'Saison 2025-2026', active: false, closed: true }],
       transactions: [entry({ id: 1 })]
     });
     const newBtn = Array.from(target.querySelectorAll('button')).find((b) => /Nouveau/.test(b.textContent || ''));
     expect(newBtn?.hasAttribute('disabled')).toBe(true);
-    expect(target.querySelector('button[aria-label="Supprimer"]')?.hasAttribute('disabled')).toBe(true);
+    expect(rowMenuTrigger()).toBeUndefined();
+  });
+
+  const rowMenuTrigger = () =>
+    Array.from(target.querySelectorAll('button')).find((b) => b.textContent?.includes('Ouvrir le menu'));
+
+  /** Ouvre le menu de la première ligne et clique « Modifier ». */
+  const openEdit = async () => {
+    rowMenuTrigger()!.click();
+    flushSync();
+    await new Promise((r) => setTimeout(r, 50));
+    flushSync();
+    const item = Array.from(document.body.querySelectorAll('[role="menuitem"]')).find((el) => /Modifier/.test(el.textContent || '')) as HTMLElement;
+    expect(item).toBeDefined();
+    item.click();
+    flushSync();
+  };
+
+  it('rouvre une recette dans le formulaire, remplie de ce qu\'elle porte', async () => {
+    mountWith({
+      transactions: [entry({ id: 7, seasonId: 1, categoryId: 12, amount: 5000, memberId: 42, accrualType: 'normal', description: 'Vente boissons buvette' })],
+      seasons: [{ id: 1, code: '25-26', name: 'Saison 2025-2026', active: true }],
+      seasonId: '25-26'
+    });
+    await openEdit();
+
+    expect(document.body.textContent).toContain('Modifier la recette');
+    expect((document.body.querySelector('#amount-input') as HTMLInputElement).value).toBe('50.00');
+    expect((document.body.querySelector('#date-input') as HTMLInputElement).value).toBe('2026-07-13');
+    expect((document.body.querySelector('#description-input') as HTMLInputElement).value).toBe('Vente boissons buvette');
+  });
+
+  it('rouvre un virement entier depuis sa jambe reçue : source, destinataire et les deux dates', async () => {
+    // Sur l'écran Badnet, la recharge apparaît par sa jambe `destination` : le formulaire doit
+    // pourtant montrer le virement tel qu'il a été saisi, du compte courant vers le porte-monnaie.
+    mountWith({
+      account: ACCOUNTS[2],
+      transactions: [entry({
+        id: 8, type: 'transfert', accountId: 4, transferId: 3, transferLeg: 'destination', counterpartAccountId: 1,
+        date: '2026-07-15', counterpartDate: '2026-07-13', amount: 20_000, category: null, description: 'Recharge Badnet', paymentMethod: 'virement_interne'
+      })]
+    });
+    await openEdit();
+
+    expect(document.body.textContent).toContain('Modifier le virement interne');
+    expect((document.body.querySelector('#amount-input') as HTMLInputElement).value).toBe('200.00');
+    // La date du formulaire est celle du débit ; celle du crédit, distincte, s'affiche à part.
+    expect((document.body.querySelector('#date-input') as HTMLInputElement).value).toBe('2026-07-13');
+    expect((document.body.querySelector('#destination-date-input') as HTMLInputElement).value).toBe('2026-07-15');
+    expect(document.body.textContent).toContain('Compte Source');
+    expect(document.body.textContent).toContain('Compte Destinataire');
+  });
+
+  it('ne propose pas « Modifier » sans le droit d\'écriture, mais garde « Supprimer »', async () => {
+    mountWith({ canWrite: false, transactions: [entry({ id: 1 })] });
+    rowMenuTrigger()!.click();
+    flushSync();
+    await new Promise((r) => setTimeout(r, 50));
+    flushSync();
+    const items = Array.from(document.body.querySelectorAll('[role="menuitem"]')).map((el) => el.textContent?.trim());
+    expect(items.some((t) => /Modifier/.test(t || ''))).toBe(false);
+    expect(items.some((t) => /Supprimer/.test(t || ''))).toBe(true);
   });
 
   it("montre le compte d'attente comme une dette positive, avec les avances en attente", () => {

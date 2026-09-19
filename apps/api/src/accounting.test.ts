@@ -239,6 +239,23 @@ describe('Accounting API Endpoints', () => {
       console.log('TRANSFER_RES_ERROR:', await transferRes.clone().text());
     }
     expect(transferRes.status).toBe(200);
+    const transferId = ((await transferRes.json()) as any).data.id;
+
+    // 3c. Le virement se corrige entier, sur sa propre route : 250 € au lieu de 200 €, puis retour à 200 €.
+    const putTransfer = (amountCents: number) => app.request(`http://localhost/accounting/internal-transfers/${transferId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        seasonId: '25-26', sourceAccountId: 'current', destinationAccountId: 'cash',
+        amountCents, sourceDate: '2026-07-13', description: 'Approvisionnement Caisse (corrigé)'
+      })
+    }, { DB: mockD1 as any });
+    const editedRes = await putTransfer(25000);
+    expect(editedRes.status).toBe(200);
+    const edited = ((await editedRes.json()) as any).data;
+    expect(edited.amountCents).toBe(25000);
+    expect(edited.legs.map((l: any) => l.amountCents)).toEqual([25000, 25000]);
+    expect((await putTransfer(20000)).status).toBe(200);
 
     // 4. Fetch reports and assert correct balances
     const reportRes = await app.request('http://localhost/accounting/seasons/25-26/reports', undefined, { DB: mockD1 as any });

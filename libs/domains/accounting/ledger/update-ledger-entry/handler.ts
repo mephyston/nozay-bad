@@ -29,15 +29,15 @@ export async function updateLedgerEntry(db: Db, id: number, body: UpdateTransact
   });
 
   /*
-   * Un virement interne ne se modifie plus ici.
+   * Un virement interne ne se modifie pas ici.
    *
    * Il lui faut deux écritures — une par compte, chacune avec sa date de valeur et son propre
    * pointage bancaire — et cette route n'en écrit qu'une. La refuser franchement vaut mieux que
    * d'écrire une jambe orpheline : le CHECK de la base la rejetterait de toute façon, mais avec
-   * une erreur D1 brute au lieu d'un message.
+   * une erreur D1 brute au lieu d'un message. Le virement entier se corrige sur sa propre route.
    */
   if (body.type === 'transfert' || existing.type === 'transfert') {
-    throw new AppError('Un virement interne se modifie via PUT /accounting/internal-transfers/:id.', 400);
+    throw new AppError('Un virement interne se modifie entier, via PUT /accounting/internal-transfers/:id.', 400);
   }
 
   if (!body.category) {

@@ -149,6 +149,7 @@ export const ROUTE_PERMISSIONS: RouteRule[] = [
   // ── Comptabilité : virements internes ──────────────────────────────────────
   // Un virement écrit deux lignes du grand livre : c'est le même droit.
   { method: 'POST', path: '/accounting/internal-transfers', permission: 'accounting:ledger:write', feature: 'accounting' },
+  { method: 'PUT', path: '/accounting/internal-transfers/:id', permission: 'accounting:ledger:write', feature: 'accounting' },
 
   // ── Comptabilité : grand livre ─────────────────────────────────────────────
   // `transactions` et `ledger` sont les alias historiques de `ledger-entries`.

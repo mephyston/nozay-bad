@@ -3,12 +3,12 @@
   import { Search, X, Filter, ChevronDown } from '@lucide/svelte';
   import { Button, Dialog, Sheet, Tabs, Input, DropdownMenu, Checkbox, AlertDialog, DataTableToolbar, FormField, SearchableCombobox, softNavigate, submitForm, toast, toSeasonOptions } from '@nba/ui';
   import type { Transaction, Pagination, BalanceReport, Season, Category, AccountClass } from './ledger-types';
-  import { submitTransaction, validateTransaction, deleteTransaction, changePage as actionChangePage, applySeasonChange as actionApplySeasonChange } from './ledger-actions';
+  import { submitTransaction, validateTransaction, deleteTransaction, editValuesFor, changePage as actionChangePage, applySeasonChange as actionApplySeasonChange } from './ledger-actions';
   import TransactionLedgerBalances from './TransactionLedgerBalances.svelte';
   import TransactionLedgerHeader from './TransactionLedgerHeader.svelte';
   import TransactionLedgerTable from './TransactionLedgerTable.svelte';
   import TransactionFormSheet from './TransactionFormSheet.svelte';
-  import { findAccount, toAccountOptions, type AccountLike } from '../../../shared/account-labels';
+  import { toAccountOptions, type AccountLike } from '../../../shared/account-labels';
   import type { MemberLike } from './member-options';
 
   let {
@@ -203,6 +203,7 @@
     accrualNote = '';
     targetSeasonId = selectedSeason;
     editingId = null;
+    editingTransferId = null;
     /*
      * Les comptes, le moyen de paiement et la catégorie sont remis à zéro eux aussi.
      *
@@ -221,22 +222,28 @@
     memberId = '';
   }
 
+  let editingTransferId = $state<number | null>(null);
+
+  // Une jambe de virement rouvre le virement entier : ses deux comptes et ses deux dates.
   function startEdit(tx: Transaction, e: MouseEvent) {
     e.stopPropagation();
-    editingId = tx.id;
-    amount = (tx.amount / 100).toFixed(2);
-    date = tx.date;
-    category = tx.categoryId ? String(tx.categoryId) : '1';
-    formAccountId = findAccount(accounts, tx.accountId)?.code ?? mainAccountId;
-    paymentMethod = tx.paymentMethod;
-    description = tx.description;
-    reference = tx.reference || '';
-    accrualType = (tx as any).accrualType || 'normal';
-    accrualNote = (tx as any).accrualNote || '';
-    targetSeasonId = tx.seasonId;
-    // L'adhérent déjà rattaché — au rapprochement, par un chèque — se garde à la modification.
-    memberId = tx.memberId ? String(tx.memberId) : '';
-    showPanel = tx.type;
+    const values = editValuesFor(tx, accounts, { accountId: mainAccountId, seasonId: selectedSeason });
+    editingId = values.editingId;
+    editingTransferId = values.editingTransferId ?? null;
+    amount = values.amount;
+    date = values.date;
+    category = values.category;
+    formAccountId = values.formAccountId;
+    destinationAccountId = values.destinationAccountId;
+    destinationDate = values.destinationDate;
+    paymentMethod = values.paymentMethod;
+    description = values.description;
+    reference = values.reference;
+    accrualType = values.accrualType;
+    accrualNote = values.accrualNote;
+    targetSeasonId = values.targetSeasonId;
+    memberId = values.memberId ?? '';
+    showPanel = values.showPanel;
   }
 
   async function handleAddTransaction(e: Event) {
@@ -244,7 +251,7 @@
     isSubmitting = true;
     errorMsg = '';
 
-    const values = { editingId, showPanel, amount, date, category, formAccountId, destinationAccountId, destinationDate, paymentMethod, description, reference, accrualType, accrualNote, targetSeasonId, memberId };
+    const values = { editingId, editingTransferId, showPanel, amount, date, category, formAccountId, destinationAccountId, destinationDate, paymentMethod, description, reference, accrualType, accrualNote, targetSeasonId, memberId };
     await submitForm({
       validate: () => validateTransaction(values),
       submit: () => submitTransaction(values),

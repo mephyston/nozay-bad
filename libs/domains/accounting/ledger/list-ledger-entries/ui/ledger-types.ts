@@ -6,8 +6,12 @@ export interface Transaction {
   accountId: number;
   /** De quel côté du virement se tient l'écriture ; `null` pour une recette ou une dépense. */
   transferLeg?: 'source' | 'destination' | null;
+  /** Le virement parent d'une jambe ; `null` pour une recette ou une dépense. */
+  transferId?: number | null;
   /** Le compte d'en face, lu sur la jambe jumelle : sans lui, entrant et sortant se ressemblent. */
   counterpartAccountId?: number | null;
+  /** La date de valeur de la jambe jumelle : le formulaire d'un virement porte les deux dates. */
+  counterpartDate?: string | null;
   category: string | null;
   categoryId?: number | null;
   amount: number;

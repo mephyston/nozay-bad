@@ -49,6 +49,8 @@ Les écritures issues d'une même ligne de relevé bancaire sont regroupées : o
 
 Le menu d'actions de chaque ligne permet de **modifier** ou de **supprimer** une écriture. Sur mobile, un appui sur la ligne ouvre directement la modification.
 
+Un virement interne se modifie et se supprime **entier** : ouvrir l'une de ses deux jambes rouvre le virement complet, avec ses deux comptes et ses deux dates. Une jambe déjà pointée au rapprochement garde son montant et son compte tant qu'elle n'est pas dissociée.
+
 La suppression exige un droit distinct de la saisie : quelqu'un peut avoir le droit d'écrire sans avoir celui de supprimer.
 
 > [!WARNING]
