@@ -8,6 +8,7 @@
 	let {
 		ref = $bindable(null),
 		side = "left",
+		mobileSide = side,
 		variant = "sidebar",
 		collapsible = "offcanvas",
 		class: className,
@@ -15,6 +16,12 @@
 		...restProps
 	}: WithElementRef<HTMLAttributes<HTMLDivElement>> & {
 		side?: "left" | "right";
+		/**
+		 * D'où le menu arrive sur téléphone. `top` le fait descendre du haut de l'écran
+		 * et l'étend sur toute la hauteur — le geste des menus mobiles d'apple.com —
+		 * plutôt que de glisser depuis le bord, ce qui est le geste d'une barre latérale.
+		 */
+		mobileSide?: "left" | "right" | "top";
 		variant?: "sidebar" | "floating" | "inset";
 		collapsible?: "offcanvas" | "icon" | "none";
 	} = $props();
@@ -45,10 +52,11 @@
 			data-mobile="true"
 			class={cn(
 				"bg-sidebar text-sidebar-foreground w-(--sidebar-width) p-0 [&>button]:hidden",
+				mobileSide === "top" && "data-[side=top]:h-dvh data-[side=top]:w-full data-[side=top]:border-b-0",
 				className
 			)}
 			style="--sidebar-width: {SIDEBAR_WIDTH_MOBILE};"
-			{side}
+			side={mobileSide}
 		>
 			<Sheet.Header class="sr-only">
 				<Sheet.Title>Sidebar</Sheet.Title>

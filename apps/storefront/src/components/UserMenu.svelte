@@ -265,7 +265,9 @@
 
   {#if open && mobile}
     <Sheet.Root bind:open>
-      <Sheet.Content side="right" class="w-full gap-0 p-0 sm:max-w-sm" data-testid="account-sheet">
+      <!-- Sur téléphone, le panneau descend du haut de l'écran — comme les menus mobiles
+           d'apple.com — et le remplit ; à la souris, il reste un volet à droite. -->
+      <Sheet.Content side={mobile ? 'top' : 'right'} class="w-full gap-0 p-0 sm:max-w-sm data-[side=top]:h-dvh data-[side=top]:border-b-0" data-testid="account-sheet">
         <Sheet.Header class="flex-row items-center gap-3 border-b border-border p-4 pr-14">
           {@render avatar('size-11')}
           <div class="min-w-0">

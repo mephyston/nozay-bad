@@ -1,6 +1,7 @@
 ---
 import { ThemeToggle } from '@nba/ui';
 import UserMenu from './UserMenu.svelte';
+import HeaderSearch from './HeaderSearch.svelte';
 import { featureOn, type Feature } from '@nba/club/context';
 
 interface Props {
@@ -74,6 +75,7 @@ const session = Astro.locals.session;
   </div>
 
   <div class="flex items-center gap-2 sm:gap-3">
+    {session && <HeaderSearch client:idle features={Astro.locals.club?.features ?? {}} session={session} />}
     <ThemeToggle client:load />
     {session && (
       <UserMenu

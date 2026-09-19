@@ -59,6 +59,7 @@ export { default as ThemeToggle } from "./components/patterns/ThemeToggle.svelte
 export { default as EnvBanner } from "./components/patterns/EnvBanner.svelte";
 export { default as FormSheet } from "./components/patterns/FormSheet.svelte";
 export { default as MenuSearchField } from "./components/patterns/MenuSearchField.svelte";
+export { default as HeaderSearch } from "./components/patterns/HeaderSearch.svelte";
 export { default as MenuSearchResults } from "./components/patterns/MenuSearchResults.svelte";
 export { default as MemberAvatar } from "./components/patterns/MemberAvatar.svelte";
 export { default as RichTextEditor } from './components/patterns/RichTextEditor.svelte';

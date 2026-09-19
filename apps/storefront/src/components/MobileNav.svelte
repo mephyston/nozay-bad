@@ -1,10 +1,10 @@
 <script lang="ts">
-  import { Home, ShoppingCart, Newspaper, CalendarDays, Search, User, IdCard, Wallet, History, FileText, Bell, Receipt, Trophy, Users, Package, Loader2 } from '@lucide/svelte';
-  import { searchNav, softNavigate, MenuSearchField, MenuSearchResults, type NavSearchHit } from '@nba/ui';
+  import { Home, ShoppingCart, Newspaper, CalendarDays, Search } from '@lucide/svelte';
+  import { softNavigate, MenuSearchField } from '@nba/ui';
   import ShuttlecockIcon from './ShuttlecockIcon.svelte';
+  import SearchResults from './SearchResults.svelte';
   import { storefrontNavGroups } from '../lib/nav';
   import type { SessionPayload } from '../lib/auth';
-  import { searchContent, type ContentSearchGroup } from '../lib/search';
 
   /**
    * La barre du bas de l'espace adhérent : les onglets, et une loupe à part.
@@ -38,38 +38,10 @@
     { href: '/equipes', label: 'Mon club', icon: ShuttlecockIcon, feature: 'teams' }
   ].filter((item) => !item.feature || features[item.feature] !== false);
 
-  const ICONS: Record<string, any> = { Home, Newspaper, CalendarDays, ShoppingCart, Trophy, Users, User, IdCard, Wallet, History, FileText, Bell, Receipt, Package };
-  const KIND_ICONS: Record<string, any> = { member: User, post: Newspaper, event: CalendarDays, team: Trophy, product: Package };
-
   let open = $state(false);
   let query = $state('');
-  let content = $state<ContentSearchGroup[]>([]);
-  let loading = $state(false);
-
+  let firstHref = $state<string | null>(null);
   const groups = $derived(storefrontNavGroups({ features, session }));
-  const pageHits = $derived<NavSearchHit[]>(open ? searchNav(groups, [], query, 5) : []);
-  const contentCount = $derived(content.reduce((n, g) => n + g.hits.length, 0));
-
-  // Le contenu, débouncé et borné à la dernière saisie : une réponse en retard sur une
-  // frappe plus récente est jetée.
-  let ticket = 0;
-  $effect(() => {
-    const q = query.trim();
-    const mine = ++ticket;
-    if (!open || q.length < 2) {
-      content = [];
-      loading = false;
-      return;
-    }
-    loading = true;
-    const timer = setTimeout(async () => {
-      const result = await searchContent(q);
-      if (mine !== ticket) return;
-      content = result;
-      loading = false;
-    }, 250);
-    return () => clearTimeout(timer);
-  });
 
   function closeSearch() {
     open = false;
@@ -82,8 +54,7 @@
   }
 
   function submit() {
-    const first = pageHits[0]?.href ?? content.find((g) => g.hits.length > 0)?.hits[0]?.href;
-    if (first) go(first);
+    if (firstHref) go(firstHref);
   }
 </script>
 
@@ -129,38 +100,7 @@
     {#if open}
       {#if query.trim()}
         <div class="glass-surface absolute inset-x-0 bottom-full mb-2 max-h-[60dvh] overflow-y-auto rounded-2xl" data-testid="search-results">
-          {#if pageHits.length > 0}
-            <p class="px-4 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Pages</p>
-            <MenuSearchResults hits={pageHits} {query} icons={ICONS} onPick={(hit) => go(hit.href)} />
-          {/if}
-          {#each content as group (group.kind)}
-            {#if group.hits.length > 0}
-              {@const Icon = KIND_ICONS[group.kind]}
-              <p class="px-4 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{group.label}</p>
-              <div class="p-1.5">
-                {#each group.hits as hit (hit.href)}
-                  <button type="button" class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-primary/10" onclick={() => go(hit.href)}>
-                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted text-foreground"><Icon class="h-4 w-4" /></span>
-                    <span class="min-w-0 flex-1">
-                      <span class="block truncate text-sm font-medium text-foreground">{hit.title}</span>
-                      {#if hit.subtitle}<span class="block truncate text-xs text-muted-foreground">{hit.subtitle}</span>{/if}
-                    </span>
-                  </button>
-                {/each}
-              </div>
-            {/if}
-          {/each}
-          {#if pageHits.length === 0 && contentCount === 0}
-            <p class="px-4 py-3 text-sm text-muted-foreground">
-              {#if loading}
-                <Loader2 class="mr-1.5 inline h-4 w-4 animate-spin" /> Recherche…
-              {:else if query.trim().length < 2}
-                Tapez au moins deux lettres.
-              {:else}
-                Rien pour « {query.trim()} ».
-              {/if}
-            </p>
-          {/if}
+          <SearchResults {query} {groups} bind:firstHref onPick={go} />
         </div>
       {/if}
       <MenuSearchField bind:query placeholder="Adhérent, article, équipe, produit…" onClose={closeSearch} onSubmit={submit} />

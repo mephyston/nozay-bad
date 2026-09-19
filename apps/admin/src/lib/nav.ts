@@ -159,13 +159,21 @@ export const NAV_GROUPS: NavGroup[] = [
 /** Icône et adresse d'une entrée de menu pour un compte sans relevé (caisse, porte-monnaie). */
 export const ACCOUNT_MENU_ICONS: Record<string, string> = { cash: 'Wallet', wallet: 'CreditCard', voucher: 'Ticket' };
 
+/** Ce qu'on tape pour retrouver un compte selon sa nature, en plus de son nom et de son code. */
+const ACCOUNT_MENU_KEYWORDS: Record<string, string[]> = {
+  cash: ['caisse', 'especes', 'liquide', 'compte'],
+  wallet: ['porte-monnaie', 'solde', 'compte'],
+  voucher: ['cheques', 'bons', 'coupons', 'titres', 'pass', 'compte']
+};
+
 export function menuAccountItem(account: { code: string; label: string; kind: string }): NavItem {
   return {
     name: account.label,
     icon: ACCOUNT_MENU_ICONS[account.kind] ?? 'Wallet',
     href: `/admin/accounting/accounts/${account.code}`,
     permission: 'accounting:ledger:read',
-    feature: 'accounting'
+    feature: 'accounting',
+    keywords: [account.code, ...(ACCOUNT_MENU_KEYWORDS[account.kind] ?? [])]
   };
 }
 

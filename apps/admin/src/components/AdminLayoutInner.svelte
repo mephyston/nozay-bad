@@ -42,7 +42,7 @@
   import { onMount } from "svelte";
   import { Sidebar, Breadcrumb, Separator, Avatar, GlobalConfirm, AppVersion, PwaInstallBanner, ThemeToggle, toast } from "@nba/ui";
   import AdminMobileDock from './AdminMobileDock.svelte';
-  import { searchNav, softNavigate, MenuSearchField, MenuSearchResults, type NavSearchHit } from '@nba/ui';
+  import { searchNav, softNavigate, MenuSearchField, MenuSearchResults, HeaderSearch, type NavSearchHit } from '@nba/ui';
 
   let { children, email, name, permissions = [], realEmail = '', club, breadcrumb } = $props<{
     children?: import('svelte').Snippet;
@@ -155,9 +155,22 @@
     if (menuQuery.trim() && navElement) navElement.scrollTop = 0;
   });
 
-  /** Un résultat choisi, depuis le menu ou la barre du bas : on y va, ou on ouvre la saisie sur place. */
+  /*
+    Recherche de l'en-tête, à la souris : la même, dans le panneau qui descend du haut.
+    Avant la saisie, les saisies rapides du compte tiennent lieu de liens rapides.
+  */
+  let headerQuery = $state('');
+  let headerSearch = $state<{ closeSearch: () => void } | null>(null);
+  const headerHits = $derived<NavSearchHit[]>(
+    headerQuery.trim()
+      ? searchNav(accessibleNavGroups, quickActions, headerQuery)
+      : quickActions.map((a) => ({ kind: 'action' as const, name: a.name, icon: a.icon, href: a.href, group: 'Saisie rapide', event: a.event, pathPrefix: a.pathPrefix }))
+  );
+
+  /** Un résultat choisi, depuis le menu, la barre du bas ou l'en-tête : on y va, ou on ouvre la saisie sur place. */
   function pickHit(hit: NavSearchHit) {
     menuQuery = '';
+    headerSearch?.closeSearch();
     sidebar.setOpenMobile(false);
     // Une saisie rapide depuis sa propre page : le sheet s'ouvre sans naviguer.
     if (hit.kind === 'action' && hit.pathPrefix && window.location.pathname.startsWith(hit.pathPrefix)) {
@@ -485,7 +498,7 @@
 
 <PwaInstallBanner />
 
-<Sidebar.Root collapsible="icon" variant="inset">
+<Sidebar.Root collapsible="icon" variant="inset" mobileSide="top">
   <!-- Header -->
   <Sidebar.Header class="p-2 border-0 bg-transparent">
     <div class="pt-safe flex items-center w-full justify-between gap-1">
@@ -666,6 +679,22 @@
     </div>
 
     <div class="flex items-center gap-3 pt-2 md:pt-0">
+      <!-- À la souris seulement : sur téléphone, c'est la loupe de la barre du bas. -->
+      <HeaderSearch
+        bind:this={headerSearch}
+        bind:query={headerQuery}
+        class="hidden md:inline-flex"
+        placeholder="Chercher une page, une saisie…"
+        label="Chercher dans le menu"
+        onSubmit={() => headerHits[0] && pickHit(headerHits[0])}
+      >
+        {#if headerHits.length > 0 || headerQuery.trim()}
+          <p class="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            {headerQuery.trim() ? 'Résultats' : 'Liens rapides'}
+          </p>
+          <MenuSearchResults hits={headerHits} query={headerQuery} icons={ICONS} onPick={pickHit} />
+        {/if}
+      </HeaderSearch>
       <ThemeToggle />
       <!-- Le compte connecté : dans l'en-tête, comme dans l'espace adhérent. -->
         <DropdownMenu.Root onOpenChange={(ouvert) => ouvert && chargerComptesUsurpables()}>
