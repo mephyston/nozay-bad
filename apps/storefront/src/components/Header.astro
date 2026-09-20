@@ -44,7 +44,7 @@ const session = Astro.locals.session;
   La bande de fond, elle, reste pleine largeur.
 -->
 <header
-  class="shrink-0 border-b border-border bg-background sticky top-0 z-40"
+  class="site-header shrink-0 border-b border-border bg-background sticky top-0 z-40"
   style="height: calc(3.5rem + env(safe-area-inset-top, 0px)); padding-top: env(safe-area-inset-top, 0px);"
 >
 <div class="mx-auto flex h-full w-full max-w-[calc(48rem+3rem)] items-center justify-between px-3 sm:px-6">
@@ -98,3 +98,19 @@ const session = Astro.locals.session;
   </div>
 </div>
 </header>
+
+<style>
+  /*
+    Installée sur iPhone, l'application passe sous la barre d'état (`black-translucent`)
+    et iOS 26 la dessine en verre : son flou déborde de quelques pixels sous la zone
+    sûre, et rognait le haut du logo et de la loupe. Un peu d'air en plus, en mode
+    autonome seulement — dans Safari, la barre d'adresse fait déjà la place.
+  */
+  @media (display-mode: standalone) {
+    .site-header {
+      --status-bar-bleed: 0.375rem;
+      height: calc(3.5rem + env(safe-area-inset-top, 0px) + var(--status-bar-bleed)) !important;
+      padding-top: calc(env(safe-area-inset-top, 0px) + var(--status-bar-bleed)) !important;
+    }
+  }
+</style>

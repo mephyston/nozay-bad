@@ -152,6 +152,28 @@ export default defineConfig({
       }
     },
     optimizeDeps: {
+      /*
+        Même défaut que le site public et l'espace adhérent : le rendu Svelte côté serveur
+        et quelques dépendances des composants ne sont découverts qu'au premier rendu,
+        Vite ré-optimise et renomme ses chunks, et le worker SSR de Cloudflare réclame
+        l'ancien (« The file does not exist at …/deps_ssr/… ») : le serveur mourait
+        avant d'être prêt.
+      */
+      include: [
+        'astro/assets/services/noop',
+        'astro/app/manifest',
+        'astro/logger/console',
+        '@astrojs/svelte/server.js',
+        'bits-ui',
+        'mode-watcher',
+        'svelte-sonner',
+        'tailwind-merge',
+        'tailwind-variants',
+        'vaul-svelte',
+        '@internationalized/date',
+        'drizzle-orm',
+        'drizzle-orm/sqlite-core'
+      ],
       exclude: [
         'astro:transitions',
         '@astrojs/cloudflare',

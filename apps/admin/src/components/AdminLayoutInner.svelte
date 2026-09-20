@@ -146,14 +146,6 @@
   $effect(() => {
     if (!sidebar.openMobile) menuQuery = '';
   });
-  /*
-    Les résultats remplacent la liste par le haut : si l'on avait fait défiler le menu
-    jusqu'en bas avant de taper, ils s'écrivaient au-dessus de la ligne d'horizon et
-    l'écran semblait vide. On remonte donc dès que la recherche commence.
-  */
-  $effect(() => {
-    if (menuQuery.trim() && navElement) navElement.scrollTop = 0;
-  });
 
   /*
     Recherche de l'en-tête, à la souris : la même, dans le panneau qui descend du haut.
@@ -529,11 +521,8 @@
   <!-- Navigation items -->
   <!-- Sur téléphone, la liste passe sous la pilule : d'où le dégagement en bas. -->
   <Sidebar.Content class={sidebar.isMobile ? 'p-2 pb-28 space-y-4' : 'p-2 space-y-4'} bind:ref={navElement}>
-    {#if sidebar.isMobile && menuQuery.trim()}
-      <MenuSearchResults hits={menuHits} query={menuQuery} icons={ICONS} onPick={pickHit} />
-    {/if}
     {#each filteredNavGroups as group}
-      <Sidebar.Group class={sidebar.isMobile && menuQuery.trim() ? 'hidden' : 'p-0'}>
+      <Sidebar.Group class="p-0">
         {#if group.label}
           {@const open = isGroupOpen(group.label)}
           {@const isActiveGroup = group.label === activeGroupLabel}
@@ -610,6 +599,16 @@
   -->
   <Sidebar.Footer class={sidebar.isMobile ? 'absolute inset-x-0 bottom-0 z-10 p-3 pb-safe border-0 bg-transparent' : 'p-2 border-t border-border'}>
     {#if sidebar.isMobile}
+      <!--
+        Les résultats se posent juste au-dessus de la pilule, en verre sur la liste, et
+        non en haut de celle-ci : ils restent sous les yeux quelle que soit la position
+        du menu — comme la recherche de la barre du bas, hors du menu.
+      -->
+      {#if menuQuery.trim()}
+        <div class="glass-surface mb-2 max-h-[50dvh] overflow-y-auto rounded-2xl">
+          <MenuSearchResults hits={menuHits} query={menuQuery} icons={ICONS} onPick={pickHit} />
+        </div>
+      {/if}
       <MenuSearchField bind:query={menuQuery} onClose={() => sidebar.setOpenMobile(false)} onSubmit={() => menuHits[0] && pickHit(menuHits[0])} />
     {:else}
       <AppVersion class="group-data-[collapsible=icon]:hidden pb-1" />
