@@ -19,6 +19,23 @@ export default defineConfig({
   },
   projects: [
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
+    // Téléphone. Chromium plutôt que WebKit : `devices['iPhone 15']` bascule le moteur,
+    // ce qui imposerait `playwright install webkit` en CI (~100 Mo) et un rendu de police
+    // différent — donc une seconde famille de références pour aucun bug attrapé en plus.
+    // Les références sont nommées par projet (`…-mobile-linux.png`), donc cet ajout ne
+    // touche aucune référence existante.
+    {
+      name: 'mobile',
+      use: {
+        browserName: 'chromium',
+        viewport: { width: 390, height: 844 },
+        deviceScaleFactor: 2,
+        // Chromium uniquement : pose le métaviewport et l'émulation tactile, sans quoi
+        // les variantes `sm:` se comporteraient comme sur un bureau étroit.
+        isMobile: true,
+        hasTouch: true,
+      },
+    },
   ],
   webServer: {
     command: 'node scripts/serve-storybook.mjs',
