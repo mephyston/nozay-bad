@@ -4,6 +4,7 @@
   import ListSection from './ListSection.svelte';
   import ListRowSkeleton from './ListRowSkeleton.svelte';
   import { cn } from '../../../lib/utils.js';
+  import { swipeActions } from '../../../lib/actions/swipe-actions.js';
 
   let {
     items,
@@ -88,7 +89,12 @@
         {#if sections}
           <ListSection label={groupe.libelle} sticky={collant} count={groupe.elements.length} />
         {/if}
-        <ul class={classesListe}>
+        <!--
+          Le balayage s'installe sur la liste, pas sur chaque ligne : quatre écouteurs
+          au lieu de deux cents, et la ligne ouverte devient une variable locale.
+          L'action se retire d'elle-même sur une ligne sans actions révélables.
+        -->
+        <ul class={classesListe} use:swipeActions>
           {#each groupe.elements as element (element.index)}
             {@render listRow(element.item, element.index)}
           {/each}

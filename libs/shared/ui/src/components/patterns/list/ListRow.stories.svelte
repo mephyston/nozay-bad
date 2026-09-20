@@ -1,6 +1,12 @@
 <script module lang="ts">
   import { defineMeta } from '@storybook/addon-svelte-csf';
-  import { ListRow, Badge, Avatar, DropdownMenu } from '@nba/ui';
+  import { ListRow, Badge, Avatar, DropdownMenu, type SwipeAction } from '@nba/ui';
+  import { Trash2, Check } from '@lucide/svelte';
+
+  const ACTIONS: SwipeAction[] = [
+    { id: 'suppr', label: 'Supprimer', icon: Trash2, tone: 'destructive', confirm: 'Supprimer cette ligne ?', run: () => {} },
+    { id: 'valider', label: 'Valider', icon: Check, tone: 'primary', run: () => {} },
+  ];
 
   const { Story } = defineMeta({
     title: 'Patterns/ListRow',
@@ -95,6 +101,27 @@
     {#snippet contenu()}
       <ListRow title="Ligne sélectionnée" subtitle="ni lien ni action" value="—" selected />
       <ListRow title="Ligne désactivée" subtitle="clôturée" value="—" disabled />
+    {/snippet}
+    {@render liste(contenu)}
+  {/snippet}
+</Story>
+
+<Story name="BalayageFerme">
+  {#snippet template()}
+    {#snippet contenu()}
+      <ListRow href="#" title="Note de frais — Déplacement" subtitle="Pièce 2026-0147" value="-84,20 €" valueTone="destructive" swipe={ACTIONS} />
+      <ListRow href="#" title="Note de frais — Volants" subtitle="Pièce 2026-0148" value="-42,00 €" valueTone="destructive" swipe={ACTIONS} />
+    {/snippet}
+    {@render liste(contenu)}
+  {/snippet}
+</Story>
+
+<Story name="BalayageOuvert">
+  {#snippet template()}
+    {#snippet contenu()}
+      <!-- Un geste ne se photographie pas : l'ouverture est pilotée pour la référence. -->
+      <ListRow href="#" title="Note de frais — Déplacement" subtitle="Pièce 2026-0147" value="-84,20 €" valueTone="destructive" swipe={ACTIONS} swipeOpen />
+      <ListRow href="#" title="Note de frais — Volants" subtitle="Pièce 2026-0148" value="-42,00 €" valueTone="destructive" swipe={ACTIONS} />
     {/snippet}
     {@render liste(contenu)}
   {/snippet}

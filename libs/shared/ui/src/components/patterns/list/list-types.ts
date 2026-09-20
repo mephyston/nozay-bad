@@ -44,3 +44,19 @@ export type ListRowModel = {
   /** Deuxième ligne à droite, sous la valeur. */
   valueCaption?: string;
 };
+
+/**
+ * Une action de ligne, déclarée une fois et servie par trois voies : le balayage
+ * du doigt, le bouton escamoté au clavier, l'annonce du lecteur d'écran. C'est la
+ * condition pour que le geste ne soit jamais le seul chemin.
+ */
+export type SwipeAction<T = unknown> = {
+  id: string;
+  /** Sert aussi de nom accessible : jamais une icône seule. */
+  label: string;
+  icon?: any;
+  tone?: 'neutral' | 'primary' | 'destructive';
+  /** Question posée avant exécution. De fait obligatoire sur une action destructrice. */
+  confirm?: string;
+  run: (item: T) => void | Promise<void>;
+};

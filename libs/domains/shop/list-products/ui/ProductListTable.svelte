@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Edit, Trash2, Plus, CornerDownRight, ImageIcon, Layers, Power, PowerOff } from "@lucide/svelte";
-  import { Button, Badge, Amount, DropdownMenu, DataTable, DataTableToolbar, DataTableRowActions, Table, ListView, ListRow, formatAmount } from "@nba/ui";
+  import { Button, Badge, Amount, DropdownMenu, DataTable, DataTableToolbar, DataTableRowActions, Table, ListView, ListRow, RowActionItems, formatAmount, type SwipeAction } from "@nba/ui";
   import { canDelete, isVariant, type Product } from './products-manager-types';
 
   /**
@@ -32,6 +32,40 @@
   } = $props();
 
   const hasVariants = (p: Product) => (p.variantCount ?? 0) > 0;
+
+  /**
+   * Les actions révélées par un balayage, déclarées en données.
+   *
+   * « Modifier » n'y figure pas : c'est déjà ce que fait l'appui sur la ligne, et
+   * un geste qui refait ce qu'un appui fait déjà n'apprend rien. Le balayage sert
+   * ce qu'on ne peut pas atteindre autrement sans ouvrir un menu.
+   *
+   * L'ordre compte : la première action touche le bord de l'écran et c'est elle
+   * qu'un balayage long exécute. On y met la bascule d'activation, réversible —
+   * un geste ample est trop facile à déclencher par mégarde pour qu'il porte
+   * l'irréversible, que la confirmation garde de toute façon en second rideau.
+   *
+   * Le menu de la table et celui de la liste rendent le même tableau par
+   * `RowActionItems` : une seule déclaration, trois chemins d'accès.
+   */
+  function actionsBalayage(p: Product): SwipeAction<Product>[] {
+    const liste: SwipeAction<Product>[] = [
+      p.active
+        ? { id: 'desactiver', label: 'Désactiver', icon: PowerOff, tone: 'primary', run: (x) => onSetActive(x, false) }
+        : { id: 'activer', label: 'Activer', icon: Power, tone: 'primary', run: (x) => onSetActive(x, true) },
+    ];
+    if (canDelete(p)) {
+      liste.push({
+        id: 'supprimer',
+        label: 'Supprimer',
+        icon: Trash2,
+        tone: 'destructive',
+        confirm: `Supprimer « ${isVariant(p) ? p.variantLabel : p.name} » ? Cette action est sans retour.`,
+        run: (x) => onDelete(x),
+      });
+    }
+    return liste;
+  }
 
   /**
    * Projection d'un article en ligne de liste.
@@ -93,8 +127,7 @@
   </Button>
 {/snippet}
 
-{#snippet actions(product: Product)}
-  <DropdownMenu.Label>Actions</DropdownMenu.Label>
+{#snippet actionsPropres(product: Product)}
   <DropdownMenu.Item onclick={() => onStartEdit(product)} class="cursor-pointer">
     <Edit class="w-3.5 h-3.5 mr-2" /> Modifier
   </DropdownMenu.Item>
@@ -103,21 +136,13 @@
       <Layers class="w-3.5 h-3.5 mr-2" /> Ajouter une déclinaison
     </DropdownMenu.Item>
   {/if}
-  {#if product.active}
-    <DropdownMenu.Item onclick={() => onSetActive(product, false)} class="cursor-pointer">
-      <PowerOff class="w-3.5 h-3.5 mr-2" /> Désactiver
-    </DropdownMenu.Item>
-  {:else}
-    <DropdownMenu.Item onclick={() => onSetActive(product, true)} class="cursor-pointer">
-      <Power class="w-3.5 h-3.5 mr-2" /> Activer
-    </DropdownMenu.Item>
-  {/if}
-  {#if canDelete(product)}
-    <DropdownMenu.Separator />
-    <DropdownMenu.Item onclick={() => onDelete(product)} class="text-destructive focus:text-destructive cursor-pointer">
-      <Trash2 class="w-3.5 h-3.5 mr-2" /> Supprimer
-    </DropdownMenu.Item>
-  {/if}
+{/snippet}
+
+{#snippet menuComplet(product: Product)}
+  <DropdownMenu.Label>Actions</DropdownMenu.Label>
+  {@render actionsPropres(product)}
+  <DropdownMenu.Separator />
+  <RowActionItems actions={actionsBalayage(product)} item={product} />
 {/snippet}
 
 <DataTable
@@ -159,7 +184,8 @@
           value={l.valeur}
           valueTone={l.ton}
           valueCaption={l.legende}
-          actions={canWrite ? actions : undefined}
+          swipe={canWrite ? actionsBalayage(product) : []}
+          actions={canWrite ? actionsPropres : undefined}
           class={isVariant(product) ? 'pl-4' : ''}
         >
           {#snippet leading()}
@@ -236,7 +262,7 @@
       <Table.Cell>{@render status(product)}</Table.Cell>
       <Table.Cell class="text-right relative">
         {#if canWrite}
-          <DataTableRowActions>{@render actions(product)}</DataTableRowActions>
+          <DataTableRowActions>{@render menuComplet(product)}</DataTableRowActions>
         {/if}
       </Table.Cell>
     </Table.Row>
