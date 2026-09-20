@@ -24,6 +24,12 @@
      * le champ se contente de tenir sa valeur liée.
      */
     onSubmit?: (valeur: string) => void;
+    /**
+     * Temporisation avant appel de `onSubmit` pendant la frappe. À **0**, la
+     * frappe n'appelle rien : seules la validation et l'effacement déclenchent.
+     * C'est ce qu'il faut quand chaque appel part au serveur — une recherche
+     * relancée à chaque lettre, ce sont autant de requêtes pour une seule question.
+     */
     debounce?: number;
     class?: string;
   } = $props();
@@ -32,7 +38,7 @@
   let minuteur: ReturnType<typeof setTimeout> | undefined;
 
   function differer(valeur: string) {
-    if (!onSubmit) return;
+    if (!onSubmit || debounce <= 0) return;
     clearTimeout(minuteur);
     minuteur = setTimeout(() => onSubmit(valeur), debounce);
   }

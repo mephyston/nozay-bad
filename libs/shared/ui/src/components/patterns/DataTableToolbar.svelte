@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { Search, Filter, X } from '@lucide/svelte';
-  import { Input } from '../ui/input';
+  import { Filter } from '@lucide/svelte';
   import { Button } from '../ui/button';
+  import ListSearchField from './ListSearchField.svelte';
   import * as DropdownMenu from '../ui/dropdown-menu';
   import type { Snippet } from 'svelte';
 
@@ -27,40 +27,26 @@
     actions?: Snippet;
   } = $props();
 
-  function handleKeydown(e: KeyboardEvent) {
-    if (e.key === 'Enter' && onSearchSubmit) {
-      onSearchSubmit(searchValue);
-    }
-  }
-
-  function handleClear() {
-    searchValue = '';
-    if (onSearchClear) onSearchClear();
-    else if (onSearchSubmit) onSearchSubmit('');
+  function rechercher(valeur: string) {
+    searchValue = valeur;
+    if (valeur === '' && onSearchClear) onSearchClear();
+    else onSearchSubmit?.(valeur);
   }
 </script>
 
 <div class="flex flex-col sm:flex-row flex-wrap gap-3 items-stretch sm:items-center w-full">
   {#if hasSearch}
-    <div class="relative flex-1 sm:w-64">
-      <Input
-      type="text"
-      placeholder={searchPlaceholder}
+    <!--
+      `debounce={0}` : cette recherche part au serveur. La relancer à chaque
+      lettre, ce sont autant de requêtes pour une seule question.
+    -->
+    <ListSearchField
       bind:value={searchValue}
-      onkeydown={handleKeydown}
-      class="!pl-9 !pr-8 bg-background border-border h-9"
+      placeholder={searchPlaceholder}
+      onSubmit={rechercher}
+      debounce={0}
+      class="flex-1 sm:w-64"
     />
-    <Search class="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-    {#if searchValue}
-      <button
-        type="button"
-        class="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xs p-1 cursor-pointer"
-        onclick={handleClear}
-      >
-        <X class="h-3 w-3" />
-      </button>
-    {/if}
-  </div>
   {/if}
 
   {#if hasFilters && filters}
