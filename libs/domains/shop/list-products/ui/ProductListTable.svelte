@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Edit, Trash2, Plus, CornerDownRight, ImageIcon, Layers, Power, PowerOff } from "@lucide/svelte";
-  import { Button, Badge, Amount, DropdownMenu, DataTable, DataTableToolbar, DataTableRowActions, Table, Card } from "@nba/ui";
+  import { Button, Badge, Amount, DropdownMenu, DataTable, DataTableToolbar, DataTableRowActions, Table, ListView, ListRow, formatAmount } from "@nba/ui";
   import { canDelete, isVariant, type Product } from './products-manager-types';
 
   /**
@@ -32,6 +32,36 @@
   } = $props();
 
   const hasVariants = (p: Product) => (p.variantCount ?? 0) > 0;
+
+  /**
+   * Projection d'un article en ligne de liste.
+   *
+   * Le prix est la valeur qui compte : c'est lui qui va à droite. La catégorie et le
+   * nombre de déclinaisons tiennent sur le sous-titre, le stock sous le prix, et tout
+   * le reste — modifier, activer, supprimer — vit dans le menu d'actions.
+   *
+   * Le statut ne garde pas son bouton de bascule : imbriqué dans la zone cliquable de
+   * la ligne, il en ferait un élément interactif dans un autre. Un article actif est la
+   * norme et ne s'annonce pas ; seul « Inactif » se signale, et la bascule passe par le
+   * menu, où elle existait déjà.
+   */
+  function ligne(p: Product) {
+    const variante = isVariant(p);
+    const decline = hasVariants(p);
+    const categorie = p.categoryLabel ?? 'Autre';
+    const nb = p.variantCount ?? 0;
+    return {
+      titre: variante ? (p.variantLabel ?? '') : p.name,
+      sousTitre: variante
+        ? undefined
+        : decline
+          ? `${categorie} · ${nb} déclinaison${nb === 1 ? '' : 's'}`
+          : categorie,
+      valeur: decline ? 'selon déclinaison' : formatAmount(p.priceCents ?? p.price),
+      ton: decline ? ('muted' as const) : ('foreground' as const),
+      legende: !decline && p.trackStock ? `Stock ${p.stock}` : undefined,
+    };
+  }
 </script>
 
 {#snippet thumbnail(product: Product, size: string)}
@@ -92,6 +122,7 @@
 
 <DataTable
   data={filteredProducts}
+  mobileSpacing="list"
   emptyTitle="Aucun article"
   emptyDescription="Aucun article trouvé."
 >
@@ -113,53 +144,43 @@
   {/snippet}
 
   {#snippet mobileView()}
-    {#if filteredProducts.length === 0}
-      <div class="p-6 text-center text-muted-foreground text-sm">Aucun article trouvé.</div>
-    {:else}
-      {#each filteredProducts as product (product.id)}
-        <Card.Root class={isVariant(product) ? 'ml-4 border-l-2 border-l-primary/30' : ''}>
-          <Card.Content class="p-4 space-y-3">
-            <div class="flex items-start gap-3">
-              {#if !isVariant(product)}
-                {@render thumbnail(product, 'h-12 w-12')}
-              {:else}
-                <CornerDownRight class="h-4 w-4 mt-1 text-muted-foreground shrink-0" />
-              {/if}
-              <div class="min-w-0 flex-1">
-                <h4 class="font-bold text-sm text-foreground truncate">
-                  {isVariant(product) ? product.variantLabel : product.name}
-                </h4>
-                {#if !isVariant(product)}
-                  <div class="mt-1 flex flex-wrap gap-1">
-                    <Badge variant="primary-soft" size="xs">{product.categoryLabel ?? 'Autre'}</Badge>
-                    {#if hasVariants(product)}
-                      <Badge variant="outline" size="xs">{product.variantCount} déclinaison{product.variantCount === 1 ? '' : 's'}</Badge>
-                    {/if}
-                  </div>
-                {/if}
-              </div>
-              <div class="text-right shrink-0">
-                {#if !hasVariants(product)}
-                  <span class="font-bold text-base text-foreground block"><Amount cents={product.priceCents ?? product.price} /></span>
-                  {#if product.trackStock}
-                    <span class="text-xs {product.stock > 0 ? 'text-muted-foreground' : 'text-destructive font-semibold'} block mt-0.5">Stock : {product.stock}</span>
-                  {/if}
-                {/if}
-                <div class="mt-0.5">{@render status(product)}</div>
-              </div>
-            </div>
-            {#if canWrite}
-              <div class="flex items-center justify-end gap-2 pt-2 border-t border-border/50">
-                <Button variant="outline" size="sm" onclick={() => onStartEdit(product)} class="h-8 text-xs font-semibold gap-1.5 flex-1">
-                  <Edit class="w-3.5 h-3.5" /> <span>Modifier</span>
-                </Button>
-                <DataTableRowActions>{@render actions(product)}</DataTableRowActions>
-              </div>
+    <ListView
+      items={filteredProducts}
+      emptyTitle="Aucun article"
+      emptyDescription="Aucun article trouvé."
+    >
+      {#snippet listRow(product)}
+        {@const l = ligne(product)}
+        <ListRow
+          item={product}
+          onclick={canWrite ? () => onStartEdit(product) : undefined}
+          title={l.titre}
+          subtitle={l.sousTitre}
+          value={l.valeur}
+          valueTone={l.ton}
+          valueCaption={l.legende}
+          actions={canWrite ? actions : undefined}
+          class={isVariant(product) ? 'pl-4' : ''}
+        >
+          {#snippet leading()}
+            {#if isVariant(product)}
+              <CornerDownRight class="h-4 w-4 text-muted-foreground" />
+            {:else}
+              {@render thumbnail(product, 'h-9 w-9')}
             {/if}
-          </Card.Content>
-        </Card.Root>
-      {/each}
-    {/if}
+          {/snippet}
+          <!--
+            Le snippet se déclare toujours : un `{#snippet}` sous un `{#if}` ne serait
+            pas passé en propriété au composant. C'est son contenu qui est conditionnel.
+          -->
+          {#snippet badge()}
+            {#if !product.active}
+              <Badge variant="outline" size="xs">Inactif</Badge>
+            {/if}
+          {/snippet}
+        </ListRow>
+      {/snippet}
+    </ListView>
   {/snippet}
 
   {#snippet header()}

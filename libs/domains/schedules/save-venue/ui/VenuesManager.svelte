@@ -3,8 +3,10 @@
   import {
     Button,
     Input,
-    Card,
+    Badge,
     Table,
+    ListView,
+    ListRow,
     DataTable,
     DataTableToolbar,
     DataTableRowActions,
@@ -154,8 +156,16 @@
     [v.streetAddress, [v.postalCode, v.city].filter(Boolean).join(' ')].filter(Boolean).join(', ') || '—';
 </script>
 
+{#snippet actionsVenue(v: VenueRow)}
+  <DropdownMenu.Label>Actions</DropdownMenu.Label>
+  <DropdownMenu.Item onclick={() => openEdit(v)} class="cursor-pointer">
+    <Edit class="mr-2 h-3.5 w-3.5" /> Modifier
+  </DropdownMenu.Item>
+{/snippet}
+
 <DataTable
   data={filtered}
+  mobileSpacing="list"
   {pagination}
   onPageChange={() => {}}
   itemName="gymnase(s)"
@@ -176,21 +186,33 @@
   {/snippet}
 
   {#snippet mobileView()}
-    {#each filtered as v (v.id)}
-      <Card.Root>
-        <Card.Content class="space-y-2 p-4">
-          <p class="text-sm font-bold text-foreground">{v.name}</p>
-          <p class="text-xs text-muted-foreground">{adresse(v)}</p>
-          {#if canWrite}
-            <div class="flex justify-end border-t border-border/50 pt-2">
-              <Button variant="outline" size="sm" onclick={() => openEdit(v)} class="h-8 gap-1.5 text-xs font-semibold">
-                <Edit class="h-3.5 w-3.5" /> Modifier
-              </Button>
-            </div>
-          {/if}
-        </Card.Content>
-      </Card.Root>
-    {/each}
+    <ListView
+      items={filtered}
+      emptyTitle="Aucun gymnase"
+      emptyDescription="Déclarez les salles où le club joue : les créneaux et le site public y renvoient."
+    >
+      {#snippet listRow(v)}
+        <!--
+          Le code est l'identifiant stable : il va à droite, en sourdine. La position
+          n'est signalée que lorsqu'elle manque — c'est l'exception qui appelle une
+          action, le site public en a besoin pour son plan.
+        -->
+        <ListRow
+          item={v}
+          onclick={canWrite ? () => openEdit(v) : undefined}
+          title={v.name}
+          subtitle={adresse(v)}
+          value={v.code}
+          actions={canWrite ? actionsVenue : undefined}
+        >
+          {#snippet badge()}
+            {#if !v.latitude || !v.longitude}
+              <Badge variant="outline" size="xs">Sans position</Badge>
+            {/if}
+          {/snippet}
+        </ListRow>
+      {/snippet}
+    </ListView>
   {/snippet}
 
   {#snippet header()}
@@ -215,12 +237,7 @@
       <Table.Cell><code class="text-xs text-muted-foreground">{v.code}</code></Table.Cell>
       <Table.Cell class="relative text-right">
         {#if canWrite}
-          <DataTableRowActions>
-            <DropdownMenu.Label>Actions</DropdownMenu.Label>
-            <DropdownMenu.Item onclick={() => openEdit(v)} class="cursor-pointer">
-              <Edit class="mr-2 h-3.5 w-3.5" /> Modifier
-            </DropdownMenu.Item>
-          </DataTableRowActions>
+          <DataTableRowActions>{@render actionsVenue(v)}</DataTableRowActions>
         {/if}
       </Table.Cell>
     </Table.Row>
