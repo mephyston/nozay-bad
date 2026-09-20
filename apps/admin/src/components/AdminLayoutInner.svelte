@@ -37,7 +37,7 @@
     DoorOpen,
     KeyRound,
     CircleAlert,
-    CreditCard, Dumbbell, Ticket, Receipt } from "@lucide/svelte";
+    CreditCard, Dumbbell, Ticket, Receipt, Activity } from "@lucide/svelte";
   import { DropdownMenu } from "bits-ui";
   import { onMount } from "svelte";
   import { Sidebar, Breadcrumb, Separator, Avatar, GlobalConfirm, AppVersion, PwaInstallBanner, ThemeToggle, toast } from "@nba/ui";
@@ -79,7 +79,7 @@
   const ICONS: Record<string, any> = {
     LayoutDashboard, Users, BarChart3, BookOpen, FileCheck, Scale,
     Landmark, Wallet, Coins, Package, ShoppingCart, Bell, Megaphone, Image, FileText, Newspaper, CalendarClock, CalendarDays, PanelBottom, Settings, User, HelpCircle,
-    Trophy, ChartNoAxesColumn, ShieldCheck, Signpost, DoorOpen, KeyRound, CreditCard, Dumbbell, Ticket, Receipt,
+    Trophy, ChartNoAxesColumn, ShieldCheck, Signpost, DoorOpen, KeyRound, CreditCard, Dumbbell, Ticket, Receipt, Activity,
     Menu: MenuIcon
   };
 

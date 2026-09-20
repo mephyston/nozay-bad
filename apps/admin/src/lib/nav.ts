@@ -147,7 +147,14 @@ export const NAV_GROUPS: NavGroup[] = [
     label: 'Réglages',
     items: [
       { name: 'Configuration', icon: 'Settings', href: '/admin/settings', permission: 'settings:hub:read', keywords: ['reglages', 'parametres', 'club', 'comptes', 'moyens de paiement', 'fonctionnalites', 'identite', 'documents', 'logo', 'categories', 'attestation', 'saisons'] },
-      { name: 'Accès & Rôles', icon: 'User', href: '/admin/iam', permission: 'iam:users:read', keywords: ['utilisateurs', 'roles', 'droits', 'permissions', 'acces', 'compte', 'connexion'] }
+      { name: 'Accès & Rôles', icon: 'User', href: '/admin/iam', permission: 'iam:users:read', keywords: ['utilisateurs', 'roles', 'droits', 'permissions', 'acces', 'compte', 'connexion'] },
+      /*
+        La consommation de la plateforme mesure le compte Cloudflare, pas le club : elle
+        n'a pas de carte dans la configuration du club, et le droit qui l'ouvre n'est
+        porté que par qui exploite la plateforme. Sans entrée ici, la page n'était plus
+        joignable qu'en tapant son adresse.
+      */
+      { name: 'Plateforme', icon: 'Activity', href: '/admin/settings/plateforme', permission: 'settings:platform:read', keywords: ['cloudflare', 'consommation', 'quota', 'usage', 'cpu', 'd1', 'requetes', 'workers'] }
     ]
   },
   {
