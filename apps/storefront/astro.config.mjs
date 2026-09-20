@@ -114,7 +114,6 @@ export default defineConfig({
         'svelte-sonner',
         'tailwind-merge',
         'tailwind-variants',
-        'vaul-svelte',
         '@internationalized/date',
         'drizzle-orm',
         'drizzle-orm/sqlite-core',

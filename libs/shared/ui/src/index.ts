@@ -7,7 +7,6 @@ export { Select, type SelectSize } from './components/ui/select';
 export * as Alert from './components/ui/alert';
 export * as Card from './components/ui/card';
 export * as Dialog from './components/ui/dialog';
-export * as Drawer from './components/ui/drawer';
 
 // Additional components
 export * as Accordion from './components/ui/accordion';
@@ -69,6 +68,8 @@ export { default as FormField } from "./components/patterns/FormField.svelte";
 export { default as ThemeToggle } from "./components/patterns/ThemeToggle.svelte";
 export { default as EnvBanner } from "./components/patterns/EnvBanner.svelte";
 export { default as FormSheet } from "./components/patterns/FormSheet.svelte";
+export { default as ResponsiveSheet } from "./components/patterns/ResponsiveSheet.svelte";
+export { dragDetents } from "./lib/actions/drag-detents.js";
 export { default as MenuSearchField } from "./components/patterns/MenuSearchField.svelte";
 export { default as HeaderSearch } from "./components/patterns/HeaderSearch.svelte";
 export { default as MenuSearchResults } from "./components/patterns/MenuSearchResults.svelte";
