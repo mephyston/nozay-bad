@@ -60,6 +60,7 @@ export { default as ListRow } from './components/patterns/list/ListRow.svelte';
 export { default as ListSection } from './components/patterns/list/ListSection.svelte';
 export { default as ListRowSkeleton } from './components/patterns/list/ListRowSkeleton.svelte';
 export { TONE_CLASS } from './components/patterns/list/list-types.js';
+export { formatAmount, centsFrom } from './lib/amount.js';
 export type { Tone, ListRowModel } from './components/patterns/list/list-types.js';
 export { default as FormField } from "./components/patterns/FormField.svelte";
 export { default as ThemeToggle } from "./components/patterns/ThemeToggle.svelte";
