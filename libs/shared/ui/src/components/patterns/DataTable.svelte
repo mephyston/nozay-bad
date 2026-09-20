@@ -4,6 +4,7 @@
   import * as Card from '../ui/card';
   import { Skeleton } from '../ui/skeleton';
   import EmptyState from './EmptyState.svelte';
+  import { cn } from '../../lib/utils.js';
 
   let {
     data,
@@ -39,8 +40,13 @@
      * `spaced` — des cartes détachées. À réserver aux listes dont chaque carte porte ses
      * propres actions : jointives, les zones cliquables de deux voisines se touchent, et
      * le pouce vise mal.
+     *
+     * `list` — la vue liste de `@nba/ui` : le snippet `mobileView` rend une `<ListView>`,
+     * qui gère elle-même séparateurs, sections et espacement. `DataTable` s'efface alors
+     * complètement sous `md` — y compris la chrome de la carte, dont `overflow-hidden`
+     * clipperait les en-têtes de section collants.
      */
-    mobileSpacing?: 'divided' | 'spaced';
+    mobileSpacing?: 'divided' | 'spaced' | 'list';
     /**
      * Classes posées sur le `<table>`. `table-fixed` fait tenir la table dans son
      * conteneur quoi qu'il arrive : les largeurs viennent des en-têtes, et une colonne
@@ -78,7 +84,13 @@
     </div>
   {/if}
 
-  <Card.Root class="overflow-hidden">
+  <Card.Root
+    class={cn(
+      'overflow-hidden',
+      mobileSpacing === 'list' &&
+        'border-0 bg-transparent shadow-none md:border md:bg-card md:shadow-sm'
+    )}
+  >
     <!-- Desktop View (hidden on mobile if mobileView is provided) -->
     <div class={mobileView ? "hidden md:block" : "block"}>
       <div class="overflow-x-auto">
@@ -135,9 +147,13 @@
             />
           </div>
         {:else}
-          <div class={mobileSpacing === 'spaced' ? 'space-y-3 p-3' : 'divide-y divide-border'}>
+          {#if mobileSpacing === 'list'}
             {@render mobileView()}
-          </div>
+          {:else}
+            <div class={mobileSpacing === 'spaced' ? 'space-y-3 p-3' : 'divide-y divide-border'}>
+              {@render mobileView()}
+            </div>
+          {/if}
         {/if}
       </div>
     {/if}

@@ -54,6 +54,13 @@ export { default as DataTable } from './components/patterns/DataTable.svelte';
 export { default as DataTableToolbar } from './components/patterns/DataTableToolbar.svelte';
 export { default as DataTableColumnHeader } from "./components/patterns/DataTableColumnHeader.svelte";
 export { default as DataTableRowActions } from "./components/patterns/DataTableRowActions.svelte";
+// Vue liste — ce qu'on affiche à la place d'un tableau sur un téléphone.
+export { default as ListView } from './components/patterns/list/ListView.svelte';
+export { default as ListRow } from './components/patterns/list/ListRow.svelte';
+export { default as ListSection } from './components/patterns/list/ListSection.svelte';
+export { default as ListRowSkeleton } from './components/patterns/list/ListRowSkeleton.svelte';
+export { TONE_CLASS } from './components/patterns/list/list-types.js';
+export type { Tone, ListRowModel } from './components/patterns/list/list-types.js';
 export { default as FormField } from "./components/patterns/FormField.svelte";
 export { default as ThemeToggle } from "./components/patterns/ThemeToggle.svelte";
 export { default as EnvBanner } from "./components/patterns/EnvBanner.svelte";
