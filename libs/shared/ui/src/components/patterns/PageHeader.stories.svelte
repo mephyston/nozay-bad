@@ -55,9 +55,9 @@
 <Story name="TitreReplie">
   {#snippet template()}
     <!-- L'état que prend la barre de l'application quand le grand titre a quitté l'écran. -->
-    <div class="flex h-14 w-[390px] max-w-full items-center justify-between border-b border-border bg-background px-4">
-      <span class="text-sm text-muted-foreground opacity-0">Admin</span>
-      <PageTitleSlot title="Adhérents" collapsed />
+    <div class="relative flex h-14 w-[390px] max-w-full items-center justify-between border-b border-border bg-background px-4">
+      <span class="text-sm text-muted-foreground">Admin</span>
+      <PageTitleSlot title="Adhérents" collapsed class="absolute left-1/2 max-w-[55%] -translate-x-1/2" />
       <span class="size-8 rounded-full bg-muted"></span>
     </div>
   {/snippet}

@@ -687,7 +687,7 @@
     l'appliquer aux deux ajouterait une seconde fois la hauteur de l'îlot.
   -->
   <header
-    class="flex min-h-14 shrink-0 items-center justify-between px-6 border-b border-border bg-background pb-2 md:pb-0 md:h-14"
+    class="relative flex min-h-14 shrink-0 items-center justify-between px-6 border-b border-border bg-background pb-2 md:pb-0 md:h-14"
     class:pt-safe={!isImpersonating}
   >
     <div class="flex items-center gap-4 h-full pt-2 md:pt-0">
@@ -726,8 +726,16 @@
       </Breadcrumb.Root>
     </div>
 
-    <!-- Le titre replié, au centre de la barre. Téléphone seulement. -->
-    <PageTitleSlot title={titrePage} collapsed={titreReplie} class="md:hidden" />
+    <!--
+      Centré en absolu sur la barre, et non posé dans son flux : entre un fil
+      d'Ariane et un groupe d'icônes de largeurs différentes, il se centrerait
+      entre eux — donc de travers à l'écran.
+    -->
+    <PageTitleSlot
+      title={titrePage}
+      collapsed={titreReplie}
+      class="absolute left-1/2 max-w-[55%] -translate-x-1/2 md:hidden"
+    />
 
     <div class="flex items-center gap-3 pt-2 md:pt-0">
       <!-- À la souris seulement : sur téléphone, c'est la loupe de la barre du bas. -->
