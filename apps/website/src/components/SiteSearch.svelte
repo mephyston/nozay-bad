@@ -10,7 +10,14 @@
    * agenda, rien d'autre : c'est l'API qui borne le site public au public. Entrée sans
    * résultat choisi ouvre la page `/recherche/`, la même recherche sans script.
    */
-  let { quickLinks = [] }: { quickLinks?: { label: string; href: string }[] } = $props();
+  let {
+    quickLinks = [],
+    placeholder = 'Rechercher sur le site'
+  }: {
+    quickLinks?: { label: string; href: string }[];
+    /** « Rechercher sur nozaybad.fr » : le nom d'hôte vient de la configuration, jamais du code. */
+    placeholder?: string;
+  } = $props();
 
   let query = $state('');
   let groups = $state<SiteSearchGroup[]>([]);
@@ -51,7 +58,7 @@
   }
 </script>
 
-<HeaderSearch bind:this={panel} bind:query placeholder="Une page, une actualité, un rendez-vous…" label="Rechercher sur le site" onSubmit={submit}>
+<HeaderSearch bind:this={panel} bind:query {placeholder} label="Rechercher sur le site" onSubmit={submit}>
   {#if query.trim().length >= 2}
     {#each groups as group (group.kind)}
       {#if group.hits.length > 0}

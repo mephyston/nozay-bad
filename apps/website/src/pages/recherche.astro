@@ -13,6 +13,13 @@ import { allowSearch, cleanQuery, NO_STORE, SEARCH_MAX_LENGTH, SEARCH_MIN_LENGTH
 */
 const env = resolveEnv(Astro.locals);
 const siteUrl = env.SITE_URL ?? import.meta.env.PUBLIC_SITE_URL ?? Astro.url.origin;
+const siteHost = (() => {
+  try {
+    return new URL(siteUrl).hostname;
+  } catch {
+    return Astro.url.hostname;
+  }
+})();
 const q = cleanQuery(Astro.url.searchParams.get('q'));
 
 let limited = false;
@@ -45,7 +52,7 @@ const total = groups.reduce((n, g) => n + g.hits.length, 0);
         name="q"
         value={q}
         maxlength={SEARCH_MAX_LENGTH}
-        placeholder="Une page, une actualité, un rendez-vous…"
+        placeholder={`Rechercher sur ${siteHost}`}
         aria-label="Rechercher sur le site"
         class="border-border bg-background text-foreground placeholder:text-muted-foreground h-11 min-w-0 flex-1 rounded-lg border px-4 text-base focus:outline-none focus:ring-2 focus:ring-primary"
         autofocus={!q}

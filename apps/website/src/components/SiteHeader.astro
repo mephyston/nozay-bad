@@ -14,6 +14,15 @@ import { listNavItems, type NavItemView } from '../lib/cms';
  */
 const env = resolveEnv(Astro.locals);
 const nav: NavItemView[] = await listNavItems(env, 'header');
+/** « Rechercher sur nozaybad.fr » — l'hôte du site, lu dans sa configuration. */
+const siteHost = (() => {
+  try {
+    return new URL(env.SITE_URL ?? import.meta.env.PUBLIC_SITE_URL ?? Astro.url.origin).hostname;
+  } catch {
+    return Astro.url.hostname;
+  }
+})();
+const searchPlaceholder = `Rechercher sur ${siteHost}`;
 const current = Astro.url.pathname;
 
 const isExternal = (item: NavItemView) => item.externalUrl !== null;
@@ -193,7 +202,7 @@ const openSection = nav.findIndex((item) => item.children.length > 0 && isActive
 
     <div class="ml-auto flex items-center gap-1">
       {/* Les entrées de premier niveau qui mènent quelque part : les liens rapides de la loupe. */}
-      <SiteSearch client:idle quickLinks={nav.flatMap((item) => (item.href ? [{ label: item.label, href: item.href }] : item.children.filter((c) => c.href).map((c) => ({ label: c.label, href: c.href as string })))).slice(0, 8)} />
+      <SiteSearch client:idle placeholder={searchPlaceholder} quickLinks={nav.flatMap((item) => (item.href ? [{ label: item.label, href: item.href }] : item.children.filter((c) => c.href).map((c) => ({ label: c.label, href: c.href as string })))).slice(0, 8)} />
       <ThemeToggle />
 
       <button
