@@ -87,8 +87,12 @@
   <Card.Root
     class={cn(
       'overflow-hidden',
+      // `Card.Root` se cerne d'un `ring-1`, pas d'un `border` : neutraliser la
+      // bordure ne suffisait pas, et la bague doublait le cadre de la liste.
+      // Son rembourrage vertical et son `overflow-hidden` partent aussi — ce
+      // dernier clipperait les en-têtes de section collants.
       mobileSpacing === 'list' &&
-        'border-0 bg-transparent shadow-none md:border md:bg-card md:shadow-sm'
+        'ring-0 bg-transparent py-0 overflow-visible md:ring-1 md:bg-card md:py-(--card-spacing) md:overflow-hidden'
     )}
   >
     <!-- Desktop View (hidden on mobile if mobileView is provided) -->
