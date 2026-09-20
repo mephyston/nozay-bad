@@ -126,6 +126,7 @@
 
 <li
   data-list-row
+  data-context-menu={actions || swipe.length > 0 ? '' : undefined}
   class={cn('relative bg-card', swipe.length > 0 && 'overflow-hidden', className)}
 >
   {#if swipe.length > 0}
@@ -213,6 +214,7 @@
               variant="ghost"
               size="icon-sm"
               {...props}
+              data-row-menu
               class="sr-only focus:not-sr-only focus-visible:not-sr-only"
             >
               <span class="sr-only">Actions</span>
@@ -233,6 +235,22 @@
 </li>
 
 <style>
+  /*
+    Le maintien long ne peut être intercepté qu'en neutralisant la sélection de
+    texte et le menu natif d'iOS — d'où la restriction aux lignes qui portent un
+    menu, et l'exception `data-selectable` : une ligne porte souvent une
+    référence qu'on recopie, un numéro de licence ou de pièce.
+  */
+  li[data-context-menu] [data-swipe-layer] {
+    -webkit-touch-callout: none;
+    user-select: none;
+  }
+
+  li[data-context-menu] [data-selectable] {
+    -webkit-touch-callout: default;
+    user-select: text;
+  }
+
   /*
     Le rappel : ressenti d'un tiroir qui se cale, pas d'une transition linéaire.
     Pendant le geste, `data-swiping` sur la liste la coupe — le doigt doit être

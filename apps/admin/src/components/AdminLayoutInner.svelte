@@ -42,7 +42,7 @@
   import { onMount } from "svelte";
   import { Sidebar, Breadcrumb, Separator, Avatar, GlobalConfirm, AppVersion, PwaInstallBanner, ThemeToggle, toast } from "@nba/ui";
   import AdminMobileDock from './AdminMobileDock.svelte';
-  import { searchNav, softNavigate, MenuSearchField, MenuSearchResults, HeaderSearch, PageTitleSlot, type NavSearchHit } from '@nba/ui';
+  import { searchNav, softNavigate, MenuSearchField, MenuSearchResults, HeaderSearch, PageTitleSlot, pullToRefresh, type NavSearchHit } from '@nba/ui';
 
   let { children, email, name, permissions = [], realEmail = '', club, breadcrumb } = $props<{
     children?: import('svelte').Snippet;
@@ -833,6 +833,9 @@
     class="flex-1 overflow-y-auto pb-24 md:pb-0"
     data-scroll-root
     bind:this={scrollContainer}
+    use:pullToRefresh={{
+      onRefresh: () => softNavigate(window.location.href),
+    }}
   >
     <main class="p-4 md:p-6">
       {#if children}

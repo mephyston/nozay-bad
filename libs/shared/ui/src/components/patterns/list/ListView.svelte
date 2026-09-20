@@ -5,6 +5,7 @@
   import ListRowSkeleton from './ListRowSkeleton.svelte';
   import { cn } from '../../../lib/utils.js';
   import { swipeActions } from '../../../lib/actions/swipe-actions.js';
+  import { longPress } from '../../../lib/actions/long-press.js';
 
   let {
     items,
@@ -94,7 +95,7 @@
           au lieu de deux cents, et la ligne ouverte devient une variable locale.
           L'action se retire d'elle-même sur une ligne sans actions révélables.
         -->
-        <ul class={classesListe} use:swipeActions>
+        <ul class={classesListe} use:swipeActions use:longPress>
           {#each groupe.elements as element (element.index)}
             {@render listRow(element.item, element.index)}
           {/each}

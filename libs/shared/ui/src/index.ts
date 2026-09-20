@@ -63,6 +63,8 @@ export { formatAmount, centsFrom } from './lib/amount.js';
 export type { Tone, ListRowModel, SwipeAction } from './components/patterns/list/list-types.js';
 export { swipeActions } from './lib/actions/swipe-actions.js';
 export { runAction } from './lib/actions/run-action.js';
+export { pullToRefresh } from './lib/actions/pull-to-refresh.js';
+export { longPress } from './lib/actions/long-press.js';
 export { default as RowActionItems } from './components/patterns/list/RowActionItems.svelte';
 export { default as FormField } from "./components/patterns/FormField.svelte";
 export { default as ThemeToggle } from "./components/patterns/ThemeToggle.svelte";
