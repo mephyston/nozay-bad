@@ -69,6 +69,9 @@ export { default as ThemeToggle } from "./components/patterns/ThemeToggle.svelte
 export { default as EnvBanner } from "./components/patterns/EnvBanner.svelte";
 export { default as FormSheet } from "./components/patterns/FormSheet.svelte";
 export { default as ResponsiveSheet } from "./components/patterns/ResponsiveSheet.svelte";
+export { default as FilterSheet } from "./components/patterns/FilterSheet.svelte";
+export { default as ListSearchField } from "./components/patterns/ListSearchField.svelte";
+export { default as SegmentedFilter } from "./components/patterns/SegmentedFilter.svelte";
 export { dragDetents } from "./lib/actions/drag-detents.js";
 export { default as MenuSearchField } from "./components/patterns/MenuSearchField.svelte";
 export { default as HeaderSearch } from "./components/patterns/HeaderSearch.svelte";
@@ -77,6 +80,7 @@ export { default as MemberAvatar } from "./components/patterns/MemberAvatar.svel
 export { default as RichTextEditor } from './components/patterns/RichTextEditor.svelte';
 export { default as RichTextToolbar } from './components/patterns/RichTextToolbar.svelte';
 export { default as PageHeader } from './components/patterns/PageHeader.svelte';
+export { default as PageTitleSlot } from './components/patterns/PageTitleSlot.svelte';
 export { default as SearchableCombobox } from './components/patterns/SearchableCombobox.svelte';
 export { default as StatusIcon } from './components/patterns/StatusIcon.svelte';
 export { default as DashboardCard } from './components/patterns/DashboardCard.svelte';

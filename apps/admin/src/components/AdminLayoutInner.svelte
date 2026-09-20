@@ -42,7 +42,7 @@
   import { onMount } from "svelte";
   import { Sidebar, Breadcrumb, Separator, Avatar, GlobalConfirm, AppVersion, PwaInstallBanner, ThemeToggle, toast } from "@nba/ui";
   import AdminMobileDock from './AdminMobileDock.svelte';
-  import { searchNav, softNavigate, MenuSearchField, MenuSearchResults, HeaderSearch, type NavSearchHit } from '@nba/ui';
+  import { searchNav, softNavigate, MenuSearchField, MenuSearchResults, HeaderSearch, PageTitleSlot, type NavSearchHit } from '@nba/ui';
 
   let { children, email, name, permissions = [], realEmail = '', club, breadcrumb } = $props<{
     children?: import('svelte').Snippet;
@@ -133,6 +133,49 @@
 
   /** Le conteneur qui défile : la barre du bas s'y rétracte. */
   let scrollContainer = $state<HTMLElement | null>(null);
+
+  /**
+   * Le grand titre se replie dans la barre.
+   *
+   * L'observation vit ici, et non dans `PageHeader` : dans une page Astro, cet
+   * en-tête est rendu côté serveur sans directive `client:`, donc jamais hydraté —
+   * un effet posé chez lui ne tournerait pas. Le layout, lui, est un îlot, et il
+   * possède à la fois la barre et le conteneur défilant.
+   *
+   * Sentinelle + `IntersectionObserver` plutôt qu'un écouteur de défilement :
+   * l'état est binaire — le titre bascule, il ne s'interpole pas — et cela ne
+   * coûte aucun travail par frame.
+   */
+  let titrePage = $state('');
+  let titreReplie = $state(false);
+
+  $effect(() => {
+    const racine = scrollContainer;
+    if (!racine) return;
+
+    let observateur: IntersectionObserver | null = null;
+
+    const accrocher = () => {
+      observateur?.disconnect();
+      const titre = racine.querySelector<HTMLElement>('[data-page-title]');
+      titrePage = titre?.textContent?.trim() ?? '';
+      titreReplie = false;
+      if (!titre) return;
+      observateur = new IntersectionObserver(
+        ([entree]) => (titreReplie = !entree.isIntersecting),
+        { root: racine, threshold: 0 }
+      );
+      observateur.observe(titre);
+    };
+
+    accrocher();
+    // La navigation douce échange le contenu sans remonter forcément cet îlot.
+    document.addEventListener('astro:page-load', accrocher);
+    return () => {
+      observateur?.disconnect();
+      document.removeEventListener('astro:page-load', accrocher);
+    };
+  });
 
   /*
     Recherche dans le menu ouvert (téléphone).
@@ -653,8 +696,14 @@
       
       <Separator orientation="vertical" class="h-4 hidden md:block" />
       
-      <!-- Breadcrumb -->
-      <Breadcrumb.Root>
+      <!--
+        Le fil d'Ariane s'efface quand le titre de page vient le remplacer : la
+        barre fait 56 px, les deux n'y tiennent pas. Au-dessus de `md`, rien ne
+        change — le grand titre ne se replie pas.
+      -->
+      <Breadcrumb.Root
+        class={titreReplie ? 'opacity-0 transition-opacity md:opacity-100' : 'transition-opacity'}
+      >
         <Breadcrumb.List>
           <Breadcrumb.Item class="hidden sm:inline-flex">
             <Breadcrumb.Link href="/">Admin</Breadcrumb.Link>
@@ -676,6 +725,9 @@
         </Breadcrumb.List>
       </Breadcrumb.Root>
     </div>
+
+    <!-- Le titre replié, au centre de la barre. Téléphone seulement. -->
+    <PageTitleSlot title={titrePage} collapsed={titreReplie} class="md:hidden" />
 
     <div class="flex items-center gap-3 pt-2 md:pt-0">
       <!-- À la souris seulement : sur téléphone, c'est la loupe de la barre du bas. -->
@@ -772,7 +824,16 @@
   </header>
 
   <!-- Main Content Area -->
-  <div class="flex-1 overflow-y-auto pb-24 md:pb-0" bind:this={scrollContainer}>
+  <!--
+    `data-scroll-root` : c'est lui qui défile dans l'administration, et non la
+    fenêtre. Les primitives qui observent le défilement — le grand titre repliable,
+    le geste de rafraîchissement — s'y accrochent par cet attribut.
+  -->
+  <div
+    class="flex-1 overflow-y-auto pb-24 md:pb-0"
+    data-scroll-root
+    bind:this={scrollContainer}
+  >
     <main class="p-4 md:p-6">
       {#if children}
         {@render children()}
