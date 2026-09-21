@@ -77,7 +77,7 @@
     autocapitalize="off"
     spellcheck="false"
     {placeholder}
-    aria-label="Chercher dans le menu"
+    aria-label={placeholder}
     class="h-full min-w-0 flex-1 bg-transparent text-base text-foreground placeholder:text-muted-foreground focus:outline-none"
     onkeydown={onKeydown}
   />

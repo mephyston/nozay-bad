@@ -37,6 +37,8 @@
   const action = $derived(dockDePage.action);
 
   function openSearch() {
+    // Repeuplé avec ce qui est appliqué : on rouvre pour corriger, pas pour retaper.
+    query = recherche?.valeur ?? '';
     open = true;
     compact = false;
   }
@@ -98,7 +100,7 @@
 >
   <button
     type="button"
-    class="glass-surface dock-circle flex h-14 shrink-0 items-center justify-center overflow-hidden rounded-full text-foreground transition-[width,opacity] duration-200 {open ? 'w-0 border-0 opacity-0 pointer-events-none' : 'w-14'}"
+    class="glass-surface dock-circle flex h-14 shrink-0 items-center justify-center overflow-hidden rounded-full text-foreground transition-[width,opacity] duration-300 {open ? 'w-0 border-0 opacity-0 pointer-events-none' : 'w-14'}"
     aria-label="Ouvrir le menu"
     aria-hidden={open}
     tabindex={open ? -1 : 0}
@@ -107,43 +109,64 @@
     <MenuIcon class="h-6 w-6" />
   </button>
 
-  <div class="relative flex min-w-0 items-end justify-end gap-3 {open ? 'flex-1' : ''}">
-    {#if open && recherche}
-      <MenuSearchField
-        bind:query
-        placeholder={recherche.placeholder}
-        onClose={closeSearch}
-        onSubmit={valider}
-      />
-    {:else}
-      {#if recherche}
-        <button
-          type="button"
-          class="glass-surface dock-circle flex h-14 w-14 shrink-0 items-center justify-center rounded-full text-foreground"
-          aria-label={recherche.placeholder}
-          onclick={openSearch}
-        >
-          <Search class="h-6 w-6" />
-        </button>
-      {/if}
+  <!--
+    Toujours `flex-1`, même fermé : c'est ce qui permet au champ de s'étirer depuis
+    le cercle. Dans un conteneur dimensionné sur son contenu, la largeur du parent
+    sauterait d'un coup et il n'y aurait plus rien à animer.
+  -->
+  <div class="relative flex min-w-0 flex-1 items-end justify-end gap-3">
+    {#if recherche}
+      <!--
+        La coquille porte la largeur, son contenu la remplit : de 3,5 rem à toute
+        la place, le cercle s'étire en pilule. Les deux ont la même hauteur, le même
+        rayon et la même surface, ce qui rend la transformation continue à l'œil.
+      -->
+      <div class="dock-search min-w-0 overflow-hidden" style="width: {open ? '100%' : '3.5rem'}">
+        {#if open}
+          <MenuSearchField
+            bind:query
+            placeholder={recherche.placeholder}
+            onClose={closeSearch}
+            onSubmit={valider}
+          />
+        {:else}
+          <button
+            type="button"
+            class="glass-surface dock-circle flex h-14 w-full items-center justify-center rounded-full text-foreground"
+            aria-label={recherche.placeholder}
+            onclick={openSearch}
+          >
+            <Search class="h-6 w-6" />
+          </button>
+        {/if}
+      </div>
+    {/if}
 
-      {#if action}
-        {@const Icone = action.icone as any}
-        <!-- Pleine, et non en verre : c'est l'action principale, elle s'annonce. -->
-        <button
-          type="button"
-          class="dock-circle flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg"
-          aria-label={action.libelle}
-          onclick={action.run}
-        >
-          <Icone class="h-6 w-6" />
-        </button>
-      {/if}
+    {#if action}
+      {@const Icone = action.icone as any}
+      <!-- Pleine, et non en verre : c'est l'action principale, elle s'annonce. -->
+      <button
+        type="button"
+        class="dock-circle flex h-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary text-primary-foreground shadow-lg transition-[width,opacity] duration-300 {open
+          ? 'pointer-events-none w-0 opacity-0'
+          : 'w-14'}"
+        aria-label={action.libelle}
+        aria-hidden={open}
+        tabindex={open ? -1 : 0}
+        onclick={action.run}
+      >
+        <Icone class="h-6 w-6" />
+      </button>
     {/if}
   </div>
 </div>
 
 <style>
+  /* L'étirement du cercle en pilule, et son repli. */
+  .dock-search {
+    transition: width 320ms cubic-bezier(0.32, 0.72, 0, 1);
+  }
+
   /* Rétractation : chaque cercle rétrécit depuis le bas, sans rien déplacer dans la page. */
   .dock-circle {
     transform-origin: 50% 100%;
@@ -152,8 +175,19 @@
   .dock.is-compact .dock-circle {
     transform: scale(0.78);
   }
+
+  /* L'enfoncement : le doigt doit sentir qu'il a touché avant que l'écran ne change. */
+  .dock-circle:active {
+    transform: scale(0.9);
+    transition-duration: 90ms;
+  }
+  .dock.is-compact .dock-circle:active {
+    transform: scale(0.7);
+  }
+
   @media (prefers-reduced-motion: reduce) {
-    .dock-circle {
+    .dock-circle,
+    .dock-search {
       transition: none;
     }
   }

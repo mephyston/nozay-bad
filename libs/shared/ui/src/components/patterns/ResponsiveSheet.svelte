@@ -121,10 +121,16 @@
       class={cn(
         'bg-card text-card-foreground border-border fixed z-50 flex flex-col bg-clip-padding text-sm shadow-lg',
         estMobile
-          ? 'inset-x-0 bottom-0 rounded-t-2xl border-t'
+          ? // La montée est jouée par `dragDetents`, qui possède la translation ;
+            // la sortie se contente d'un fondu, une animation de transformation
+            // entrerait en conflit avec cette translation posée en ligne.
+            'inset-x-0 bottom-0 rounded-t-2xl border-t data-closed:animate-out data-closed:fade-out-0 data-closed:duration-200'
           : cn(
               'inset-y-0 h-full w-full pt-[env(safe-area-inset-top,0px)]',
-              side === 'right' ? 'right-0 border-l' : 'left-0 border-r',
+              'data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0',
+              side === 'right'
+                ? 'right-0 border-l data-open:slide-in-from-right-10 data-closed:slide-out-to-right-10'
+                : 'left-0 border-r data-open:slide-in-from-left-10 data-closed:slide-out-to-left-10',
               TAILLE[size]
             ),
         className

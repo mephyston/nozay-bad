@@ -98,3 +98,43 @@ test.describe('PullToRefresh', () => {
     expect(etat.opacite).toBeGreaterThan(0.3);
   });
 });
+
+test.describe('ResponsiveSheet — entrée', () => {
+  test('la feuille monte depuis le bord bas', async ({ page }) => {
+    // La translation est posée en ligne par `dragDetents` : aucune animation CSS ne
+    // peut la jouer, et une capture ne voit qu'un état. On relève donc les écritures.
+    await page.addInitScript(() => {
+      (window as unknown as { __releve: string[] }).__releve = [];
+      const obs = new MutationObserver((muts) => {
+        for (const m of muts) {
+          const el = m.target as HTMLElement;
+          if (el instanceof HTMLElement && el.dataset.presentation === 'sheet') {
+            (window as unknown as { __releve: string[] }).__releve.push(el.style.transform);
+          }
+        }
+      });
+      document.addEventListener('DOMContentLoaded', () =>
+        obs.observe(document.documentElement, {
+          subtree: true,
+          attributes: true,
+          attributeFilter: ['style'],
+        })
+      );
+    });
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await ouvrirStory(page, 'patterns-responsivesheet--palier-haut');
+    await page.locator('[data-presentation="sheet"]').waitFor({ state: 'attached' });
+    await page.waitForTimeout(600);
+
+    const releve = await page.evaluate(
+      () => (window as unknown as { __releve: string[] }).__releve
+    );
+    const distances = releve.map((t) => Number(/translate3d\(0px, ([\d.]+)px/.exec(t)?.[1] ?? NaN));
+
+    // Elle part hors de l'écran…
+    expect(distances[0]).toBeGreaterThan(400);
+    // …et se cale au palier demandé.
+    expect(distances[distances.length - 1]).toBe(0);
+  });
+});

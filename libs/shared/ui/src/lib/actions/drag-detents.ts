@@ -29,6 +29,7 @@ export type DragDetentsOptions = {
 };
 
 const SEUIL_AXE = 6;
+const RESSORT = 'transform 320ms cubic-bezier(0.32, 0.72, 0, 1)';
 /** Au-delà, le geste est un rejet quelle que soit la distance parcourue. */
 const VELOCITE_REJET = 0.55;
 
@@ -53,6 +54,10 @@ export function dragDetents(node: HTMLElement, options: DragDetentsOptions = {})
   let actif = false;
   let pointeur: number | null = null;
   let trame = 0;
+  let premiereMesure = true;
+
+  const mouvementReduit = () =>
+    window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
 
   const max = () => Math.max(...opts.detents);
   const hauteurFeuille = () => hauteurVisible * max();
@@ -63,13 +68,31 @@ export function dragDetents(node: HTMLElement, options: DragDetentsOptions = {})
     if (!opts.enabled) {
       node.style.height = '';
       node.style.transform = '';
+      node.style.transition = '';
       node.style.removeProperty('--nba-sheet-offset');
       document.documentElement.style.removeProperty('--nba-sheet-progress');
       return;
     }
     hauteurVisible = window.visualViewport?.height ?? window.innerHeight;
     node.style.height = `${hauteurFeuille()}px`;
-    if (!actif) poser(offsetDe(palier));
+    if (actif) return;
+
+    if (premiereMesure && !mouvementReduit()) {
+      // La feuille monte depuis le bord bas, d'où vient le doigt qui l'a demandée.
+      // Sans cela elle apparaissait d'un coup, déjà en place : la translation est
+      // posée en ligne par cette action, donc aucune animation CSS ne peut la jouer.
+      premiereMesure = false;
+      node.style.transition = 'none';
+      poser(hauteurFeuille());
+      requestAnimationFrame(() => {
+        node.style.transition = RESSORT;
+        poser(offsetDe(palier));
+      });
+      return;
+    }
+
+    premiereMesure = false;
+    poser(offsetDe(palier));
   }
 
   function poser(y: number) {
@@ -85,6 +108,7 @@ export function dragDetents(node: HTMLElement, options: DragDetentsOptions = {})
   }
 
   function caler(index: number) {
+    node.style.transition = mouvementReduit() ? 'none' : RESSORT;
     palier = index;
     poser(offsetDe(index));
     opts.onDetent?.(index);
@@ -125,6 +149,7 @@ export function dragDetents(node: HTMLElement, options: DragDetentsOptions = {})
         return;
       }
       actif = true;
+      node.style.transition = 'none';
       node.setAttribute('data-sheet-dragging', '');
       node.setPointerCapture(e.pointerId);
     }
@@ -154,6 +179,7 @@ export function dragDetents(node: HTMLElement, options: DragDetentsOptions = {})
 
     const rejet = opts.dismissible && (vitesse > VELOCITE_REJET || y > offsetDe(0) + hauteurVisible * 0.15);
     if (rejet) {
+      node.style.transition = mouvementReduit() ? 'none' : RESSORT;
       poser(hauteurFeuille());
       opts.onDismiss?.();
       return;

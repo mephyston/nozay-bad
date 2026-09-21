@@ -12,6 +12,8 @@
 
 export type RechercheDeListe = {
   placeholder: string;
+  /** Le terme actuellement appliqué. Repeuple le champ à sa réouverture. */
+  valeur: string;
   /** Appelée à la validation, et avec une chaîne vide à l'effacement. */
   onSubmit: (valeur: string) => void;
 };

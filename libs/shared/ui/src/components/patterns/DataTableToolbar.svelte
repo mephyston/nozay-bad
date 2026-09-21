@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Filter } from '@lucide/svelte';
+  import { Filter, X } from '@lucide/svelte';
   import { Button } from '../ui/button';
   import ListSearchField from './ListSearchField.svelte';
   import { cn } from '../../lib/utils.js';
@@ -40,6 +40,7 @@
     if (!dockSearch || !hasSearch) return;
     return dockDePage.declarerRecherche({
       placeholder: searchPlaceholder,
+      valeur: searchValue,
       onSubmit: rechercher,
     });
   });
@@ -52,6 +53,24 @@
 </script>
 
 <div class="flex flex-col sm:flex-row flex-wrap gap-3 items-stretch sm:items-center w-full">
+  {#if hasSearch && dockSearch && searchValue}
+    <!--
+      Le filtre appliqué, et de quoi le retirer.
+      Sur téléphone, le champ est descendu dans la barre du bas et se referme après
+      validation : sans ce jeton, la liste restait filtrée sans que rien ne le dise
+      ni n'offre de revenir en arrière.
+    -->
+    <button
+      type="button"
+      onclick={() => rechercher('')}
+      class="inline-flex h-9 max-w-full items-center gap-1.5 self-start rounded-full bg-accent px-3 text-sm text-accent-foreground md:hidden"
+    >
+      <span class="truncate">« {searchValue} »</span>
+      <X class="size-4 shrink-0" />
+      <span class="sr-only">Retirer la recherche</span>
+    </button>
+  {/if}
+
   {#if hasSearch}
     <!--
       `debounce={0}` : cette recherche part au serveur. La relancer à chaque
