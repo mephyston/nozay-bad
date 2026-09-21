@@ -1,18 +1,19 @@
 <script lang="ts">
-  import { Landmark, TriangleAlert, User, Plus, Pencil, X } from '@lucide/svelte';
+  import { Landmark, TriangleAlert, Plus } from '@lucide/svelte';
   import {
-    Card,
-    Badge,
     Button,
-    Select,
     EmptyState,
     FormSheet,
     FormField,
     SearchableCombobox,
     uiConfirm,
     flashAndReload,
-    toSeasonOptions
+    toSeasonOptions,
+    ChoiceField,
+    dockDePage
   } from '@nba/ui';
+  import ClubFunctionsList from './ClubFunctionsList.svelte';
+  import ClubFunctionsGrid from './ClubFunctionsGrid.svelte';
   import { CLUB_FUNCTIONS, CLUB_FUNCTION_LABELS, type ClubFunction } from '../../shared/club-functions';
   import type { ClubFunctionAssignment } from '../dto';
 
@@ -56,6 +57,17 @@
       holders: assignments.filter((a) => a.function === fn)
     }))
   );
+
+  /*
+    L'ajout descend dans la barre du bas : c'est la seule action de l'écran, et elle
+    vivait en haut d'un en-tête qui défile. Rien à chercher ici, donc pas de loupe.
+  */
+  $effect(() => {
+    if (!canWrite) return;
+    return dockDePage.declarerActions([
+      { id: 'ajouter-dirigeant', label: 'Ajouter un dirigeant', icon: Plus, run: () => openCreate() }
+    ]);
+  });
 
   const displayName = (a: { firstName: string | null; lastName: string | null; licence: string }) =>
     [a.firstName, a.lastName].filter(Boolean).join(' ').trim() || `Licence ${a.licence}`;
@@ -170,23 +182,35 @@
 </script>
 
 <div class="space-y-6">
-  <div class="flex items-center justify-between gap-3 flex-wrap">
-    <div class="flex items-center gap-2 text-sm text-muted-foreground">
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <!-- La règle est une explication : elle reste à la souris, qui a la place. -->
+    <div class="hidden items-center gap-2 text-sm text-muted-foreground md:flex">
       <Landmark class="w-4 h-4" />
       Une fonction au plus par adhérent ; président, trésorier et trésorier adjoint n'ont qu'un titulaire.
     </div>
-    <div class="flex items-center gap-2">
+    <div class="flex w-full items-center gap-2 md:w-auto">
       {#if seasonOptions.length > 0}
-        <div class="w-36">
-          <Select bind:value={selectedSeason} onchange={changeSeason} aria-label="Saison">
-            {#each seasonOptions as o (o.value)}
-              <option value={o.value}>{o.label.replace('Saison ', '')}</option>
-            {/each}
-          </Select>
+        <div class="w-full md:w-36">
+          <!--
+            Au doigt, la saison devient une rangée : intitulé à gauche, valeur et
+            double chevron à droite, comme tout ce qui ouvre un menu. Le bloc autour
+            porte l'intitulé que la rangée absorbe — sans lui, la rangée n'affiche
+            que sa valeur, et rien ne dit de quoi elle parle.
+          -->
+          <FormField id="saison-dirigeants" label="Saison">
+            <ChoiceField
+              id="saison-dirigeants"
+              label="Saison"
+              options={seasonOptions.map((o) => ({ value: String(o.value), label: o.label.replace('Saison ', '') }))}
+              bind:value={selectedSeason}
+              onChange={changeSeason}
+            />
+          </FormField>
         </div>
       {/if}
       {#if canWrite}
-        <Button size="sm" onclick={() => openCreate()}>
+        <!-- Sur téléphone, cette action vit dans la barre du bas. -->
+        <Button size="sm" onclick={() => openCreate()} class="hidden md:inline-flex">
           <Plus class="w-3.5 h-3.5" />
           Ajouter un dirigeant
         </Button>
@@ -202,69 +226,25 @@
       description="Après l'assemblée générale, attribuez leur fonction aux dirigeants. Les rappels de gestion du club (import des classements avant une journée d'interclubs, etc.) leur sont adressés."
     />
   {:else}
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      {#each byFunction as group (group.fn)}
-        <Card.Root>
-          <Card.Content class="p-4 space-y-2">
-            <div class="flex items-center justify-between gap-2 border-b border-border pb-2">
-              <h3 class="text-sm font-bold text-foreground">{group.label}</h3>
-              {#if group.holders.length === 0}
-                <Badge variant="warning" size="xs">Non attribuée</Badge>
-              {/if}
-            </div>
-            {#each group.holders as holder (holder.licence)}
-              <div class="flex items-center gap-2 rounded-md px-2 py-1.5 -mx-2 hover:bg-accent/50 transition-colors">
-                <a
-                  href={`/admin/members/${holder.licence}?season=${encodeURIComponent(season)}`}
-                  class="flex items-center gap-2 min-w-0 flex-1"
-                >
-                  <User class="w-4 h-4 text-muted-foreground shrink-0" />
-                  <span class="text-sm font-medium text-foreground truncate">{displayName(holder)}</span>
-                  <span class="text-xs text-muted-foreground shrink-0">{holder.licence}</span>
-                  {#if holder.memberId === null}
-                    <!-- Licence sans dossier : l'adhérent a quitté le référentiel, la
-                         fonction reste — la retirer est une décision humaine. -->
-                    <Badge variant="destructive" size="xs">Sans dossier</Badge>
-                  {/if}
-                </a>
-                {#if canWrite}
-                  <button
-                    type="button"
-                    class="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground shrink-0"
-                    title="Changer de fonction"
-                    aria-label={`Changer la fonction de ${displayName(holder)}`}
-                    onclick={() => openEdit(holder)}
-                  >
-                    <Pencil class="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    type="button"
-                    class="p-1 rounded hover:bg-muted text-muted-foreground hover:text-destructive shrink-0"
-                    title="Retirer la fonction"
-                    aria-label={`Retirer la fonction de ${displayName(holder)}`}
-                    onclick={() => remove(holder)}
-                  >
-                    <X class="w-3.5 h-3.5" />
-                  </button>
-                {/if}
-              </div>
-            {:else}
-              <p class="text-xs text-muted-foreground italic">Personne pour cette saison.</p>
-            {/each}
-            {#if canWrite}
-              <button
-                type="button"
-                class="text-xs text-primary hover:underline flex items-center gap-1"
-                onclick={() => openCreate(group.fn)}
-              >
-                <Plus class="w-3 h-3" />
-                Attribuer
-              </button>
-            {/if}
-          </Card.Content>
-        </Card.Root>
-      {/each}
-    </div>
+    <ClubFunctionsList
+      groupes={byFunction}
+      {season}
+      {canWrite}
+      nomAffiche={displayName}
+      onEdit={openEdit}
+      onRemove={remove}
+      onCreate={(fn) => openCreate(fn)}
+    />
+
+    <ClubFunctionsGrid
+      groupes={byFunction}
+      {season}
+      {canWrite}
+      nomAffiche={displayName}
+      onEdit={openEdit}
+      onRemove={remove}
+      onCreate={(fn) => openCreate(fn)}
+    />
   {/if}
 </div>
 
@@ -292,11 +272,17 @@
     />
   </FormField>
 
+  <!--
+    `ChoiceField` et non la liste déroulante native : celle-ci fait 32 px de haut,
+    moitié moins qu'une cible tactile, et n'a pas la forme des autres rangées du
+    formulaire.
+  -->
   <FormField label="Fonction" id="dirigeant-function">
-    <Select id="dirigeant-function" bind:value={fn}>
-      {#each CLUB_FUNCTIONS as code (code)}
-        <option value={code}>{CLUB_FUNCTION_LABELS[code]}</option>
-      {/each}
-    </Select>
+    <ChoiceField
+      id="dirigeant-function"
+      label="Fonction"
+      options={CLUB_FUNCTIONS.map((code) => ({ value: code, label: CLUB_FUNCTION_LABELS[code] }))}
+      bind:value={() => fn, (v) => (fn = v as ClubFunction)}
+    />
   </FormField>
 </FormSheet>

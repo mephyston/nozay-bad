@@ -25,6 +25,32 @@
     canWrite?: boolean;
   } = $props();
 
+  /**
+   * D'où l'on vient, et non « la liste » par défaut.
+   *
+   * On arrive sur une fiche depuis la liste des adhérents, mais aussi depuis les
+   * dirigeants — et le retour y ramenait tout le monde à la liste. Le référent dit
+   * la provenance ; à défaut (ouverture directe, favori, rechargement), la liste
+   * reste le repli, qui est le bon endroit dans le doute.
+   */
+  const RETOURS: { motif: RegExp; href: string; libelle: string }[] = [
+    { motif: /\/admin\/members\/dirigeants/, href: '/admin/members/dirigeants', libelle: 'Retour aux dirigeants' }
+  ];
+
+  const retour = $derived.by(() => {
+    const parDefaut = {
+      href: `/admin/members?season=${seasonId}`,
+      libelle: 'Retour à la liste des adhérents'
+    };
+    if (typeof document === 'undefined') return parDefaut;
+    const referent = document.referrer;
+    // Un référent d'un autre site ne dit rien de notre navigation.
+    if (!referent || !referent.startsWith(window.location.origin)) return parDefaut;
+    const connu = RETOURS.find((r) => r.motif.test(referent));
+    if (!connu) return parDefaut;
+    return { href: `${connu.href}?season=${encodeURIComponent(seasonId)}`, libelle: connu.libelle };
+  });
+
   let activeTab = $state<'profil' | 'cotisation' | 'transactions'>('profil');
 
   // Pont de l'administration, et non l'adresse du site public : les portraits ne sont
@@ -47,19 +73,19 @@
     où l'on retourne et n'a pas besoin d'être une cible de 44 points.
   -->
   <a
-    href={`/admin/members?season=${seasonId}`}
-    aria-label="Retour à la liste des adhérents"
+    href={retour.href}
+    aria-label={retour.libelle}
     class="glass-surface flex size-11 items-center justify-center rounded-full text-foreground no-underline md:hidden"
   >
     <ChevronLeft class="size-6" />
   </a>
 
   <a
-    href={`/admin/members?season=${seasonId}`}
+    href={retour.href}
     class="hidden items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground md:inline-flex"
   >
     <ArrowLeft class="w-4 h-4" />
-    Retour à la liste des adhérents
+    {retour.libelle}
   </a>
 
   <!-- Profile Header Card -->

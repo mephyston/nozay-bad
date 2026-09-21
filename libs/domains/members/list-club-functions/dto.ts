@@ -13,6 +13,13 @@ export interface ClubFunctionAssignment {
   memberId: number | null;
   firstName: string | null;
   lastName: string | null;
+  /**
+   * Version du portrait, jointe depuis l'annuaire de la saison ; `null` sans photo.
+   *
+   * L'API des fonctions ne la rend pas : le relais la recopie depuis la liste des
+   * adhérents qu'il charge déjà, plutôt que d'ouvrir une seconde source.
+   */
+  photoUpdatedAt?: string | number | null;
 }
 
 export interface ClubFunctionsStatus {

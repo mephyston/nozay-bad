@@ -319,8 +319,7 @@
             subtitle={l.sousTitre}
             value={l.valeur}
             valueTone={l.ton}
-            swipe={actionsAdherent(member)}
-            actions={actionsSecondaires(member)}
+            actions={[...actionsAdherent(member), ...actionsSecondaires(member)]}
           >
             {#snippet leading()}
               <MemberAvatar src={photoSrc(member)} name={l.titre} class="size-9 shrink-0" />

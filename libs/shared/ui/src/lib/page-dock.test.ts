@@ -19,7 +19,7 @@ beforeEach(() => {
   vi.resetModules();
 });
 
-const action = (id: string) => ({ id, libelle: id, icone: null, run: () => {} });
+const action = (id: string) => ({ id, label: id, icon: null, run: () => {} });
 
 describe('dockDePage', () => {
   it('partage son état entre deux copies du module', async () => {

@@ -1,6 +1,6 @@
 <script lang="ts" generics="T">
   import type { Snippet } from 'svelte';
-  import { ChevronRight } from '@lucide/svelte';
+  import { ChevronRight, Ellipsis } from '@lucide/svelte';
   import { cn } from '../../../lib/utils.js';
   import ListRowMenu from './ListRowMenu.svelte';
   import ListRowSwipeTrack from './ListRowSwipeTrack.svelte';
@@ -18,7 +18,6 @@
     leading,
     badge,
     actions = [],
-    swipe = [],
     swipeOpen = false,
     disclosure,
     onDisclosure,
@@ -48,16 +47,15 @@
      * visible par ligne » — le chevron dit où l'on va, rien d'autre ne s'affiche.
      */
     /**
-     * Actions propres à l'écran, déclarées en données comme celles du balayage :
-     * c'est ce qui permet de les rendre en feuille au doigt et en menu ancré à la
-     * souris, sans que l'appelant ait à écrire deux fois la même chose.
+     * Ce qu'on peut faire de cette ligne, dans l'ordre.
+     *
+     * La **première** est celle qu'un balayage long exécute : y mettre le
+     * réversible, jamais l'irréversible. Les trois premières se révèlent au
+     * balayage ; au-delà, les deux premières et un « Plus… » qui ouvre la feuille
+     * — la règle d'iOS, et celle qui garantit qu'aucune action n'est atteignable
+     * par le seul maintien long, geste que rien n'annonce.
      */
     actions?: SwipeAction<T>[];
-    /**
-     * Actions révélées par un balayage vers la gauche. Les mêmes alimentent le menu
-     * escamoté : une seule déclaration, trois chemins d'accès.
-     */
-    swipe?: SwipeAction<T>[];
     /**
      * Ouverture pilotée, pour les captures de régression visuelle — un geste ne se
      * photographie pas. N'a pas vocation à être utilisée par un écran.
@@ -89,7 +87,20 @@
     children?: Snippet;
   } = $props();
 
-  const menu = $derived([...actions, ...swipe]);
+  /*
+    Trois actions se révèlent d'un balayage ; au-delà, deux et un « Plus… ». C'est
+    la règle d'iOS, et elle répond à un défaut constaté : une action laissée au seul
+    menu n'était atteignable que par un maintien long, que rien n'annonce.
+  */
+  const PLUS: SwipeAction<T> = {
+    id: '__plus',
+    label: 'Plus…',
+    icon: Ellipsis,
+    run: () => (menuOuvert = true)
+  };
+  const revelees = $derived(actions.length <= 3 ? actions : [...actions.slice(0, 2), PLUS]);
+
+  let menuOuvert = $state(false);
 
   let piste = $state<HTMLElement | null>(null);
   let coucheEl = $state<HTMLElement | null>(null);
@@ -147,11 +158,11 @@
 
 <li
   data-list-row
-  data-context-menu={menu.length > 0 ? '' : undefined}
-  class={cn('relative bg-card', swipe.length > 0 && 'overflow-hidden', className)}
+  data-context-menu={actions.length > 0 ? '' : undefined}
+  class={cn('relative bg-card', actions.length > 0 && 'overflow-hidden', className)}
 >
-  {#if swipe.length > 0}
-    <ListRowSwipeTrack actions={swipe} item={item as T} open={swipeOpen} bind:ref={piste} />
+  {#if actions.length > 0}
+    <ListRowSwipeTrack actions={revelees} item={item as T} open={swipeOpen} bind:ref={piste} />
   {/if}
 
   <div
@@ -162,7 +173,7 @@
       selected && 'bg-accent',
       nested && 'pl-12',
       // Le navigateur garde le défilement vertical ; il ne nous livre que l'horizontal.
-      swipe.length > 0 && 'touch-pan-y'
+      actions.length > 0 && 'touch-pan-y'
     )}
   >
     {#if disclosure === 'none'}
@@ -221,8 +232,8 @@
       </div>
     {/if}
 
-    {#if menu.length > 0}
-      <ListRowMenu actions={menu} item={item as T} {title} />
+    {#if actions.length > 0}
+      <ListRowMenu bind:open={menuOuvert} {actions} item={item as T} {title} />
     {/if}
   </div>
 </li>

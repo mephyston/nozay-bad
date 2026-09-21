@@ -255,8 +255,7 @@
           value={l.valeur}
           valueTone={l.ton}
           valueCaption={l.legende}
-          swipe={canWrite ? actionsBalayage(product) : []}
-          actions={canWrite ? actionsPropres(product) : []}
+          actions={canWrite ? [...actionsBalayage(product), ...actionsPropres(product)] : []}
           nested={entree.enfant}
           disclosure={entree.enfant ? undefined : declinable ? (deplies[product.id] ? 'expanded' : 'collapsed') : 'none'}
           onDisclosure={() => basculerPli(product)}

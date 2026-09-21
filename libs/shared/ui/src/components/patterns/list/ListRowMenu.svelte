@@ -21,16 +21,18 @@
   let {
     actions,
     item,
-    title
+    title,
+    open = $bindable(false)
   }: {
     actions: SwipeAction<T>[];
     item: T;
     /** Ce sur quoi portent les actions ; en-tête de la feuille. */
     title?: string;
+    /** Ouvrable de l'extérieur : le balayage y mène par son action « Plus… ». */
+    open?: boolean;
   } = $props();
 
   const requete = creerIsMobile();
-  let ouvert = $state(false);
 </script>
 
 {#snippet declencheur(props: Record<string, unknown> = {})}
@@ -47,8 +49,8 @@
 {/snippet}
 
 {#if requete.current}
-  {@render declencheur({ onclick: () => (ouvert = true) })}
-  <ActionSheet bind:open={ouvert} {actions} {item} {title} />
+  {@render declencheur({ onclick: () => (open = true) })}
+  <ActionSheet bind:open {actions} {item} {title} />
 {:else}
   <DropdownMenu.Root>
     <DropdownMenu.Trigger>

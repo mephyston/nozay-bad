@@ -113,8 +113,8 @@
 <Story name="BalayageFerme">
   {#snippet template()}
     {#snippet contenu()}
-      <ListRow href="#" title="Note de frais — Déplacement" subtitle="Pièce 2026-0147" value="-84,20 €" valueTone="destructive" swipe={ACTIONS} />
-      <ListRow href="#" title="Note de frais — Volants" subtitle="Pièce 2026-0148" value="-42,00 €" valueTone="destructive" swipe={ACTIONS} />
+      <ListRow href="#" title="Note de frais — Déplacement" subtitle="Pièce 2026-0147" value="-84,20 €" valueTone="destructive" actions={ACTIONS} />
+      <ListRow href="#" title="Note de frais — Volants" subtitle="Pièce 2026-0148" value="-42,00 €" valueTone="destructive" actions={ACTIONS} />
     {/snippet}
     {@render liste(contenu)}
   {/snippet}
@@ -124,8 +124,8 @@
   {#snippet template()}
     {#snippet contenu()}
       <!-- Un geste ne se photographie pas : l'ouverture est pilotée pour la référence. -->
-      <ListRow href="#" title="Note de frais — Déplacement" subtitle="Pièce 2026-0147" value="-84,20 €" valueTone="destructive" swipe={ACTIONS} swipeOpen />
-      <ListRow href="#" title="Note de frais — Volants" subtitle="Pièce 2026-0148" value="-42,00 €" valueTone="destructive" swipe={ACTIONS} />
+      <ListRow href="#" title="Note de frais — Déplacement" subtitle="Pièce 2026-0147" value="-84,20 €" valueTone="destructive" actions={ACTIONS} swipeOpen />
+      <ListRow href="#" title="Note de frais — Volants" subtitle="Pièce 2026-0148" value="-42,00 €" valueTone="destructive" actions={ACTIONS} />
     {/snippet}
     {@render liste(contenu)}
   {/snippet}
@@ -162,6 +162,32 @@
         subtitle="Volants"
         value="24,50 €"
         valueTone="foreground"
+      />
+    {/snippet}
+    {@render liste(contenu)}
+  {/snippet}
+</Story>
+
+<Story name="BalayagePlus">
+  {#snippet template()}
+    {#snippet contenu()}
+      <!--
+        Au-delà de trois actions, le balayage en révèle deux et un « Plus… » qui
+        ouvre la feuille : c'est la règle d'iOS, et elle garantit qu'aucune action
+        n'est atteignable par le seul maintien long, geste que rien n'annonce.
+      -->
+      <ListRow
+        href="#"
+        title="Maillot club — Homme"
+        subtitle="3 déclinaisons"
+        value="32,00 €"
+        swipeOpen
+        actions={[
+          { id: 'desactiver', label: 'Désactiver', icon: Check, tone: 'primary', run: () => {} },
+          { id: 'modifier', label: 'Modifier', icon: Edit, run: () => {} },
+          { id: 'declinaison', label: 'Ajouter une déclinaison', icon: Layers, run: () => {} },
+          { id: 'supprimer', label: 'Supprimer', icon: Trash2, tone: 'destructive', run: () => {} },
+        ]}
       />
     {/snippet}
     {@render liste(contenu)}
