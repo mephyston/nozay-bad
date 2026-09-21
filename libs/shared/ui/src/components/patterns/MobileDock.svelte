@@ -60,6 +60,11 @@
   const libelleAction = $derived(
     actions.length === 1 ? actions[0].libelle : 'Ajouter'
   );
+  const CERCLE_ACTION = $derived(
+    'dock-circle flex h-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary text-primary-foreground shadow-lg transition-[width,opacity] duration-300 ' +
+      (open ? 'pointer-events-none w-0 opacity-0' : 'w-14')
+  );
+
   const listeReduite = $derived(!!recherche && (!!recherche.valeur || !!recherche.filtres?.actif));
 
   function openSearch() {
@@ -189,24 +194,23 @@
     {/if}
 
     {#if actions.length > 0}
-      {#snippet cercleAction(props: Record<string, unknown> = {})}
+      <!--
+        Les deux cas s'écrivent séparément, et c'est délibéré : le déclencheur d'un
+        menu reçoit ses gestionnaires de `bits-ui` par un spread, et poser un
+        `onclick` après lui l'écrasait — le menu ne s'ouvrait plus. Un spread doit
+        rester le dernier mot sur un déclencheur.
+      -->
+      {#if actions.length === 1}
         <button
           type="button"
-          {...props}
-          class="dock-circle flex h-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary text-primary-foreground shadow-lg transition-[width,opacity] duration-300 {open
-            ? 'pointer-events-none w-0 opacity-0'
-            : 'w-14'}"
+          class={CERCLE_ACTION}
           aria-label={libelleAction}
           aria-hidden={open}
           tabindex={open ? -1 : 0}
-          onclick={actions.length === 1 ? actions[0].run : undefined}
+          onclick={actions[0].run}
         >
           <IconeAction class="h-6 w-6" />
         </button>
-      {/snippet}
-
-      {#if actions.length === 1}
-        {@render cercleAction()}
       {:else}
         <!--
           Au-delà d'une action, un petit menu en verre s'ouvre au-dessus du bouton —
@@ -216,7 +220,16 @@
         <DropdownMenu.Root>
           <DropdownMenu.Trigger>
             {#snippet child({ props })}
-              {@render cercleAction(props)}
+              <button
+                type="button"
+                class={CERCLE_ACTION}
+                aria-label={libelleAction}
+                aria-hidden={open}
+                tabindex={open ? -1 : 0}
+                {...props}
+              >
+                <IconeAction class="h-6 w-6" />
+              </button>
             {/snippet}
           </DropdownMenu.Trigger>
           <DropdownMenu.Content

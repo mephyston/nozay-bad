@@ -163,6 +163,23 @@ test.describe('MobileDock', () => {
     expect(opacite).toBeGreaterThan(0.9);
   });
 
+  test('le déclencheur garde les gestionnaires de la bibliothèque', async ({ page }) => {
+    await ouvrirStory(page, 'patterns-mobiledock--deux-actions');
+
+    /*
+      Un `click` natif, sans événement `pointer` : c'est ce qui distingue un
+      déclencheur intact d'un déclencheur dont le gestionnaire a été écrasé. Un
+      `onclick` posé **après** le spread de `bits-ui` remplaçait le sien, et le menu
+      ne s'ouvrait plus — un spread doit rester le dernier mot sur un déclencheur.
+    */
+    await page.evaluate(() => {
+      const bouton = document.querySelector<HTMLElement>('[data-admin-dock] button[aria-label="Ajouter"]');
+      bouton?.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+    });
+
+    await expect(page.getByRole('menuitem', { name: 'Import Poona' })).toBeVisible();
+  });
+
   test('une action unique s’exécute sans passer par un menu', async ({ page }) => {
     await ouvrirStory(page, 'patterns-mobiledock--une-action');
 
