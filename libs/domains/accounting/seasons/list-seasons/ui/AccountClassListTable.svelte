@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Check, Edit2, Trash2, X } from "@lucide/svelte";
-  import { Button, Input, Badge, AlertDialog, toast, DataTable, DataTableToolbar, Table, DataTableColumnHeader, Card } from '@nba/ui';
+  import { Button, Input, Badge, AlertDialog, DataTable, DataTableToolbar, Table, DataTableColumnHeader, Card, uiAlert } from '@nba/ui';
   import type { AccountClass } from "./settings-types";
 
   let {
@@ -30,7 +30,7 @@
     try {
       await onDeleteAccountClass(deletingAccountClass.code);
     } catch (err: any) {
-      toast.error(err.message || 'Erreur lors de la suppression');
+      uiAlert(err.message || 'Erreur lors de la suppression');
     } finally {
       deletingAccountClass = null;
     }

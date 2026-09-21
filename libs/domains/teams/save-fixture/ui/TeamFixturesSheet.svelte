@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Sheet, Button, Input, Badge, toast } from '@nba/ui';
+  import { Sheet, Button, Input, Badge, uiAlert } from '@nba/ui';
   import { CalendarX } from '@lucide/svelte';
   import type { GetTeamOutput } from '../../get-team/dto';
 
@@ -114,13 +114,10 @@
         }
       }
 
-      toast.success(
-        touched.length === 1 ? 'Rencontre enregistrée.' : `${touched.length} rencontres enregistrées.`
-      );
       open = false;
       onSaved();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "L'enregistrement a échoué.");
+      uiAlert(error instanceof Error ? error.message : "L'enregistrement a échoué.");
     } finally {
       saving = false;
     }

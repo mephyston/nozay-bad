@@ -132,7 +132,7 @@
       {/if}
 
       <!-- Ligne 1 : Montant et Date en Grille -->
-      <div class="grid grid-cols-2 gap-4">
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <FormField id="amount-input" label="Montant (€)">
           <Input id="amount-input" type="number" step="0.01" min="0.01" bind:value={amount} required />
           </FormField>
@@ -148,7 +148,7 @@
 
       <!-- Ligne 3 : Catégorie / Comptes en Grille -->
       {#if showPanel !== 'transfert'}
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <FormField id="category-select" label="Catégorie">
             <SearchableCombobox id="category-select" items={categoryItems} bind:value={category} searchPlaceholder="Rechercher une catégorie..." />
             </FormField>
@@ -157,7 +157,7 @@
           </FormField>
         </div>
       {:else}
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <FormField id="account-select" label="Compte Source">
             <SearchableCombobox id="account-select" items={accountItems} bind:value={formAccountId} />
             </FormField>

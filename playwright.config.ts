@@ -16,9 +16,37 @@ export default defineConfig({
   use: {
     baseURL: `http://localhost:${PORT}`,
     colorScheme: 'light',
+    locale: 'fr-FR',
+    timezoneId: 'Europe/Paris',
+    /*
+      Limite connue : un contrôle natif — `<input type="date">`, `type="time"` —
+      se formate sur la langue de l'**interface** du navigateur, que ni `locale`
+      ni `--lang` ne changent sur le *headless shell*. Ces champs apparaissent
+      donc « 09/21/2026 » et « 08:00 PM » dans les références, là où un navigateur
+      français affichera « 21/09/2026 » et « 20:00 ». C'est le rendu du système,
+      pas le nôtre : la référence reste utile pour la mise en page, pas pour le
+      format de la valeur.
+    */
   },
   projects: [
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
+    // Téléphone. Chromium plutôt que WebKit : `devices['iPhone 15']` bascule le moteur,
+    // ce qui imposerait `playwright install webkit` en CI (~100 Mo) et un rendu de police
+    // différent — donc une seconde famille de références pour aucun bug attrapé en plus.
+    // Les références sont nommées par projet (`…-mobile-linux.png`), donc cet ajout ne
+    // touche aucune référence existante.
+    {
+      name: 'mobile',
+      use: {
+        browserName: 'chromium',
+        viewport: { width: 390, height: 844 },
+        deviceScaleFactor: 2,
+        // Chromium uniquement : pose le métaviewport et l'émulation tactile, sans quoi
+        // les variantes `sm:` se comporteraient comme sur un bureau étroit.
+        isMobile: true,
+        hasTouch: true,
+      },
+    },
   ],
   webServer: {
     command: 'node scripts/serve-storybook.mjs',

@@ -1,0 +1,235 @@
+import { test, expect, type Page } from '@playwright/test';
+
+/**
+ * Ce que les captures ne voient pas.
+ *
+ * Une feuille peut s'afficher parfaitement et n'être plus qu'une image :
+ * `bits-ui` pose `pointer-events: none` sur le `body` tant qu'un dialogue est
+ * ouvert, et ne réactive que son propre contenu par un `style` en ligne. Un
+ * attribut `style` posé par-dessus l'écrasait — le formulaire était intact à
+ * l'écran, et mort au doigt. Aucune régression visuelle ne pouvait l'attraper.
+ */
+async function ouvrirStory(page: Page, id: string) {
+  await page.goto(`/iframe.html?id=${id}&viewMode=story&globals=theme:Clair`);
+  await page.locator('#storybook-root').waitFor({ state: 'visible' });
+  await page.evaluate(() => document.fonts.ready);
+}
+
+test.describe('ResponsiveSheet', () => {
+  for (const palier of ['palier-bas', 'palier-haut'] as const) {
+    test(`reste utilisable au ${palier}`, async ({ page }) => {
+      await ouvrirStory(page, `patterns-responsivesheet--${palier}`);
+
+      const champ = page.locator('#storybook-root input').first();
+      await expect(champ).toBeVisible();
+
+      // La cause racine, testée pour elle-même : le contenu doit recevoir les événements.
+      await expect(champ).toHaveCSS('pointer-events', 'auto');
+
+      await champ.fill('Gymnase de la Noue');
+      await expect(champ).toHaveValue('Gymnase de la Noue');
+
+      // Le pied vit hors du `<form>` : ses boutons doivent rester atteignables.
+      await expect(page.getByRole('button', { name: 'Enregistrer' })).toBeEnabled();
+      await page.getByRole('button', { name: 'Enregistrer' }).click();
+    });
+  }
+});
+
+test.describe('ListRow', () => {
+  test('le menu escamoté est atteignable au clavier', async ({ page }) => {
+    await ouvrirStory(page, 'patterns-listrow--avec-actions');
+
+    const declencheur = page.locator('[data-row-menu]').first();
+    await expect(declencheur).toBeAttached();
+
+    // Invisible au doigt, mais focusable : c'est la voie clavier des actions de ligne.
+    await declencheur.focus();
+    await expect(declencheur).toBeFocused();
+  });
+});
+
+test.describe('PullToRefresh', () => {
+  test('le témoin apparaît quand on tire vers le bas', async ({ page }) => {
+    await ouvrirStory(page, 'actions-pulltorefresh--liste');
+
+    const conteneur = page.locator('[data-scroll-root]');
+    await expect(conteneur).toBeVisible();
+
+    // Événements tactiles synthétiques : c'est le seul chemin que l'action écoute,
+    // précisément parce que les événements `pointer` sont annulés par le rebond natif.
+    const etat = await page.evaluate(async () => {
+      const cible = document.querySelector('[data-scroll-root]') as HTMLElement;
+      const boite = cible.getBoundingClientRect();
+      const x = boite.left + boite.width / 2;
+      const y0 = boite.top + 40;
+
+      const toucher = (clientY: number) =>
+        new Touch({ identifier: 1, target: cible, clientX: x, clientY });
+      const envoyer = (type: string, clientY: number) =>
+        cible.dispatchEvent(
+          new TouchEvent(type, {
+            touches: type === 'touchend' ? [] : [toucher(clientY)],
+            changedTouches: [toucher(clientY)],
+            bubbles: true,
+            cancelable: true,
+          })
+        );
+
+      envoyer('touchstart', y0);
+      for (const d of [20, 60, 120, 180]) envoyer('touchmove', y0 + d);
+      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+
+      const temoin = document.querySelector('[data-nba-ptr]') as HTMLElement;
+      const releve = {
+        temoinPresent: !!temoin,
+        opacite: temoin ? Number(getComputedStyle(temoin).opacity) : 0,
+        conteneurDeplace: cible.style.transform !== '',
+        marqueEnCours: cible.hasAttribute('data-pulling'),
+      };
+      envoyer('touchend', y0 + 180);
+      return releve;
+    });
+
+    expect(etat.temoinPresent).toBe(true);
+    expect(etat.marqueEnCours).toBe(true);
+    expect(etat.conteneurDeplace).toBe(true);
+    // Le plancher d'opacité : le témoin doit se voir dès que le geste est pris.
+    expect(etat.opacite).toBeGreaterThan(0.3);
+  });
+});
+
+test.describe('ResponsiveSheet — entrée', () => {
+  test('la feuille monte depuis le bord bas', async ({ page }) => {
+    // La translation est posée en ligne par `dragDetents` : aucune animation CSS ne
+    // peut la jouer, et une capture ne voit qu'un état. On relève donc les écritures.
+    await page.addInitScript(() => {
+      (window as unknown as { __releve: string[] }).__releve = [];
+      const obs = new MutationObserver((muts) => {
+        for (const m of muts) {
+          const el = m.target as HTMLElement;
+          if (el instanceof HTMLElement && el.dataset.presentation === 'sheet') {
+            (window as unknown as { __releve: string[] }).__releve.push(el.style.transform);
+          }
+        }
+      });
+      // Observé sur `document` et immédiatement, pas sur `documentElement` au
+      // `DOMContentLoaded` : sous charge, la montée s'achevait avant que
+      // l'observateur ne soit posé, et le test échouait sans rien de cassé.
+      obs.observe(document, { subtree: true, attributes: true, attributeFilter: ['style'] });
+    });
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await ouvrirStory(page, 'patterns-responsivesheet--palier-haut');
+    await page.locator('[data-presentation="sheet"]').waitFor({ state: 'attached' });
+    await page.waitForTimeout(600);
+
+    const releve = await page.evaluate(
+      () => (window as unknown as { __releve: string[] }).__releve
+    );
+    const distances = releve.map((t) => Number(/translate3d\(0px, ([\d.]+)px/.exec(t)?.[1] ?? NaN));
+
+    // Elle part hors de l'écran…
+    expect(distances[0]).toBeGreaterThan(400);
+    // …et se cale au palier demandé.
+    expect(distances[distances.length - 1]).toBe(0);
+  });
+});
+
+test.describe('MobileDock', () => {
+  // La barre n'existe qu'au doigt : sur le projet bureau, elle est masquée par `md:hidden`.
+  test.beforeEach(async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+  });
+
+  test('le menu des actions rend ses entrées, déclarées avant le montage', async ({ page }) => {
+    await ouvrirStory(page, 'patterns-mobiledock--deux-actions');
+
+    const plus = page.locator('[data-admin-dock] button[aria-label="Ajouter"]');
+    await expect(plus).toBeVisible();
+    await plus.click();
+
+    await expect(page.getByRole('menuitem', { name: 'Import Poona' })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: 'Exporter les mails' })).toBeVisible();
+
+    // Le menu porte du texte : 72 % d'opacité le laissaient illisible au-dessus
+    // d'une liste. Une surface qui porte des mots doit être presque opaque.
+    const opacite = await page.evaluate(() => {
+      const contenu = document.querySelector('[data-slot="dropdown-menu-content"]') as HTMLElement;
+      const fond = getComputedStyle(contenu).backgroundColor;
+      const alpha = /\/\s*([\d.]+)\s*\)/.exec(fond) ?? /,\s*([\d.]+)\s*\)$/.exec(fond);
+      return alpha ? Number(alpha[1]) : 1;
+    });
+    expect(opacite).toBeGreaterThan(0.9);
+  });
+
+  test('le déclencheur garde les gestionnaires de la bibliothèque', async ({ page }) => {
+    await ouvrirStory(page, 'patterns-mobiledock--deux-actions');
+
+    /*
+      Un `click` natif, sans événement `pointer` : c'est ce qui distingue un
+      déclencheur intact d'un déclencheur dont le gestionnaire a été écrasé. Un
+      `onclick` posé **après** le spread de `bits-ui` remplaçait le sien, et le menu
+      ne s'ouvrait plus — un spread doit rester le dernier mot sur un déclencheur.
+    */
+    await page.evaluate(() => {
+      const bouton = document.querySelector<HTMLElement>('[data-admin-dock] button[aria-label="Ajouter"]');
+      bouton?.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+    });
+
+    await expect(page.getByRole('menuitem', { name: 'Import Poona' })).toBeVisible();
+  });
+
+  test('une action unique s’exécute sans passer par un menu', async ({ page }) => {
+    await ouvrirStory(page, 'patterns-mobiledock--une-action');
+
+    // Le cercle porte alors le nom de l'action, pas un « Ajouter » générique.
+    await expect(page.locator('[data-admin-dock] button[aria-label="Nouveau produit"]')).toBeVisible();
+    await expect(page.locator('[data-admin-dock] button[aria-label="Ajouter"]')).toHaveCount(0);
+  });
+
+  test('une déclaration postérieure au montage atteint la barre', async ({ page }) => {
+    await ouvrirStory(page, 'patterns-mobiledock--declaration-apres-montage');
+
+    await expect(page.locator('[data-admin-dock] button[aria-label="Ajouter"]')).toHaveCount(0);
+    await page.locator('[data-test="declarer"]').click();
+    await expect(page.locator('[data-admin-dock] button[aria-label="Ajouter"]')).toBeVisible();
+  });
+});
+
+test.describe('ListRow — balayage', () => {
+  test('une ligne qui est un lien se balaie comme les autres', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await ouvrirStory(page, 'patterns-listrow--balayage-ferme');
+
+    const couche = page.locator('[data-swipe-layer]').first();
+    await expect(couche).toBeVisible();
+    const boite = (await couche.boundingBox())!;
+    const y = boite.y + boite.height / 2;
+
+    /*
+      Un lien est glissable par défaut : le navigateur ouvrait une session de
+      glisser dès qu'on le tirait de côté, ce qui annule les événements de pointeur
+      et tuait le balayage. Les lignes portant un `onclick` n'avaient pas le défaut,
+      n'étant pas des liens — d'où un balayage qui marchait sur les produits et pas
+      sur les adhérents.
+    */
+    await page.mouse.move(boite.x + boite.width - 20, y);
+    await page.mouse.down();
+    for (const dx of [10, 40, 80, 120]) {
+      await page.mouse.move(boite.x + boite.width - 20 - dx, y);
+    }
+
+    // La translation est posée dans une frame d'animation : la lire aussitôt
+    // reviendrait à la lire avant qu'elle n'existe.
+    await page.waitForTimeout(120);
+
+    const deplacement = await couche.evaluate((el) => {
+      const t = /translate3d\((-?[\d.]+)px/.exec((el as HTMLElement).style.transform);
+      return t ? Math.abs(Number(t[1])) : 0;
+    });
+    await page.mouse.up();
+
+    expect(deplacement, 'la couche doit suivre le doigt').toBeGreaterThan(20);
+  });
+});

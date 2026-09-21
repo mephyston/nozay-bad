@@ -74,7 +74,6 @@
         if (!res.ok) throw new Error(await readApiError(res, "L'enregistrement a échoué."));
         onSaved?.();
       },
-      success: `${spec.title} : enregistré.`,
       onError: (message) => {
         errorMsg = message;
       }

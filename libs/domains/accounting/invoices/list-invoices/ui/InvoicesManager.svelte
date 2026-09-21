@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Plus } from '@lucide/svelte';
-  import { AlertDialog, Button, DataTableToolbar, FormField, SearchableCombobox, softNavigate, openDocument, submitForm, toast, toSeasonOptions } from '@nba/ui';
+  import { AlertDialog, Button, DataTableToolbar, FormField, SearchableCombobox, softNavigate, openDocument, submitForm, toSeasonOptions, uiAlert } from '@nba/ui';
   import type { Invoice, Season } from './invoices-types';
   import { InvoiceFormState } from './invoices-form-state.svelte';
   import * as api from './invoices-api';
@@ -68,7 +68,7 @@
       const fetchedItems = await api.fetchInvoiceDetails(invoice.id);
       form.openEditModal(invoice, fetchedItems);
     } catch (err: unknown) {
-      toast.error((err as Error).message || "Erreur de chargement des détails.");
+      uiAlert((err as Error).message || "Erreur de chargement des détails.");
     }
   }
 

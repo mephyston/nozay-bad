@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Plus, Edit2, Trash2, Power, Store, Landmark, CreditCard, AlertCircle } from '@lucide/svelte';
-  import { Alert, Badge, Button, Card, DataTable, DataTableToolbar, DataTableColumnHeader, DataTableRowActions, DropdownMenu, Table, toast } from '@nba/ui';
+  import { Alert, Badge, Button, Card, DataTable, DataTableToolbar, DataTableColumnHeader, DataTableRowActions, DropdownMenu, Table, toast, uiAlert } from '@nba/ui';
   import type { SettingsState } from '../../../seasons/list-seasons/ui/settings-api-classes';
   import * as api from './treasury-api';
   import TreasuryAccountForm from './TreasuryAccountForm.svelte';
@@ -87,7 +87,7 @@
   // formulaire où s'écrire : ils passent en toast.
   async function rowAction(run: () => Promise<boolean>) {
     if (await run()) onSaved?.();
-    else if (state.errorMsg) toast.error(state.errorMsg);
+    else if (state.errorMsg) uiAlert(state.errorMsg);
   }
 </script>
 

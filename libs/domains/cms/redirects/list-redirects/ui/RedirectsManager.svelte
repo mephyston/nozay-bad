@@ -13,9 +13,9 @@
     FormField,
     FormSheet,
     submitForm,
-    toast,
     uiConfirm,
-    flashAndReload
+    flashAndReload,
+    uiAlert
   } from '@nba/ui';
 
   interface RedirectRow {
@@ -167,7 +167,6 @@
     await submitForm({
       validate,
       submit: () => post(body, "L'enregistrement a échoué."),
-      success: editingId === null ? 'Redirection créée.' : 'Redirection mise à jour.',
       close: () => {
         showFormSheet = false;
       },
@@ -195,7 +194,7 @@
       await post({ action: 'delete', id: row.id }, 'La suppression a échoué.');
       flashAndReload('Redirection supprimée.');
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'La suppression a échoué.');
+      uiAlert(error instanceof Error ? error.message : 'La suppression a échoué.');
     }
   }
 </script>

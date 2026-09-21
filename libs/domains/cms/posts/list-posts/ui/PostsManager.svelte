@@ -19,9 +19,9 @@
     FormSheet,
     RichTextEditor,
     submitForm,
-    toast,
     uiConfirm,
-    flashAndReload
+    flashAndReload,
+    uiAlert
   } from '@nba/ui';
 
   interface PostRow {
@@ -279,7 +279,7 @@
       await post({ action: 'notify', id: row.id }, 'La diffusion a échoué.');
       flashAndReload('Actualité diffusée aux adhérents.');
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'La diffusion a échoué.');
+      uiAlert(error instanceof Error ? error.message : 'La diffusion a échoué.');
     }
   }
 
@@ -352,7 +352,6 @@
               },
           id ? 'La modification a échoué.' : 'La création a échoué.'
         ),
-      success: id ? 'Actualité mise à jour.' : 'Actualité créée en brouillon.',
       close: () => {
         resetForm();
         showFormSheet = false;
@@ -371,7 +370,7 @@
       await post({ action: 'publish', id: row.id, published: row.status !== 'published' }, "L'opération a échoué.");
       flashAndReload(row.status === 'published' ? 'Actualité retirée.' : 'Actualité publiée.');
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "L'opération a échoué.");
+      uiAlert(error instanceof Error ? error.message : "L'opération a échoué.");
     }
   }
 
@@ -387,7 +386,7 @@
       await post({ action: 'delete', id: row.id }, 'La suppression a échoué.');
       flashAndReload('Actualité supprimée.');
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'La suppression a échoué.');
+      uiAlert(error instanceof Error ? error.message : 'La suppression a échoué.');
     }
   }
 </script>

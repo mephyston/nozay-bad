@@ -16,9 +16,9 @@
     FormField,
     FormSheet,
     submitForm,
-    toast,
     uiConfirm,
-    flashAndReload
+    flashAndReload,
+    uiAlert
   } from '@nba/ui';
   import { AUDIENCE_LABELS, WEEKDAY_LABELS } from '../../shared/schema';
 
@@ -142,7 +142,6 @@
               },
           id ? 'La modification a échoué.' : 'La création a échoué.'
         ),
-      success: id ? 'Créneau mis à jour.' : 'Créneau ajouté.',
       close: () => {
         resetForm();
         showFormSheet = false;
@@ -161,7 +160,7 @@
       await post({ action: 'update', id: row.id, active: !row.active }, "L'opération a échoué.");
       flashAndReload(row.active ? 'Créneau masqué du site.' : 'Créneau réaffiché.');
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "L'opération a échoué.");
+      uiAlert(error instanceof Error ? error.message : "L'opération a échoué.");
     }
   }
 
@@ -176,7 +175,7 @@
       await post({ action: 'delete', id: row.id }, 'La suppression a échoué.');
       flashAndReload('Créneau supprimé.');
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'La suppression a échoué.');
+      uiAlert(error instanceof Error ? error.message : 'La suppression a échoué.');
     }
   }
 </script>

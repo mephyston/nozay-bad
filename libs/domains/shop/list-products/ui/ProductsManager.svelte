@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Plus, Edit, Layers } from "@lucide/svelte";
-  import { FormSheet, submitForm, toast, flashAndReload } from "@nba/ui";
+  import { FormSheet, submitForm, flashAndReload, uiAlert } from "@nba/ui";
   import { isVariant, productLabel, type Product, type ProductCategory } from './products-manager-types';
   import {
     submitProduct,
@@ -139,7 +139,6 @@
     await submitForm({
       validate: () => validateProduct(snapshot),
       submit: () => submitProduct(snapshot),
-      success: snapshot.editingId ? 'Produit mis à jour.' : 'Produit créé.',
       close: () => { showFormSheet = false; },
       // Le sheet couvre la page : le refus s'affiche dans le formulaire lui-même.
       onError: (message) => { errorMsg = message; }
@@ -156,9 +155,8 @@
       }
       const index = productsList.findIndex((p) => p.id === product.id);
       if (index !== -1) productsList[index].active = active;
-      toast.success(active ? 'Produit activé.' : 'Produit désactivé.');
     } catch (err: any) {
-      toast.error(err.message);
+      uiAlert(err.message);
     }
   }
 
@@ -166,7 +164,7 @@
     try {
       if (await deleteProduct(product)) flashAndReload('Produit supprimé.');
     } catch (err: any) {
-      toast.error(err.message);
+      uiAlert(err.message);
     }
   }
 

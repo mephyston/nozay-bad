@@ -135,10 +135,23 @@ export const ECRANS: Record<string, Ecran> = {
         lire(`/members?season=${s}&limit=5000`)
       ]);
 
+      const annuaire: any[] = (adherents as any)?.data ?? adherents ?? [];
+      /*
+        Le portrait vient de l'annuaire déjà chargé, joint par licence : l'API des
+        fonctions ne le rend pas, et l'ajouter là-bas ferait une seconde source pour
+        une donnée qu'on tient ici gratuitement.
+      */
+      const portraits = new Map(
+        annuaire.map((m: any) => [String(m.licence), m.photoUpdatedAt ?? null])
+      );
+
       return {
-        assignments: fonctions.data ?? [],
+        assignments: ((fonctions.data as any[]) ?? []).map((a: any) => ({
+          ...a,
+          photoUpdatedAt: portraits.get(String(a.licence)) ?? null
+        })),
         // L'annuaire n'est là que pour nommer les licences : trois champs suffisent.
-        members: ((adherents as any)?.data ?? adherents ?? []).map((m: any) => ({
+        members: annuaire.map((m: any) => ({
           licence: String(m.licence),
           firstName: m.firstName,
           lastName: m.lastName

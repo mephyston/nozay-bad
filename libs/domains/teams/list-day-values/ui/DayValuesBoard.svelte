@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Table, Badge, Select, Alert, Button, softNavigate, toast } from '@nba/ui';
+  import { Table, Badge, Select, Alert, Button, softNavigate, toast, uiAlert } from '@nba/ui';
   import { TriangleAlert, CircleCheck, UsersRound, CircleHelp } from '@lucide/svelte';
   import { CHAMPIONSHIPS, CHAMPIONSHIP_RULES, type Championship } from '../../shared/championship';
   import type { ListDayValuesOutput, DayTeamValue } from '../dto';
@@ -87,7 +87,7 @@
         );
       else toast.success(`${team.captainName ?? 'Le staff'} prévenu (${sent?.recipients} destinataire(s)).`);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "L'envoi a échoué.");
+      uiAlert(error instanceof Error ? error.message : "L'envoi a échoué.");
     } finally {
       notifying = null;
     }

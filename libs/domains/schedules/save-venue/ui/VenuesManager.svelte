@@ -3,8 +3,11 @@
   import {
     Button,
     Input,
-    Card,
+    Badge,
     Table,
+    RowActionItems,
+    ListView,
+    ListRow,
     DataTable,
     DataTableToolbar,
     DataTableRowActions,
@@ -12,7 +15,9 @@
     FormField,
     FormSheet,
     submitForm,
-    readApiError
+    readApiError,
+    dockDePage,
+    type SwipeAction
   } from '@nba/ui';
 
   interface VenueRow {
@@ -139,7 +144,6 @@
         });
         if (!res.ok) throw new Error(await readApiError(res, "L'enregistrement a échoué."));
       },
-      success: editingCode === null ? 'Gymnase créé.' : 'Gymnase mis à jour.',
       close: () => {
         showSheet = false;
       },
@@ -150,12 +154,34 @@
     busy = false;
   }
 
+  /**
+   * L'action principale descend dans la barre du bas, à portée du pouce. Le bouton
+   * du haut reste pour la souris ; sur téléphone il ferait doublon.
+   */
+  $effect(() => {
+    if (!canWrite) return;
+    return dockDePage.declarerActions([
+      { id: 'nouveau-gymnase', label: 'Nouveau gymnase', icon: Plus, run: openAdd },
+    ]);
+  });
+
+  /** Une seule action, mais déclarée en données : le menu et la feuille la rendent. */
+  const actionsVenue = (v: VenueRow): SwipeAction<VenueRow>[] => [
+    { id: 'modifier', label: 'Modifier', icon: Edit, run: (x) => openEdit(x) },
+  ];
+
   const adresse = (v: VenueRow) =>
     [v.streetAddress, [v.postalCode, v.city].filter(Boolean).join(' ')].filter(Boolean).join(', ') || '—';
 </script>
 
+{#snippet menuVenue(v: VenueRow)}
+  <DropdownMenu.Label>Actions</DropdownMenu.Label>
+  <RowActionItems actions={actionsVenue(v)} item={v} />
+{/snippet}
+
 <DataTable
   data={filtered}
+  mobileSpacing="list"
   {pagination}
   onPageChange={() => {}}
   itemName="gymnase(s)"
@@ -163,10 +189,15 @@
   emptyDescription="Déclarez les salles où le club joue : les créneaux et le site public y renvoient."
 >
   {#snippet toolbar()}
-    <DataTableToolbar bind:searchValue={searchTerm} searchPlaceholder="Rechercher un gymnase..." hasFilters={false}>
+    <DataTableToolbar
+      bind:searchValue={searchTerm}
+      searchPlaceholder="Rechercher un gymnase…"
+      dockSearch
+      hasFilters={false}
+    >
       {#snippet actions()}
         {#if canWrite}
-          <Button onclick={openAdd} class="h-9 shrink-0 gap-1.5 font-bold">
+          <Button onclick={openAdd} class="hidden h-9 shrink-0 gap-1.5 font-bold md:flex">
             <Plus class="h-4 w-4" />
             <span>Nouveau gymnase</span>
           </Button>
@@ -176,21 +207,33 @@
   {/snippet}
 
   {#snippet mobileView()}
-    {#each filtered as v (v.id)}
-      <Card.Root>
-        <Card.Content class="space-y-2 p-4">
-          <p class="text-sm font-bold text-foreground">{v.name}</p>
-          <p class="text-xs text-muted-foreground">{adresse(v)}</p>
-          {#if canWrite}
-            <div class="flex justify-end border-t border-border/50 pt-2">
-              <Button variant="outline" size="sm" onclick={() => openEdit(v)} class="h-8 gap-1.5 text-xs font-semibold">
-                <Edit class="h-3.5 w-3.5" /> Modifier
-              </Button>
-            </div>
-          {/if}
-        </Card.Content>
-      </Card.Root>
-    {/each}
+    <ListView
+      items={filtered}
+      emptyTitle="Aucun gymnase"
+      emptyDescription="Déclarez les salles où le club joue : les créneaux et le site public y renvoient."
+    >
+      {#snippet listRow(v)}
+        <!--
+          Le code est l'identifiant stable : il va à droite, en sourdine. La position
+          n'est signalée que lorsqu'elle manque — c'est l'exception qui appelle une
+          action, le site public en a besoin pour son plan.
+        -->
+        <ListRow
+          item={v}
+          onclick={canWrite ? () => openEdit(v) : undefined}
+          title={v.name}
+          subtitle={adresse(v)}
+          value={v.code}
+          actions={canWrite ? actionsVenue(v) : []}
+        >
+          {#snippet badge()}
+            {#if !v.latitude || !v.longitude}
+              <Badge variant="outline" size="xs">Sans position</Badge>
+            {/if}
+          {/snippet}
+        </ListRow>
+      {/snippet}
+    </ListView>
   {/snippet}
 
   {#snippet header()}
@@ -215,12 +258,7 @@
       <Table.Cell><code class="text-xs text-muted-foreground">{v.code}</code></Table.Cell>
       <Table.Cell class="relative text-right">
         {#if canWrite}
-          <DataTableRowActions>
-            <DropdownMenu.Label>Actions</DropdownMenu.Label>
-            <DropdownMenu.Item onclick={() => openEdit(v)} class="cursor-pointer">
-              <Edit class="mr-2 h-3.5 w-3.5" /> Modifier
-            </DropdownMenu.Item>
-          </DataTableRowActions>
+          <DataTableRowActions>{@render menuVenue(v)}</DataTableRowActions>
         {/if}
       </Table.Cell>
     </Table.Row>

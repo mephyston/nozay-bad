@@ -171,7 +171,6 @@
         if (!res.ok) throw new Error(await readApiError(res, "Impossible d'enregistrer le budget."));
       },
       // Le réaffichage recalcule la comparaison réalisé / prévisionnel.
-      success: 'Budget prévisionnel enregistré.',
       onError: (message) => { saveStatus = { type: 'error', message }; }
     });
 

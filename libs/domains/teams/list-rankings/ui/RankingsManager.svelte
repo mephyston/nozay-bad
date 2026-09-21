@@ -5,7 +5,7 @@
     softNavigate,
     readCollapseState,
     writeCollapseState,
-    toast
+    uiAlert
   } from '@nba/ui';
   import { Upload, FileText } from '@lucide/svelte';
   import RankingsTable from './RankingsTable.svelte';
@@ -105,11 +105,10 @@
       rows = rows.map((row) =>
         row.licence === licence ? { ...row, [field]: value, source: 'manuel' as const } : row
       );
-      toast.success('Classement corrigé.');
     } catch (error) {
       // La cellule reprend sa valeur d'origine au prochain rendu : rien n'a été écrit.
       rows = [...rows];
-      toast.error(error instanceof Error ? error.message : "La correction n'a pas été enregistrée.");
+      uiAlert(error instanceof Error ? error.message : "La correction n'a pas été enregistrée.");
     } finally {
       saving = null;
     }

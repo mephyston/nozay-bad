@@ -110,7 +110,6 @@
         const payload = (await response.json()) as { error?: string };
         if (!response.ok) throw new Error(payload.error || "L'enregistrement a échoué.");
       },
-      success: team ? 'Équipe mise à jour.' : `Équipe ${teamName(teamPrefix, number)} créée.`,
       close: () => {
         open = false;
         onSaved();

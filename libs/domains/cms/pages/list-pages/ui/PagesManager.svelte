@@ -15,9 +15,9 @@
     FormSheet,
     submitForm,
     softNavigate,
-    toast,
     uiConfirm,
-    flashAndReload
+    flashAndReload,
+    uiAlert
   } from '@nba/ui';
 
   interface PageRow {
@@ -94,7 +94,6 @@
     await submitForm({
       validate: () => (title.trim() ? null : 'Le titre de la page est obligatoire.'),
       submit: () => post({ action: 'create', title: title.trim() }, 'La création a échoué.'),
-      success: 'Page créée en brouillon.',
       close: () => {
         title = '';
         showFormSheet = false;
@@ -120,7 +119,7 @@
       await post({ action: 'delete', id: row.id }, 'La suppression a échoué.');
       flashAndReload('Page supprimée.');
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'La suppression a échoué.');
+      uiAlert(error instanceof Error ? error.message : 'La suppression a échoué.');
     }
   }
 </script>

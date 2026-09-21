@@ -1,6 +1,5 @@
 <script lang="ts">
-  import { Checkbox, SearchableCombobox, Input, Textarea, FormField, Button } from '@nba/ui';
-  import { ImagePlus, Trash2, Layers } from '@lucide/svelte';
+  import { SwitchField, SearchableCombobox, MediaField, Input, Textarea, FormField } from '@nba/ui';
   import type { ProductFormValues } from './products-manager-actions';
   import { productLabel, type Product, type ProductCategory } from './products-manager-types';
 
@@ -54,14 +53,9 @@
 
   const preview = $derived(pendingPreview ?? (values.removeImage ? null : currentImageUrl));
 
-  function onFile(event: Event) {
-    const input = event.currentTarget as HTMLInputElement;
-    const file = input.files?.[0] ?? null;
-    if (file) {
-      values.imageFile = file;
-      values.removeImage = false;
-    }
-    input.value = '';
+  function onFile(file: File) {
+    values.imageFile = file;
+    values.removeImage = false;
   }
 
   function clearImage() {
@@ -70,7 +64,16 @@
   }
 </script>
 
-<FormField id="parent" label="Déclinaison de">
+<!--
+  L'explication passe par le `hint` du bloc plutôt que par un paragraphe fait main :
+  une aide n'a pas besoin d'une icône de domaine pour s'annoncer, et celle-ci
+  décalait le texte sans rien dire de plus.
+-->
+<FormField
+  id="parent"
+  label="Déclinaison de"
+  hint="Une déclinaison est une taille, une couleur… d'un produit existant : la boutique la propose au choix sur la carte du produit."
+>
   <SearchableCombobox
     id="parent"
     items={parentItems}
@@ -78,20 +81,17 @@
     placeholder="Aucun — produit à part entière"
     searchPlaceholder="Rechercher un produit…"
   />
-  <p class="text-xs text-muted-foreground mt-1.5 flex items-start gap-1.5">
-    <Layers class="w-3.5 h-3.5 shrink-0 mt-px" />
-    <span>Une déclinaison est une taille, une couleur… d'un produit existant : la boutique la propose au choix sur la carte du produit.</span>
-  </p>
 </FormField>
 
 {#if isVariant}
-  <FormField id="variantLabel" label="Libellé de la déclinaison">
+  <FormField
+    id="variantLabel"
+    label="Libellé de la déclinaison"
+    hint={parent
+      ? `Nom, catégorie, description et image sont ceux de « ${parent.name} » et se modifient sur sa fiche.`
+      : undefined}
+  >
     <Input id="variantLabel" type="text" placeholder="Ex : L, 12 ans, Rouge…" bind:value={values.variantLabel} maxlength={40} required />
-    {#if parent}
-      <p class="text-xs text-muted-foreground mt-1.5">
-        Nom, catégorie, description et image sont ceux de « {parent.name} » et se modifient sur sa fiche.
-      </p>
-    {/if}
   </FormField>
 {:else}
   <FormField id="name" label="Nom du produit">
@@ -113,28 +113,14 @@
   </FormField>
 
   <FormField id="image" label="Image">
-    <div class="flex items-center gap-4">
-      <div class="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border bg-muted/30">
-        {#if preview}
-          <img src={preview} alt="" class="h-full w-full object-contain" />
-        {:else}
-          <ImagePlus class="h-6 w-6 text-muted-foreground" />
-        {/if}
-      </div>
-      <div class="flex flex-col gap-2">
-        <label class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-input px-3 py-2 text-sm font-medium hover:bg-muted">
-          <ImagePlus class="h-4 w-4" />
-          <span>{preview ? 'Remplacer' : 'Choisir une image'}</span>
-          <input id="image" type="file" accept="image/png,image/jpeg,image/webp" class="sr-only" onchange={onFile} />
-        </label>
-        {#if preview}
-          <Button type="button" variant="ghost" size="sm" class="justify-start gap-1.5 text-muted-foreground" onclick={clearImage}>
-            <Trash2 class="h-4 w-4" /> Retirer
-          </Button>
-        {/if}
-        <p class="text-xs text-muted-foreground">PNG, JPEG ou WebP, 8 Mo au plus. Réduite automatiquement.</p>
-      </div>
-    </div>
+    <MediaField
+      id="image"
+      label="Image"
+      {preview}
+      hint="PNG, JPEG ou WebP, 8 Mo au plus. Réduite automatiquement."
+      onSelect={onFile}
+      onClear={clearImage}
+    />
   </FormField>
 {/if}
 
@@ -142,12 +128,15 @@
   <Input type="number" id="price" step="0.01" min="0" placeholder="0.00" bind:value={values.price} required class="font-outfit tabular-nums" />
 </FormField>
 
-<div class="flex items-center gap-2 py-2">
-  <Checkbox id="trackStock" bind:checked={values.trackStock} />
-  <label for="trackStock" class="text-sm font-medium text-foreground cursor-pointer select-none">
-    Gérer le stock pour {isVariant ? 'cette déclinaison' : 'ce produit'}
-  </label>
-</div>
+<!--
+  Des réglages, donc des interrupteurs : l'état se lit toujours au même endroit,
+  à droite, là où des cases le plaçaient après des libellés de longueurs inégales.
+-->
+<SwitchField
+  id="trackStock"
+  label="Gérer le stock pour {isVariant ? 'cette déclinaison' : 'ce produit'}"
+  bind:checked={values.trackStock}
+/>
 
 {#if values.trackStock}
   <FormField id="stock" label="Quantité en stock">
@@ -155,9 +144,9 @@
   </FormField>
 {/if}
 
-<div class="flex items-center gap-2 py-2">
-  <Checkbox id="active" bind:checked={values.active} />
-  <label for="active" class="text-sm font-medium text-foreground cursor-pointer select-none">
-    {isVariant ? 'Déclinaison proposée aux adhérents' : 'Produit actif (visible par les adhérents)'}
-  </label>
-</div>
+<SwitchField
+  id="active"
+  label={isVariant ? 'Déclinaison proposée aux adhérents' : 'Produit actif'}
+  hint={isVariant ? undefined : 'Visible par les adhérents dans la boutique.'}
+  bind:checked={values.active}
+/>

@@ -9,7 +9,7 @@
   import { submitTransaction, validateTransaction, deleteTransaction, editValuesFor, type TransactionFormValues } from '../../../ledger/list-ledger-entries/ui/ledger-actions';
   import type { AccountLike } from '../../../shared/account-labels';
   import type { MemberLike } from '../../../ledger/list-ledger-entries/ui/member-options';
-  import { toast, submitForm, uiConfirm, flashAndReload, seasonForDate } from '@nba/ui';
+  import { submitForm, uiConfirm, flashAndReload, seasonForDate, uiAlert } from '@nba/ui';
 
   /**
    * Un compte sans relevé — la caisse, le porte-monnaie Badnet, le compte d'attente des
@@ -185,7 +185,6 @@
     await submitForm({
       validate: () => validateTransaction(values),
       submit: () => submitTransaction(values),
-      success: editingId ? 'Mouvement modifié.' : 'Mouvement enregistré.',
       close: () => { showPanel = null; },
       onError: (message) => { errorMsg = message; }
     });
@@ -202,7 +201,7 @@
       await deleteTransaction(id);
       flashAndReload('Mouvement supprimé.');
     } catch (err: any) {
-      toast.error(err.message);
+      uiAlert(err.message);
     }
   }
 </script>

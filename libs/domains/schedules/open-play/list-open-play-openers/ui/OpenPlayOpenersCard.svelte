@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Plus, Trash2 } from '@lucide/svelte';
-  import { Button, Input, Card, Badge, uiConfirm, toast, flashAndReload } from '@nba/ui';
+  import { Button, Input, Card, Badge, uiConfirm, flashAndReload, uiAlert } from '@nba/ui';
 
   /**
    * Les détenteurs de clé de la saison.
@@ -87,7 +87,7 @@
       await post({ action: 'addOpener', seasonCode, licence: member.licence }, "L'ajout a échoué.");
       flashAndReload(`${member.firstName} ${member.lastName} peut désormais ouvrir un créneau.`);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "L'ajout a échoué.");
+      uiAlert(error instanceof Error ? error.message : "L'ajout a échoué.");
       busy = false;
     }
   }
@@ -105,7 +105,7 @@
       await post({ action: 'removeOpener', id: opener.id }, 'Le retrait a échoué.');
       flashAndReload('Clé reprise.');
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Le retrait a échoué.');
+      uiAlert(error instanceof Error ? error.message : 'Le retrait a échoué.');
     }
   }
 </script>

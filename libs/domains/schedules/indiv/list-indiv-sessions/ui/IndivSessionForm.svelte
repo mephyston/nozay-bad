@@ -73,7 +73,6 @@
           throw new Error(message);
         }
       },
-      success: '',
       close: () => { open = false; flashAndReload(id ? 'Soirée mise à jour.' : 'Soirée ajoutée.'); },
       onError: (message) => { error = message; }
     });
@@ -87,11 +86,11 @@
       {#each venues as venue (venue.id)}<option value={String(venue.id)}>{venue.name}</option>{/each}
     </Select>
   </FormField>
-  <div class="grid grid-cols-2 gap-3">
+  <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
     <FormField label="Date" id="indiv-date"><Input id="indiv-date" type="date" bind:value={date} /></FormField>
     <FormField label="Début" id="indiv-start"><Input id="indiv-start" type="time" bind:value={startTime} /></FormField>
   </div>
-  <div class="grid grid-cols-3 gap-3">
+  <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
     <FormField label="Créneaux" id="indiv-count"><Input id="indiv-count" type="number" min="1" max={MAX_SLOT_COUNT} bind:value={slotCount} /></FormField>
     <FormField label="Minutes" id="indiv-minutes"><Input id="indiv-minutes" type="number" min="5" max={MAX_SLOT_MINUTES} step="5" bind:value={slotMinutes} /></FormField>
     <FormField label="Places" id="indiv-capacity"><Input id="indiv-capacity" type="number" min="1" max={MAX_CAPACITY_PER_SLOT} bind:value={capacityPerSlot} /></FormField>

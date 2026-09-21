@@ -1,10 +1,28 @@
 <script module>
 </script>
 <script lang="ts">
-  import { Eye, ChevronRight, Receipt } from '@lucide/svelte';
-  import { Button, Badge, DropdownMenu, DataTable, Table, DataTableColumnHeader, DataTableRowActions, MemberAvatar, uiConfirm, toast, flashAndReload, softNavigate, openDocument } from '@nba/ui';
+  import { Eye, Receipt, FileText, Users } from '@lucide/svelte';
+  import {
+    Badge,
+    DropdownMenu,
+    DataTable,
+    Table,
+    DataTableColumnHeader,
+    DataTableRowActions,
+    RowActionItems,
+    ListView,
+    ListRow,
+    MemberAvatar,
+    uiConfirm,
+    flashAndReload,
+    softNavigate,
+    openDocument,
+    uiAlert,
+    type SwipeAction
+  } from '@nba/ui';
   import type { Member, Pagination, Filters, Season } from './members-table-types';
   import { membershipStatusLabel, membershipStatusVariant } from '../../shared/membership-status';
+  import { ligneAdherent } from './members-row-model';
   import MembersTableFiltersPopover from './MembersTableFiltersPopover.svelte';
 
   let { data = [], pagination, filters, seasons = [], canExport = false }: { data: Member[]; pagination: Pagination; filters: Filters; seasons?: Season[]; canExport?: boolean } = $props();
@@ -68,9 +86,9 @@
         return;
       }
       const txt = await res.text().catch(() => '');
-      toast.error(txt || `Échec de la mise à jour (HTTP ${res.status}).`);
+      uiAlert(txt || `Échec de la mise à jour (HTTP ${res.status}).`);
     } catch (e: any) {
-      toast.error('Erreur réseau : ' + (e?.message ?? String(e)));
+      uiAlert('Erreur réseau : ' + (e?.message ?? String(e)));
     }
     togglingId = null;
   }
@@ -117,6 +135,76 @@
     applyFilters();
   }
 
+  /**
+   * Ce qu'on peut faire d'un adhérent depuis la liste.
+   *
+   * « Voir la fiche » n'y figure pas : c'est déjà ce que fait l'appui sur la ligne.
+   * L'autorisation de note de frais est la seule action courante, donc la seule
+   * révélée par un balayage ; l'attestation, plus rare et conditionnée au
+   * règlement, reste au menu.
+   */
+  function actionsAdherent(member: Member): SwipeAction<Member>[] {
+    return [
+      {
+        id: 'note-de-frais',
+        label: member.expenseAuthorized ? 'Retirer note de frais' : 'Autoriser note de frais',
+        icon: Receipt,
+        tone: 'primary',
+        run: (m) => toggleExpense(m)
+      }
+    ];
+  }
+
+  function actionsSecondaires(member: Member): SwipeAction<Member>[] {
+    if (!member.paid) return [];
+    return [
+      {
+        id: 'attestation',
+        label: 'Attestation CSE',
+        icon: FileText,
+        run: (m) => openDocument(`/admin/accounting/attestations/${m.id}`)
+      }
+    ];
+  }
+
+  /*
+    Les tranches suivantes s'ajoutent à la liste au lieu de la remplacer.
+
+    Une requête par appui, sur la page suivante : on ne relit jamais ce qui est déjà
+    à l'écran, là où augmenter la limite relirait tout depuis le début. `data` est
+    la première page, rendue par le relais ; `supplement` porte ce qu'on a demandé
+    ensuite, et l'îlot étant remonté à chaque navigation, il repart vide de lui-même.
+  */
+  let supplement = $state<Member[]>([]);
+  let chargeEnCours = $state(false);
+  let dernierePage = $state(1);
+
+  const lignes = $derived([...data, ...supplement]);
+
+  async function chargerSuite() {
+    if (chargeEnCours || dernierePage >= pagination.totalPages) return;
+    chargeEnCours = true;
+    const params = new URLSearchParams(window.location.search);
+    params.set('page', String(dernierePage + 1));
+    try {
+      const res = await fetch(`/admin/api/members/list?${params.toString()}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      /*
+        Le relais enveloppe : `{ success, data: { members, pagination, … } }`. Lire
+        `members` à la racine rendait `undefined`, et la liste ne grandissait jamais —
+        sans erreur, puisque le tableau vide s'ajoutait sans rien changer.
+      */
+      const enveloppe = (await res.json()) as { data?: { members?: Member[] } };
+      const suite = enveloppe.data?.members;
+      if (!Array.isArray(suite)) throw new Error('réponse inattendue');
+      supplement = [...supplement, ...suite];
+      dernierePage += 1;
+    } catch {
+      uiAlert('La suite de la liste n’a pas pu être chargée.');
+    }
+    chargeEnCours = false;
+  }
+
   function changePage(newPage: number) {
     if (newPage < 1 || newPage > pagination.totalPages) return;
     const params = new URLSearchParams(window.location.search);
@@ -127,15 +215,20 @@
 
 <div class="space-y-4">
   <DataTable
-    {data}
+    data={lignes}
+    mobileSpacing="list"
     {pagination}
     onPageChange={changePage}
+    onLoadMore={chargerSuite}
+    isLoadingMore={chargeEnCours}
+    loadedCount={lignes.length}
     itemName="adhérent(s)"
     emptyTitle="Aucun adhérent"
     emptyDescription="Aucun adhérent ne correspond à ces critères de recherche."
   >
     {#snippet toolbar()}
       <MembersTableFiltersPopover
+        total={pagination?.total ?? 0}
         bind:searchInput
         bind:selectedSeason
         bind:selectedGender
@@ -200,27 +293,10 @@
                   Voir profil
                 </a>
               </DropdownMenu.Item>
-              <DropdownMenu.Item onclick={() => toggleExpense(member)} class="cursor-pointer flex items-center w-full">
-                <Receipt class="w-3.5 h-3.5 mr-2" />
-                {member.expenseAuthorized ? 'Retirer note de frais' : 'Autoriser note de frais'}
-              </DropdownMenu.Item>
-              {#if member.paid}
-                <DropdownMenu.Item asChild>
-                  <a
-                    href={`/admin/accounting/attestations/${member.id}`}
-                    onclick={(e) => {
-                      e.preventDefault();
-                      openDocument(`/admin/accounting/attestations/${member.id}`);
-                    }}
-                    class="cursor-pointer flex items-center w-full"
-                  >
-                    <svg class="w-3.5 h-3.5 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    Attestation CSE
-                  </a>
-                </DropdownMenu.Item>
-              {/if}
+              <RowActionItems
+                actions={[...actionsAdherent(member), ...actionsSecondaires(member)]}
+                item={member}
+              />
             </DataTableRowActions>
           </div>
         </Table.Cell>
@@ -228,82 +304,29 @@
     {/snippet}
 
     {#snippet mobileView()}
-      {#each data as member}
-        <div class="flex items-center justify-between p-3.5 hover:bg-muted/50 transition-colors">
-          <a
-            href={`/admin/members/${member.licence}?season=${filters?.season || '25-26'}`}
-            class="flex items-center gap-3 min-w-0 flex-1 no-underline text-foreground group"
+      <ListView
+        items={lignes}
+        emptyIcon={Users}
+        emptyTitle="Aucun adhérent"
+        emptyDescription="Aucun adhérent ne correspond à ces critères."
+      >
+        {#snippet listRow(member)}
+          {@const l = ligneAdherent(member, filters?.season || '25-26')}
+          <ListRow
+            item={member}
+            href={l.href}
+            title={l.titre}
+            subtitle={l.sousTitre}
+            value={l.valeur}
+            valueTone={l.ton}
+            actions={[...actionsAdherent(member), ...actionsSecondaires(member)]}
           >
-            <MemberAvatar
-              src={photoSrc(member)}
-              name={`${member.lastName} ${member.firstName}`}
-              class="size-9 shrink-0 transition-colors group-hover:bg-primary/20"
-            />
-            <div class="min-w-0 flex-1">
-              <div class="font-bold text-sm truncate group-hover:text-primary transition-colors">
-                {member.lastName} {member.firstName}
-              </div>
-              <div class="text-xs text-muted-foreground flex items-center gap-2 mt-0.5">
-                <span>Licence: {member.licence}</span>
-                <span
-                  class="inline-flex items-center text-[10px] font-semibold {member.status === 'valide'
-                    ? 'text-success'
-                    : member.status === 'suspendu'
-                      ? 'text-destructive'
-                      : member.status === 'incomplet'
-                        ? 'text-warning'
-                        : 'text-muted-foreground'}"
-                >
-                  • {membershipStatusLabel(member.status)}
-                </span>
-              </div>
-            </div>
-          </a>
-
-          <div class="flex items-center gap-1 shrink-0 ml-2">
-            <DataTableRowActions>
-              <DropdownMenu.Item asChild>
-                <a
-                  href={`/admin/members/${member.licence}?season=${filters?.season || '25-26'}`}
-                  class="cursor-pointer flex items-center w-full"
-                >
-                  <Eye class="w-4 h-4 text-primary mr-2" />
-                  Voir la fiche
-                </a>
-              </DropdownMenu.Item>
-              <DropdownMenu.Item onclick={() => toggleExpense(member)} class="cursor-pointer flex items-center w-full">
-                <Receipt class="w-3.5 h-3.5 mr-2" />
-                {member.expenseAuthorized ? 'Retirer note de frais' : 'Autoriser note de frais'}
-              </DropdownMenu.Item>
-              {#if member.paid}
-                <DropdownMenu.Item asChild>
-                  <a
-                    href={`/admin/accounting/attestations/${member.id}`}
-                    onclick={(e) => {
-                      e.preventDefault();
-                      openDocument(`/admin/accounting/attestations/${member.id}`);
-                    }}
-                    class="cursor-pointer flex items-center w-full"
-                  >
-                    <svg class="w-4 h-4 text-muted-foreground mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    Attestation CSE
-                  </a>
-                </DropdownMenu.Item>
-              {/if}
-            </DataTableRowActions>
-
-            <a
-              href={`/admin/members/${member.licence}?season=${filters?.season || '25-26'}`}
-              class="p-1.5 text-muted-foreground hover:text-foreground"
-              aria-label="Voir la fiche"
-            >
-              <ChevronRight class="w-4 h-4" />
-            </a>
-          </div>
-        </div>
-      {/each}
+            {#snippet leading()}
+              <MemberAvatar src={photoSrc(member)} name={l.titre} class="size-9 shrink-0" />
+            {/snippet}
+          </ListRow>
+        {/snippet}
+      </ListView>
     {/snippet}
   </DataTable>
 </div>

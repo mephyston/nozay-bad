@@ -2,13 +2,16 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // Même contrainte que flash.test.ts : `vi.mock` est hissé, ses fabriques ne peuvent pas
 // fermer sur des variables déclarées ici.
-const { navigate, toast } = vi.hoisted(() => ({
+const { navigate, toast, uiAlert } = vi.hoisted(() => ({
   navigate: vi.fn(),
-  toast: { success: vi.fn(), error: vi.fn(), info: vi.fn() }
+  toast: { success: vi.fn(), error: vi.fn(), info: vi.fn() },
+  uiAlert: vi.fn(() => Promise.resolve())
 }));
 
 vi.mock('astro:transitions/client', () => ({ navigate }));
 vi.mock('../components/ui/sonner', () => ({ toast }));
+// Un refus s'acquitte : il ne s'efface plus tout seul au bout de quelques secondes.
+vi.mock('../components/ui/alert-dialog/confirm', () => ({ uiAlert }));
 
 import { submitForm } from './form-submit';
 
@@ -67,6 +70,16 @@ describe('submitForm — succès', () => {
 
     expect(order).toEqual(['close', 'navigate']);
   });
+
+  it('ne confirme rien quand la liste réaffichée porte déjà la trace', async () => {
+    // Le cas courant depuis l'adoption de la doctrine iOS : la ligne créée ou
+    // modifiée est la confirmation, et un message ne ferait que la recouvrir.
+    const ok = await submitForm({ submit: async () => ({ id: 1 }) });
+
+    expect(ok).toBe(true);
+    expect(navigate).toHaveBeenCalled();
+    expect(stored()?.message ?? '').toBe('');
+  });
 });
 
 describe('submitForm — échec de l’écriture', () => {
@@ -83,7 +96,7 @@ describe('submitForm — échec de l’écriture', () => {
     expect(close).not.toHaveBeenCalled();
     expect(navigate).not.toHaveBeenCalled();
     expect(stored()).toBeNull();
-    expect(toast.error).toHaveBeenCalledWith('FOREIGN KEY constraint failed');
+    expect(uiAlert).toHaveBeenCalledWith('FOREIGN KEY constraint failed');
   });
 
   it('route l’erreur vers le formulaire quand l’écran l’affiche lui-même', async () => {
@@ -96,7 +109,7 @@ describe('submitForm — échec de l’écriture', () => {
     });
 
     expect(onError).toHaveBeenCalledWith('Numéro de facture déjà attribué, réessayez');
-    expect(toast.error).not.toHaveBeenCalled();
+    expect(uiAlert).not.toHaveBeenCalled();
   });
 
   it('affiche un message par défaut quand l’échec n’en porte aucun', async () => {
@@ -105,7 +118,7 @@ describe('submitForm — échec de l’écriture', () => {
       success: 'Créé.'
     });
 
-    expect(toast.error).toHaveBeenCalledWith('Une erreur est survenue.');
+    expect(uiAlert).toHaveBeenCalledWith('Une erreur est survenue.');
   });
 });
 

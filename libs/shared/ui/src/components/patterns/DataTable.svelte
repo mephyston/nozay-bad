@@ -3,7 +3,9 @@
   import { Table, TableBody, TableCell, TableHeader, TableRow, TablePagination } from '../ui/table';
   import * as Card from '../ui/card';
   import { Skeleton } from '../ui/skeleton';
+  import { Button } from '../ui/button';
   import EmptyState from './EmptyState.svelte';
+  import { cn } from '../../lib/utils.js';
 
   let {
     data,
@@ -17,6 +19,9 @@
     tableClass,
     pagination,
     onPageChange,
+    onLoadMore,
+    isLoadingMore = false,
+    loadedCount,
     limitOptions,
     itemName,
     emptyIcon,
@@ -39,8 +44,13 @@
      * `spaced` — des cartes détachées. À réserver aux listes dont chaque carte porte ses
      * propres actions : jointives, les zones cliquables de deux voisines se touchent, et
      * le pouce vise mal.
+     *
+     * `list` — la vue liste de `@nba/ui` : le snippet `mobileView` rend une `<ListView>`,
+     * qui gère elle-même séparateurs, sections et espacement. `DataTable` s'efface alors
+     * complètement sous `md` — y compris la chrome de la carte, dont `overflow-hidden`
+     * clipperait les en-têtes de section collants.
      */
-    mobileSpacing?: 'divided' | 'spaced';
+    mobileSpacing?: 'divided' | 'spaced' | 'list';
     /**
      * Classes posées sur le `<table>`. `table-fixed` fait tenir la table dans son
      * conteneur quoi qu'il arrive : les largeurs viennent des en-têtes, et une colonne
@@ -50,6 +60,24 @@
     tableClass?: string;
     pagination?: any;
     onPageChange?: (page: number) => void;
+    /**
+     * Charge la tranche suivante **et l'ajoute** à la liste, sur téléphone.
+     *
+     * Les points de pagination d'iOS ne conviennent pas ici : ils servent un petit
+     * nombre de pages sœurs qu'on feuillette horizontalement, pas une liste qui
+     * défile verticalement. Et le défilement infini charge ce que personne n'a
+     * demandé — coûteux quand la contrainte est le nombre de lignes lues. Un appui
+     * explicite, comme le « Charger d'anciens messages » de Mail, ne lit que ce
+     * qu'on demande, et le rendre automatique un jour ne coûtera qu'un observateur
+     * d'intersection posé sur ce bouton.
+     *
+     * Sur ordinateur, la pagination numérotée reste : elle seule permet d'aller
+     * droit à la page 6.
+     */
+    onLoadMore?: () => void;
+    isLoadingMore?: boolean;
+    /** Nombre de lignes déjà affichées, quand l'appelant les accumule. */
+    loadedCount?: number;
     limitOptions?: number[];
     itemName?: string;
     emptyIcon?: any;
@@ -78,7 +106,17 @@
     </div>
   {/if}
 
-  <Card.Root class="overflow-hidden">
+  <Card.Root
+    class={cn(
+      'overflow-hidden',
+      // `Card.Root` se cerne d'un `ring-1`, pas d'un `border` : neutraliser la
+      // bordure ne suffisait pas, et la bague doublait le cadre de la liste.
+      // Son rembourrage vertical et son `overflow-hidden` partent aussi — ce
+      // dernier clipperait les en-têtes de section collants.
+      mobileSpacing === 'list' &&
+        'ring-0 bg-transparent py-0 overflow-visible md:ring-1 md:bg-card md:py-(--card-spacing) md:overflow-hidden'
+    )}
+  >
     <!-- Desktop View (hidden on mobile if mobileView is provided) -->
     <div class={mobileView ? "hidden md:block" : "block"}>
       <div class="overflow-x-auto">
@@ -135,22 +173,54 @@
             />
           </div>
         {:else}
-          <div class={mobileSpacing === 'spaced' ? 'space-y-3 p-3' : 'divide-y divide-border'}>
+          {#if mobileSpacing === 'list'}
             {@render mobileView()}
-          </div>
+          {:else}
+            <div class={mobileSpacing === 'spaced' ? 'space-y-3 p-3' : 'divide-y divide-border'}>
+              {@render mobileView()}
+            </div>
+          {/if}
         {/if}
       </div>
     {/if}
 
     <!-- Pagination -->
     {#if pagination && pagination.totalPages > 1 && onPageChange}
-      <Card.Footer class="border-t px-6 py-4 flex items-center justify-between bg-muted/20">
-        <TablePagination
-          {pagination}
-          onChangePage={onPageChange}
-          {itemName}
-          {limitOptions}
-        />
+      <Card.Footer
+        class={cn(
+          'flex items-center justify-between border-t bg-muted/20 px-6 py-4',
+          // En vue liste, le pied de carte n'a plus de carte où s'appuyer : il
+          // reprend le fond de la page plutôt que de dessiner un bandeau isolé.
+          mobileSpacing === 'list' &&
+            'border-0 bg-transparent px-0 py-3 md:border-t md:bg-muted/20 md:px-6 md:py-4'
+        )}
+      >
+        {#if onLoadMore}
+          {@const affichees = loadedCount ?? data.length}
+          {@const reste = Math.max(pagination.total - affichees, 0)}
+          <div class="w-full space-y-2 md:hidden">
+            <p class="text-center text-xs text-muted-foreground">
+              {affichees} sur {pagination.total}
+            </p>
+            {#if reste > 0}
+              <Button
+                variant="outline"
+                class="w-full"
+                disabled={isLoadingMore}
+                onclick={onLoadMore}
+              >
+                {isLoadingMore
+                  ? 'Chargement…'
+                  : `Afficher les ${Math.min(reste, pagination.limit ?? 20)} suivants`}
+              </Button>
+            {/if}
+          </div>
+          <div class="hidden w-full md:block">
+            <TablePagination {pagination} onChangePage={onPageChange} {itemName} {limitOptions} />
+          </div>
+        {:else}
+          <TablePagination {pagination} onChangePage={onPageChange} {itemName} {limitOptions} />
+        {/if}
       </Card.Footer>
     {/if}
   </Card.Root>

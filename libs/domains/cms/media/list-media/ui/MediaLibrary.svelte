@@ -12,9 +12,9 @@
     FormField,
     FormSheet,
     submitForm,
-    toast,
     uiConfirm,
-    flashAndReload
+    flashAndReload,
+    uiAlert
   } from '@nba/ui';
   import { uploadFile, updateMediaAlt, deleteMedia } from './media-actions';
   import { humanSize } from './media-upload';
@@ -137,9 +137,9 @@
         faux.
       */
       success: ({ cree }) =>
-        cree
-          ? 'Média ajouté.'
-          : 'Ce fichier était déjà dans la médiathèque : rien n’a été ajouté.',
+        // Créé, la vignette apparaît et le dit mieux qu'un message. Déjà présent,
+        // rien ne bouge à l'écran : c'est le seul cas qui demande une phrase.
+        cree ? '' : 'Ce fichier était déjà dans la médiathèque : rien n’a été ajouté.',
       close: () => {
         file = null;
         alt = '';
@@ -179,7 +179,6 @@
         return null;
       },
       submit: () => updateMediaAlt((row as MediaRow).id, editAlt.trim()),
-      success: 'Description modifiée.',
       close: () => {
         editing = null;
         editAlt = '';
@@ -206,7 +205,7 @@
       await deleteMedia(row.id);
       flashAndReload('Média supprimé.');
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'La suppression a échoué.');
+      uiAlert(error instanceof Error ? error.message : 'La suppression a échoué.');
     }
   }
 </script>

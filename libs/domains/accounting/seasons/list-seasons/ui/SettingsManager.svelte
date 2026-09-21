@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Calendar, AlertCircle, Plus } from "@lucide/svelte";
-  import { Card, Alert, Tabs, Button, toast } from "@nba/ui";
+  import { Card, Alert, Tabs, Button, uiAlert } from "@nba/ui";
   import SeasonConfig from "./SeasonConfig.svelte";
   import CategoriesConfig from "./CategoriesConfig.svelte";
   import AccountClassesConfig from "./AccountClassesConfig.svelte";
@@ -36,7 +36,7 @@
   // Les confirmations passent par le flash de `submitForm` : elles sont rejouées après
   // le réaffichage de la liste. Seuls les échecs restent à afficher ici.
   $effect(() => {
-    if (viewState.errorMsg) toast.error(viewState.errorMsg);
+    if (viewState.errorMsg) uiAlert(viewState.errorMsg);
   });
 
   // --- SEASONS STATE ---

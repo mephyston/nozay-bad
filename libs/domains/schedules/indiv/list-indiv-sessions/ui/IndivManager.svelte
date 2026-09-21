@@ -1,8 +1,17 @@
 <script lang="ts">
   import { Plus, Edit, Ban, Users, RotateCcw, CalendarPlus } from '@lucide/svelte';
   import {
-    Button, Badge, Card, Table, DataTable, DataTableToolbar, DataTableRowActions, DropdownMenu,
-    toast, uiConfirm, flashAndReload
+    Button,
+    Badge,
+    Card,
+    Table,
+    DataTable,
+    DataTableToolbar,
+    DataTableRowActions,
+    DropdownMenu,
+    uiConfirm,
+    flashAndReload,
+    uiAlert
   } from '@nba/ui';
   import IndivSessionForm from './IndivSessionForm.svelte';
   import IndivGenerateForm from './IndivGenerateForm.svelte';
@@ -72,7 +81,7 @@
       await post({ action: 'update', id: row.id, status: 'cancelled', cancelledReason: reason.trim() }, "L'annulation a échoué.");
       flashAndReload('Soirée annulée.');
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "L'annulation a échoué.");
+      uiAlert(error instanceof Error ? error.message : "L'annulation a échoué.");
     }
   }
 
@@ -87,7 +96,7 @@
       await post({ action: 'update', id: row.id, status: 'open' }, 'La réouverture a échoué.');
       flashAndReload('Soirée rouverte.');
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'La réouverture a échoué.');
+      uiAlert(error instanceof Error ? error.message : 'La réouverture a échoué.');
     }
   }
 

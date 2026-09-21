@@ -1,7 +1,9 @@
 <script lang="ts">
-	import type { Component, Snippet } from "svelte";
+	import { getContext, type Component, type Snippet } from "svelte";
 	import type { HTMLInputAttributes, HTMLInputTypeAttribute } from "svelte/elements";
 	import { cn, type WithElementRef } from "../../../lib/utils.js";
+	import { creerIsMobile } from "../../../lib/hooks/is-mobile.svelte.js";
+	import { CLE_CHAMP, type ContexteChamp } from "../../patterns/FormField.svelte";
 
 	type InputType = Exclude<HTMLInputTypeAttribute, "file">;
 
@@ -20,8 +22,26 @@
 		class: className,
 		"data-slot": dataSlot = "input",
 		icon: Icon,
+		placeholder,
 		...restProps
 	}: Props = $props();
+
+	/*
+	  Sur téléphone, l'intitulé descend dans le champ — la disposition iOS, qui rend
+	  une ligne par champ. Le bloc ne masque le sien qu'une fois qu'on l'a pris.
+
+	  Il l'emporte sur un texte d'invite déjà fourni : ces invites sont des exemples
+	  (« Ex : Maillot du club… »), utiles à la souris où le libellé est visible
+	  au-dessus, mais qui laisseraient un champ sans nom une fois celui-ci masqué.
+	*/
+	const champ = getContext<ContexteChamp | undefined>(CLE_CHAMP);
+	const requete = creerIsMobile();
+	const absorbable = $derived(!!champ && champ.absorbable && requete.current && type !== "file");
+	const invite = $derived(absorbable ? champ!.label : placeholder);
+
+	$effect(() => {
+		if (absorbable) champ!.absorberLabel();
+	});
 </script>
 
 <div class="relative w-full flex items-center">
@@ -40,6 +60,7 @@
 				className
 			)}
 			type="file"
+			placeholder={invite}
 			bind:files
 			bind:value
 			{...restProps}
@@ -54,8 +75,28 @@
 				className
 			)}
 			{type}
+			placeholder={invite}
 			bind:value
 			{...restProps}
 		/>
 	{/if}
 </div>
+
+<style>
+	/*
+	  Les flèches d'un champ numérique ne servent à rien : trop petites pour être
+	  visées au doigt, elles ne font gagner un pas que sur des valeurs minuscules et
+	  volent de la largeur à la saisie. On tape le nombre.
+	*/
+	input[type="number"] {
+		appearance: textfield;
+		-moz-appearance: textfield;
+	}
+
+	input[type="number"]::-webkit-outer-spin-button,
+	input[type="number"]::-webkit-inner-spin-button {
+		-webkit-appearance: none;
+		appearance: none;
+		margin: 0;
+	}
+</style>

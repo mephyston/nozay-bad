@@ -1,7 +1,9 @@
 <script lang="ts">
-  import { Search, Filter, X } from '@lucide/svelte';
-  import { Input } from '../ui/input';
+  import { Filter, X } from '@lucide/svelte';
   import { Button } from '../ui/button';
+  import ListSearchField from './ListSearchField.svelte';
+  import { cn } from '../../lib/utils.js';
+  import { dockDePage } from '../../lib/page-dock.svelte.js';
   import * as DropdownMenu from '../ui/dropdown-menu';
   import type { Snippet } from 'svelte';
 
@@ -9,65 +11,127 @@
     searchValue = $bindable(''),
     searchPlaceholder = 'Rechercher...',
     hasSearch = true,
+    dockSearch = false,
+    activeFilters = [],
     hasFilters = false,
     filtersActive = false,
     onSearchSubmit,
     onSearchClear,
+    onOpenFilters,
     filters,
     actions
   }: {
     searchValue?: string;
     searchPlaceholder?: string;
     hasSearch?: boolean;
+    /**
+     * Confie la recherche à la barre du bas sur téléphone, et masque le champ ici
+     * sous `md`. Le pouce n'a pas à remonter en haut de l'écran pour chercher.
+     */
+    dockSearch?: boolean;
+    /**
+     * Les critères posés, et de quoi les retirer un à un.
+     *
+     * Un filtre appliqué doit se voir et se défaire sans rouvrir le panneau qui l'a
+     * posé — sinon la liste reste réduite sans que rien ne le dise. Les jetons se
+     * lisent à tout écran : sur ordinateur aussi, la pastille du panneau dit qu'il y
+     * a des filtres, jamais lesquels.
+     */
+    activeFilters?: { id: string; label: string; onRemove: () => void }[];
     hasFilters?: boolean;
     filtersActive?: boolean;
     onSearchSubmit?: (value: string) => void;
     onSearchClear?: () => void;
+    /**
+     * Ouvre les filtres sur téléphone, depuis l'entonnoir de la barre du bas.
+     * Sans elle, `dockSearch` ne descend que la recherche.
+     */
+    onOpenFilters?: () => void;
     filters?: Snippet;
     actions?: Snippet;
   } = $props();
 
-  function handleKeydown(e: KeyboardEvent) {
-    if (e.key === 'Enter' && onSearchSubmit) {
-      onSearchSubmit(searchValue);
-    }
-  }
+  // Le placeholder et la fonction sont stables : l'effet ne se rejoue pas à la frappe.
+  $effect(() => {
+    if (!dockSearch || !hasSearch) return;
+    return dockDePage.declarerRecherche({
+      placeholder: searchPlaceholder,
+      valeur: searchValue,
+      onSubmit: rechercher,
+      // Chercher et filtrer sont la même intention : réduire la liste.
+      filtres: onOpenFilters ? { actif: filtersActive, ouvrir: onOpenFilters } : undefined,
+    });
+  });
 
-  function handleClear() {
-    searchValue = '';
-    if (onSearchClear) onSearchClear();
-    else if (onSearchSubmit) onSearchSubmit('');
+  function rechercher(valeur: string) {
+    searchValue = valeur;
+    if (valeur === '' && onSearchClear) onSearchClear();
+    else onSearchSubmit?.(valeur);
   }
 </script>
 
 <div class="flex flex-col sm:flex-row flex-wrap gap-3 items-stretch sm:items-center w-full">
+  {#if activeFilters.length > 0}
+    <div class="flex max-w-full flex-wrap items-center gap-2 self-start">
+      {#each activeFilters as critere (critere.id)}
+        <button
+          type="button"
+          onclick={critere.onRemove}
+          class="inline-flex h-9 max-w-full items-center gap-1.5 rounded-full bg-accent px-3 text-sm text-accent-foreground"
+        >
+          <span class="truncate">{critere.label}</span>
+          <X class="size-4 shrink-0" />
+          <span class="sr-only">Retirer ce filtre</span>
+        </button>
+      {/each}
+    </div>
+  {/if}
+
+  {#if hasSearch && dockSearch && searchValue}
+    <!--
+      Le filtre appliqué, et de quoi le retirer.
+      Sur téléphone, le champ est descendu dans la barre du bas et se referme après
+      validation : sans ce jeton, la liste restait filtrée sans que rien ne le dise
+      ni n'offre de revenir en arrière.
+    -->
+    <button
+      type="button"
+      onclick={() => rechercher('')}
+      class="inline-flex h-9 max-w-full items-center gap-1.5 self-start rounded-full bg-accent px-3 text-sm text-accent-foreground md:hidden"
+    >
+      <span class="truncate">« {searchValue} »</span>
+      <X class="size-4 shrink-0" />
+      <span class="sr-only">Retirer la recherche</span>
+    </button>
+  {/if}
+
   {#if hasSearch}
-    <div class="relative flex-1 sm:w-64">
-      <Input
-      type="text"
-      placeholder={searchPlaceholder}
+    <!--
+      `debounce={0}` : cette recherche part au serveur. La relancer à chaque
+      lettre, ce sont autant de requêtes pour une seule question.
+    -->
+    <ListSearchField
       bind:value={searchValue}
-      onkeydown={handleKeydown}
-      class="!pl-9 !pr-8 bg-background border-border h-9"
+      placeholder={searchPlaceholder}
+      onSubmit={rechercher}
+      debounce={0}
+      class={cn('flex-1 sm:w-64', dockSearch && 'hidden md:block')}
     />
-    <Search class="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-    {#if searchValue}
-      <button
-        type="button"
-        class="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xs p-1 cursor-pointer"
-        onclick={handleClear}
-      >
-        <X class="h-3 w-3" />
-      </button>
-    {/if}
-  </div>
   {/if}
 
   {#if hasFilters && filters}
+    <!--
+      Confiés au dock, les filtres quittent le haut de l'écran : l'entonnoir de la
+      pilule les ouvre, et ce bouton ne sert plus qu'à la souris.
+    -->
     <DropdownMenu.Root>
       <DropdownMenu.Trigger asChild>
         {#snippet child({ props })}
-          <Button {...props} variant="outline" class="flex items-center gap-2 h-9 relative">
+          <Button
+            {...props}
+            variant="outline"
+            class={cn('relative h-9 items-center gap-2', dockSearch ? 'hidden md:flex' : 'flex')}
+          >
             <Filter class="w-4 h-4" /> Filtres
             {#if filtersActive}
               <span class="flex h-2 w-2 rounded-full bg-primary absolute -top-1 -right-1"></span>

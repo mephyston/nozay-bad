@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Sheet, Button, Badge, SearchableCombobox, Alert, MemberAvatar, toast, Separator } from '@nba/ui';
+  import { Sheet, Button, Badge, SearchableCombobox, Alert, MemberAvatar, toast, Separator, uiAlert } from '@nba/ui';
   import { UserRoundX, TriangleAlert, Plus, X } from '@lucide/svelte';
   import type { GetTeamOutput } from '../dto';
 
@@ -132,13 +132,11 @@
         toast.warning(
           `${result.rejected.length} licence(s) écartée(s) : absentes du référentiel des adhérents.`
         );
-      } else {
-        toast.success('Staff et effectif enregistrés.');
       }
       open = false;
       onSaved();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "L'enregistrement a échoué.");
+      uiAlert(error instanceof Error ? error.message : "L'enregistrement a échoué.");
     } finally {
       saving = false;
     }

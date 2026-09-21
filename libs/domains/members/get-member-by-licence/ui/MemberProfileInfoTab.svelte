@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Shield, Calendar, Tag, Mail, Phone, Receipt, Copy, Check, User, Users, Landmark } from '@lucide/svelte';
-  import { Card, Button, Badge, Checkbox, uiConfirm, toast } from '@nba/ui';
+  import { Card, Button, Badge, Checkbox, uiConfirm, uiAlert } from '@nba/ui';
   import type { Member } from './member-profile-types';
   import { CLUB_FUNCTIONS, CLUB_FUNCTION_LABELS, type ClubFunction } from '../../shared/club-functions';
 
@@ -45,15 +45,12 @@
       });
       if (res.ok) {
         authorized = !authorized;
-        toast.success(authorized
-          ? `${name} peut désormais soumettre des notes de frais.`
-          : `${name} ne peut plus soumettre de notes de frais.`);
       } else {
         const txt = await res.text().catch(() => '');
-        toast.error(txt || `Échec de la mise à jour (HTTP ${res.status}).`);
+        uiAlert(txt || `Échec de la mise à jour (HTTP ${res.status}).`);
       }
     } catch (e: any) {
-      toast.error('Erreur réseau : ' + (e?.message ?? String(e)));
+      uiAlert('Erreur réseau : ' + (e?.message ?? String(e)));
     }
     toggling = false;
   }
@@ -94,12 +91,11 @@
         } catch {
           /* Sans stockage, il n'y avait rien à invalider. */
         }
-        toast.success('Fonction au club enregistrée.');
       } else {
-        toast.error(body?.error || `Échec de la mise à jour (HTTP ${res.status}).`);
+        uiAlert(body?.error || `Échec de la mise à jour (HTTP ${res.status}).`);
       }
     } catch (e: any) {
-      toast.error('Erreur réseau : ' + (e?.message ?? String(e)));
+      uiAlert('Erreur réseau : ' + (e?.message ?? String(e)));
     }
     savingFunctions = false;
   }

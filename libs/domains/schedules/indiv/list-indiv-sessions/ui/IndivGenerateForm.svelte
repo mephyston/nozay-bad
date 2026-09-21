@@ -63,7 +63,6 @@
         if (!response.ok) throw new Error(payload.error ?? 'La génération a échoué.');
         result = payload.data ?? null;
       },
-      success: '',
       close: () => {
         open = false;
         const r = result;
@@ -80,7 +79,7 @@
 </script>
 
 <FormSheet bind:open title="Programmer les soirées d’indiv" description="Une soirée par occurrence des créneaux choisis, parmi ceux marqués « séances individuelles » dans les horaires. Rejouer une période ne crée rien en double." icon={CalendarPlus} {error} isSubmitting={submitting} submitLabel="Programmer" onSubmit={generate}>
-  <div class="grid grid-cols-2 gap-3">
+  <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
     <FormField label="Du" id="gen-from"><Input id="gen-from" type="date" bind:value={from} /></FormField>
     <FormField label="Au" id="gen-to"><Input id="gen-to" type="date" bind:value={to} /></FormField>
   </div>
@@ -94,7 +93,7 @@
     {/each}
   </div>
   <FormField label="Heure de début (vide = celle du créneau)" id="gen-start"><Input id="gen-start" type="time" bind:value={startTime} /></FormField>
-  <div class="grid grid-cols-3 gap-3">
+  <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
     <FormField label="Créneaux" id="gen-count"><Input id="gen-count" type="number" min="1" max={MAX_SLOT_COUNT} bind:value={slotCount} /></FormField>
     <FormField label="Minutes" id="gen-minutes"><Input id="gen-minutes" type="number" min="5" max={MAX_SLOT_MINUTES} step="5" bind:value={slotMinutes} /></FormField>
     <FormField label="Places" id="gen-capacity"><Input id="gen-capacity" type="number" min="1" max={MAX_CAPACITY_PER_SLOT} bind:value={capacityPerSlot} /></FormField>

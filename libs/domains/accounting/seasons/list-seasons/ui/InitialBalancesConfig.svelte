@@ -57,7 +57,6 @@
           initialBalanceCents: Math.round((values[b.accountId] ?? 0) * 100)
         }))
       },
-      success: 'Soldes initiaux enregistrés.'
     });
   }
 </script>

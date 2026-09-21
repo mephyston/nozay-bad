@@ -7,6 +7,12 @@
 			variant: {
 				default: "bg-muted",
 				line: "gap-1 bg-transparent border-0 shadow-none",
+				/*
+				  Le segmented control d'iOS : une pilule en verre, des segments de
+				  largeur égale, et celui qui est actif surélevé par sa propre surface.
+				  Réservé au téléphone, où il remplace une rangée d'onglets qui défile.
+				*/
+				glass: "glass-surface h-12 gap-1 rounded-full border-0 p-1 shadow-none",
 			},
 		},
 		defaultVariants: {

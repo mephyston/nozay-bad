@@ -15,9 +15,9 @@
     Combobox,
     type ComboboxItem,
     submitForm,
-    toast,
     uiConfirm,
-    flashAndReload
+    flashAndReload,
+    uiAlert
   } from '@nba/ui';
 
   import { NAV_LOCATIONS, NAV_LOCATION_LABELS, type NavLocation } from '../../../shared/nav';
@@ -199,7 +199,6 @@
       },
       submit: () =>
         id ? call(`/cms/nav/${id}`, 'PUT', payload) : call('/cms/nav', 'POST', payload),
-      success: id ? 'Entrée de menu mise à jour.' : 'Entrée ajoutée au menu.',
       close: () => {
         resetForm();
         showFormSheet = false;
@@ -229,7 +228,7 @@
       await call('/cms/nav/reorder', 'PUT', { ids }, "Le déplacement a échoué.");
       flashAndReload('Ordre du menu mis à jour.');
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Le déplacement a échoué.");
+      uiAlert(error instanceof Error ? error.message : "Le déplacement a échoué.");
     }
   }
 
@@ -248,7 +247,7 @@
       await call(`/cms/nav/${item.id}`, 'DELETE', undefined, 'La suppression a échoué.');
       flashAndReload('Entrée retirée du menu.');
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'La suppression a échoué.');
+      uiAlert(error instanceof Error ? error.message : 'La suppression a échoué.');
     }
   }
 </script>

@@ -27,6 +27,11 @@ export interface ConfirmOptions {
   cancelLabel?: string;
   /** Rend le bouton d'action rouge, pour une action sans retour. */
   destructive?: boolean;
+  /**
+   * `alert` n'offre qu'un bouton d'acquittement : c'est la forme d'un message
+   * d'erreur. Un refus qui s'efface tout seul est un refus qu'on peut manquer.
+   */
+  mode?: 'confirm' | 'alert';
 }
 
 export interface ConfirmRequest extends Required<ConfirmOptions> {
@@ -39,12 +44,36 @@ const DEFAULTS = {
   title: 'Confirmation',
   confirmLabel: 'Confirmer',
   cancelLabel: 'Annuler',
-  destructive: false
+  destructive: false,
+  mode: 'confirm' as const
 };
 
 export function uiConfirm(input: string | ConfirmOptions): Promise<boolean> {
   const options: ConfirmOptions = typeof input === 'string' ? { description: input } : input;
   return new Promise((resolve) => {
     confirmStore.set({ ...DEFAULTS, ...options, resolve });
+  });
+}
+
+/**
+ * Signale un refus, et attend qu'il soit lu.
+ *
+ * Remplace le toast d'erreur partout où le message n'a pas de formulaire où
+ * s'inscrire. Un toast disparaît au bout de quelques secondes : appliqué à une
+ * erreur, il laisse l'utilisateur devant une action qui n'a pas eu lieu sans
+ * qu'il sache pourquoi. iOS ne connaît d'ailleurs pas le toast — ce qui doit être
+ * acquitté l'est par une alerte.
+ */
+export function uiAlert(input: string | Omit<ConfirmOptions, 'mode' | 'cancelLabel'>): Promise<void> {
+  const options = typeof input === 'string' ? { description: input } : input;
+  return new Promise((resolve) => {
+    confirmStore.set({
+      ...DEFAULTS,
+      title: 'Action impossible',
+      confirmLabel: "J'ai compris",
+      ...options,
+      mode: 'alert',
+      resolve: () => resolve(),
+    });
   });
 }

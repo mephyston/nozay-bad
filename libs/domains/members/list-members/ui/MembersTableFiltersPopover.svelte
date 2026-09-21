@@ -1,9 +1,30 @@
 <script lang="ts">
-  import { Download } from '@lucide/svelte';
-  import { DataTableToolbar, Button, SearchableCombobox, toSeasonOptions } from '@nba/ui';
-  import { MEMBERSHIP_STATUSES, MEMBERSHIP_STATUS_LABELS } from '../../shared/membership-status';
+  import { Download, Upload, Plus } from '@lucide/svelte';
+  import {
+    DataTableToolbar,
+    Button,
+    FilterSheet,
+    dockDePage,
+    softNavigate,
+    type SwipeAction
+  } from '@nba/ui';
+  import { membershipStatusLabel } from '../../shared/membership-status';
+  import MembersTableFilters from './MembersTableFilters.svelte';
   import type { Season } from './members-table-types';
 
+  /**
+   * La barre d'outils de la liste des adhérents, et ses critères.
+   *
+   * Les mêmes champs servent deux présentations : la popover, à la souris, et la
+   * feuille de filtres, au doigt — ouverte depuis l'entonnoir de la pilule de
+   * recherche.
+   *
+   * **Tout ce qui réduit la liste vit là, et nulle part ailleurs.** Un jeu de
+   * segments posé au-dessus de la liste avait un temps porté le statut : deux
+   * contrôles pour un même critère finissent par se contredire, et obligent à
+   * chercher lequel fait foi. Ce qui reste au-dessus de la liste ne règle rien — ce
+   * sont les jetons, qui disent ce qui est appliqué et permettent de le défaire.
+   */
   let {
     searchInput = $bindable(''),
     selectedSeason = $bindable('25-26'),
@@ -13,6 +34,7 @@
     selectedCohort = $bindable(''),
     seasons = [],
     exportHref = null,
+    total = 0,
     onApply,
     onReset
   }: {
@@ -25,96 +47,156 @@
     seasons: Season[];
     /** Adresse du fichier des mails aux filtres en cours, ou `null` sans le droit. */
     exportHref?: string | null;
+    /** Nombre d'adhérents que donnent les critères en cours. */
+    total?: number;
     onApply: () => void;
     onReset: () => void;
   } = $props();
 
-  function handleKeydown(e: KeyboardEvent) {
-    if (e.key === 'Enter') {
-      onApply();
-    }
-  }
-  
-  const isFilterActive = $derived(!!selectedGender || !!selectedType || !!selectedStatus || !!selectedCohort || (selectedSeason && seasons.length > 0));
+  let filtresOuverts = $state(false);
 
-  const seasonItems = $derived(
-    seasons.length > 0
-      ? toSeasonOptions(seasons)
-      : [{ label: 'Saison 2025-2026', value: '25-26' }]
+  const isFilterActive = $derived(
+    !!selectedGender || !!selectedType || !!selectedStatus || !!selectedCohort
   );
-  const genderItems = [
-    { label: 'Tous les genres', value: '' },
-    { label: 'Homme (M)', value: 'M' },
-    { label: 'Femme (F)', value: 'F' }
-  ];
-  const typeItems = [
-    { label: 'Tous les types', value: '' },
-    { label: 'Compétiteur', value: 'Competiteur' },
-    { label: 'Loisir', value: 'Loisir' }
-  ];
-  const statusItems = [
-    { label: 'Tous les statuts', value: '' },
-    ...MEMBERSHIP_STATUSES.map((value) => ({ label: MEMBERSHIP_STATUS_LABELS[value], value }))
-  ];
-  // Même partage que la carte « Renouvellement » du tableau de bord, par personne contre n-1.
-  const cohortItems = [
-    { label: 'Toute la saison', value: '' },
-    { label: 'Renouvelés (déjà là en n-1)', value: 'renewed' },
-    { label: 'Nouveaux (absents en n-1)', value: 'new' },
-    { label: 'Non renouvelés (adhérents de n-1 sans adhésion)', value: 'lapsed' }
-  ];
+
+  /** Les critères posés, lisibles et retirables un à un au-dessus de la liste. */
+  const criteres = $derived(
+    [
+      selectedStatus && {
+        id: 'statut',
+        label: membershipStatusLabel(selectedStatus),
+        onRemove: () => {
+          selectedStatus = '';
+          onApply();
+        }
+      },
+      selectedGender && {
+        id: 'genre',
+        label: selectedGender === 'M' ? 'Hommes' : 'Femmes',
+        onRemove: () => {
+          selectedGender = '';
+          onApply();
+        }
+      },
+      selectedType && {
+        id: 'type',
+        label: selectedType === 'Competiteur' ? 'Compétiteurs' : 'Loisir',
+        onRemove: () => {
+          selectedType = '';
+          onApply();
+        }
+      },
+      selectedCohort && {
+        id: 'cohorte',
+        label:
+          selectedCohort === 'renewed'
+            ? 'Renouvelés'
+            : selectedCohort === 'new'
+              ? 'Nouveaux'
+              : 'Non renouvelés',
+        onRemove: () => {
+          selectedCohort = '';
+          onApply();
+        }
+      }
+    ].filter(Boolean) as { id: string; label: string; onRemove: () => void }[]
+  );
+
+  /*
+    L'import et l'export descendent dans la barre du bas : ce sont les deux seules
+    actions de cet écran, et elles vivaient en haut d'une barre d'outils qui défile.
+    Aucun adhérent ne se crée ici — ils viennent de Poona — d'où l'import en tête.
+  */
+  $effect(() => {
+    const actions: SwipeAction[] = [
+      {
+        id: 'import',
+        label: 'Import Poona',
+        icon: Upload,
+        run: () => softNavigate('/admin/members/import')
+      }
+    ];
+    if (exportHref) {
+      actions.push({
+        id: 'export',
+        label: 'Exporter les mails',
+        icon: Download,
+        run: () => {
+          window.location.href = exportHref;
+        }
+      });
+    }
+    return dockDePage.declarerActions(actions);
+  });
 </script>
 
-<DataTableToolbar
-  bind:searchValue={searchInput}
-  searchPlaceholder="Rechercher un adhérent (Nom, Licence...)"
-  hasFilters={true}
-  filtersActive={isFilterActive}
-  onSearchSubmit={onApply}
-  onSearchClear={onApply}
->
-  {#snippet filters()}
-    <h4 class="font-semibold text-sm border-b border-border pb-2">Options de filtrage</h4>
-    <div class="space-y-3 pt-2">
-        <div class="space-y-1.5">
-          <label for="filter-season" class="text-xs font-semibold text-muted-foreground">Saison</label>
-          <SearchableCombobox id="filter-season" items={seasonItems} bind:value={selectedSeason} onValueChange={onApply} />
-        </div>
-        <div class="space-y-1.5">
-          <label for="filter-gender" class="text-xs font-semibold text-muted-foreground">Genre</label>
-          <SearchableCombobox id="filter-gender" items={genderItems} bind:value={selectedGender} onValueChange={onApply} />
-        </div>
-        <div class="space-y-1.5">
-          <label for="filter-type" class="text-xs font-semibold text-muted-foreground">Type d'adhérent</label>
-          <SearchableCombobox id="filter-type" items={typeItems} bind:value={selectedType} onValueChange={onApply} />
-        </div>
-        <div class="space-y-1.5">
-          <label for="filter-status" class="text-xs font-semibold text-muted-foreground">Statut</label>
-          <SearchableCombobox id="filter-status" items={statusItems} bind:value={selectedStatus} onValueChange={onApply} />
-        </div>
-        <div class="space-y-1.5">
-          <label for="filter-cohort" class="text-xs font-semibold text-muted-foreground">Cohorte</label>
-          <SearchableCombobox id="filter-cohort" items={cohortItems} bind:value={selectedCohort} onValueChange={onApply} />
-        </div>
-    </div>
-    <div class="pt-2 flex justify-end">
-      <Button variant="ghost" size="sm" onclick={onReset} class="text-xs">Réinitialiser</Button>
-    </div>
-  {/snippet}
+<div class="w-full space-y-3">
+  <DataTableToolbar
+    bind:searchValue={searchInput}
+    searchPlaceholder="Rechercher un adhérent (nom, licence…)"
+    dockSearch
+    hasFilters={true}
+    filtersActive={isFilterActive}
+    activeFilters={criteres}
+    onSearchSubmit={onApply}
+    onSearchClear={onApply}
+    onOpenFilters={() => (filtresOuverts = true)}
+  >
+    {#snippet filters()}
+      <h4 class="border-b border-border pb-2 text-sm font-semibold">Options de filtrage</h4>
+      <div class="space-y-3 pt-2">
+        <MembersTableFilters
+          bind:selectedSeason
+          bind:selectedStatus
+          bind:selectedGender
+          bind:selectedType
+          bind:selectedCohort
+          {seasons}
+          {onApply}
+        />
+      </div>
+      <div class="flex justify-end pt-2">
+        <Button variant="ghost" size="sm" onclick={onReset} class="text-xs">Réinitialiser</Button>
+      </div>
+    {/snippet}
 
-  {#snippet actions()}
-    {#if exportHref}
-      <Button href={exportHref} download variant="secondary" class="h-9 gap-2 w-full sm:w-auto">
-        <Download class="w-4 h-4" />
-        Exporter les mails
+    {#snippet actions()}
+      <!-- Sur téléphone, ces deux actions vivent dans la barre du bas. -->
+      {#if exportHref}
+        <Button href={exportHref} download variant="secondary" class="hidden h-9 gap-2 md:flex">
+          <Download class="h-4 w-4" />
+          Exporter les mails
+        </Button>
+      {/if}
+      <Button href="/admin/members/import" class="hidden h-9 gap-2 md:inline-flex">
+        <Plus class="h-4 w-4" />
+        Import Poona
       </Button>
-    {/if}
-    <a
-      href="/admin/members/import"
-      class="px-4 py-2 bg-primary text-primary-foreground text-sm font-medium rounded-md shadow hover:bg-primary/90 cursor-pointer inline-flex items-center justify-center gap-2 border-0 no-underline h-9 w-full sm:w-auto"
-    >
-      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
-      Import Poona
-    </a>
-  {/snippet}
-</DataTableToolbar>
+    {/snippet}
+  </DataTableToolbar>
+
+</div>
+
+<FilterSheet
+  bind:open={filtresOuverts}
+  description="Ces critères s'ajoutent à la recherche."
+  resultCount={total}
+  itemName="adhérent"
+  hasActiveFilters={isFilterActive}
+  onReset={() => {
+    onReset();
+    filtresOuverts = false;
+  }}
+>
+  <div class="space-y-3">
+    <MembersTableFilters
+      bind:selectedSeason
+      bind:selectedStatus
+      bind:selectedGender
+      bind:selectedType
+      bind:selectedCohort
+      {seasons}
+      {onApply}
+    />
+  </div>
+</FilterSheet>

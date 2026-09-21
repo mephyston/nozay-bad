@@ -12,7 +12,8 @@
     EmptyState,
     CollapsibleSection,
     toast,
-    uiConfirm
+    uiConfirm,
+    uiAlert
   } from '@nba/ui';
   import { Bell, Send, ExternalLink, CalendarClock, Zap } from '@lucide/svelte';
   import { NOTIFICATION_CATEGORIES } from '../../shared/categories';
@@ -176,11 +177,11 @@
     // réaction et sans message, impossible à diagnostiquer côté utilisateur.
     try {
       if (!title.trim() || !body.trim()) {
-        toast.error('Le titre et le message sont obligatoires.');
+        uiAlert('Le titre et le message sont obligatoires.');
         return;
       }
       if (target === 'groups' && selectedGroups.length === 0) {
-        toast.error('Sélectionnez au moins un groupe.');
+        uiAlert('Sélectionnez au moins un groupe.');
         return;
       }
       if (target === 'all' && stats.devices === 0) {
@@ -245,7 +246,7 @@
       await refresh();
     } catch (e) {
       console.error('[notifications] envoi en échec', e);
-      toast.error(e instanceof Error ? e.message : "L'envoi a échoué.");
+      uiAlert(e instanceof Error ? e.message : "L'envoi a échoué.");
     } finally {
       sending = false;
     }

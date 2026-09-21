@@ -18,7 +18,8 @@
     submitForm,
     toast,
     uiConfirm,
-    flashAndReload
+    flashAndReload,
+    uiAlert
   } from '@nba/ui';
   import { EVENT_CATEGORY_LABELS, EVENT_REGISTRATION_LABELS } from '../../shared/schema';
 
@@ -212,7 +213,6 @@
           },
           id ? 'La modification a échoué.' : 'La création a échoué.'
         ),
-      success: id ? 'Événement mis à jour.' : 'Événement créé en brouillon.',
       close: () => {
         resetForm();
         showFormSheet = false;
@@ -231,7 +231,7 @@
       await post({ action: 'update', id: row.id, status }, "L'opération a échoué.");
       flashAndReload('Événement mis à jour.');
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "L'opération a échoué.");
+      uiAlert(error instanceof Error ? error.message : "L'opération a échoué.");
     }
   }
 
@@ -284,7 +284,7 @@
       await navigator.clipboard.writeText(text);
       toast.success('Liste copiée.');
     } catch {
-      toast.error("La copie a échoué. Le navigateur l'a peut-être refusée.");
+      uiAlert("La copie a échoué. Le navigateur l'a peut-être refusée.");
     }
   }
 
@@ -299,7 +299,7 @@
       await post({ action: 'delete', id: row.id }, 'La suppression a échoué.');
       flashAndReload('Événement supprimé.');
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'La suppression a échoué.');
+      uiAlert(error instanceof Error ? error.message : 'La suppression a échoué.');
     }
   }
 </script>

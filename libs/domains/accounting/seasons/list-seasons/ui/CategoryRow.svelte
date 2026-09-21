@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Check, Edit2, Trash2, X, MoreHorizontal, PowerOff, Power } from "@lucide/svelte";
-  import { Button, Input, Badge, Table, AlertDialog, toast, DropdownMenu } from "@nba/ui";
+  import { Button, Input, Badge, Table, AlertDialog, DropdownMenu, uiAlert } from "@nba/ui";
   import type { Category, AccountClass } from "./settings-types";
 
   let {
@@ -49,7 +49,7 @@
         await onDeleteCategory(cat.id);
         // Toast and reload are handled by the API action in SettingsManager
       } catch (err: any) {
-        toast.error(err.message || 'Erreur lors de la suppression');
+        uiAlert(err.message || 'Erreur lors de la suppression');
       }
     } else if (action === 'toggleActive') {
       try {
@@ -64,7 +64,7 @@
         });
         cat.active = newActive; // Instant UI update
       } catch (err: any) {
-        toast.error(err.message || 'Erreur lors de la modification');
+        uiAlert(err.message || 'Erreur lors de la modification');
       }
     }
   }

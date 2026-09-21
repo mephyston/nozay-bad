@@ -40,9 +40,8 @@
     CreditCard, Dumbbell, Ticket, Receipt, Activity } from "@lucide/svelte";
   import { DropdownMenu } from "bits-ui";
   import { onMount } from "svelte";
-  import { Sidebar, Breadcrumb, Separator, Avatar, GlobalConfirm, AppVersion, PwaInstallBanner, ThemeToggle, toast } from "@nba/ui";
-  import AdminMobileDock from './AdminMobileDock.svelte';
-  import { searchNav, softNavigate, MenuSearchField, MenuSearchResults, HeaderSearch, type NavSearchHit } from '@nba/ui';
+  import { Sidebar, Breadcrumb, Separator, Avatar, GlobalConfirm, AppVersion, PwaInstallBanner, ThemeToggle, uiAlert } from "@nba/ui";
+  import { searchNav, softNavigate, MenuSearchField, MenuSearchResults, HeaderSearch, PageTitleSlot, MobileDock, pullToRefresh, type NavSearchHit } from '@nba/ui';
 
   let { children, email, name, permissions = [], realEmail = '', club, breadcrumb } = $props<{
     children?: import('svelte').Snippet;
@@ -133,6 +132,49 @@
 
   /** Le conteneur qui défile : la barre du bas s'y rétracte. */
   let scrollContainer = $state<HTMLElement | null>(null);
+
+  /**
+   * Le grand titre se replie dans la barre.
+   *
+   * L'observation vit ici, et non dans `PageHeader` : dans une page Astro, cet
+   * en-tête est rendu côté serveur sans directive `client:`, donc jamais hydraté —
+   * un effet posé chez lui ne tournerait pas. Le layout, lui, est un îlot, et il
+   * possède à la fois la barre et le conteneur défilant.
+   *
+   * Sentinelle + `IntersectionObserver` plutôt qu'un écouteur de défilement :
+   * l'état est binaire — le titre bascule, il ne s'interpole pas — et cela ne
+   * coûte aucun travail par frame.
+   */
+  let titrePage = $state('');
+  let titreReplie = $state(false);
+
+  $effect(() => {
+    const racine = scrollContainer;
+    if (!racine) return;
+
+    let observateur: IntersectionObserver | null = null;
+
+    const accrocher = () => {
+      observateur?.disconnect();
+      const titre = racine.querySelector<HTMLElement>('[data-page-title]');
+      titrePage = titre?.textContent?.trim() ?? '';
+      titreReplie = false;
+      if (!titre) return;
+      observateur = new IntersectionObserver(
+        ([entree]) => (titreReplie = !entree.isIntersecting),
+        { root: racine, threshold: 0 }
+      );
+      observateur.observe(titre);
+    };
+
+    accrocher();
+    // La navigation douce échange le contenu sans remonter forcément cet îlot.
+    document.addEventListener('astro:page-load', accrocher);
+    return () => {
+      observateur?.disconnect();
+      document.removeEventListener('astro:page-load', accrocher);
+    };
+  });
 
   /*
     Recherche dans le menu ouvert (téléphone).
@@ -439,7 +481,7 @@
       body: JSON.stringify({ email: target })
     });
     if (!res.ok) {
-      toast.error("Le changement de compte a échoué.");
+      uiAlert("Le changement de compte a échoué.");
       return;
     }
 
@@ -604,12 +646,24 @@
         non en haut de celle-ci : ils restent sous les yeux quelle que soit la position
         du menu — comme la recherche de la barre du bas, hors du menu.
       -->
+      <!--
+        Ici le verre flotte sur la barre latérale, pas sur la page : sans ce `--glass-base`
+        il se teinterait avec le fond du contenu et trancherait avec ce qu'il recouvre.
+      -->
       {#if menuQuery.trim()}
-        <div class="glass-surface mb-2 max-h-[50dvh] overflow-y-auto rounded-2xl">
+        <div
+          class="glass-surface mb-2 max-h-[50dvh] overflow-y-auto rounded-2xl"
+          style="--glass-base: var(--sidebar)"
+        >
           <MenuSearchResults hits={menuHits} query={menuQuery} icons={ICONS} onPick={pickHit} />
         </div>
       {/if}
-      <MenuSearchField bind:query={menuQuery} onClose={() => sidebar.setOpenMobile(false)} onSubmit={() => menuHits[0] && pickHit(menuHits[0])} />
+      <MenuSearchField
+        bind:query={menuQuery}
+        style="--glass-base: var(--sidebar)"
+        onClose={() => sidebar.setOpenMobile(false)}
+        onSubmit={() => menuHits[0] && pickHit(menuHits[0])}
+      />
     {:else}
       <AppVersion class="group-data-[collapsible=icon]:hidden pb-1" />
     {/if}
@@ -644,7 +698,7 @@
     l'appliquer aux deux ajouterait une seconde fois la hauteur de l'îlot.
   -->
   <header
-    class="flex min-h-14 shrink-0 items-center justify-between px-6 border-b border-border bg-background pb-2 md:pb-0 md:h-14"
+    class="relative flex min-h-14 shrink-0 items-center justify-between px-6 border-b border-border bg-background pb-2 md:pb-0 md:h-14"
     class:pt-safe={!isImpersonating}
   >
     <div class="flex items-center gap-4 h-full pt-2 md:pt-0">
@@ -653,8 +707,14 @@
       
       <Separator orientation="vertical" class="h-4 hidden md:block" />
       
-      <!-- Breadcrumb -->
-      <Breadcrumb.Root>
+      <!--
+        Le fil d'Ariane s'efface quand le titre de page vient le remplacer : la
+        barre fait 56 px, les deux n'y tiennent pas. Au-dessus de `md`, rien ne
+        change — le grand titre ne se replie pas.
+      -->
+      <Breadcrumb.Root
+        class={titreReplie ? 'opacity-0 transition-opacity md:opacity-100' : 'transition-opacity'}
+      >
         <Breadcrumb.List>
           <Breadcrumb.Item class="hidden sm:inline-flex">
             <Breadcrumb.Link href="/">Admin</Breadcrumb.Link>
@@ -676,6 +736,17 @@
         </Breadcrumb.List>
       </Breadcrumb.Root>
     </div>
+
+    <!--
+      Centré en absolu sur la barre, et non posé dans son flux : entre un fil
+      d'Ariane et un groupe d'icônes de largeurs différentes, il se centrerait
+      entre eux — donc de travers à l'écran.
+    -->
+    <PageTitleSlot
+      title={titrePage}
+      collapsed={titreReplie}
+      class="absolute left-1/2 max-w-[55%] -translate-x-1/2 md:hidden"
+    />
 
     <div class="flex items-center gap-3 pt-2 md:pt-0">
       <!-- À la souris seulement : sur téléphone, c'est la loupe de la barre du bas. -->
@@ -772,7 +843,19 @@
   </header>
 
   <!-- Main Content Area -->
-  <div class="flex-1 overflow-y-auto pb-24 md:pb-0" bind:this={scrollContainer}>
+  <!--
+    `data-scroll-root` : c'est lui qui défile dans l'administration, et non la
+    fenêtre. Les primitives qui observent le défilement — le grand titre repliable,
+    le geste de rafraîchissement — s'y accrochent par cet attribut.
+  -->
+  <div
+    class="flex-1 overflow-y-auto pb-24 md:pb-0"
+    data-scroll-root
+    bind:this={scrollContainer}
+    use:pullToRefresh={{
+      onRefresh: () => softNavigate(window.location.href),
+    }}
+  >
     <main class="p-4 md:p-6">
       {#if children}
         {@render children()}
@@ -781,14 +864,11 @@
   </div>
 </Sidebar.Inset>
 
-<AdminMobileDock
-  groups={accessibleNavGroups}
-  actions={quickActions}
-  icons={ICONS}
-  {scrollContainer}
-  onMenuClick={() => sidebar.setOpenMobile(true)}
-  onPick={pickHit}
-/>
+<!--
+  La barre du bas ne porte plus la recherche du menu : elle existe déjà dans le
+  menu ouvert, juste en dessous. Ce qu'elle porte désormais vient de l'écran.
+-->
+<MobileDock {scrollContainer} onMenuClick={() => sidebar.setOpenMobile(true)} />
 <GlobalConfirm />
 
 <style>
