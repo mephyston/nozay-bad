@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Checkbox, SearchableCombobox, Input, Textarea, FormField, Button } from '@nba/ui';
+  import { SwitchField, SearchableCombobox, Input, Textarea, FormField, Button } from '@nba/ui';
   import { ImagePlus, Trash2, Layers } from '@lucide/svelte';
   import type { ProductFormValues } from './products-manager-actions';
   import { productLabel, type Product, type ProductCategory } from './products-manager-types';
@@ -142,12 +142,15 @@
   <Input type="number" id="price" step="0.01" min="0" placeholder="0.00" bind:value={values.price} required class="font-outfit tabular-nums" />
 </FormField>
 
-<div class="flex items-center gap-2 py-2">
-  <Checkbox id="trackStock" bind:checked={values.trackStock} />
-  <label for="trackStock" class="text-sm font-medium text-foreground cursor-pointer select-none">
-    Gérer le stock pour {isVariant ? 'cette déclinaison' : 'ce produit'}
-  </label>
-</div>
+<!--
+  Des réglages, donc des interrupteurs : l'état se lit toujours au même endroit,
+  à droite, là où des cases le plaçaient après des libellés de longueurs inégales.
+-->
+<SwitchField
+  id="trackStock"
+  label="Gérer le stock pour {isVariant ? 'cette déclinaison' : 'ce produit'}"
+  bind:checked={values.trackStock}
+/>
 
 {#if values.trackStock}
   <FormField id="stock" label="Quantité en stock">
@@ -155,9 +158,9 @@
   </FormField>
 {/if}
 
-<div class="flex items-center gap-2 py-2">
-  <Checkbox id="active" bind:checked={values.active} />
-  <label for="active" class="text-sm font-medium text-foreground cursor-pointer select-none">
-    {isVariant ? 'Déclinaison proposée aux adhérents' : 'Produit actif (visible par les adhérents)'}
-  </label>
-</div>
+<SwitchField
+  id="active"
+  label={isVariant ? 'Déclinaison proposée aux adhérents' : 'Produit actif'}
+  hint={isVariant ? undefined : 'Visible par les adhérents dans la boutique.'}
+  bind:checked={values.active}
+/>
