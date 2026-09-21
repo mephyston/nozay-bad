@@ -113,13 +113,10 @@ test.describe('ResponsiveSheet — entrée', () => {
           }
         }
       });
-      document.addEventListener('DOMContentLoaded', () =>
-        obs.observe(document.documentElement, {
-          subtree: true,
-          attributes: true,
-          attributeFilter: ['style'],
-        })
-      );
+      // Observé sur `document` et immédiatement, pas sur `documentElement` au
+      // `DOMContentLoaded` : sous charge, la montée s'achevait avant que
+      // l'observateur ne soit posé, et le test échouait sans rien de cassé.
+      obs.observe(document, { subtree: true, attributes: true, attributeFilter: ['style'] });
     });
 
     await page.setViewportSize({ width: 390, height: 844 });
