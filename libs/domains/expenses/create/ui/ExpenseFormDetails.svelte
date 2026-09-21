@@ -14,7 +14,7 @@
   } = $props();
 </script>
 
-<div class="grid grid-cols-2 gap-3">
+<div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
     <FormField id="category" label="Catégorie de dépense">
     <SearchableCombobox id="category" items={visibleCategories.map((cat) => ({ label: cat.label, value: String(cat.value) }))} bind:value={category} />
   </FormField>

@@ -82,15 +82,55 @@
 
   const requete = creerIsMobile();
   /**
-   * Deux cercles sur téléphone : ils libèrent la hauteur d'une feuille et tombent
-   * sous les pouces. Le check porte la couleur d'accent et **non du vert** — ici le
-   * vert est `success`, un état, « c'est fait » ; l'employer pour « valider » le
+   * Deux cercles sur téléphone, **en haut de la feuille** et non en pied.
+   *
+   * Une feuille est ancrée au bas de l'écran : quand le clavier logiciel s'ouvre,
+   * réduire sa hauteur ne remonte pas son pied, que le clavier recouvre alors
+   * entièrement — les boutons devenaient inatteignables dès qu'on saisissait. Une
+   * modale iOS met pour cette raison ses actions dans sa barre de navigation.
+   *
+   * Le check porte la couleur d'accent et **non du vert** : ici le vert est
+   * `success`, un état — « c'est fait » —, et l'employer pour « valider » le
    * rendrait muet là où il sert vraiment.
    */
   const cercles = $derived(requete.current && !namedActions);
 </script>
 
-<ResponsiveSheet bind:open {title} icon={Icon} {description} {size}>
+<ResponsiveSheet bind:open {title} icon={Icon} {description} {size} footerHidden={cercles}>
+  {#snippet headerLeading()}
+    {#if cercles}
+      <Button
+        type="button"
+        variant="ghost"
+        disabled={isSubmitting}
+        onclick={() => (open = false)}
+        class="glass-surface size-11 rounded-full p-0"
+        style="--glass-base: var(--card)"
+        aria-label={cancelLabel}
+      >
+        <X class="size-5" />
+      </Button>
+    {/if}
+  {/snippet}
+
+  {#snippet headerTrailing()}
+    {#if cercles}
+      <Button
+        type="submit"
+        form={formId}
+        disabled={isSubmitting}
+        class="size-11 rounded-full p-0"
+        aria-label={isSubmitting ? submittingLabel : submitLabel}
+      >
+        {#if isSubmitting}
+          <Loader2 class="size-5 animate-spin" />
+        {:else}
+          <Check class="size-5" />
+        {/if}
+      </Button>
+    {/if}
+  {/snippet}
+
   <div class="space-y-4 pt-2">
     {#if error}
       <ErrorAlert message={error} />
@@ -104,33 +144,6 @@
   {#snippet footer()}
     {#if footerSnippet}
       {@render footerSnippet(formId)}
-    {:else if cercles}
-      <div class="flex items-center justify-between">
-        <Button
-          type="button"
-          variant="ghost"
-          disabled={isSubmitting}
-          onclick={() => (open = false)}
-          class="glass-surface size-14 rounded-full p-0"
-          style="--glass-base: var(--card)"
-          aria-label={cancelLabel}
-        >
-          <X class="size-6" />
-        </Button>
-        <Button
-          type="submit"
-          form={formId}
-          disabled={isSubmitting}
-          class="size-14 rounded-full p-0"
-          aria-label={isSubmitting ? submittingLabel : submitLabel}
-        >
-          {#if isSubmitting}
-            <Loader2 class="size-6 animate-spin" />
-          {:else}
-            <Check class="size-6" />
-          {/if}
-        </Button>
-      </div>
     {:else}
       <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
         <Button

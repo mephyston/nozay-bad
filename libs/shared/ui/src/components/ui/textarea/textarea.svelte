@@ -1,14 +1,28 @@
 <script lang="ts">
+	import { getContext } from "svelte";
 	import { cn, type WithElementRef, type WithoutChildren } from "../../../lib/utils.js";
 	import type { HTMLTextareaAttributes } from "svelte/elements";
+	import { creerIsMobile } from "../../../lib/hooks/is-mobile.svelte.js";
+	import { CLE_CHAMP, type ContexteChamp } from "../../patterns/FormField.svelte";
 
 	let {
 		ref = $bindable(null),
 		value = $bindable(),
 		class: className,
 		"data-slot": dataSlot = "textarea",
+		placeholder,
 		...restProps
 	}: WithoutChildren<WithElementRef<HTMLTextareaAttributes>> = $props();
+
+	/* Même règle que pour `Input` : voir `FormField`. */
+	const champ = getContext<ContexteChamp | undefined>(CLE_CHAMP);
+	const requete = creerIsMobile();
+	const absorbable = $derived(!!champ && !placeholder && requete.current);
+	const invite = $derived(absorbable ? champ!.label : placeholder);
+
+	$effect(() => {
+		if (absorbable) champ!.absorberLabel();
+	});
 </script>
 
 <textarea
@@ -19,5 +33,6 @@
 		className
 	)}
 	bind:value
+	placeholder={invite}
 	{...restProps}
 ></textarea>

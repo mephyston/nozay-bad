@@ -40,7 +40,7 @@
     <Textarea id="edit-desc-{exp.id}" bind:value={editDescription} rows={3} required />
   </FormField>
 
-  <div class="grid grid-cols-3 gap-4">
+  <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
       <FormField id="edit-cat-{exp.id}" label="Catégorie compta">
       <SearchableCombobox id="edit-cat-{exp.id}" items={categoriesList.map((cat) => ({ label: cat.label, value: String(cat.value) }))} bind:value={editCategory} />
     </FormField>

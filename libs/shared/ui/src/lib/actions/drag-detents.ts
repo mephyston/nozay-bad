@@ -121,6 +121,14 @@ export function dragDetents(node: HTMLElement, options: DragDetentsOptions = {})
     const cible = e.target as Element | null;
     if (cible?.closest('[data-no-drag]')) return;
 
+    /*
+      Un appui qui commence sur un contrôle lui appartient. Sans cette garde, un
+      appui un peu glissé sur un champ engageait le geste de la feuille, dont le
+      `preventDefault` annulait le clic : le champ ne prenait pas le focus, et le
+      clavier ne s'ouvrait pas.
+    */
+    if (cible?.closest('input, textarea, select, button, a, [contenteditable]')) return;
+
     const surPoignee = !!cible?.closest('[data-grabber]');
     const zone = zoneDefilante(cible);
     // Le contenu défile, la feuille ne glisse que depuis le haut : sinon le geste

@@ -30,6 +30,9 @@
     size = 'md',
     dismissible = true,
     showCloseButton = true,
+    headerLeading,
+    headerTrailing,
+    footerHidden = false,
     portalProps,
     class: className,
     header,
@@ -54,6 +57,20 @@
      */
     portalProps?: { to?: string | HTMLElement };
     class?: string;
+    /**
+     * Actions posées de part et d'autre du titre, sur téléphone : la barre de
+     * navigation d'une modale iOS. Elles y vivent **et non en pied** parce qu'une
+     * feuille est ancrée en bas — réduire sa hauteur quand le clavier s'ouvre ne
+     * remonte pas son pied, que le clavier recouvre alors entièrement.
+     */
+    headerLeading?: Snippet;
+    headerTrailing?: Snippet;
+    /**
+     * Masque le pied sans que l'appelant ait à ne pas fournir le snippet — ce qu'un
+     * composant ne peut pas décider conditionnellement. Sans cela, un pied vide
+     * laisserait sa bordure et son fond en travers de la feuille.
+     */
+    footerHidden?: boolean;
     header?: Snippet;
     children: Snippet;
     footer?: Snippet;
@@ -131,13 +148,37 @@
         </div>
       {/if}
 
+      {@const barreHaute = estMobile && (headerLeading || headerTrailing)}
       <div class={cn('shrink-0 px-6', estMobile ? 'pb-2' : 'pt-6 pb-2')}>
-        <Dialog.Title class="flex items-center gap-2 text-base font-semibold">
-          {#if Icon}<Icon class="h-5 w-5 text-primary" />{/if}
-          {title}
-        </Dialog.Title>
+        {#if barreHaute}
+          <!-- Barre de navigation : retrait à gauche, titre au centre, validation à droite. -->
+          <div class="flex items-center gap-2">
+            <div class="flex w-14 shrink-0 justify-start">
+              {#if headerLeading}{@render headerLeading()}{/if}
+            </div>
+            <Dialog.Title class="min-w-0 flex-1 truncate text-center text-base font-semibold">
+              {title}
+            </Dialog.Title>
+            <div class="flex w-14 shrink-0 justify-end">
+              {#if headerTrailing}{@render headerTrailing()}{/if}
+            </div>
+          </div>
+        {:else}
+          <Dialog.Title class="flex items-center gap-2 text-base font-semibold">
+            {#if Icon}<Icon class="h-5 w-5 text-primary" />{/if}
+            {title}
+          </Dialog.Title>
+        {/if}
+        <!--
+          Sous une barre de navigation, la description ne s'affiche pas : la hauteur
+          d'un téléphone est rare, et deux lignes d'explication repoussent d'autant
+          les champs sous le clavier. Elle reste rendue pour les technologies
+          d'assistance, qui l'annoncent avec le titre.
+        -->
         {#if description}
-          <Dialog.Description class="mt-1 text-sm text-muted-foreground">
+          <Dialog.Description
+            class={cn('mt-1 text-sm text-muted-foreground', barreHaute && 'sr-only')}
+          >
             {description}
           </Dialog.Description>
         {/if}
@@ -148,7 +189,7 @@
         {@render children()}
       </div>
 
-      {#if footer}
+      {#if footer && !footerHidden}
         <!--
           Le pied colle en bas sur téléphone : sur une feuille à mi-hauteur, un
           bouton posé dans le flux passe sous le pli et devient introuvable.

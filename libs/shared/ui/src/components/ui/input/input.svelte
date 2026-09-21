@@ -1,7 +1,9 @@
 <script lang="ts">
-	import type { Component, Snippet } from "svelte";
+	import { getContext, type Component, type Snippet } from "svelte";
 	import type { HTMLInputAttributes, HTMLInputTypeAttribute } from "svelte/elements";
 	import { cn, type WithElementRef } from "../../../lib/utils.js";
+	import { creerIsMobile } from "../../../lib/hooks/is-mobile.svelte.js";
+	import { CLE_CHAMP, type ContexteChamp } from "../../patterns/FormField.svelte";
 
 	type InputType = Exclude<HTMLInputTypeAttribute, "file">;
 
@@ -20,8 +22,24 @@
 		class: className,
 		"data-slot": dataSlot = "input",
 		icon: Icon,
+		placeholder,
 		...restProps
 	}: Props = $props();
+
+	/*
+	  Sur téléphone, l'intitulé descend dans le champ — la disposition iOS, qui rend
+	  une ligne par champ. Le bloc ne masque le sien qu'une fois qu'on l'a pris : un
+	  texte d'invite déjà fourni par l'appelant l'emporte, et le libellé reste alors
+	  au-dessus puisqu'il dit autre chose.
+	*/
+	const champ = getContext<ContexteChamp | undefined>(CLE_CHAMP);
+	const requete = creerIsMobile();
+	const absorbable = $derived(!!champ && !placeholder && requete.current && type !== "file");
+	const invite = $derived(absorbable ? champ!.label : placeholder);
+
+	$effect(() => {
+		if (absorbable) champ!.absorberLabel();
+	});
 </script>
 
 <div class="relative w-full flex items-center">
@@ -40,6 +58,7 @@
 				className
 			)}
 			type="file"
+			placeholder={invite}
 			bind:files
 			bind:value
 			{...restProps}
@@ -54,6 +73,7 @@
 				className
 			)}
 			{type}
+			placeholder={invite}
 			bind:value
 			{...restProps}
 		/>

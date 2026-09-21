@@ -64,11 +64,12 @@
   {/snippet}
 </Story>
 
-<Story name="PiedEnDeuxCercles">
+<Story name="ActionsEnTete">
   {#snippet template()}
     <!--
-      Le pied d'un formulaire sur téléphone : croix en verre, check en couleur
-      d'accent — et non en vert, réservé ici à l'état « c'est fait ».
+      Un formulaire sur téléphone : croix en verre et check en couleur d'accent, en
+      **barre de navigation**. Une feuille est ancrée en bas — le clavier logiciel
+      recouvrirait des boutons posés en pied, quelle que soit sa hauteur.
     -->
     <div class="h-screen w-full bg-background">
       <FormSheet
@@ -81,7 +82,7 @@
           <Input value="Gymnase des Bruyères" />
         </FormField>
         <FormField label="Ville">
-          <Input value="Nozay" />
+          <Input value="" />
         </FormField>
       </FormSheet>
     </div>
