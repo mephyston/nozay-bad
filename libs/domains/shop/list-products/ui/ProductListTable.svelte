@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Edit, Trash2, Plus, CornerDownRight, ImageIcon, Layers, Power, PowerOff } from "@lucide/svelte";
-  import { Button, Badge, Amount, DropdownMenu, DataTable, DataTableToolbar, DataTableRowActions, Table, ListView, ListRow, RowActionItems, formatAmount, dockDePage, type SwipeAction } from "@nba/ui";
+  import { Button, Badge, Amount, DropdownMenu, DataTable, DataTableToolbar, DataTableRowActions, Table, ListView, ListRow, RowActionItems, formatAmount, dockDePage, readCollapseState, writeCollapseState, type SwipeAction } from "@nba/ui";
   import { canDelete, isVariant, type Product } from './products-manager-types';
 
   /**
@@ -39,12 +39,64 @@
    */
   $effect(() => {
     if (!onOpenAdd || !canWrite) return;
-    return dockDePage.declarerAction({
-      libelle: 'Nouveau produit',
-      icone: Plus,
-      run: onOpenAdd,
-    });
+    return dockDePage.declarerActions([
+      { id: 'nouveau-produit', libelle: 'Nouveau produit', icone: Plus, run: onOpenAdd },
+    ]);
   });
+
+  /**
+   * Le catalogue en deux niveaux : un parent, ses déclinaisons repliées.
+   *
+   * Replié par défaut — un parent tient alors sur une ligne, et le catalogue se lit
+   * d'un coup d'œil au lieu de dérouler trois tailles par maillot. Une déclinaison
+   * orpheline (son parent est sorti du filtre) remonte au premier niveau : elle ne
+   * doit pas disparaître d'une recherche qu'elle satisfait.
+   */
+  const arbre = $derived.by(() => {
+    const parents = filteredProducts.filter((p) => !isVariant(p));
+    const connus = new Set(parents.map((p) => p.id));
+    const enfants = new Map<number, Product[]>();
+    const orphelines: Product[] = [];
+    for (const p of filteredProducts) {
+      if (!isVariant(p)) continue;
+      const parent = p.parentId as number;
+      if (!connus.has(parent)) orphelines.push(p);
+      else enfants.set(parent, [...(enfants.get(parent) ?? []), p]);
+    }
+    return { parents, enfants, orphelines };
+  });
+
+  const cleDePli = (id: number) => `produit-declinaisons-${id}`;
+  let deplies = $state<Record<number, boolean>>({});
+
+  // Le pli survit au rechargement que provoque chaque enregistrement : sans quoi le
+  // groupe qu'on vient d'ouvrir se referme sous les doigts.
+  $effect(() => {
+    const etat: Record<number, boolean> = {};
+    for (const parent of arbre.parents) {
+      if (hasVariants(parent)) etat[parent.id] = readCollapseState(cleDePli(parent.id), false);
+    }
+    deplies = etat;
+  });
+
+  /** Ce que la liste affiche réellement : les parents, et les enfants dépliés. */
+  const lignesVisibles = $derived.by(() => {
+    const out: { produit: Product; enfant: boolean }[] = [];
+    for (const parent of arbre.parents) {
+      out.push({ produit: parent, enfant: false });
+      if (deplies[parent.id]) {
+        for (const enfant of arbre.enfants.get(parent.id) ?? []) out.push({ produit: enfant, enfant: true });
+      }
+    }
+    for (const orpheline of arbre.orphelines) out.push({ produit: orpheline, enfant: false });
+    return out;
+  });
+
+  function basculerPli(parent: Product) {
+    const ouvert = !deplies[parent.id];
+    deplies = { ...deplies, [parent.id]: ouvert };
+    writeCollapseState(cleDePli(parent.id), ouvert);
+  }
 
   /**
    * Les actions révélées par un balayage, déclarées en données.
@@ -184,12 +236,14 @@
 
   {#snippet mobileView()}
     <ListView
-      items={filteredProducts}
+      items={lignesVisibles}
       emptyTitle="Aucun article"
       emptyDescription="Aucun article trouvé."
     >
-      {#snippet listRow(product)}
+      {#snippet listRow(entree)}
+        {@const product = entree.produit}
         {@const l = ligne(product)}
+        {@const declinable = !entree.enfant && hasVariants(product)}
         <ListRow
           item={product}
           onclick={canWrite ? () => onStartEdit(product) : undefined}
@@ -200,12 +254,12 @@
           valueCaption={l.legende}
           swipe={canWrite ? actionsBalayage(product) : []}
           actions={canWrite ? actionsPropres : undefined}
-          class={isVariant(product) ? 'pl-4' : ''}
+          nested={entree.enfant}
+          disclosure={entree.enfant ? undefined : declinable ? (deplies[product.id] ? 'expanded' : 'collapsed') : 'none'}
+          onDisclosure={() => basculerPli(product)}
         >
           {#snippet leading()}
-            {#if isVariant(product)}
-              <CornerDownRight class="h-4 w-4 text-muted-foreground" />
-            {:else}
+            {#if !entree.enfant}
               {@render thumbnail(product, 'h-9 w-9')}
             {/if}
           {/snippet}

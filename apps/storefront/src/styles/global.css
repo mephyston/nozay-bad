@@ -160,7 +160,7 @@
   qui défile derrière gêne la lecture.
 */
 .glass-surface {
-  background: color-mix(in oklab, var(--card) 72%, transparent);
+  background: color-mix(in oklab, var(--glass-base, var(--background)) 72%, transparent);
   -webkit-backdrop-filter: blur(20px) saturate(160%);
   backdrop-filter: blur(20px) saturate(160%);
   border: 1px solid color-mix(in oklab, var(--border) 70%, transparent);
@@ -177,12 +177,12 @@
 }
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .glass-surface {
-    background: var(--card);
+    background: var(--glass-base, var(--background));
   }
 }
 @media (prefers-reduced-transparency: reduce) {
   .glass-surface {
-    background: var(--card);
+    background: var(--glass-base, var(--background));
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
   }

@@ -158,7 +158,9 @@
    */
   $effect(() => {
     if (!canWrite) return;
-    return dockDePage.declarerAction({ libelle: 'Nouveau gymnase', icone: Plus, run: openAdd });
+    return dockDePage.declarerActions([
+      { id: 'nouveau-gymnase', libelle: 'Nouveau gymnase', icone: Plus, run: openAdd },
+    ]);
   });
 
   const adresse = (v: VenueRow) =>

@@ -1,6 +1,6 @@
 <script module lang="ts">
   import { defineMeta } from '@storybook/addon-svelte-csf';
-  import { ResponsiveSheet, Button, FormField, Input } from '@nba/ui';
+  import { ResponsiveSheet, FormSheet, Button, FormField, Input } from '@nba/ui';
   import { CalendarDays } from '@lucide/svelte';
 
   const { Story } = defineMeta({
@@ -60,6 +60,30 @@
       <ResponsiveSheet open portalProps={{ to: '#storybook-root' }} title="Détail" description="Une feuille sans actions.">
         {@render contenu()}
       </ResponsiveSheet>
+    </div>
+  {/snippet}
+</Story>
+
+<Story name="PiedEnDeuxCercles">
+  {#snippet template()}
+    <!--
+      Le pied d'un formulaire sur téléphone : croix en verre, check en couleur
+      d'accent — et non en vert, réservé ici à l'état « c'est fait ».
+    -->
+    <div class="h-screen w-full bg-background">
+      <FormSheet
+        open
+        title="Nouveau gymnase"
+        description="Les créneaux et le site public y renvoient."
+        onSubmit={(e) => e.preventDefault()}
+      >
+        <FormField label="Nom du gymnase">
+          <Input value="Gymnase des Bruyères" />
+        </FormField>
+        <FormField label="Ville">
+          <Input value="Nozay" />
+        </FormField>
+      </FormSheet>
     </div>
   {/snippet}
 </Story>

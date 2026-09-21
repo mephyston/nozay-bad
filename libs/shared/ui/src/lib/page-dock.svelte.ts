@@ -10,16 +10,32 @@
  * écran redéclare ce qui lui revient à son montage.
  */
 
+export type FiltresDeListe = {
+  /** Au moins un critère est posé : la loupe s'allume. */
+  actif: boolean;
+  ouvrir: () => void;
+};
+
 export type RechercheDeListe = {
   placeholder: string;
   /** Le terme actuellement appliqué. Repeuple le champ à sa réouverture. */
   valeur: string;
   /** Appelée à la validation, et avec une chaîne vide à l'effacement. */
   onSubmit: (valeur: string) => void;
+  /**
+   * Les filtres avancés, atteints par un entonnoir **dans la pilule de recherche**.
+   *
+   * Pas une action du bouton `+` : celui-ci crée, la loupe réduit. Mettre « Filtrer »
+   * à côté de « Nouvelle recette » ferait du `+` un bouton « divers », et c'est ainsi
+   * qu'une barre du bas perd son sens. Chercher et filtrer sont la même intention —
+   * réduire la liste — donc un seul contrôle, et une pastille qui ne dit qu'une chose.
+   */
+  filtres?: FiltresDeListe;
 };
 
 export type ActionDeListe = {
-  /** Sert de nom accessible : le bouton n'a qu'une icône. */
+  id: string;
+  /** Sert de nom accessible, et d'intitulé dans le menu au-delà d'une action. */
   libelle: string;
   icone: unknown;
   run: () => void;
@@ -27,7 +43,16 @@ export type ActionDeListe = {
 
 class DockDePage {
   recherche = $state<RechercheDeListe | null>(null);
-  action = $state<ActionDeListe | null>(null);
+
+  /**
+   * Les actions de l'écran. Une seule s'exécute au premier appui ; plusieurs
+   * ouvrent un petit menu en verre au-dessus du bouton.
+   *
+   * La géographie de la barre ne change jamais : le menu à gauche, deux cercles à
+   * droite au maximum. Une barre dont la disposition varie d'un écran à l'autre
+   * perd la mémoire du pouce.
+   */
+  actions = $state<ActionDeListe[]>([]);
 
   /**
    * Chaque `declarer*` rend de quoi se retirer.
@@ -43,10 +68,10 @@ class DockDePage {
     };
   }
 
-  declarerAction(a: ActionDeListe): () => void {
-    this.action = a;
+  declarerActions(liste: ActionDeListe[]): () => void {
+    this.actions = liste;
     return () => {
-      if (this.action === a) this.action = null;
+      if (this.actions === liste) this.actions = [];
     };
   }
 }

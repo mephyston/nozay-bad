@@ -1,9 +1,10 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import { Save } from '@lucide/svelte';
+  import { Save, Check, X, Loader2 } from '@lucide/svelte';
   import ResponsiveSheet from './ResponsiveSheet.svelte';
   import { Button } from '../ui/button';
   import ErrorAlert from './ErrorAlert.svelte';
+  import { creerIsMobile } from '../../lib/hooks/is-mobile.svelte.js';
   import type { SheetSize } from '../ui/sheet/sheet-content.svelte';
 
   /**
@@ -41,6 +42,7 @@
     size = 'md',
     onSubmit,
     submitIcon,
+    namedActions = false,
     children,
     footer: footerSnippet
   }: {
@@ -58,6 +60,14 @@
     onSubmit: (event: Event) => void;
     /** Icône du bouton de soumission ; `Save` par défaut. */
     submitIcon?: Snippet;
+    /**
+     * Garde des boutons nommés sur téléphone, au lieu des deux cercles.
+     *
+     * À poser sur une soumission **irréversible** : nommer l'acte est le dernier
+     * garde-fou avant de l'accomplir, et un rond ne le nomme pas. Même raison qui
+     * réserve le rouge aux actions sans retour dans `uiConfirm`.
+     */
+    namedActions?: boolean;
     children: Snippet;
     /**
      * Remplace les boutons par défaut lorsqu'un écran a besoin d'actions
@@ -69,6 +79,15 @@
 
   // Le pied vit hors du `<form>` : les boutons l'y rattachent par leur attribut `form`.
   const formId = $props.id();
+
+  const requete = creerIsMobile();
+  /**
+   * Deux cercles sur téléphone : ils libèrent la hauteur d'une feuille et tombent
+   * sous les pouces. Le check porte la couleur d'accent et **non du vert** — ici le
+   * vert est `success`, un état, « c'est fait » ; l'employer pour « valider » le
+   * rendrait muet là où il sert vraiment.
+   */
+  const cercles = $derived(requete.current && !namedActions);
 </script>
 
 <ResponsiveSheet bind:open {title} icon={Icon} {description} {size}>
@@ -85,6 +104,33 @@
   {#snippet footer()}
     {#if footerSnippet}
       {@render footerSnippet(formId)}
+    {:else if cercles}
+      <div class="flex items-center justify-between">
+        <Button
+          type="button"
+          variant="ghost"
+          disabled={isSubmitting}
+          onclick={() => (open = false)}
+          class="glass-surface size-14 rounded-full p-0"
+          style="--glass-base: var(--card)"
+          aria-label={cancelLabel}
+        >
+          <X class="size-6" />
+        </Button>
+        <Button
+          type="submit"
+          form={formId}
+          disabled={isSubmitting}
+          class="size-14 rounded-full p-0"
+          aria-label={isSubmitting ? submittingLabel : submitLabel}
+        >
+          {#if isSubmitting}
+            <Loader2 class="size-6 animate-spin" />
+          {:else}
+            <Check class="size-6" />
+          {/if}
+        </Button>
+      </div>
     {:else}
       <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
         <Button

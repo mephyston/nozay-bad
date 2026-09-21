@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { Menu as MenuIcon, Search } from '@lucide/svelte';
-  import { MenuSearchField, dockDePage } from '@nba/ui';
+  import { Menu as MenuIcon, Search, SlidersHorizontal, Plus } from '@lucide/svelte';
+  import { MenuSearchField, DropdownMenu, dockDePage } from '@nba/ui';
 
   /**
    * La barre du bas de l'administration, sur téléphone.
@@ -34,7 +34,13 @@
   let compact = $state(false);
 
   const recherche = $derived(dockDePage.recherche);
-  const action = $derived(dockDePage.action);
+  const actions = $derived(dockDePage.actions);
+  /** Une seule action garde son icône ; plusieurs s'effacent derrière un « + ». */
+  const IconeAction = $derived(actions.length === 1 ? (actions[0].icone as any) : Plus);
+  const libelleAction = $derived(
+    actions.length === 1 ? actions[0].libelle : 'Ajouter'
+  );
+  const listeReduite = $derived(!!recherche && (!!recherche.valeur || !!recherche.filtres?.actif));
 
   function openSearch() {
     // Repeuplé avec ce qui est appliqué : on rouvre pour corriger, pas pour retaper.
@@ -121,42 +127,94 @@
         la place, le cercle s'étire en pilule. Les deux ont la même hauteur, le même
         rayon et la même surface, ce qui rend la transformation continue à l'œil.
       -->
-      <div class="dock-search min-w-0 overflow-hidden" style="width: {open ? '100%' : '3.5rem'}">
+      <div class="dock-search min-w-0" style="width: {open ? '100%' : '3.5rem'}">
         {#if open}
           <MenuSearchField
             bind:query
             placeholder={recherche.placeholder}
             onClose={closeSearch}
             onSubmit={valider}
-          />
+          >
+            {#snippet trailing()}
+              {#if recherche?.filtres}
+                <button
+                  type="button"
+                  onclick={recherche.filtres.ouvrir}
+                  class="relative flex size-10 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-muted"
+                  aria-label="Filtres"
+                >
+                  <SlidersHorizontal class="size-5" />
+                  {#if recherche.filtres.actif}
+                    <span class="absolute right-1.5 top-1.5 size-1.5 rounded-full bg-primary"></span>
+                  {/if}
+                </button>
+              {/if}
+            {/snippet}
+          </MenuSearchField>
         {:else}
           <button
             type="button"
-            class="glass-surface dock-circle flex h-14 w-full items-center justify-center rounded-full text-foreground"
-            aria-label={recherche.placeholder}
+            class="glass-surface dock-circle relative flex h-14 w-full items-center justify-center rounded-full text-foreground"
+            aria-label={listeReduite ? 'Liste réduite : modifier' : recherche.placeholder}
             onclick={openSearch}
           >
             <Search class="h-6 w-6" />
+            {#if listeReduite}
+              <!-- Un terme ou un filtre : la barre le dit même quand les jetons ont défilé. -->
+              <span class="absolute right-4 top-4 size-2 rounded-full bg-primary"></span>
+            {/if}
           </button>
         {/if}
       </div>
     {/if}
 
-    {#if action}
-      {@const Icone = action.icone as any}
-      <!-- Pleine, et non en verre : c'est l'action principale, elle s'annonce. -->
-      <button
-        type="button"
-        class="dock-circle flex h-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary text-primary-foreground shadow-lg transition-[width,opacity] duration-300 {open
-          ? 'pointer-events-none w-0 opacity-0'
-          : 'w-14'}"
-        aria-label={action.libelle}
-        aria-hidden={open}
-        tabindex={open ? -1 : 0}
-        onclick={action.run}
-      >
-        <Icone class="h-6 w-6" />
-      </button>
+    {#if actions.length > 0}
+      {#snippet cercleAction(props: Record<string, unknown> = {})}
+        <button
+          type="button"
+          {...props}
+          class="dock-circle flex h-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary text-primary-foreground shadow-lg transition-[width,opacity] duration-300 {open
+            ? 'pointer-events-none w-0 opacity-0'
+            : 'w-14'}"
+          aria-label={libelleAction}
+          aria-hidden={open}
+          tabindex={open ? -1 : 0}
+          onclick={actions.length === 1 ? actions[0].run : undefined}
+        >
+          <IconeAction class="h-6 w-6" />
+        </button>
+      {/snippet}
+
+      {#if actions.length === 1}
+        {@render cercleAction()}
+      {:else}
+        <!--
+          Au-delà d'une action, un petit menu en verre s'ouvre au-dessus du bouton —
+          l'ellipse de l'app Météo. La barre, elle, ne bouge pas d'un pixel : c'est
+          ce qui permet au grand livre d'offrir trois écritures sans la déformer.
+        -->
+        <DropdownMenu.Root>
+          <DropdownMenu.Trigger>
+            {#snippet child({ props })}
+              {@render cercleAction(props)}
+            {/snippet}
+          </DropdownMenu.Trigger>
+          <DropdownMenu.Content
+            side="top"
+            align="end"
+            sideOffset={12}
+            class="glass-surface min-w-52 rounded-2xl border-0 p-1.5"
+          >
+            {#each actions as action (action.id)}
+              {@const Icone = action.icone as any}
+              <DropdownMenu.Item onclick={action.run} class="cursor-pointer gap-2.5 rounded-xl py-2.5">
+                <Icone class="size-4" />
+                {action.libelle}
+              </DropdownMenu.Item>
+            {/each}
+          </DropdownMenu.Content>
+        </DropdownMenu.Root>
+      {/if}
     {/if}
   </div>
 </div>

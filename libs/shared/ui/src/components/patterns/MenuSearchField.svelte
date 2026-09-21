@@ -16,13 +16,23 @@
     query = $bindable(''),
     placeholder = 'Chercher dans le menu…',
     onClose,
-    onSubmit
+    onSubmit,
+    trailing,
+    style = ''
   }: {
     query: string;
     placeholder?: string;
     onClose: () => void;
     /** Entrée : le premier résultat, si l'appelant en a un. */
     onSubmit?: () => void;
+    /**
+     * Posé entre le champ et la croix. C'est là que vit l'entonnoir des filtres :
+     * chercher et filtrer sont la même intention — réduire la liste — et méritent
+     * donc un seul contrôle, pas deux cercles concurrents dans la barre.
+     */
+    trailing?: import('svelte').Snippet;
+    /** Permet au contexte de dire sur quoi le verre flotte (`--glass-base`). */
+    style?: string;
   } = $props();
 
   let input = $state<HTMLInputElement | null>(null);
@@ -65,7 +75,7 @@
   });
 </script>
 
-<div class="glass-surface flex h-14 w-full items-center gap-2 rounded-full pl-4 pr-2" style="margin-bottom: {keyboardInset}px" data-menu-search>
+<div class="glass-surface flex h-14 w-full items-center gap-2 rounded-full pl-4 pr-2" style="margin-bottom: {keyboardInset}px; {style}" data-menu-search>
   <Search class="h-5 w-5 shrink-0 text-muted-foreground" />
   <input
     bind:this={input}
@@ -81,6 +91,7 @@
     class="h-full min-w-0 flex-1 bg-transparent text-base text-foreground placeholder:text-muted-foreground focus:outline-none"
     onkeydown={onKeydown}
   />
+  {#if trailing}{@render trailing()}{/if}
   <button type="button" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-muted" aria-label="Fermer la recherche" onclick={onClose}>
     <X class="h-5 w-5" />
   </button>

@@ -6,6 +6,7 @@
   import { cn } from '../../../lib/utils.js';
   import { runAction } from '../../../lib/actions/run-action.js';
   import RowActionItems from './RowActionItems.svelte';
+  import ListRowSwipeTrack from './ListRowSwipeTrack.svelte';
   import { TONE_CLASS, type Tone, type SwipeAction } from './list-types.js';
 
   let {
@@ -22,7 +23,10 @@
     actions,
     swipe = [],
     swipeOpen = false,
-    chevron = !!href,
+    disclosure,
+    onDisclosure,
+    nested = false,
+    chevron = !!href || !!onclick,
     selected = false,
     disabled = false,
     class: className,
@@ -57,6 +61,24 @@
      * photographie pas. N'a pas vocation à être utilisée par un écran.
      */
     swipeOpen?: boolean;
+    /**
+     * Repli du groupe que cette ligne ouvre. Rendu **à gauche**, avant l'avatar :
+     * sur iOS le chevron de tête déplie, celui de queue emmène ailleurs. Les mettre
+     * du même côté rend la ligne illisible.
+     *
+     * `none` n'affiche rien mais réserve la place : dans une liste qui mêle des
+     * lignes dépliables et des lignes simples, c'est ce qui garde les vignettes
+     * alignées.
+     */
+    disclosure?: 'collapsed' | 'expanded' | 'none';
+    onDisclosure?: () => void;
+    /** Ligne fille d'un groupe : décalée pour s'aligner sous le titre du parent. */
+    nested?: boolean;
+    /**
+     * Le chevron de queue dit que la ligne mène quelque part — fiche de détail ou
+     * formulaire. Par défaut dès qu'elle est actionnable ; à mettre à `false` quand
+     * l'appui ne fait qu'un changement sur place.
+     */
     chevron?: boolean;
     selected?: boolean;
     disabled?: boolean;
@@ -68,11 +90,6 @@
   let piste = $state<HTMLElement | null>(null);
   let coucheEl = $state<HTMLElement | null>(null);
 
-  const TON_ACTION: Record<NonNullable<SwipeAction['tone']>, string> = {
-    neutral: 'bg-muted text-muted-foreground',
-    primary: 'bg-primary text-primary-foreground',
-    destructive: 'bg-destructive text-destructive-foreground',
-  };
 
   // L'ouverture pilotée mesure la piste : sa largeur dépend du nombre d'actions
   // et de la longueur de leurs libellés, elle ne peut pas être écrite en dur.
@@ -130,39 +147,7 @@
   class={cn('relative bg-card', swipe.length > 0 && 'overflow-hidden', className)}
 >
   {#if swipe.length > 0}
-    <!--
-      La piste vit sous la couche glissante. Ses boutons sont hors du parcours de
-      tabulation et masqués aux technologies d'assistance tant que la ligne est
-      fermée : ils ne sont qu'un reflet visuel du menu, qui reste la voie clavier.
-
-      `flex-row-reverse` : la première action déclarée doit toucher le bord de
-      l'écran, parce que c'est elle qu'un balayage long exécute. L'ordre du DOM
-      reste celui de la déclaration — le geste prend le premier bouton — seul le
-      rendu s'inverse.
-    -->
-    <div
-      data-swipe-track
-      bind:this={piste}
-      aria-hidden={!swipeOpen}
-      class="absolute inset-y-0 right-0 flex flex-row-reverse"
-    >
-      {#each swipe as action (action.id)}
-        {@const Icone = action.icon}
-        <button
-          type="button"
-          tabindex="-1"
-          data-no-swipe
-          onclick={() => runAction(action, item as T)}
-          class={cn(
-            'flex min-w-[4.75rem] flex-col items-center justify-center gap-1 px-3 text-xs font-medium',
-            TON_ACTION[action.tone ?? 'neutral']
-          )}
-        >
-          {#if Icone}<Icone class="size-5" aria-hidden="true" />{/if}
-          <span>{action.label}</span>
-        </button>
-      {/each}
-    </div>
+    <ListRowSwipeTrack actions={swipe} item={item as T} open={swipeOpen} bind:ref={piste} />
   {/if}
 
   <div
@@ -171,10 +156,36 @@
     class={cn(
       'relative flex items-center gap-2 bg-card px-4 transition-colors',
       selected && 'bg-accent',
+      nested && 'pl-12',
       // Le navigateur garde le défilement vertical ; il ne nous livre que l'horizontal.
       swipe.length > 0 && 'touch-pan-y'
     )}
   >
+    {#if disclosure === 'none'}
+      <span class="size-8 shrink-0" aria-hidden="true"></span>
+    {:else if disclosure}
+      <!--
+        Hors de la zone cliquable de la ligne : un bouton ne vit pas dans un lien, et
+        le repli ne doit pas déclencher la navigation. `data-no-swipe` le soustrait au
+        balayage comme au maintien long.
+      -->
+      <button
+        type="button"
+        data-no-swipe
+        aria-expanded={disclosure === 'expanded'}
+        aria-label={disclosure === 'expanded' ? 'Replier' : 'Déplier'}
+        onclick={onDisclosure}
+        class="-ml-1 flex size-8 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-muted"
+      >
+        <ChevronRight
+          class={cn(
+            'size-4 transition-transform duration-200',
+            disclosure === 'expanded' && 'rotate-90'
+          )}
+        />
+      </button>
+    {/if}
+
     <!--
       `min-h-[3.25rem]` : 52 px, la hauteur au-dessous de laquelle une ligne cesse
       d'être visable au pouce. Elle ne se négocie pas par écran.
@@ -269,7 +280,8 @@
     reste, c'est un retour et non une animation. Seul le rappel devient instantané.
   */
   @media (prefers-reduced-motion: reduce) {
-    [data-swipe-layer] {
+    [data-swipe-layer],
+    [aria-expanded] :global(svg) {
       transition: none;
     }
   }

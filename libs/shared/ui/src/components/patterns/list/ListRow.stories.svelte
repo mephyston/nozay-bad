@@ -126,3 +126,40 @@
     {@render liste(contenu)}
   {/snippet}
 </Story>
+
+<Story name="Declinaisons">
+  {#snippet template()}
+    {#snippet contenu()}
+      <!--
+        Le chevron de tête déplie, celui de queue emmène ailleurs. Une ligne sans
+        déclinaison réserve quand même la place du premier, pour que les vignettes
+        restent alignées.
+      -->
+      <ListRow
+        onclick={() => {}}
+        disclosure="expanded"
+        title="Maillot club — Homme"
+        subtitle="Textile · 2 déclinaisons"
+        value="selon déclinaison"
+      />
+      <ListRow onclick={() => {}} nested title="Taille M" value="32,00 €" valueTone="foreground" />
+      <ListRow onclick={() => {}} nested title="Taille L" value="32,00 €" valueTone="foreground" />
+      <ListRow
+        onclick={() => {}}
+        disclosure="collapsed"
+        title="Short club"
+        subtitle="Textile · 3 déclinaisons"
+        value="selon déclinaison"
+      />
+      <ListRow
+        onclick={() => {}}
+        disclosure="none"
+        title="Volants plumes (tube)"
+        subtitle="Volants"
+        value="24,50 €"
+        valueTone="foreground"
+      />
+    {/snippet}
+    {@render liste(contenu)}
+  {/snippet}
+</Story>

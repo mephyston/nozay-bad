@@ -84,7 +84,7 @@ export { default as RichTextToolbar } from './components/patterns/RichTextToolba
 export { default as PageHeader } from './components/patterns/PageHeader.svelte';
 export { default as PageTitleSlot } from './components/patterns/PageTitleSlot.svelte';
 export { dockDePage } from './lib/page-dock.svelte.js';
-export type { RechercheDeListe, ActionDeListe } from './lib/page-dock.svelte.js';
+export type { RechercheDeListe, ActionDeListe, FiltresDeListe } from './lib/page-dock.svelte.js';
 export { default as SearchableCombobox } from './components/patterns/SearchableCombobox.svelte';
 export { default as StatusIcon } from './components/patterns/StatusIcon.svelte';
 export { default as DashboardCard } from './components/patterns/DashboardCard.svelte';

@@ -314,8 +314,19 @@
   transparence » du système aussi. Teinte à 72 % : en dessous, le texte qui défile
   derrière gêne la lecture.
 */
+/*
+  Le verre se teinte avec **ce qui est derrière lui**, et non avec `--card`.
+
+  Les deux jetons diffèrent (250,249,245 contre 245,244,239) : une barre flottante
+  teintée carte posée sur le fond de page se voyait comme une tache d'une couleur
+  qui n'est celle de rien. Au repos, au-dessus d'une zone unie, un verre doit
+  disparaître — il ne se révèle que lorsque du contenu passe dessous.
+
+  `--glass-base` permet au contexte de dire sur quoi il flotte : la barre latérale,
+  par exemple, pose `--glass-base: var(--sidebar)`.
+*/
 .glass-surface {
-  background: color-mix(in oklab, var(--card) 72%, transparent);
+  background: color-mix(in oklab, var(--glass-base, var(--background)) 72%, transparent);
   -webkit-backdrop-filter: blur(20px) saturate(160%);
   backdrop-filter: blur(20px) saturate(160%);
   border: 1px solid color-mix(in oklab, var(--border) 70%, transparent);
@@ -332,12 +343,12 @@
 }
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .glass-surface {
-    background: var(--card);
+    background: var(--glass-base, var(--background));
   }
 }
 @media (prefers-reduced-transparency: reduce) {
   .glass-surface {
-    background: var(--card);
+    background: var(--glass-base, var(--background));
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
   }

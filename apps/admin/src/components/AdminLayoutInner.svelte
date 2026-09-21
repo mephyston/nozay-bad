@@ -647,12 +647,24 @@
         non en haut de celle-ci : ils restent sous les yeux quelle que soit la position
         du menu — comme la recherche de la barre du bas, hors du menu.
       -->
+      <!--
+        Ici le verre flotte sur la barre latérale, pas sur la page : sans ce `--glass-base`
+        il se teinterait avec le fond du contenu et trancherait avec ce qu'il recouvre.
+      -->
       {#if menuQuery.trim()}
-        <div class="glass-surface mb-2 max-h-[50dvh] overflow-y-auto rounded-2xl">
+        <div
+          class="glass-surface mb-2 max-h-[50dvh] overflow-y-auto rounded-2xl"
+          style="--glass-base: var(--sidebar)"
+        >
           <MenuSearchResults hits={menuHits} query={menuQuery} icons={ICONS} onPick={pickHit} />
         </div>
       {/if}
-      <MenuSearchField bind:query={menuQuery} onClose={() => sidebar.setOpenMobile(false)} onSubmit={() => menuHits[0] && pickHit(menuHits[0])} />
+      <MenuSearchField
+        bind:query={menuQuery}
+        style="--glass-base: var(--sidebar)"
+        onClose={() => sidebar.setOpenMobile(false)}
+        onSubmit={() => menuHits[0] && pickHit(menuHits[0])}
+      />
     {:else}
       <AppVersion class="group-data-[collapsible=icon]:hidden pb-1" />
     {/if}

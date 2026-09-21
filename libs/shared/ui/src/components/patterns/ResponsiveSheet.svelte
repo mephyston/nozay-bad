@@ -4,7 +4,7 @@
   import XIcon from '@lucide/svelte/icons/x';
   import { Button } from '../ui/button/index.js';
   import { cn } from '../../lib/utils.js';
-  import { IsMobile } from '../../lib/hooks/is-mobile.svelte.js';
+  import { creerIsMobile } from '../../lib/hooks/is-mobile.svelte.js';
   import { dragDetents } from '../../lib/actions/drag-detents.js';
   import type { SheetSize } from '../ui/sheet/sheet-content.svelte';
 
@@ -59,20 +59,8 @@
     footer?: Snippet;
   } = $props();
 
-  /**
-   * `MediaQuery` appelle `window.matchMedia` dès sa construction. Deux
-   * environnements n'en ont pas : le rendu serveur, où `window` n'existe pas, et
-   * jsdom, où il existe **sans** `matchMedia` — d'où la garde sur la fonction
-   * elle-même et pas seulement sur `window`. Sans elle, tout écran portant un
-   * formulaire tombe au rendu serveur.
-   *
-   * Dans ces deux cas on rend la présentation latérale ; l'hydratation corrige,
-   * sans discordance visible puisque le contenu n'est rendu qu'une fois la
-   * feuille ouverte, donc toujours après.
-   */
-  const requete =
-    typeof window !== 'undefined' && typeof window.matchMedia === 'function' ? new IsMobile() : null;
-  const estMobile = $derived(requete?.current ?? false);
+  const requete = creerIsMobile();
+  const estMobile = $derived(requete.current);
 
   let contenu = $state<HTMLElement | null>(null);
 
