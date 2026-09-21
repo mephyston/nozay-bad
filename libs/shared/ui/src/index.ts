@@ -70,6 +70,8 @@ export { default as RowActionItems } from './components/patterns/list/RowActionI
 export { default as FormField } from "./components/patterns/FormField.svelte";
 export { default as SwitchField } from "./components/patterns/SwitchField.svelte";
 export { default as ChoiceField } from "./components/patterns/ChoiceField.svelte";
+export { default as ChoicePicker } from "./components/patterns/ChoicePicker.svelte";
+export { default as ActionSheet } from "./components/patterns/ActionSheet.svelte";
 export { default as ThemeToggle } from "./components/patterns/ThemeToggle.svelte";
 export { default as EnvBanner } from "./components/patterns/EnvBanner.svelte";
 export { default as FormSheet } from "./components/patterns/FormSheet.svelte";

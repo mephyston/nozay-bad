@@ -5,6 +5,7 @@
     Input,
     Badge,
     Table,
+    RowActionItems,
     ListView,
     ListRow,
     DataTable,
@@ -15,7 +16,8 @@
     FormSheet,
     submitForm,
     readApiError,
-    dockDePage
+    dockDePage,
+    type SwipeAction
   } from '@nba/ui';
 
   interface VenueRow {
@@ -163,15 +165,18 @@
     ]);
   });
 
+  /** Une seule action, mais déclarée en données : le menu et la feuille la rendent. */
+  const actionsVenue = (v: VenueRow): SwipeAction<VenueRow>[] => [
+    { id: 'modifier', label: 'Modifier', icon: Edit, run: (x) => openEdit(x) },
+  ];
+
   const adresse = (v: VenueRow) =>
     [v.streetAddress, [v.postalCode, v.city].filter(Boolean).join(' ')].filter(Boolean).join(', ') || '—';
 </script>
 
-{#snippet actionsVenue(v: VenueRow)}
+{#snippet menuVenue(v: VenueRow)}
   <DropdownMenu.Label>Actions</DropdownMenu.Label>
-  <DropdownMenu.Item onclick={() => openEdit(v)} class="cursor-pointer">
-    <Edit class="mr-2 h-3.5 w-3.5" /> Modifier
-  </DropdownMenu.Item>
+  <RowActionItems actions={actionsVenue(v)} item={v} />
 {/snippet}
 
 <DataTable
@@ -219,7 +224,7 @@
           title={v.name}
           subtitle={adresse(v)}
           value={v.code}
-          actions={canWrite ? actionsVenue : undefined}
+          actions={canWrite ? actionsVenue(v) : []}
         >
           {#snippet badge()}
             {#if !v.latitude || !v.longitude}
@@ -253,7 +258,7 @@
       <Table.Cell><code class="text-xs text-muted-foreground">{v.code}</code></Table.Cell>
       <Table.Cell class="relative text-right">
         {#if canWrite}
-          <DataTableRowActions>{@render actionsVenue(v)}</DataTableRowActions>
+          <DataTableRowActions>{@render menuVenue(v)}</DataTableRowActions>
         {/if}
       </Table.Cell>
     </Table.Row>

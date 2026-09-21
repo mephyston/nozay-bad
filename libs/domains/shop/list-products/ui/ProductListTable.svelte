@@ -113,6 +113,22 @@
    * Le menu de la table et celui de la liste rendent le même tableau par
    * `RowActionItems` : une seule déclaration, trois chemins d'accès.
    */
+  /** Ce que le balayage ne révèle pas, mais que le menu doit offrir. */
+  function actionsPropres(p: Product): SwipeAction<Product>[] {
+    const liste: SwipeAction<Product>[] = [
+      { id: 'modifier', label: 'Modifier', icon: Edit, run: (x) => onStartEdit(x) },
+    ];
+    if (!isVariant(p)) {
+      liste.push({
+        id: 'declinaison',
+        label: 'Ajouter une déclinaison',
+        icon: Layers,
+        run: (x) => onAddVariant(x),
+      });
+    }
+    return liste;
+  }
+
   function actionsBalayage(p: Product): SwipeAction<Product>[] {
     const liste: SwipeAction<Product>[] = [
       p.active
@@ -192,22 +208,9 @@
   </Button>
 {/snippet}
 
-{#snippet actionsPropres(product: Product)}
-  <DropdownMenu.Item onclick={() => onStartEdit(product)} class="cursor-pointer">
-    <Edit class="w-3.5 h-3.5 mr-2" /> Modifier
-  </DropdownMenu.Item>
-  {#if !isVariant(product)}
-    <DropdownMenu.Item onclick={() => onAddVariant(product)} class="cursor-pointer">
-      <Layers class="w-3.5 h-3.5 mr-2" /> Ajouter une déclinaison
-    </DropdownMenu.Item>
-  {/if}
-{/snippet}
-
 {#snippet menuComplet(product: Product)}
   <DropdownMenu.Label>Actions</DropdownMenu.Label>
-  {@render actionsPropres(product)}
-  <DropdownMenu.Separator />
-  <RowActionItems actions={actionsBalayage(product)} item={product} />
+  <RowActionItems actions={[...actionsPropres(product), ...actionsBalayage(product)]} item={product} />
 {/snippet}
 
 <DataTable
@@ -253,7 +256,7 @@
           valueTone={l.ton}
           valueCaption={l.legende}
           swipe={canWrite ? actionsBalayage(product) : []}
-          actions={canWrite ? actionsPropres : undefined}
+          actions={canWrite ? actionsPropres(product) : []}
           nested={entree.enfant}
           disclosure={entree.enfant ? undefined : declinable ? (deplies[product.id] ? 'expanded' : 'collapsed') : 'none'}
           onDisclosure={() => basculerPli(product)}

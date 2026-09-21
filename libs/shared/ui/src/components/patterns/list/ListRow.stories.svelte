@@ -1,7 +1,7 @@
 <script module lang="ts">
   import { defineMeta } from '@storybook/addon-svelte-csf';
-  import { ListRow, Badge, Avatar, DropdownMenu, type SwipeAction } from '@nba/ui';
-  import { Trash2, Check } from '@lucide/svelte';
+  import { ListRow, Badge, Avatar, type SwipeAction } from '@nba/ui';
+  import { Trash2, Check, Edit, Layers } from '@lucide/svelte';
 
   const ACTIONS: SwipeAction[] = [
     { id: 'suppr', label: 'Supprimer', icon: Trash2, tone: 'destructive', confirm: 'Supprimer cette ligne ?', run: () => {} },
@@ -85,12 +85,16 @@
 <Story name="AvecActions">
   {#snippet template()}
     {#snippet contenu()}
-      <ListRow href="#" title="Maillot club — Homme" subtitle="3 déclinaisons" value="32,00 €">
-        {#snippet actions()}
-          <DropdownMenu.Item>Modifier</DropdownMenu.Item>
-          <DropdownMenu.Item>Dupliquer</DropdownMenu.Item>
-        {/snippet}
-      </ListRow>
+      <ListRow
+        href="#"
+        title="Maillot club — Homme"
+        subtitle="3 déclinaisons"
+        value="32,00 €"
+        actions={[
+          { id: 'modifier', label: 'Modifier', icon: Edit, run: () => {} },
+          { id: 'declinaison', label: 'Ajouter une déclinaison', icon: Layers, run: () => {} },
+        ]}
+      />
     {/snippet}
     {@render liste(contenu)}
   {/snippet}

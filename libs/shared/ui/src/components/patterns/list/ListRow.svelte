@@ -1,11 +1,8 @@
 <script lang="ts" generics="T">
   import type { Snippet } from 'svelte';
-  import { ChevronRight, MoreHorizontal } from '@lucide/svelte';
-  import * as DropdownMenu from '../../ui/dropdown-menu/index.js';
-  import { Button } from '../../ui/button/index.js';
+  import { ChevronRight } from '@lucide/svelte';
   import { cn } from '../../../lib/utils.js';
-  import { runAction } from '../../../lib/actions/run-action.js';
-  import RowActionItems from './RowActionItems.svelte';
+  import ListRowMenu from './ListRowMenu.svelte';
   import ListRowSwipeTrack from './ListRowSwipeTrack.svelte';
   import { TONE_CLASS, type Tone, type SwipeAction } from './list-types.js';
 
@@ -20,7 +17,7 @@
     valueCaption,
     leading,
     badge,
-    actions,
+    actions = [],
     swipe = [],
     swipeOpen = false,
     disclosure,
@@ -50,7 +47,12 @@
      * lecteur d'écran. C'est la contrepartie de la règle « une seule affordance
      * visible par ligne » — le chevron dit où l'on va, rien d'autre ne s'affiche.
      */
-    actions?: Snippet<[T]>;
+    /**
+     * Actions propres à l'écran, déclarées en données comme celles du balayage :
+     * c'est ce qui permet de les rendre en feuille au doigt et en menu ancré à la
+     * souris, sans que l'appelant ait à écrire deux fois la même chose.
+     */
+    actions?: SwipeAction<T>[];
     /**
      * Actions révélées par un balayage vers la gauche. Les mêmes alimentent le menu
      * escamoté : une seule déclaration, trois chemins d'accès.
@@ -86,6 +88,8 @@
     /** Échappatoire : remplace entièrement titre / sous-titre / valeur. */
     children?: Snippet;
   } = $props();
+
+  const menu = $derived([...actions, ...swipe]);
 
   let piste = $state<HTMLElement | null>(null);
   let coucheEl = $state<HTMLElement | null>(null);
@@ -143,7 +147,7 @@
 
 <li
   data-list-row
-  data-context-menu={actions || swipe.length > 0 ? '' : undefined}
+  data-context-menu={menu.length > 0 ? '' : undefined}
   class={cn('relative bg-card', swipe.length > 0 && 'overflow-hidden', className)}
 >
   {#if swipe.length > 0}
@@ -217,30 +221,8 @@
       </div>
     {/if}
 
-    {#if actions || swipe.length > 0}
-      <DropdownMenu.Root>
-        <DropdownMenu.Trigger>
-          {#snippet child({ props })}
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              {...props}
-              data-row-menu
-              class="sr-only focus:not-sr-only focus-visible:not-sr-only"
-            >
-              <span class="sr-only">Actions</span>
-              <MoreHorizontal class="size-4" aria-hidden="true" />
-            </Button>
-          {/snippet}
-        </DropdownMenu.Trigger>
-        <DropdownMenu.Content align="end">
-          {#if actions}{@render actions(item as T)}{/if}
-          {#if swipe.length > 0 && actions}
-            <DropdownMenu.Separator />
-          {/if}
-          <RowActionItems actions={swipe} item={item as T} />
-        </DropdownMenu.Content>
-      </DropdownMenu.Root>
+    {#if menu.length > 0}
+      <ListRowMenu actions={menu} item={item as T} {title} />
     {/if}
   </div>
 </li>
