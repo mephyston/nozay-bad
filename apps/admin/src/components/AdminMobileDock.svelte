@@ -1,37 +1,30 @@
 <script lang="ts">
   import { Menu as MenuIcon, Search } from '@lucide/svelte';
-  import type { NavGroup, QuickAction } from '../lib/nav';
-  import { searchNav, MenuSearchField, MenuSearchResults, type NavSearchHit } from '@nba/ui';
+  import { MenuSearchField, dockDePage } from '@nba/ui';
 
   /**
    * La barre du bas de l'administration, sur téléphone.
    *
-   * Deux cercles en verre, séparés, comme dans l'app Météo : **Menu** à gauche ouvre le
-   * menu — avec sa pilule de recherche déjà déployée en bas — ; la **loupe** à droite
-   * s'étire ici même en champ de recherche qui filtre le menu, pages et saisies rapides,
-   * sans quitter la page. Les résultats s'affichent au-dessus du champ, près du pouce
-   * et au-dessus du clavier.
+   * Des cercles en verre, séparés, comme dans l'app Météo. **Menu** à gauche ouvre
+   * le menu — avec sa pilule de recherche déjà déployée en bas. À droite, ce que
+   * l'écran courant y met : sa **recherche** et son **action principale**.
    *
-   * Au défilement, dans les deux sens, les cercles se font petits ; ils reviennent dès
-   * que le doigt s'arrête. La recherche ouverte suspend la rétractation.
+   * La loupe ne cherche plus dans le menu : cette recherche-là existe déjà dans le
+   * menu ouvert, et deux loupes voulant dire deux choses différentes est ce qu'une
+   * barre du bas pardonne le moins. Ce qui se cherche ici est ce qui est à l'écran.
+   *
+   * L'action principale d'une liste — « Nouveau produit », « Nouveau gymnase » —
+   * vivait en haut de la barre d'outils, là où un pouce ne va pas et d'où elle
+   * défilait hors de l'écran. Elle descend à portée.
+   *
+   * Au défilement, dans les deux sens, les cercles se font petits ; ils reviennent
+   * dès que le doigt s'arrête. La recherche ouverte suspend la rétractation.
    */
   let {
-    groups = [],
-    actions = [],
-    icons = {},
     onMenuClick,
-    onPick,
     scrollContainer
   }: {
-    /** Le menu tel que la barre latérale l'affiche : déjà filtré par droits et fonctionnalités. */
-    groups: Pick<NavGroup, 'label' | 'items'>[];
-    /** Saisies rapides ouvertes à ce compte. */
-    actions: QuickAction[];
-    /** Icônes Lucide par nom, résolues par le layout (`nav.ts` est aussi lu côté serveur). */
-    icons: Record<string, any>;
     onMenuClick: () => void;
-    /** Un résultat choisi : le layout navigue, ou ouvre la saisie rapide sur place. */
-    onPick: (hit: NavSearchHit) => void;
     /** L'élément qui défile : le contenu de l'administration, pas la fenêtre. */
     scrollContainer?: HTMLElement | null;
   } = $props();
@@ -40,7 +33,8 @@
   let query = $state('');
   let compact = $state(false);
 
-  const hits = $derived<NavSearchHit[]>(open ? searchNav(groups, actions, query) : []);
+  const recherche = $derived(dockDePage.recherche);
+  const action = $derived(dockDePage.action);
 
   function openSearch() {
     open = true;
@@ -52,10 +46,17 @@
     query = '';
   }
 
-  function pick(hit: NavSearchHit) {
-    closeSearch();
-    onPick(hit);
+  function valider() {
+    recherche?.onSubmit(query);
+    // Pas de voile ni de panneau de résultats : ce qui filtre est la liste derrière.
+    // La validation navigue le plus souvent, ce qui remonte l'îlot et referme d'office.
+    open = false;
   }
+
+  // Un écran sans recherche ne doit pas garder un champ ouvert derrière lui.
+  $effect(() => {
+    if (!recherche && open) closeSearch();
+  });
 
   /*
     Rétractation au défilement, dans les deux sens ; retour au repos du doigt.
@@ -90,11 +91,6 @@
   });
 </script>
 
-{#if open}
-  <!-- Toucher hors du panneau referme la recherche ; le clavier se range avec. -->
-  <button type="button" class="md:hidden fixed inset-0 z-40 bg-black/20 backdrop-blur-[2px]" aria-label="Fermer la recherche" onclick={closeSearch}></button>
-{/if}
-
 <div
   class="dock md:hidden fixed inset-x-4 z-50 flex items-end justify-between {open ? 'gap-0' : 'gap-3'} {compact ? 'is-compact' : ''}"
   style="bottom: calc(env(safe-area-inset-bottom, 0px) + 0.5rem)"
@@ -111,23 +107,38 @@
     <MenuIcon class="h-6 w-6" />
   </button>
 
-  <div class="relative flex min-w-0 justify-end {open ? 'flex-1' : ''}">
-    {#if open}
-      {#if query.trim()}
-        <div class="glass-surface absolute inset-x-0 bottom-full mb-2 max-h-[50dvh] overflow-y-auto rounded-2xl">
-          <MenuSearchResults {hits} {query} {icons} onPick={pick} />
-        </div>
-      {/if}
-      <MenuSearchField bind:query onClose={closeSearch} onSubmit={() => hits[0] && pick(hits[0])} />
+  <div class="relative flex min-w-0 items-end justify-end gap-3 {open ? 'flex-1' : ''}">
+    {#if open && recherche}
+      <MenuSearchField
+        bind:query
+        placeholder={recherche.placeholder}
+        onClose={closeSearch}
+        onSubmit={valider}
+      />
     {:else}
-      <button
-        type="button"
-        class="glass-surface dock-circle flex h-14 w-14 shrink-0 items-center justify-center rounded-full text-foreground"
-        aria-label="Chercher dans le menu"
-        onclick={openSearch}
-      >
-        <Search class="h-6 w-6" />
-      </button>
+      {#if recherche}
+        <button
+          type="button"
+          class="glass-surface dock-circle flex h-14 w-14 shrink-0 items-center justify-center rounded-full text-foreground"
+          aria-label={recherche.placeholder}
+          onclick={openSearch}
+        >
+          <Search class="h-6 w-6" />
+        </button>
+      {/if}
+
+      {#if action}
+        {@const Icone = action.icone as any}
+        <!-- Pleine, et non en verre : c'est l'action principale, elle s'annonce. -->
+        <button
+          type="button"
+          class="dock-circle flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg"
+          aria-label={action.libelle}
+          onclick={action.run}
+        >
+          <Icone class="h-6 w-6" />
+        </button>
+      {/if}
     {/if}
   </div>
 </div>

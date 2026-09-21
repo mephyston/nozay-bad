@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Edit, Trash2, Plus, CornerDownRight, ImageIcon, Layers, Power, PowerOff } from "@lucide/svelte";
-  import { Button, Badge, Amount, DropdownMenu, DataTable, DataTableToolbar, DataTableRowActions, Table, ListView, ListRow, RowActionItems, formatAmount, type SwipeAction } from "@nba/ui";
+  import { Button, Badge, Amount, DropdownMenu, DataTable, DataTableToolbar, DataTableRowActions, Table, ListView, ListRow, RowActionItems, formatAmount, dockDePage, type SwipeAction } from "@nba/ui";
   import { canDelete, isVariant, type Product } from './products-manager-types';
 
   /**
@@ -32,6 +32,19 @@
   } = $props();
 
   const hasVariants = (p: Product) => (p.variantCount ?? 0) > 0;
+
+  /**
+   * L'action principale descend dans la barre du bas, à portée du pouce. Le bouton
+   * du haut reste pour la souris ; sur téléphone il ferait doublon.
+   */
+  $effect(() => {
+    if (!onOpenAdd || !canWrite) return;
+    return dockDePage.declarerAction({
+      libelle: 'Nouveau produit',
+      icone: Plus,
+      run: onOpenAdd,
+    });
+  });
 
   /**
    * Les actions révélées par un balayage, déclarées en données.
@@ -154,12 +167,13 @@
   {#snippet toolbar()}
     <DataTableToolbar
       bind:searchValue={searchTerm}
-      searchPlaceholder="Rechercher un article..."
+      searchPlaceholder="Rechercher un article…"
+      dockSearch
       hasFilters={false}
     >
       {#snippet actions()}
         {#if onOpenAdd && canWrite}
-          <Button onclick={onOpenAdd} class="font-bold flex items-center justify-center gap-1.5 shrink-0 h-9">
+          <Button onclick={onOpenAdd} class="hidden md:flex font-bold items-center justify-center gap-1.5 shrink-0 h-9">
             <Plus class="w-4 h-4" />
             <span>Nouveau produit</span>
           </Button>

@@ -853,14 +853,11 @@
   </div>
 </Sidebar.Inset>
 
-<AdminMobileDock
-  groups={accessibleNavGroups}
-  actions={quickActions}
-  icons={ICONS}
-  {scrollContainer}
-  onMenuClick={() => sidebar.setOpenMobile(true)}
-  onPick={pickHit}
-/>
+<!--
+  La barre du bas ne porte plus la recherche du menu : elle existe déjà dans le
+  menu ouvert, juste en dessous. Ce qu'elle porte désormais vient de l'écran.
+-->
+<AdminMobileDock {scrollContainer} onMenuClick={() => sidebar.setOpenMobile(true)} />
 <GlobalConfirm />
 
 <style>

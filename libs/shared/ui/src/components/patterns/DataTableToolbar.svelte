@@ -2,6 +2,8 @@
   import { Filter } from '@lucide/svelte';
   import { Button } from '../ui/button';
   import ListSearchField from './ListSearchField.svelte';
+  import { cn } from '../../lib/utils.js';
+  import { dockDePage } from '../../lib/page-dock.svelte.js';
   import * as DropdownMenu from '../ui/dropdown-menu';
   import type { Snippet } from 'svelte';
 
@@ -9,6 +11,7 @@
     searchValue = $bindable(''),
     searchPlaceholder = 'Rechercher...',
     hasSearch = true,
+    dockSearch = false,
     hasFilters = false,
     filtersActive = false,
     onSearchSubmit,
@@ -19,6 +22,11 @@
     searchValue?: string;
     searchPlaceholder?: string;
     hasSearch?: boolean;
+    /**
+     * Confie la recherche à la barre du bas sur téléphone, et masque le champ ici
+     * sous `md`. Le pouce n'a pas à remonter en haut de l'écran pour chercher.
+     */
+    dockSearch?: boolean;
     hasFilters?: boolean;
     filtersActive?: boolean;
     onSearchSubmit?: (value: string) => void;
@@ -26,6 +34,15 @@
     filters?: Snippet;
     actions?: Snippet;
   } = $props();
+
+  // Le placeholder et la fonction sont stables : l'effet ne se rejoue pas à la frappe.
+  $effect(() => {
+    if (!dockSearch || !hasSearch) return;
+    return dockDePage.declarerRecherche({
+      placeholder: searchPlaceholder,
+      onSubmit: rechercher,
+    });
+  });
 
   function rechercher(valeur: string) {
     searchValue = valeur;
@@ -45,7 +62,7 @@
       placeholder={searchPlaceholder}
       onSubmit={rechercher}
       debounce={0}
-      class="flex-1 sm:w-64"
+      class={cn('flex-1 sm:w-64', dockSearch && 'hidden md:block')}
     />
   {/if}
 

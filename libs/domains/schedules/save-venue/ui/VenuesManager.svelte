@@ -14,7 +14,8 @@
     FormField,
     FormSheet,
     submitForm,
-    readApiError
+    readApiError,
+    dockDePage
   } from '@nba/ui';
 
   interface VenueRow {
@@ -152,6 +153,15 @@
     busy = false;
   }
 
+  /**
+   * L'action principale descend dans la barre du bas, à portée du pouce. Le bouton
+   * du haut reste pour la souris ; sur téléphone il ferait doublon.
+   */
+  $effect(() => {
+    if (!canWrite) return;
+    return dockDePage.declarerAction({ libelle: 'Nouveau gymnase', icone: Plus, run: openAdd });
+  });
+
   const adresse = (v: VenueRow) =>
     [v.streetAddress, [v.postalCode, v.city].filter(Boolean).join(' ')].filter(Boolean).join(', ') || '—';
 </script>
@@ -173,10 +183,15 @@
   emptyDescription="Déclarez les salles où le club joue : les créneaux et le site public y renvoient."
 >
   {#snippet toolbar()}
-    <DataTableToolbar bind:searchValue={searchTerm} searchPlaceholder="Rechercher un gymnase..." hasFilters={false}>
+    <DataTableToolbar
+      bind:searchValue={searchTerm}
+      searchPlaceholder="Rechercher un gymnase…"
+      dockSearch
+      hasFilters={false}
+    >
       {#snippet actions()}
         {#if canWrite}
-          <Button onclick={openAdd} class="h-9 shrink-0 gap-1.5 font-bold">
+          <Button onclick={openAdd} class="hidden h-9 shrink-0 gap-1.5 font-bold md:flex">
             <Plus class="h-4 w-4" />
             <span>Nouveau gymnase</span>
           </Button>
