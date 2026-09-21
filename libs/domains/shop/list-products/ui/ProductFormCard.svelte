@@ -70,7 +70,16 @@
   }
 </script>
 
-<FormField id="parent" label="Déclinaison de">
+<!--
+  L'explication passe par le `hint` du bloc plutôt que par un paragraphe fait main :
+  une aide n'a pas besoin d'une icône de domaine pour s'annoncer, et celle-ci
+  décalait le texte sans rien dire de plus.
+-->
+<FormField
+  id="parent"
+  label="Déclinaison de"
+  hint="Une déclinaison est une taille, une couleur… d'un produit existant : la boutique la propose au choix sur la carte du produit."
+>
   <SearchableCombobox
     id="parent"
     items={parentItems}
@@ -78,20 +87,17 @@
     placeholder="Aucun — produit à part entière"
     searchPlaceholder="Rechercher un produit…"
   />
-  <p class="text-xs text-muted-foreground mt-1.5 flex items-start gap-1.5">
-    <Layers class="w-3.5 h-3.5 shrink-0 mt-px" />
-    <span>Une déclinaison est une taille, une couleur… d'un produit existant : la boutique la propose au choix sur la carte du produit.</span>
-  </p>
 </FormField>
 
 {#if isVariant}
-  <FormField id="variantLabel" label="Libellé de la déclinaison">
+  <FormField
+    id="variantLabel"
+    label="Libellé de la déclinaison"
+    hint={parent
+      ? `Nom, catégorie, description et image sont ceux de « ${parent.name} » et se modifient sur sa fiche.`
+      : undefined}
+  >
     <Input id="variantLabel" type="text" placeholder="Ex : L, 12 ans, Rouge…" bind:value={values.variantLabel} maxlength={40} required />
-    {#if parent}
-      <p class="text-xs text-muted-foreground mt-1.5">
-        Nom, catégorie, description et image sont ceux de « {parent.name} » et se modifient sur sa fiche.
-      </p>
-    {/if}
   </FormField>
 {:else}
   <FormField id="name" label="Nom du produit">

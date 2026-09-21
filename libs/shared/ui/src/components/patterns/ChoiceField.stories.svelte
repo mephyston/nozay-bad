@@ -1,6 +1,6 @@
 <script module lang="ts">
   import { defineMeta } from '@storybook/addon-svelte-csf';
-  import { ChoiceField, SwitchField, FormField, Input, Textarea, SearchableCombobox } from '@nba/ui';
+  import { ChoiceField, SwitchField, FormField, FieldGroup, DateTimeField, Input, Textarea, SearchableCombobox } from '@nba/ui';
 
   const CATEGORIES = [
     { value: 'textile', label: 'Textile', hint: 'Maillots, shorts, survêtements' },
@@ -70,6 +70,38 @@
       <div class="py-2">
         <SwitchField id="fige" label="Réglage verrouillé" checked disabled hint="Défini par la saison." />
       </div>
+    </div>
+  {/snippet}
+</Story>
+
+<Story name="GroupeEtDates">
+  {#snippet template()}
+    <!--
+      Un libellé hors du champ reste légitime quand il coiffe un **groupe** —
+      l'application Calendrier en garde pour « Répétition ». C'est l'intitulé d'un
+      champ isolé, redondant avec ce que le champ montre déjà, qui descend dedans.
+    -->
+    <div class="w-[390px] max-w-full space-y-5">
+      <FieldGroup label="Quand">
+        <FormField id="jour" label="Date"><DateTimeField id="jour" label="Date" value="2026-09-21" /></FormField>
+        <FormField id="debut" label="Début"><DateTimeField id="debut" label="Début" type="time" value="20:00" /></FormField>
+        <FormField id="fin" label="Fin"><DateTimeField id="fin" label="Fin" type="time" value="22:00" /></FormField>
+      </FieldGroup>
+
+      <FieldGroup label="Répétition" hint="Chaque occurrence crée une séance distincte.">
+        <FormField id="freq" label="Fréquence">
+          <ChoiceField
+            id="freq"
+            label="Fréquence"
+            value="hebdo"
+            options={[
+              { value: 'jamais', label: 'Jamais' },
+              { value: 'hebdo', label: 'Toutes les semaines' },
+              { value: 'quinzaine', label: 'Toutes les deux semaines' },
+            ]}
+          />
+        </FormField>
+      </FieldGroup>
     </div>
   {/snippet}
 </Story>

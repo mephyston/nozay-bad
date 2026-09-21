@@ -31,9 +31,19 @@
   } = $props();
 </script>
 
-<div class={cn('flex min-h-11 w-full items-center justify-between gap-4', className)}>
+<!--
+  La même enveloppe que les autres champs : bordure, rayon, hauteur. Un réglage est
+  une rangée de formulaire comme une autre, et le laisser nu le faisait flotter
+  entre des champs cerclés.
+-->
+<div
+  class={cn(
+    'border-input dark:bg-input/30 flex min-h-11 w-full items-center justify-between gap-4 rounded-lg border bg-transparent px-3 py-2',
+    className
+  )}
+>
   <div class="min-w-0 flex-1">
-    <label for={id} class="block text-sm font-medium">{label}</label>
+    <label for={id} class="block text-base">{label}</label>
     {#if hint}
       <p class="mt-0.5 text-xs text-muted-foreground">{hint}</p>
     {/if}

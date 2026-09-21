@@ -36,7 +36,7 @@
 	*/
 	const champ = getContext<ContexteChamp | undefined>(CLE_CHAMP);
 	const requete = creerIsMobile();
-	const absorbable = $derived(!!champ && requete.current && type !== "file");
+	const absorbable = $derived(!!champ && champ.absorbable && requete.current && type !== "file");
 	const invite = $derived(absorbable ? champ!.label : placeholder);
 
 	$effect(() => {
@@ -81,3 +81,22 @@
 		/>
 	{/if}
 </div>
+
+<style>
+	/*
+	  Les flèches d'un champ numérique ne servent à rien : trop petites pour être
+	  visées au doigt, elles ne font gagner un pas que sur des valeurs minuscules et
+	  volent de la largeur à la saisie. On tape le nombre.
+	*/
+	input[type="number"] {
+		appearance: textfield;
+		-moz-appearance: textfield;
+	}
+
+	input[type="number"]::-webkit-outer-spin-button,
+	input[type="number"]::-webkit-inner-spin-button {
+		-webkit-appearance: none;
+		appearance: none;
+		margin: 0;
+	}
+</style>

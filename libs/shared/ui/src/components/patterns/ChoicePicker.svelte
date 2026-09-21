@@ -80,9 +80,15 @@
       {/if}
 
       {#if searchable}
-        <div class="relative shrink-0 px-4 pb-3">
+        <!--
+          Le rembourrage vit sur l'enveloppe, jamais sur la boîte de référence du
+          positionnement : `top-1/2` se calculait sinon sur la hauteur du champ
+          **plus** celle du `pb-3`, et la loupe tombait sous l'axe.
+        -->
+        <div class="shrink-0 px-4 pb-3">
+          <div class="relative">
           <Search
-            class="pointer-events-none absolute left-7 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+            class="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
             aria-hidden="true"
           />
           <input
@@ -95,6 +101,7 @@
             placeholder={searchPlaceholder}
             class="border-input h-11 w-full rounded-full border bg-transparent pl-9 pr-4 text-base outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
           />
+          </div>
         </div>
       {/if}
 

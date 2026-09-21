@@ -16,6 +16,17 @@ export default defineConfig({
   use: {
     baseURL: `http://localhost:${PORT}`,
     colorScheme: 'light',
+    locale: 'fr-FR',
+    timezoneId: 'Europe/Paris',
+    /*
+      Limite connue : un contrôle natif — `<input type="date">`, `type="time"` —
+      se formate sur la langue de l'**interface** du navigateur, que ni `locale`
+      ni `--lang` ne changent sur le *headless shell*. Ces champs apparaissent
+      donc « 09/21/2026 » et « 08:00 PM » dans les références, là où un navigateur
+      français affichera « 21/09/2026 » et « 20:00 ». C'est le rendu du système,
+      pas le nôtre : la référence reste utile pour la mise en page, pas pour le
+      format de la valeur.
+    */
   },
   projects: [
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
