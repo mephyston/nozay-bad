@@ -17,6 +17,7 @@
     filtersActive = false,
     onSearchSubmit,
     onSearchClear,
+    onOpenFilters,
     filters,
     actions
   }: {
@@ -41,6 +42,11 @@
     filtersActive?: boolean;
     onSearchSubmit?: (value: string) => void;
     onSearchClear?: () => void;
+    /**
+     * Ouvre les filtres sur téléphone, depuis l'entonnoir de la barre du bas.
+     * Sans elle, `dockSearch` ne descend que la recherche.
+     */
+    onOpenFilters?: () => void;
     filters?: Snippet;
     actions?: Snippet;
   } = $props();
@@ -52,6 +58,8 @@
       placeholder: searchPlaceholder,
       valeur: searchValue,
       onSubmit: rechercher,
+      // Chercher et filtrer sont la même intention : réduire la liste.
+      filtres: onOpenFilters ? { actif: filtersActive, ouvrir: onOpenFilters } : undefined,
     });
   });
 
@@ -112,10 +120,18 @@
   {/if}
 
   {#if hasFilters && filters}
+    <!--
+      Confiés au dock, les filtres quittent le haut de l'écran : l'entonnoir de la
+      pilule les ouvre, et ce bouton ne sert plus qu'à la souris.
+    -->
     <DropdownMenu.Root>
       <DropdownMenu.Trigger asChild>
         {#snippet child({ props })}
-          <Button {...props} variant="outline" class="flex items-center gap-2 h-9 relative">
+          <Button
+            {...props}
+            variant="outline"
+            class={cn('relative h-9 items-center gap-2', dockSearch ? 'hidden md:flex' : 'flex')}
+          >
             <Filter class="w-4 h-4" /> Filtres
             {#if filtersActive}
               <span class="flex h-2 w-2 rounded-full bg-primary absolute -top-1 -right-1"></span>

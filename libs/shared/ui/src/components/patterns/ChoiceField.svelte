@@ -25,6 +25,7 @@
     value = $bindable(''),
     options,
     placeholder = 'Choisir…',
+    onChange,
     disabled = false
   }: {
     label: string;
@@ -32,6 +33,8 @@
     value?: string;
     options: { value: string; label: string; hint?: string }[];
     placeholder?: string;
+    /** Appelée après un choix, pour les écrans qui appliquent à la volée. */
+    onChange?: (valeur: string) => void;
     disabled?: boolean;
   } = $props();
 
@@ -45,6 +48,11 @@
   });
 
   const choisi = $derived(options.find((o) => o.value === value));
+
+  function choisir(v: string) {
+    value = v;
+    onChange?.(v);
+  }
 </script>
 
 {#if requete.current}
@@ -78,7 +86,7 @@
     >
       {#each options as option (option.value)}
         <DropdownMenu.Item
-          onclick={() => (value = option.value)}
+          onclick={() => choisir(option.value)}
           class="cursor-pointer gap-2 rounded-xl py-2.5"
         >
           <Check
@@ -96,7 +104,7 @@
     </DropdownMenu.Content>
   </DropdownMenu.Root>
 {:else}
-  <Select {id} bind:value {disabled}>
+  <Select {id} bind:value {disabled} onchange={(e) => onChange?.((e.currentTarget as HTMLSelectElement).value)}>
     <option value="">{placeholder}</option>
     {#each options as option (option.value)}
       <option value={option.value}>{option.label}</option>

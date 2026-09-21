@@ -40,6 +40,9 @@
   } = $props();
 
   const retenu = $derived(depuisIso(value));
+
+  // Le mois d'ouverture, lu une fois : l'effet ci-dessous le tient à jour ensuite.
+  // svelte-ignore state_referenced_locally
   let curseur = $state(retenu ?? new Date());
 
   // Le mois affiché suit la valeur choisie ailleurs (saisie au clavier, réouverture).
