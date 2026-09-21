@@ -1,5 +1,6 @@
 <script lang="ts">
   import { FormField, ChoiceField, toSeasonOptions } from '@nba/ui';
+  import { MEMBERSHIP_STATUSES, MEMBERSHIP_STATUS_LABELS } from '../../shared/membership-status';
   import type { Season } from './members-table-types';
 
   /**
@@ -9,12 +10,13 @@
    * souris, et dans la feuille de filtres au doigt. Les deux présentations partagent
    * ainsi exactement les mêmes champs — c'est ce qui les empêche de diverger.
    *
-   * Le statut n'y figure pas : il a ses segments, visibles en permanence. Un critère
-   * ne se règle qu'à un seul endroit, sinon deux contrôles disent la même chose et
-   * finissent par se contredire.
+   * Tous les critères y sont, statut compris : réduire une liste se fait à un seul
+   * endroit, derrière la loupe. Un critère offert à deux endroits finit toujours par
+   * se contredire, et oblige à chercher lequel fait foi.
    */
   let {
     selectedSeason = $bindable('25-26'),
+    selectedStatus = $bindable(''),
     selectedGender = $bindable(''),
     selectedType = $bindable(''),
     selectedCohort = $bindable(''),
@@ -22,6 +24,7 @@
     onApply
   }: {
     selectedSeason: string;
+    selectedStatus: string;
     selectedGender: string;
     selectedType: string;
     selectedCohort: string;
@@ -32,6 +35,11 @@
   const seasonItems = $derived(
     seasons.length > 0 ? toSeasonOptions(seasons) : [{ label: 'Saison 2025-2026', value: '25-26' }]
   );
+
+  const statusItems = [
+    { label: 'Tous les statuts', value: '' },
+    ...MEMBERSHIP_STATUSES.map((value) => ({ label: MEMBERSHIP_STATUS_LABELS[value], value }))
+  ];
 
   const genderItems = [
     { label: 'Tous les genres', value: '' },
@@ -62,6 +70,10 @@
     bind:value={selectedSeason}
     onChange={onApply}
   />
+</FormField>
+
+<FormField id="filter-status" label="Statut">
+  <ChoiceField id="filter-status" label="Statut" options={statusItems} bind:value={selectedStatus} onChange={onApply} />
 </FormField>
 
 <FormField id="filter-type" label="Type">

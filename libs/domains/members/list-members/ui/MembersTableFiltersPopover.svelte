@@ -4,12 +4,11 @@
     DataTableToolbar,
     Button,
     FilterSheet,
-    SegmentedFilter,
     dockDePage,
     softNavigate,
     type SwipeAction
   } from '@nba/ui';
-  import { MEMBERSHIP_STATUSES, MEMBERSHIP_STATUS_LABELS } from '../../shared/membership-status';
+  import { membershipStatusLabel } from '../../shared/membership-status';
   import MembersTableFilters from './MembersTableFilters.svelte';
   import type { Season } from './members-table-types';
 
@@ -17,9 +16,14 @@
    * La barre d'outils de la liste des adhérents, et ses critères.
    *
    * Les mêmes champs servent deux présentations : la popover, à la souris, et la
-   * feuille de filtres, au doigt — ouverte depuis l'entonnoir de la barre du bas.
-   * Le statut, lui, sort du lot : c'est l'axe qu'on change sans cesse, il prend donc
-   * des segments sous la barre plutôt qu'une ligne dans un panneau replié.
+   * feuille de filtres, au doigt — ouverte depuis l'entonnoir de la pilule de
+   * recherche.
+   *
+   * **Tout ce qui réduit la liste vit là, et nulle part ailleurs.** Un jeu de
+   * segments posé au-dessus de la liste avait un temps porté le statut : deux
+   * contrôles pour un même critère finissent par se contredire, et obligent à
+   * chercher lequel fait foi. Ce qui reste au-dessus de la liste ne règle rien — ce
+   * sont les jetons, qui disent ce qui est appliqué et permettent de le défaire.
    */
   let {
     searchInput = $bindable(''),
@@ -55,14 +59,17 @@
     !!selectedGender || !!selectedType || !!selectedStatus || !!selectedCohort
   );
 
-  const segmentsStatut = $derived([
-    { value: '', label: 'Tous' },
-    ...MEMBERSHIP_STATUSES.map((value) => ({ value, label: MEMBERSHIP_STATUS_LABELS[value] }))
-  ]);
-
   /** Les critères posés, lisibles et retirables un à un au-dessus de la liste. */
   const criteres = $derived(
     [
+      selectedStatus && {
+        id: 'statut',
+        label: membershipStatusLabel(selectedStatus),
+        onRemove: () => {
+          selectedStatus = '';
+          onApply();
+        }
+      },
       selectedGender && {
         id: 'genre',
         label: selectedGender === 'M' ? 'Hommes' : 'Femmes',
@@ -138,9 +145,9 @@
     {#snippet filters()}
       <h4 class="border-b border-border pb-2 text-sm font-semibold">Options de filtrage</h4>
       <div class="space-y-3 pt-2">
-        <SegmentedFilter bind:value={selectedStatus} options={segmentsStatut} onChange={onApply} />
         <MembersTableFilters
           bind:selectedSeason
+          bind:selectedStatus
           bind:selectedGender
           bind:selectedType
           bind:selectedCohort
@@ -168,16 +175,6 @@
     {/snippet}
   </DataTableToolbar>
 
-  <!--
-    Le statut est l'axe qu'on change sans cesse : il prend des segments, visibles en
-    permanence, là où les autres critères se replient dans la feuille.
-  -->
-  <SegmentedFilter
-    class="md:hidden"
-    bind:value={selectedStatus}
-    options={segmentsStatut}
-    onChange={onApply}
-  />
 </div>
 
 <FilterSheet
@@ -194,6 +191,7 @@
   <div class="space-y-3">
     <MembersTableFilters
       bind:selectedSeason
+      bind:selectedStatus
       bind:selectedGender
       bind:selectedType
       bind:selectedCohort
