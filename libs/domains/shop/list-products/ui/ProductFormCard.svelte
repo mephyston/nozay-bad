@@ -1,6 +1,5 @@
 <script lang="ts">
-  import { SwitchField, SearchableCombobox, Input, Textarea, FormField, Button } from '@nba/ui';
-  import { ImagePlus, Trash2, Layers } from '@lucide/svelte';
+  import { SwitchField, SearchableCombobox, MediaField, Input, Textarea, FormField } from '@nba/ui';
   import type { ProductFormValues } from './products-manager-actions';
   import { productLabel, type Product, type ProductCategory } from './products-manager-types';
 
@@ -54,14 +53,9 @@
 
   const preview = $derived(pendingPreview ?? (values.removeImage ? null : currentImageUrl));
 
-  function onFile(event: Event) {
-    const input = event.currentTarget as HTMLInputElement;
-    const file = input.files?.[0] ?? null;
-    if (file) {
-      values.imageFile = file;
-      values.removeImage = false;
-    }
-    input.value = '';
+  function onFile(file: File) {
+    values.imageFile = file;
+    values.removeImage = false;
   }
 
   function clearImage() {
@@ -119,28 +113,14 @@
   </FormField>
 
   <FormField id="image" label="Image">
-    <div class="flex items-center gap-4">
-      <div class="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border bg-muted/30">
-        {#if preview}
-          <img src={preview} alt="" class="h-full w-full object-contain" />
-        {:else}
-          <ImagePlus class="h-6 w-6 text-muted-foreground" />
-        {/if}
-      </div>
-      <div class="flex flex-col gap-2">
-        <label class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-input px-3 py-2 text-sm font-medium hover:bg-muted">
-          <ImagePlus class="h-4 w-4" />
-          <span>{preview ? 'Remplacer' : 'Choisir une image'}</span>
-          <input id="image" type="file" accept="image/png,image/jpeg,image/webp" class="sr-only" onchange={onFile} />
-        </label>
-        {#if preview}
-          <Button type="button" variant="ghost" size="sm" class="justify-start gap-1.5 text-muted-foreground" onclick={clearImage}>
-            <Trash2 class="h-4 w-4" /> Retirer
-          </Button>
-        {/if}
-        <p class="text-xs text-muted-foreground">PNG, JPEG ou WebP, 8 Mo au plus. Réduite automatiquement.</p>
-      </div>
-    </div>
+    <MediaField
+      id="image"
+      label="Image"
+      {preview}
+      hint="PNG, JPEG ou WebP, 8 Mo au plus. Réduite automatiquement."
+      onSelect={onFile}
+      onClear={clearImage}
+    />
   </FormField>
 {/if}
 

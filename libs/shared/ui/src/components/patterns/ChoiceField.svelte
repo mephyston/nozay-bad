@@ -56,6 +56,7 @@
           {id}
           {disabled}
           {...props}
+          data-field-row
           class="border-input dark:bg-input/30 flex min-h-11 w-full items-center justify-between gap-3 rounded-lg border bg-transparent px-3 text-base disabled:pointer-events-none disabled:opacity-50"
         >
           {#if absorbable}

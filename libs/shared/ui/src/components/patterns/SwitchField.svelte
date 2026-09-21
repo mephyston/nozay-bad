@@ -1,6 +1,8 @@
 <script lang="ts">
+  import { getContext } from 'svelte';
   import { Switch } from '../ui/switch/index.js';
   import { cn } from '../../lib/utils.js';
+  import { CLE_CHAMP, type ContexteChamp } from './FormField.svelte';
 
   /**
    * Un réglage : son intitulé à gauche, son interrupteur à droite.
@@ -29,6 +31,17 @@
     disabled?: boolean;
     class?: string;
   } = $props();
+
+  /*
+    La rangée porte son intitulé à gauche : le bloc qui l'entoure ne doit pas
+    l'afficher une seconde fois au-dessus. Absorbé à toute largeur, et non
+    seulement sur téléphone — un réglage porte son nom partout.
+  */
+  const champ = getContext<ContexteChamp | undefined>(CLE_CHAMP);
+
+  $effect(() => {
+    if (champ?.absorbable) champ.absorberLabel();
+  });
 </script>
 
 <!--
@@ -37,6 +50,7 @@
   entre des champs cerclés.
 -->
 <div
+  data-field-row
   class={cn(
     'border-input dark:bg-input/30 flex min-h-11 w-full items-center justify-between gap-4 rounded-lg border bg-transparent px-3 py-2',
     className

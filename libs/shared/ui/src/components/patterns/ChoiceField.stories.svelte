@@ -1,6 +1,7 @@
 <script module lang="ts">
   import { defineMeta } from '@storybook/addon-svelte-csf';
-  import { ChoiceField, SwitchField, FormField, FieldGroup, DateTimeField, Input, Textarea, SearchableCombobox } from '@nba/ui';
+  import { ChoiceField, SwitchField, FormField, FieldGroup, DateTimeField, InlineCalendar, Input, Textarea, SearchableCombobox } from '@nba/ui';
+  import { CalendarDays, Clock, Repeat } from '@lucide/svelte';
 
   const CATEGORIES = [
     { value: 'textile', label: 'Textile', hint: 'Maillots, shorts, survêtements' },
@@ -77,14 +78,15 @@
 <Story name="GroupeEtDates">
   {#snippet template()}
     <!--
-      Un libellé hors du champ reste légitime quand il coiffe un **groupe** —
-      l'application Calendrier en garde pour « Répétition ». C'est l'intitulé d'un
-      champ isolé, redondant avec ce que le champ montre déjà, qui descend dedans.
+      La forme d'iOS : une carte par groupe, des filets entre les rangées, un
+      intitulé au-dessus et l'explication en dessous.
     -->
-    <div class="w-[390px] max-w-full space-y-5">
+    <div class="w-[390px] max-w-full space-y-5 bg-background p-3">
       <FieldGroup label="Quand">
-        <FormField id="jour" label="Date"><DateTimeField id="jour" label="Date" value="2026-09-21" /></FormField>
-        <FormField id="debut" label="Début"><DateTimeField id="debut" label="Début" type="time" value="20:00" /></FormField>
+        <FormField id="jour" label="Date">
+          <DateTimeField id="jour" label="Date" value="2026-09-21" icon={CalendarDays} />
+        </FormField>
+        <FormField id="debut" label="Début"><DateTimeField id="debut" label="Début" type="time" value="20:00" icon={Clock} /></FormField>
         <FormField id="fin" label="Fin"><DateTimeField id="fin" label="Fin" type="time" value="22:00" /></FormField>
       </FieldGroup>
 
@@ -101,6 +103,26 @@
             ]}
           />
         </FormField>
+        <FormField id="ouvert" label="Ouvert aux invités">
+          <SwitchField id="ouvert" label="Ouvert aux invités" checked />
+        </FormField>
+      </FieldGroup>
+    </div>
+  {/snippet}
+</Story>
+
+<Story name="CalendrierDeplie">
+  {#snippet template()}
+    <!-- Le calendrier tel qu'il se déplie sous la date, dans la carte du groupe. -->
+    <div class="w-[390px] max-w-full bg-background p-3">
+      <FieldGroup label="Quand">
+        <div class="divide-y divide-border">
+          <div class="flex min-h-11 items-center justify-between gap-3 px-3">
+            <span class="text-base">Début</span>
+            <span class="rounded-lg bg-accent px-2.5 py-1 text-base text-accent-foreground">21 sept. 2026</span>
+          </div>
+          <InlineCalendar value="2026-09-21" onChoose={() => {}} />
+        </div>
       </FieldGroup>
     </div>
   {/snippet}
