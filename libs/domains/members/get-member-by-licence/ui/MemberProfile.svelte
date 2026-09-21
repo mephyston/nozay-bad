@@ -2,7 +2,7 @@
 </script>
 
 <script lang="ts">
-  import { ArrowLeft, FileText } from '@lucide/svelte';
+  import { ArrowLeft, ChevronLeft, FileText } from '@lucide/svelte';
   import { Button, Badge, Tabs, Card, openDocument } from '@nba/ui';
   import type { Member, GLTransaction } from './member-profile-types';
   import type { ClubFunction } from '../../shared/club-functions';
@@ -41,9 +41,22 @@
 </script>
 
 <div class="space-y-6 max-w-3xl mx-auto">
+  <!--
+    Deux formes du même retour. Au doigt, le bouton rond en verre d'iOS, posé où le
+    pouce le cherche et assez grand pour être visé ; à la souris, la phrase, qui dit
+    où l'on retourne et n'a pas besoin d'être une cible de 44 points.
+  -->
   <a
     href={`/admin/members?season=${seasonId}`}
-    class="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+    aria-label="Retour à la liste des adhérents"
+    class="glass-surface flex size-11 items-center justify-center rounded-full text-foreground no-underline md:hidden"
+  >
+    <ChevronLeft class="size-6" />
+  </a>
+
+  <a
+    href={`/admin/members?season=${seasonId}`}
+    class="hidden items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground md:inline-flex"
   >
     <ArrowLeft class="w-4 h-4" />
     Retour à la liste des adhérents
@@ -104,7 +117,18 @@
   </Card.Root>
 
   <Tabs.Root value={activeTab} onValueChange={handleTabChange} class="w-full">
-    <Tabs.List class="flex w-full justify-start sm:justify-center overflow-x-auto no-scrollbar mb-6">
+    <!--
+      Au doigt, le segmented control d'iOS : des segments de largeur égale, celui qui
+      est actif surélevé, et des libellés courts pour qu'ils tiennent sur 390 px sans
+      défiler. À la souris, la rangée d'onglets d'origine, qui a la place de nommer.
+    -->
+    <Tabs.List variant="glass" class="mb-6 w-full md:hidden">
+      <Tabs.Trigger variant="glass" value="profil">Profil</Tabs.Trigger>
+      <Tabs.Trigger variant="glass" value="cotisation">Cotisation</Tabs.Trigger>
+      <Tabs.Trigger variant="glass" value="transactions">Finances</Tabs.Trigger>
+    </Tabs.List>
+
+    <Tabs.List class="mb-6 hidden w-full justify-start md:flex md:justify-center">
       <Tabs.Trigger value="profil">Profil & Contacts</Tabs.Trigger>
       <Tabs.Trigger value="cotisation">Cotisation Poona</Tabs.Trigger>
       <Tabs.Trigger value="transactions">Historique Financier</Tabs.Trigger>
