@@ -92,6 +92,7 @@ export { default as RichTextEditor } from './components/patterns/RichTextEditor.
 export { default as RichTextToolbar } from './components/patterns/RichTextToolbar.svelte';
 export { default as PageHeader } from './components/patterns/PageHeader.svelte';
 export { default as PageTitleSlot } from './components/patterns/PageTitleSlot.svelte';
+export { default as MobileDock } from './components/patterns/MobileDock.svelte';
 export { dockDePage } from './lib/page-dock.svelte.js';
 export type { RechercheDeListe, ActionDeListe, FiltresDeListe } from './lib/page-dock.svelte.js';
 export { default as SearchableCombobox } from './components/patterns/SearchableCombobox.svelte';

@@ -1,9 +1,16 @@
 <script lang="ts">
   import { Menu as MenuIcon, Search, SlidersHorizontal, Plus } from '@lucide/svelte';
-  import { MenuSearchField, DropdownMenu, dockDePage } from '@nba/ui';
+  import MenuSearchField from './MenuSearchField.svelte';
+  import * as DropdownMenu from '../ui/dropdown-menu/index.js';
+  import { dockDePage } from '../../lib/page-dock.svelte.js';
 
   /**
-   * La barre du bas de l'administration, sur téléphone.
+   * La barre du bas, sur téléphone.
+   *
+   * Vit dans le design system et non dans l'application : c'est le seul endroit où
+   * Storybook la voit, et donc le seul où un test peut ouvrir son menu. Elle avait
+   * livré deux défauts qu'aucun test ne pouvait attraper — un registre dupliqué par
+   * le bundler, puis un menu qui ne rendait rien.
    *
    * Des cercles en verre, séparés, comme dans l'app Météo. **Menu** à gauche ouvre
    * le menu — avec sa pilule de recherche déjà déployée en bas. À droite, ce que
@@ -216,6 +223,7 @@
             side="top"
             align="end"
             sideOffset={12}
+            style="--glass-base: var(--popover); --glass-opacity: 96%"
             class="glass-surface min-w-52 rounded-2xl border-0 p-1.5"
           >
             {#each actions as action (action.id)}

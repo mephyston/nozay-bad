@@ -135,3 +135,47 @@ test.describe('ResponsiveSheet — entrée', () => {
     expect(distances[distances.length - 1]).toBe(0);
   });
 });
+
+test.describe('MobileDock', () => {
+  // La barre n'existe qu'au doigt : sur le projet bureau, elle est masquée par `md:hidden`.
+  test.beforeEach(async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+  });
+
+  test('le menu des actions rend ses entrées, déclarées avant le montage', async ({ page }) => {
+    await ouvrirStory(page, 'patterns-mobiledock--deux-actions');
+
+    const plus = page.locator('[data-admin-dock] button[aria-label="Ajouter"]');
+    await expect(plus).toBeVisible();
+    await plus.click();
+
+    await expect(page.getByRole('menuitem', { name: 'Import Poona' })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: 'Exporter les mails' })).toBeVisible();
+
+    // Le menu porte du texte : 72 % d'opacité le laissaient illisible au-dessus
+    // d'une liste. Une surface qui porte des mots doit être presque opaque.
+    const opacite = await page.evaluate(() => {
+      const contenu = document.querySelector('[data-slot="dropdown-menu-content"]') as HTMLElement;
+      const fond = getComputedStyle(contenu).backgroundColor;
+      const alpha = /\/\s*([\d.]+)\s*\)/.exec(fond) ?? /,\s*([\d.]+)\s*\)$/.exec(fond);
+      return alpha ? Number(alpha[1]) : 1;
+    });
+    expect(opacite).toBeGreaterThan(0.9);
+  });
+
+  test('une action unique s’exécute sans passer par un menu', async ({ page }) => {
+    await ouvrirStory(page, 'patterns-mobiledock--une-action');
+
+    // Le cercle porte alors le nom de l'action, pas un « Ajouter » générique.
+    await expect(page.locator('[data-admin-dock] button[aria-label="Nouveau produit"]')).toBeVisible();
+    await expect(page.locator('[data-admin-dock] button[aria-label="Ajouter"]')).toHaveCount(0);
+  });
+
+  test('une déclaration postérieure au montage atteint la barre', async ({ page }) => {
+    await ouvrirStory(page, 'patterns-mobiledock--declaration-apres-montage');
+
+    await expect(page.locator('[data-admin-dock] button[aria-label="Ajouter"]')).toHaveCount(0);
+    await page.locator('[data-test="declarer"]').click();
+    await expect(page.locator('[data-admin-dock] button[aria-label="Ajouter"]')).toBeVisible();
+  });
+});

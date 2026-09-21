@@ -160,7 +160,7 @@
   qui défile derrière gêne la lecture.
 */
 .glass-surface {
-  background: color-mix(in oklab, var(--glass-base, var(--background)) 72%, transparent);
+  background: color-mix(in oklab, var(--glass-base, var(--background)) var(--glass-opacity, 72%), transparent);
   -webkit-backdrop-filter: blur(20px) saturate(160%);
   backdrop-filter: blur(20px) saturate(160%);
   border: 1px solid color-mix(in oklab, var(--border) 70%, transparent);

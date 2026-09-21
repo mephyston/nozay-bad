@@ -324,9 +324,14 @@
 
   `--glass-base` permet au contexte de dire sur quoi il flotte : la barre latérale,
   par exemple, pose `--glass-base: var(--sidebar)`.
+
+  `--glass-opacity` dit **combien** il laisse passer. 72 % conviennent à une pastille
+  ou à une barre, qui ne portent qu'une icône ; une surface qui porte du texte a
+  besoin de bien plus, sans quoi la liste qui défile dessous rend les libellés
+  illisibles.
 */
 .glass-surface {
-  background: color-mix(in oklab, var(--glass-base, var(--background)) 72%, transparent);
+  background: color-mix(in oklab, var(--glass-base, var(--background)) var(--glass-opacity, 72%), transparent);
   -webkit-backdrop-filter: blur(20px) saturate(160%);
   backdrop-filter: blur(20px) saturate(160%);
   border: 1px solid color-mix(in oklab, var(--border) 70%, transparent);

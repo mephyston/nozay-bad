@@ -41,8 +41,7 @@
   import { DropdownMenu } from "bits-ui";
   import { onMount } from "svelte";
   import { Sidebar, Breadcrumb, Separator, Avatar, GlobalConfirm, AppVersion, PwaInstallBanner, ThemeToggle, uiAlert } from "@nba/ui";
-  import AdminMobileDock from './AdminMobileDock.svelte';
-  import { searchNav, softNavigate, MenuSearchField, MenuSearchResults, HeaderSearch, PageTitleSlot, pullToRefresh, type NavSearchHit } from '@nba/ui';
+  import { searchNav, softNavigate, MenuSearchField, MenuSearchResults, HeaderSearch, PageTitleSlot, MobileDock, pullToRefresh, type NavSearchHit } from '@nba/ui';
 
   let { children, email, name, permissions = [], realEmail = '', club, breadcrumb } = $props<{
     children?: import('svelte').Snippet;
@@ -869,7 +868,7 @@
   La barre du bas ne porte plus la recherche du menu : elle existe déjà dans le
   menu ouvert, juste en dessous. Ce qu'elle porte désormais vient de l'écran.
 -->
-<AdminMobileDock {scrollContainer} onMenuClick={() => sidebar.setOpenMobile(true)} />
+<MobileDock {scrollContainer} onMenuClick={() => sidebar.setOpenMobile(true)} />
 <GlobalConfirm />
 
 <style>

@@ -189,8 +189,15 @@
     try {
       const res = await fetch(`/admin/api/members/list?${params.toString()}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const donnees = (await res.json()) as { members?: Member[] };
-      supplement = [...supplement, ...(donnees.members ?? [])];
+      /*
+        Le relais enveloppe : `{ success, data: { members, pagination, … } }`. Lire
+        `members` à la racine rendait `undefined`, et la liste ne grandissait jamais —
+        sans erreur, puisque le tableau vide s'ajoutait sans rien changer.
+      */
+      const enveloppe = (await res.json()) as { data?: { members?: Member[] } };
+      const suite = enveloppe.data?.members;
+      if (!Array.isArray(suite)) throw new Error('réponse inattendue');
+      supplement = [...supplement, ...suite];
       dernierePage += 1;
     } catch {
       uiAlert('La suite de la liste n’a pas pu être chargée.');
