@@ -17,7 +17,7 @@
 	/* Même règle que pour `Input` : voir `FormField`. */
 	const champ = getContext<ContexteChamp | undefined>(CLE_CHAMP);
 	const requete = creerIsMobile();
-	const absorbable = $derived(!!champ && !placeholder && requete.current);
+	const absorbable = $derived(!!champ && requete.current);
 	const invite = $derived(absorbable ? champ!.label : placeholder);
 
 	$effect(() => {

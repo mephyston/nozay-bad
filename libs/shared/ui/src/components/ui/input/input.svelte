@@ -28,13 +28,15 @@
 
 	/*
 	  Sur téléphone, l'intitulé descend dans le champ — la disposition iOS, qui rend
-	  une ligne par champ. Le bloc ne masque le sien qu'une fois qu'on l'a pris : un
-	  texte d'invite déjà fourni par l'appelant l'emporte, et le libellé reste alors
-	  au-dessus puisqu'il dit autre chose.
+	  une ligne par champ. Le bloc ne masque le sien qu'une fois qu'on l'a pris.
+
+	  Il l'emporte sur un texte d'invite déjà fourni : ces invites sont des exemples
+	  (« Ex : Maillot du club… »), utiles à la souris où le libellé est visible
+	  au-dessus, mais qui laisseraient un champ sans nom une fois celui-ci masqué.
 	*/
 	const champ = getContext<ContexteChamp | undefined>(CLE_CHAMP);
 	const requete = creerIsMobile();
-	const absorbable = $derived(!!champ && !placeholder && requete.current && type !== "file");
+	const absorbable = $derived(!!champ && requete.current && type !== "file");
 	const invite = $derived(absorbable ? champ!.label : placeholder);
 
 	$effect(() => {

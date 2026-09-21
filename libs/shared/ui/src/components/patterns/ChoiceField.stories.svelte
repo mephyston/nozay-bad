@@ -1,6 +1,6 @@
 <script module lang="ts">
   import { defineMeta } from '@storybook/addon-svelte-csf';
-  import { ChoiceField, SwitchField, FormField, Input } from '@nba/ui';
+  import { ChoiceField, SwitchField, FormField, Input, Textarea, SearchableCombobox } from '@nba/ui';
 
   const CATEGORIES = [
     { value: 'textile', label: 'Textile', hint: 'Maillots, shorts, survêtements' },
@@ -23,8 +23,23 @@
       un écran qui entre par la droite. Sur ordinateur, la liste déroulante native.
     -->
     <div class="w-[390px] max-w-full space-y-4">
+      <!--
+        Invite d'exemple fournie par l'écran : sur téléphone le libellé l'emporte,
+        sans quoi le champ se retrouverait sans nom une fois celui-ci masqué.
+      -->
       <FormField id="nom" label="Nom du produit">
-        <Input value="" />
+        <Input id="nom" value="" placeholder="Ex : Maillot du club, Yonex BG65…" />
+      </FormField>
+      <FormField id="cat" label="Catégorie comptable">
+        <SearchableCombobox
+          id="cat"
+          items={CATEGORIES.map((c) => ({ label: c.label, value: c.value }))}
+          value=""
+          placeholder="Choisir une catégorie…"
+        />
+      </FormField>
+      <FormField id="desc" label="Description (facultative)">
+        <Textarea id="desc" rows={2} placeholder="Ce que l'adhérent lit sous le nom…" />
       </FormField>
       <FormField id="categorie" label="Catégorie">
         <ChoiceField

@@ -3,11 +3,17 @@
 </script>
 
 <script lang="ts">
+  import { getContext } from 'svelte';
+  import { creerIsMobile } from '../../lib/hooks/is-mobile.svelte.js';
+  import { CLE_CHAMP, type ContexteChamp } from './FormField.svelte';
   import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
   import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '../ui/command';
   import { Button } from '../ui/button';
   import { Check, ChevronsUpDown } from '@lucide/svelte';
   import { cn } from '../../lib/utils.js';
+
+  const champ = getContext<ContexteChamp | undefined>(CLE_CHAMP);
+  const requete = creerIsMobile();
 
   let {
     items = [],
@@ -46,8 +52,16 @@
   $effect(() => { onSearch?.(searchText); });
 
   const selectedLabel = $derived(
-    items.find((item) => String(item.value) === String(value))?.label ?? placeholder
+    items.find((item) => String(item.value) === String(value))?.label ?? invite
   );
+
+  /* Même règle que `Input` : voir `FormField`. */
+  const absorbable = $derived(!!champ && requete.current);
+  const invite = $derived(absorbable ? champ!.label : placeholder);
+
+  $effect(() => {
+    if (absorbable) champ!.absorberLabel();
+  });
 </script>
 
 <Popover bind:open>
@@ -62,7 +76,7 @@
         class={cn('w-full justify-between font-normal', className)}
         {...props}
       >
-        <span class={cn('truncate', selectedLabel === placeholder && 'text-muted-foreground')}>{selectedLabel}</span>
+        <span class={cn('truncate', selectedLabel === invite && 'text-muted-foreground')}>{selectedLabel}</span>
         <ChevronsUpDown class="ml-2 h-4 w-4 shrink-0 opacity-50" />
       </Button>
     {/snippet}
