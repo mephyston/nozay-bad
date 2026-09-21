@@ -37,11 +37,19 @@ export type RechercheDeListe = {
   filtres?: FiltresDeListe;
 };
 
+/**
+ * Une action de la barre du bas.
+ *
+ * Mêmes noms de champs que `SwipeAction` — `label`, `icon` — et ce n'est pas un
+ * détail de style : les écrans déclarent souvent les deux à partir des mêmes
+ * données, et deux vocabulaires pour un même objet avaient produit un menu de deux
+ * entrées vides. `tsc` ne lit pas les `.svelte`, donc rien ne l'avait signalé.
+ */
 export type ActionDeListe = {
   id: string;
   /** Sert de nom accessible, et d'intitulé dans le menu au-delà d'une action. */
-  libelle: string;
-  icone: unknown;
+  label: string;
+  icon?: unknown;
   run: () => void;
 };
 

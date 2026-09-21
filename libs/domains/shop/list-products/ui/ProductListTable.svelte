@@ -40,7 +40,7 @@
   $effect(() => {
     if (!onOpenAdd || !canWrite) return;
     return dockDePage.declarerActions([
-      { id: 'nouveau-produit', libelle: 'Nouveau produit', icone: Plus, run: onOpenAdd },
+      { id: 'nouveau-produit', label: 'Nouveau produit', icon: Plus, run: onOpenAdd },
     ]);
   });
 

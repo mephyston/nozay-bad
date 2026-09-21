@@ -11,9 +11,9 @@
     filtres: { actif: false, ouvrir: () => {} },
   };
 
-  const IMPORT = { id: 'import', libelle: 'Import Poona', icone: Upload, run: () => {} };
-  const EXPORT = { id: 'export', libelle: 'Exporter les mails', icone: Download, run: () => {} };
-  const NOUVEAU = { id: 'nouveau', libelle: 'Nouveau produit', icone: Plus, run: () => {} };
+  const IMPORT = { id: 'import', label: 'Import Poona', icon: Upload, run: () => {} };
+  const EXPORT = { id: 'export', label: 'Exporter les mails', icon: Download, run: () => {} };
+  const NOUVEAU = { id: 'nouveau', label: 'Nouveau produit', icon: Plus, run: () => {} };
 
   const { Story } = defineMeta({
     title: 'Patterns/MobileDock',

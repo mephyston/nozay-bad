@@ -56,9 +56,9 @@
     })
   );
   /** Une seule action garde son icône ; plusieurs s'effacent derrière un « + ». */
-  const IconeAction = $derived(actions.length === 1 ? (actions[0].icone as any) : Plus);
+  const IconeAction = $derived(actions.length === 1 ? ((actions[0].icon as any) ?? Plus) : Plus);
   const libelleAction = $derived(
-    actions.length === 1 ? actions[0].libelle : 'Ajouter'
+    actions.length === 1 ? actions[0].label : 'Ajouter'
   );
   const CERCLE_ACTION = $derived(
     'dock-circle flex h-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary text-primary-foreground shadow-lg transition-[width,opacity] duration-300 ' +
@@ -240,10 +240,10 @@
             class="glass-surface min-w-52 rounded-2xl border-0 p-1.5"
           >
             {#each actions as action (action.id)}
-              {@const Icone = action.icone as any}
+              {@const Icone = action.icon as any}
               <DropdownMenu.Item onclick={action.run} class="cursor-pointer gap-2.5 rounded-xl py-2.5">
-                <Icone class="size-4" />
-                {action.libelle}
+                {#if Icone}<Icone class="size-4" />{/if}
+                {action.label}
               </DropdownMenu.Item>
             {/each}
           </DropdownMenu.Content>

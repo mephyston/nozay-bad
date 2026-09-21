@@ -161,7 +161,7 @@
   $effect(() => {
     if (!canWrite) return;
     return dockDePage.declarerActions([
-      { id: 'nouveau-gymnase', libelle: 'Nouveau gymnase', icone: Plus, run: openAdd },
+      { id: 'nouveau-gymnase', label: 'Nouveau gymnase', icon: Plus, run: openAdd },
     ]);
   });
 
