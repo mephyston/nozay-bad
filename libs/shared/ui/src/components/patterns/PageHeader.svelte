@@ -30,8 +30,13 @@
         lorsque cet en-tête est rendu côté serveur sans être hydraté.
       -->
       <h1 data-page-title class="text-3xl font-bold tracking-tight">{title}</h1>
+      <!--
+        Masquée sur téléphone : elle repousse la liste d'une ou deux lignes sans
+        rien dire que le titre ne dise déjà. Rendue pour le lecteur d'écran, qui
+        l'annonce avec le titre.
+      -->
       {#if description}
-        <p class="text-muted-foreground">{description}</p>
+        <p class="sr-only text-muted-foreground md:not-sr-only">{description}</p>
       {/if}
     </div>
     {#if actions}

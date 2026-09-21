@@ -2,12 +2,17 @@
  * Ce que l'écran courant met dans la barre du bas.
  *
  * La barre vit dans l'îlot du layout ; l'action et la recherche appartiennent à
- * l'écran, dans un autre îlot. Rien ne les relie par les props, d'où ce registre
- * de module : les deux îlots importent `@nba/ui` depuis le même chunk, donc la
- * même instance, et un module ES est unique par URL dans une page.
+ * l'écran, dans un autre îlot. Rien ne les relie par les props.
  *
- * Rien n'est persisté. L'îlot est démonté à chaque navigation douce, et chaque
- * écran redéclare ce qui lui revient à son montage.
+ * **Ni par un état de module.** C'était la première conception, et elle a tenu
+ * jusqu'à ce qu'un écran de plus fasse dupliquer le chunk : `declarerActions` s'est
+ * retrouvé défini quatre fois dans le bundle, l'écran des adhérents parlant à une
+ * copie et la barre à une autre — les actions n'arrivaient jamais. Le regroupement
+ * des chunks n'est pas une garantie sur laquelle bâtir.
+ *
+ * L'état vit donc sur `globalThis`, sous une clé `Symbol.for` — partagée entre
+ * toutes les copies du module — et les changements se signalent par un événement du
+ * document, qui traverse les frontières de module quoi qu'en fasse le bundler.
  */
 
 export type FiltresDeListe = {
@@ -27,8 +32,7 @@ export type RechercheDeListe = {
    *
    * Pas une action du bouton `+` : celui-ci crée, la loupe réduit. Mettre « Filtrer »
    * à côté de « Nouvelle recette » ferait du `+` un bouton « divers », et c'est ainsi
-   * qu'une barre du bas perd son sens. Chercher et filtrer sont la même intention —
-   * réduire la liste — donc un seul contrôle, et une pastille qui ne dit qu'une chose.
+   * qu'une barre du bas perd son sens.
    */
   filtres?: FiltresDeListe;
 };
@@ -41,39 +45,64 @@ export type ActionDeListe = {
   run: () => void;
 };
 
-class DockDePage {
-  recherche = $state<RechercheDeListe | null>(null);
+export type EtatDuDock = {
+  recherche: RechercheDeListe | null;
+  actions: ActionDeListe[];
+};
 
-  /**
-   * Les actions de l'écran. Une seule s'exécute au premier appui ; plusieurs
-   * ouvrent un petit menu en verre au-dessus du bouton.
-   *
-   * La géographie de la barre ne change jamais : le menu à gauche, deux cercles à
-   * droite au maximum. Une barre dont la disposition varie d'un écran à l'autre
-   * perd la mémoire du pouce.
-   */
-  actions = $state<ActionDeListe[]>([]);
+const CLE = Symbol.for('nba:dock-de-page');
+const EVENEMENT = 'nba:dock-de-page';
+
+function etat(): EtatDuDock {
+  const hote = globalThis as unknown as Record<symbol, EtatDuDock | undefined>;
+  hote[CLE] ??= { recherche: null, actions: [] };
+  return hote[CLE]!;
+}
+
+function annoncer(): void {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(new CustomEvent(EVENEMENT));
+}
+
+export const dockDePage = {
+  /** L'état courant. À relire à chaque notification. */
+  lire(): EtatDuDock {
+    return etat();
+  },
 
   /**
    * Chaque `declarer*` rend de quoi se retirer.
    *
    * Le retrait vérifie que la déclaration est encore la sienne : à la navigation
-   * douce, l'écran qui arrive se monte avant que le précédent ne se démonte, et
-   * un retrait aveugle effacerait ce qui vient d'être posé.
+   * douce, l'écran qui arrive se monte avant que le précédent ne se démonte, et un
+   * retrait aveugle effacerait ce qui vient d'être posé.
    */
   declarerRecherche(r: RechercheDeListe): () => void {
-    this.recherche = r;
+    etat().recherche = r;
+    annoncer();
     return () => {
-      if (this.recherche === r) this.recherche = null;
+      if (etat().recherche === r) {
+        etat().recherche = null;
+        annoncer();
+      }
     };
-  }
+  },
 
   declarerActions(liste: ActionDeListe[]): () => void {
-    this.actions = liste;
+    etat().actions = liste;
+    annoncer();
     return () => {
-      if (this.actions === liste) this.actions = [];
+      if (etat().actions === liste) {
+        etat().actions = [];
+        annoncer();
+      }
     };
-  }
-}
+  },
 
-export const dockDePage = new DockDePage();
+  /** Prévient à chaque changement. Rend de quoi se désabonner. */
+  sAbonner(ecoute: () => void): () => void {
+    if (typeof window === 'undefined') return () => {};
+    window.addEventListener(EVENEMENT, ecoute);
+    return () => window.removeEventListener(EVENEMENT, ecoute);
+  },
+};

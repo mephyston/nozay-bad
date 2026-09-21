@@ -167,6 +167,37 @@
     ];
   }
 
+  /*
+    Les tranches suivantes s'ajoutent à la liste au lieu de la remplacer.
+
+    Une requête par appui, sur la page suivante : on ne relit jamais ce qui est déjà
+    à l'écran, là où augmenter la limite relirait tout depuis le début. `data` est
+    la première page, rendue par le relais ; `supplement` porte ce qu'on a demandé
+    ensuite, et l'îlot étant remonté à chaque navigation, il repart vide de lui-même.
+  */
+  let supplement = $state<Member[]>([]);
+  let chargeEnCours = $state(false);
+  let dernierePage = $state(1);
+
+  const lignes = $derived([...data, ...supplement]);
+
+  async function chargerSuite() {
+    if (chargeEnCours || dernierePage >= pagination.totalPages) return;
+    chargeEnCours = true;
+    const params = new URLSearchParams(window.location.search);
+    params.set('page', String(dernierePage + 1));
+    try {
+      const res = await fetch(`/admin/api/members/list?${params.toString()}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const donnees = (await res.json()) as { members?: Member[] };
+      supplement = [...supplement, ...(donnees.members ?? [])];
+      dernierePage += 1;
+    } catch {
+      uiAlert('La suite de la liste n’a pas pu être chargée.');
+    }
+    chargeEnCours = false;
+  }
+
   function changePage(newPage: number) {
     if (newPage < 1 || newPage > pagination.totalPages) return;
     const params = new URLSearchParams(window.location.search);
@@ -177,10 +208,13 @@
 
 <div class="space-y-4">
   <DataTable
-    {data}
+    data={lignes}
     mobileSpacing="list"
     {pagination}
     onPageChange={changePage}
+    onLoadMore={chargerSuite}
+    isLoadingMore={chargeEnCours}
+    loadedCount={lignes.length}
     itemName="adhérent(s)"
     emptyTitle="Aucun adhérent"
     emptyDescription="Aucun adhérent ne correspond à ces critères de recherche."
@@ -264,7 +298,7 @@
 
     {#snippet mobileView()}
       <ListView
-        items={data}
+        items={lignes}
         emptyIcon={Users}
         emptyTitle="Aucun adhérent"
         emptyDescription="Aucun adhérent ne correspond à ces critères."

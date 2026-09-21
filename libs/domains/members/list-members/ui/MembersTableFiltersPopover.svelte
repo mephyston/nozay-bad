@@ -138,11 +138,11 @@
     {#snippet filters()}
       <h4 class="border-b border-border pb-2 text-sm font-semibold">Options de filtrage</h4>
       <div class="space-y-3 pt-2">
+        <SegmentedFilter bind:value={selectedStatus} options={segmentsStatut} onChange={onApply} />
         <MembersTableFilters
           bind:selectedSeason
           bind:selectedGender
           bind:selectedType
-          bind:selectedStatus
           bind:selectedCohort
           {seasons}
           {onApply}
@@ -196,7 +196,6 @@
       bind:selectedSeason
       bind:selectedGender
       bind:selectedType
-      bind:selectedStatus
       bind:selectedCohort
       {seasons}
       {onApply}

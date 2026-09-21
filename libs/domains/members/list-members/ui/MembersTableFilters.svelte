@@ -1,6 +1,5 @@
 <script lang="ts">
   import { FormField, ChoiceField, toSeasonOptions } from '@nba/ui';
-  import { MEMBERSHIP_STATUSES, MEMBERSHIP_STATUS_LABELS } from '../../shared/membership-status';
   import type { Season } from './members-table-types';
 
   /**
@@ -9,12 +8,15 @@
    * Extraits pour être rendus deux fois : dans la popover de la barre d'outils à la
    * souris, et dans la feuille de filtres au doigt. Les deux présentations partagent
    * ainsi exactement les mêmes champs — c'est ce qui les empêche de diverger.
+   *
+   * Le statut n'y figure pas : il a ses segments, visibles en permanence. Un critère
+   * ne se règle qu'à un seul endroit, sinon deux contrôles disent la même chose et
+   * finissent par se contredire.
    */
   let {
     selectedSeason = $bindable('25-26'),
     selectedGender = $bindable(''),
     selectedType = $bindable(''),
-    selectedStatus = $bindable(''),
     selectedCohort = $bindable(''),
     seasons = [],
     onApply
@@ -22,7 +24,6 @@
     selectedSeason: string;
     selectedGender: string;
     selectedType: string;
-    selectedStatus: string;
     selectedCohort: string;
     seasons: Season[];
     onApply: () => void;
@@ -44,11 +45,6 @@
     { label: 'Loisir', value: 'Loisir' }
   ];
 
-  const statusItems = [
-    { label: 'Tous les statuts', value: '' },
-    ...MEMBERSHIP_STATUSES.map((value) => ({ label: MEMBERSHIP_STATUS_LABELS[value], value }))
-  ];
-
   // Même partage que la carte « Renouvellement » du tableau de bord, par personne contre n-1.
   const cohortItems = [
     { label: 'Toute la saison', value: '' },
@@ -66,10 +62,6 @@
     bind:value={selectedSeason}
     onChange={onApply}
   />
-</FormField>
-
-<FormField id="filter-status" label="Statut">
-  <ChoiceField id="filter-status" label="Statut" options={statusItems} bind:value={selectedStatus} onChange={onApply} />
 </FormField>
 
 <FormField id="filter-type" label="Type">

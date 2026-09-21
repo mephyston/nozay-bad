@@ -33,8 +33,21 @@
   let query = $state('');
   let compact = $state(false);
 
-  const recherche = $derived(dockDePage.recherche);
-  const actions = $derived(dockDePage.actions);
+  /*
+    L'état est relu à chaque notification plutôt que lié par une rune : le registre
+    vit sur `globalThis`, hors de portée de la réactivité de Svelte, parce que le
+    bundler duplique le module qui le porterait autrement.
+  */
+  let recherche = $state(dockDePage.lire().recherche);
+  let actions = $state(dockDePage.lire().actions);
+
+  $effect(() =>
+    dockDePage.sAbonner(() => {
+      const etat = dockDePage.lire();
+      recherche = etat.recherche;
+      actions = etat.actions;
+    })
+  );
   /** Une seule action garde son icône ; plusieurs s'effacent derrière un « + ». */
   const IconeAction = $derived(actions.length === 1 ? (actions[0].icone as any) : Plus);
   const libelleAction = $derived(
