@@ -196,3 +196,40 @@ test.describe('MobileDock', () => {
     await expect(page.locator('[data-admin-dock] button[aria-label="Ajouter"]')).toBeVisible();
   });
 });
+
+test.describe('ListRow — balayage', () => {
+  test('une ligne qui est un lien se balaie comme les autres', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await ouvrirStory(page, 'patterns-listrow--balayage-ferme');
+
+    const couche = page.locator('[data-swipe-layer]').first();
+    await expect(couche).toBeVisible();
+    const boite = (await couche.boundingBox())!;
+    const y = boite.y + boite.height / 2;
+
+    /*
+      Un lien est glissable par défaut : le navigateur ouvrait une session de
+      glisser dès qu'on le tirait de côté, ce qui annule les événements de pointeur
+      et tuait le balayage. Les lignes portant un `onclick` n'avaient pas le défaut,
+      n'étant pas des liens — d'où un balayage qui marchait sur les produits et pas
+      sur les adhérents.
+    */
+    await page.mouse.move(boite.x + boite.width - 20, y);
+    await page.mouse.down();
+    for (const dx of [10, 40, 80, 120]) {
+      await page.mouse.move(boite.x + boite.width - 20 - dx, y);
+    }
+
+    // La translation est posée dans une frame d'animation : la lire aussitôt
+    // reviendrait à la lire avant qu'elle n'existe.
+    await page.waitForTimeout(120);
+
+    const deplacement = await couche.evaluate((el) => {
+      const t = /translate3d\((-?[\d.]+)px/.exec((el as HTMLElement).style.transform);
+      return t ? Math.abs(Number(t[1])) : 0;
+    });
+    await page.mouse.up();
+
+    expect(deplacement, 'la couche doit suivre le doigt').toBeGreaterThan(20);
+  });
+});

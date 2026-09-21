@@ -1,6 +1,6 @@
 <script module lang="ts">
   import { defineMeta } from '@storybook/addon-svelte-csf';
-  import { ListRow, Badge, Avatar, type SwipeAction } from '@nba/ui';
+  import { ListRow, ListView, Badge, Avatar, type SwipeAction } from '@nba/ui';
   import { Trash2, Check, Edit, Layers } from '@lucide/svelte';
 
   const ACTIONS: SwipeAction[] = [
@@ -112,11 +112,30 @@
 
 <Story name="BalayageFerme">
   {#snippet template()}
-    {#snippet contenu()}
-      <ListRow href="#" title="Note de frais — Déplacement" subtitle="Pièce 2026-0147" value="-84,20 €" valueTone="destructive" actions={ACTIONS} />
-      <ListRow href="#" title="Note de frais — Volants" subtitle="Pièce 2026-0148" value="-42,00 €" valueTone="destructive" actions={ACTIONS} />
-    {/snippet}
-    {@render liste(contenu)}
+    <!--
+      Par `ListView`, et non par une liste écrite à la main : c'est elle qui installe
+      le geste. Une story qui rend les lignes elle-même montre la bonne image et ne
+      teste rien du balayage — ce qui a laissé passer un défaut sur les lignes-liens.
+    -->
+    <div class="w-[390px] max-w-full">
+      <ListView
+        items={[
+          { id: 1, titre: 'Note de frais — Déplacement', piece: 'Pièce 2026-0147', montant: '-84,20 €' },
+          { id: 2, titre: 'Note de frais — Volants', piece: 'Pièce 2026-0148', montant: '-42,00 €' },
+        ]}
+      >
+        {#snippet listRow(n)}
+          <ListRow
+            href="#"
+            title={n.titre}
+            subtitle={n.piece}
+            value={n.montant}
+            valueTone="destructive"
+            actions={ACTIONS}
+          />
+        {/snippet}
+      </ListView>
+    </div>
   {/snippet}
 </Story>
 

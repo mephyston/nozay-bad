@@ -206,9 +206,17 @@
       d'être visable au pouce. Elle ne se négocie pas par écran.
     -->
     {#if href && !disabled}
+      <!--
+        `draggable="false"` : un lien est glissable par défaut, et le navigateur
+        ouvrait une session de glisser dès qu'on le tirait de côté — ce qui annule
+        les événements de pointeur et tuait le balayage. Les lignes qui portent un
+        `onclick` n'avaient pas le défaut, n'étant pas des liens : c'est ce qui
+        faisait marcher les produits et pas les adhérents.
+      -->
       <a
         {href}
         {onclick}
+        draggable="false"
         class="flex min-h-[3.25rem] min-w-0 flex-1 items-center gap-3 py-2.5 text-foreground no-underline"
       >
         {@render body()}
@@ -253,6 +261,14 @@
   li[data-context-menu] [data-selectable] {
     -webkit-touch-callout: default;
     user-select: text;
+  }
+
+  /*
+    Le pendant CSS de `draggable="false"`, que WebKit seul respecte : sans lui, un
+    appui glissé sur un lien lève une image fantôme et le balayage n'a plus lieu.
+  */
+  [data-swipe-layer] a {
+    -webkit-user-drag: none;
   }
 
   /*
