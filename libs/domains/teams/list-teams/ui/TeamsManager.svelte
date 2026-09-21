@@ -8,8 +8,8 @@
     Badge,
     Button,
     uiConfirm,
-    toast,
-    softNavigate
+    softNavigate,
+    uiAlert
   } from '@nba/ui';
   import { Trophy, Plus, CalendarDays, ChevronRight } from '@lucide/svelte';
   import TeamFormSheet from '../../save-team/ui/TeamFormSheet.svelte';
@@ -105,7 +105,7 @@
       detail = payload.data ?? null;
       return detail !== null;
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Chargement impossible.');
+      uiAlert(error instanceof Error ? error.message : 'Chargement impossible.');
       return false;
     }
   }
@@ -138,10 +138,9 @@
         const payload = (await response.json()) as { error?: string };
         throw new Error(payload.error || 'La suppression a échoué.');
       }
-      toast.success(`${team.name} supprimée.`);
       reload();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'La suppression a échoué.');
+      uiAlert(error instanceof Error ? error.message : 'La suppression a échoué.');
     }
   }
 

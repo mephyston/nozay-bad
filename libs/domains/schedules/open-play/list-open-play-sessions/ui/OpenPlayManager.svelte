@@ -15,9 +15,9 @@
     FormSheet,
     Sheet,
     submitForm,
-    toast,
     uiConfirm,
-    flashAndReload
+    flashAndReload,
+    uiAlert
   } from '@nba/ui';
   import { DEFAULT_MIN_PLAYERS } from '../../../shared/open-play';
 
@@ -181,7 +181,6 @@
           },
           id ? 'La modification a échoué.' : 'La création a échoué.'
         ),
-      success: id ? 'Séance mise à jour.' : 'Séance ajoutée.',
       close: () => { resetForm(); showFormSheet = false; },
       // Le sheet couvre la page : le refus s'affiche dans le formulaire lui-même.
       onError: (message) => { errorMsg = message; }
@@ -235,7 +234,6 @@
         // qu'elle n'a rien fait, alors qu'elle est simplement rejouable.
         generated = data;
       },
-      success: '',
       close: () => { showGenerateSheet = false; },
       onError: (message) => { errorMsg = message; }
     });
@@ -264,7 +262,7 @@
       await post({ action: 'update', id: row.id, status: 'cancelled', cancelledReason: reason.trim() }, "L'annulation a échoué.");
       flashAndReload('Séance annulée.');
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "L'annulation a échoué.");
+      uiAlert(error instanceof Error ? error.message : "L'annulation a échoué.");
     }
   }
 
@@ -279,7 +277,7 @@
       await post({ action: 'update', id: row.id, status: 'open' }, 'La réouverture a échoué.');
       flashAndReload('Séance rouverte.');
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'La réouverture a échoué.');
+      uiAlert(error instanceof Error ? error.message : 'La réouverture a échoué.');
     }
   }
 
@@ -294,7 +292,7 @@
       registrations = data.registrations;
       totals = data.totals;
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Lecture impossible.');
+      uiAlert(error instanceof Error ? error.message : 'Lecture impossible.');
       showRegistrationsSheet = false;
       openedSession = null;
     }

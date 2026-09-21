@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Sheet, Button, Input, Badge, Select, Checkbox, Alert, toast } from '@nba/ui';
+  import { Sheet, Button, Input, Badge, Select, Checkbox, Alert, uiAlert } from '@nba/ui';
   import { CalendarDays, Plus, X, TriangleAlert } from '@lucide/svelte';
   import { CHAMPIONSHIPS, CHAMPIONSHIP_RULES, type Championship } from '../../shared/championship';
   import { mondayOf, sundayOf } from '../../shared/week';
@@ -52,7 +52,7 @@
       if (!response.ok) throw new Error(payload.error || 'Chargement impossible.');
       days = payload.data?.days ?? [];
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Chargement impossible.');
+      uiAlert(error instanceof Error ? error.message : 'Chargement impossible.');
     } finally {
       loading = false;
     }
@@ -137,11 +137,10 @@
       const payload = (await response.json()) as { error?: string };
       if (!response.ok) throw new Error(payload.error || "L'enregistrement a échoué.");
 
-      toast.success('Calendrier enregistré.');
       await loadDays(championship);
       onSaved();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "L'enregistrement a échoué.");
+      uiAlert(error instanceof Error ? error.message : "L'enregistrement a échoué.");
     } finally {
       saving = false;
     }

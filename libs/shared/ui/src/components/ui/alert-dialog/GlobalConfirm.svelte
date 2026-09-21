@@ -32,7 +32,10 @@
       </AlertDialog.Description>
     </AlertDialog.Header>
     <AlertDialog.Footer>
-      <AlertDialog.Cancel onclick={handleCancel}>{currentReq?.cancelLabel}</AlertDialog.Cancel>
+      <!-- Une alerte n'a rien à refuser : un seul bouton, qui acquitte. -->
+      {#if currentReq?.mode !== 'alert'}
+        <AlertDialog.Cancel onclick={handleCancel}>{currentReq?.cancelLabel}</AlertDialog.Cancel>
+      {/if}
       <!--
         Le rouge est réservé aux actions sans retour : l'appliquer partout le rendrait
         muet, et c'est justement là qu'il doit arrêter la main.

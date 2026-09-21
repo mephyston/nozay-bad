@@ -42,7 +42,7 @@ export { submitForm, type SubmitFormOptions } from './lib/form-submit';
 export { readApiError } from './lib/api-error';
 export { Combobox, type ComboboxItem } from './components/ui/combobox';
 export * as DropdownMenu from './components/ui/dropdown-menu';
-export { uiConfirm } from './components/ui/alert-dialog/confirm';
+export { uiConfirm, uiAlert } from './components/ui/alert-dialog/confirm';
 export { default as GlobalConfirm } from './components/ui/alert-dialog/GlobalConfirm.svelte';
 
 // Pattern Components

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Input, Button, toast } from '@nba/ui';
+  import { Input, Button, uiAlert } from '@nba/ui';
   import { ExternalLink } from '@lucide/svelte';
   import { saveChampionshipSetting } from './championship-settings-api';
   import type { ChampionshipSettingsItem } from '../dto';
@@ -41,10 +41,9 @@
         rulesUrl: links[championship].url.trim() || null,
         rulesLabel: links[championship].label.trim() || null
       });
-      toast.success('Règlement enregistré.');
       onSaved?.();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "L'enregistrement a échoué.");
+      uiAlert(error instanceof Error ? error.message : "L'enregistrement a échoué.");
     } finally {
       saving = null;
     }

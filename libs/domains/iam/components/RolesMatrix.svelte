@@ -208,7 +208,6 @@
         });
         if (!res.ok) throw new Error(await res.text());
       },
-      success: 'Droits du rôle mis à jour.',
       close: () => {
         editing = null;
       }

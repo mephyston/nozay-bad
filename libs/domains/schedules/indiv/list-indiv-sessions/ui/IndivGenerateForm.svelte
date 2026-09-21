@@ -63,7 +63,6 @@
         if (!response.ok) throw new Error(payload.error ?? 'La génération a échoué.');
         result = payload.data ?? null;
       },
-      success: '',
       close: () => {
         open = false;
         const r = result;

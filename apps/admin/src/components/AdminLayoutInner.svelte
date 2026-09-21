@@ -40,7 +40,7 @@
     CreditCard, Dumbbell, Ticket, Receipt, Activity } from "@lucide/svelte";
   import { DropdownMenu } from "bits-ui";
   import { onMount } from "svelte";
-  import { Sidebar, Breadcrumb, Separator, Avatar, GlobalConfirm, AppVersion, PwaInstallBanner, ThemeToggle, toast } from "@nba/ui";
+  import { Sidebar, Breadcrumb, Separator, Avatar, GlobalConfirm, AppVersion, PwaInstallBanner, ThemeToggle, uiAlert } from "@nba/ui";
   import AdminMobileDock from './AdminMobileDock.svelte';
   import { searchNav, softNavigate, MenuSearchField, MenuSearchResults, HeaderSearch, PageTitleSlot, pullToRefresh, type NavSearchHit } from '@nba/ui';
 
@@ -482,7 +482,7 @@
       body: JSON.stringify({ email: target })
     });
     if (!res.ok) {
-      toast.error("Le changement de compte a échoué.");
+      uiAlert("Le changement de compte a échoué.");
       return;
     }
 

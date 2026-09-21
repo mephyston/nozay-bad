@@ -142,7 +142,6 @@
         });
         if (!res.ok) throw new Error(await readApiError(res, "L'enregistrement a échoué."));
       },
-      success: editingCode === null ? 'Gymnase créé.' : 'Gymnase mis à jour.',
       close: () => {
         showSheet = false;
       },

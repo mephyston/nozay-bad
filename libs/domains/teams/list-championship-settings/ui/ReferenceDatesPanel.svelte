@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Badge, Select, toast } from '@nba/ui';
+  import { Badge, Select, uiAlert } from '@nba/ui';
   import { CalendarClock } from '@lucide/svelte';
   import { saveChampionshipSetting } from './championship-settings-api';
   import type { ChampionshipSettingsItem } from '../dto';
@@ -38,10 +38,9 @@
     saving = championship;
     try {
       await saveChampionshipSetting(endpoint, seasonCode, championship, { referenceEloDate });
-      toast.success('Date de référence enregistrée.');
       onSaved();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "L'enregistrement a échoué.");
+      uiAlert(error instanceof Error ? error.message : "L'enregistrement a échoué.");
     } finally {
       saving = null;
     }

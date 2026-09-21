@@ -7,9 +7,9 @@
     Badge,
     CollapsibleSection,
     EmptyState,
-    toast,
     uiConfirm,
-    flashAndReload
+    flashAndReload,
+    uiAlert
   } from '@nba/ui';
   import type { BlockPayload } from '../../../shared/blocks';
   import { BLOCK_KINDS } from './block-editor-registry';
@@ -129,7 +129,7 @@
     } catch (error) {
       // Le formulaire reste ouvert avec les valeurs saisies : un refus ne doit jamais
       // faire perdre le travail en cours.
-      toast.error(error instanceof Error ? error.message : "L'enregistrement a échoué.");
+      uiAlert(error instanceof Error ? error.message : "L'enregistrement a échoué.");
       busy = false;
     }
   }
@@ -137,7 +137,7 @@
   async function togglePublished() {
     const next = page.status !== 'published';
     if (next && dirty) {
-      toast.error('Enregistrez vos modifications avant de publier.');
+      uiAlert('Enregistrez vos modifications avant de publier.');
       return;
     }
     busy = true;
@@ -145,7 +145,7 @@
       await setPublished(page.id, next);
       flashAndReload(next ? 'Page publiée.' : 'Page retirée du site.');
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "L'opération a échoué.");
+      uiAlert(error instanceof Error ? error.message : "L'opération a échoué.");
       busy = false;
     }
   }

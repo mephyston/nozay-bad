@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Input, Button, Badge, Table, Card, EmptyState, uiConfirm, toast, flashAndReload, submitForm, Sheet, FormField, DataTable, DataTableToolbar, Checkbox } from '@nba/ui';
+  import { Input, Button, Badge, Table, Card, EmptyState, uiConfirm, flashAndReload, submitForm, Sheet, FormField, DataTable, DataTableToolbar, Checkbox, uiAlert } from '@nba/ui';
   import { Plus, Trash2, Shield, Pencil } from '@lucide/svelte';
   import { ROLES, ROLE_LABELS, ROLE_DESCRIPTIONS, ROLE_PERMISSIONS, type Role } from '../shared/roles';
 
@@ -76,7 +76,6 @@
         });
         if (!res.ok) throw new Error(await res.text());
       },
-      success: editUserId ? 'Utilisateur mis à jour.' : 'Utilisateur créé.',
       close: () => { isSheetOpen = false; }
     });
   }
@@ -91,7 +90,7 @@
     if (res.ok) {
       flashAndReload('Utilisateur supprimé');
     } else {
-      toast.error(await res.text());
+      uiAlert(await res.text());
     }
   }
 </script>

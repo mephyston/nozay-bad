@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Button, CollapsibleSection, toast, uiConfirm, flashAndReload } from '@nba/ui';
+  import { Button, CollapsibleSection, uiConfirm, flashAndReload, uiAlert } from '@nba/ui';
   import { restoreRevision } from './page-editor-actions';
 
   interface RevisionRow {
@@ -35,7 +35,7 @@
       await restoreRevision(pageId, row.id);
       flashAndReload(`Version ${row.revision} restaurée.`);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'La restauration a échoué.');
+      uiAlert(error instanceof Error ? error.message : 'La restauration a échoué.');
     }
   }
 </script>

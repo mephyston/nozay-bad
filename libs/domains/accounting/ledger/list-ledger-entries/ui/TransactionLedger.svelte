@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { Search, X, Filter, ChevronDown } from '@lucide/svelte';
-  import { Button, Dialog, Sheet, Tabs, Input, DropdownMenu, Checkbox, AlertDialog, DataTableToolbar, FormField, SearchableCombobox, softNavigate, submitForm, toast, toSeasonOptions } from '@nba/ui';
+  import { Button, Dialog, Sheet, Tabs, Input, DropdownMenu, Checkbox, AlertDialog, DataTableToolbar, FormField, SearchableCombobox, softNavigate, submitForm, toSeasonOptions, uiAlert } from '@nba/ui';
   import type { Transaction, Pagination, BalanceReport, Season, Category, AccountClass } from './ledger-types';
   import { submitTransaction, validateTransaction, deleteTransaction, editValuesFor, changePage as actionChangePage, applySeasonChange as actionApplySeasonChange } from './ledger-actions';
   import TransactionLedgerBalances from './TransactionLedgerBalances.svelte';
@@ -255,7 +255,6 @@
     await submitForm({
       validate: () => validateTransaction(values),
       submit: () => submitTransaction(values),
-      success: editingId ? 'Écriture mise à jour.' : 'Écriture enregistrée.',
       close: () => { showPanel = null; },
       // Le sheet couvre la page : le refus s'affiche dans le formulaire lui-même.
       onError: (message) => { errorMsg = message; }
@@ -279,9 +278,8 @@
     sessionStorage.setItem('ledger_scroll_y', window.scrollY.toString());
     await submitForm({
       submit: () => deleteTransaction(id),
-      success: 'Écriture supprimée.',
       close: () => { deleteDialogData = null; },
-      onError: (message) => { deleteDialogData = null; toast.error(message); }
+      onError: (message) => { deleteDialogData = null; uiAlert(message); }
     });
   }
 

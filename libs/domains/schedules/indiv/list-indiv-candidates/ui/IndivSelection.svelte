@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Sparkles, Save, Megaphone, Copy } from '@lucide/svelte';
-  import { Button, Badge, Alert, toast, uiConfirm, flashAndReload } from '@nba/ui';
+  import { Button, Badge, Alert, toast, uiConfirm, flashAndReload, uiAlert } from '@nba/ui';
   import { formatWindow, type SlotWindow } from '../../../shared/indiv';
   import { ageAt, announcementText, proposeSelection, rankCandidates } from '../../../shared/indiv-selection';
 
@@ -58,7 +58,7 @@
   function assign(requestId: number, slot: number | null) {
     if (slot !== null && assignments[requestId] !== slot) {
       const taken = Object.values(assignments).filter((s) => s === slot).length;
-      if (taken >= session.capacityPerSlot) { toast.error('Ce créneau a déjà toutes ses places.'); return; }
+      if (taken >= session.capacityPerSlot) { uiAlert('Ce créneau a déjà toutes ses places.'); return; }
     }
     assignments = { ...assignments, [requestId]: slot };
   }
@@ -88,7 +88,7 @@
   async function save() {
     busy = true;
     try { await post('select', { selection: selection() }); flashAndReload('Sélection enregistrée.'); }
-    catch (error) { toast.error(error instanceof Error ? error.message : "L'enregistrement a échoué."); busy = false; }
+    catch (error) { uiAlert(error instanceof Error ? error.message : "L'enregistrement a échoué."); busy = false; }
   }
 
   async function announce() {
@@ -103,13 +103,13 @@
       if (dirty) await post('select', { selection: selection() });
       await post('announce');
       flashAndReload('Retenus annoncés.');
-    } catch (error) { toast.error(error instanceof Error ? error.message : "L'annonce a échoué."); busy = false; }
+    } catch (error) { uiAlert(error instanceof Error ? error.message : "L'annonce a échoué."); busy = false; }
   }
 
   async function copy() {
     const text = announcementText({ dateLabel, venueName: session.venueName, slots: session.slots, selectedBySlot });
     try { await navigator.clipboard.writeText(text); toast.success('Annonce copiée, prête à coller.'); }
-    catch { toast.error('Copie impossible : sélectionnez le texte à la main.'); }
+    catch { uiAlert('Copie impossible : sélectionnez le texte à la main.'); }
   }
 
   const rankings = (c: Candidate) => [c.singles, c.doubles, c.mixed].map((r) => r ?? '—').join(' / ');

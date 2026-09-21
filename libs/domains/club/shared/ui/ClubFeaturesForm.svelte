@@ -67,7 +67,6 @@
         if (!res.ok) throw new Error(await readApiError(res, "L'enregistrement a échoué."));
         onSaved?.();
       },
-      success: 'Fonctionnalités enregistrées.',
       onError: (message) => {
         errorMsg = message;
       }

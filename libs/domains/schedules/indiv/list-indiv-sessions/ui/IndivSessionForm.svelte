@@ -73,7 +73,6 @@
           throw new Error(message);
         }
       },
-      success: '',
       close: () => { open = false; flashAndReload(id ? 'Soirée mise à jour.' : 'Soirée ajoutée.'); },
       onError: (message) => { error = message; }
     });

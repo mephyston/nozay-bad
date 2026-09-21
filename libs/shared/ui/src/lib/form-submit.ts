@@ -1,5 +1,5 @@
 import { flashAndReload } from './flash';
-import { toast } from '../components/ui/sonner';
+import { uiAlert } from '../components/ui/alert-dialog/confirm';
 
 /**
  * Déroulé commun à toutes les soumissions de formulaire de l'admin.
@@ -12,15 +12,24 @@ import { toast } from '../components/ui/sonner';
  *  - **échec de validation** : rien n'est envoyé, le formulaire reste ouvert ;
  *  - **échec de l'écriture** : le formulaire reste ouvert avec les saisies, pour que
  *    l'utilisateur corrige au lieu de tout ressaisir ;
- *  - **succès** : on ferme *puis* on confirme via {@link flashAndReload}, qui rejoue le
- *    toast après le réaffichage de la liste (cf. `flash.ts` : un `toast()` émis avant la
- *    navigation serait perdu).
+ *  - **succès** : on ferme, puis on réaffiche la liste via {@link flashAndReload}.
+ *
+ * Le message de succès est **facultatif, et l'exception**. Quand la liste réaffichée
+ * porte déjà la trace de l'écriture — la ligne créée, modifiée ou disparue —, le
+ * message ne fait que répéter ce que l'écran montre, en recouvrant justement l'endroit
+ * qu'on vient de regarder. On ne le fournit que lorsque l'effet n'est visible nulle
+ * part : un courriel parti, un export lancé, un cache invalidé.
  */
 export interface SubmitFormOptions<T> {
   /** L'écriture. Doit lever une erreur si le serveur refuse. */
   submit: () => Promise<T>;
-  /** Confirmation à afficher, ou fonction du résultat de `submit`. */
-  success: string | ((result: T) => string);
+  /**
+   * Confirmation à afficher, ou fonction du résultat de `submit`.
+   *
+   * À omettre lorsque la liste réaffichée porte déjà la trace de l'écriture — c'est
+   * le cas courant. Voir l'en-tête du module.
+   */
+  success?: string | ((result: T) => string);
   /**
    * Contrôles préalables. Renvoie le message à afficher, ou `null` si tout est valide.
    * Aucune requête n'est émise tant qu'un message est renvoyé.
@@ -29,8 +38,9 @@ export interface SubmitFormOptions<T> {
   /** Ferme le sheet / la dialog. Appelé uniquement en cas de succès, avant la navigation. */
   close?: () => void;
   /**
-   * Restitution de l'échec. Par défaut un toast d'erreur ; à surcharger par les écrans
-   * qui affichent le message dans le formulaire lui-même.
+   * Restitution de l'échec. Par défaut une alerte à acquitter ; à surcharger par les
+   * écrans qui affichent le message dans le formulaire lui-même, ce qui reste
+   * préférable quand il y a un formulaire pour l'accueillir.
    */
   onError?: (message: string) => void;
   /** Écran à afficher ensuite. Par défaut on réaffiche la page courante. */
@@ -44,7 +54,7 @@ const DEFAULT_ERROR = 'Une erreur est survenue.';
  * cas une navigation est déjà en cours et l'appelant n'a plus rien à afficher.
  */
 export async function submitForm<T>(options: SubmitFormOptions<T>): Promise<boolean> {
-  const fail = options.onError ?? ((message: string) => toast.error(message));
+  const fail = options.onError ?? ((message: string) => void uiAlert(message));
 
   const invalid = options.validate?.();
   if (invalid) {
@@ -61,6 +71,8 @@ export async function submitForm<T>(options: SubmitFormOptions<T>): Promise<bool
   }
 
   options.close?.();
-  flashAndReload(typeof options.success === 'function' ? options.success(result) : options.success, 'success', options.url);
+  // Message vide : `consumeFlash` l'ignore, la liste se réaffiche sans rien annoncer.
+  const message = typeof options.success === 'function' ? options.success(result) : (options.success ?? '');
+  flashAndReload(message, 'success', options.url);
   return true;
 }

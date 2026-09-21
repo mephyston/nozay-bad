@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Button, SearchableCombobox, Alert } from '@nba/ui';
+  import { Button, SearchableCombobox, Alert, uiAlert } from '@nba/ui';
   import { TriangleAlert, CircleCheck, Info } from '@lucide/svelte';
   import type { GetLineupOutput, LineupSlotView, LineupCandidate } from '../../get-lineup/dto';
   import { DISCIPLINE_RANKING } from '../../shared/ranking';
@@ -17,7 +17,7 @@
   /**
    * Retour affiché **dans la page**, et non par une notification.
    *
-   * L'espace adhérent ne monte aucun `Toaster` : un `toast.error()` y disparaît sans
+   * L'espace adhérent ne monte aucun `Toaster` : un `uiAlert()` y disparaît sans
    * laisser de trace, et le capitaine voyait son enregistrement échouer en silence —
    * y compris quand le serveur donnait un motif précis. Le message se lit ici, à côté
    * de ce qu'il concerne.

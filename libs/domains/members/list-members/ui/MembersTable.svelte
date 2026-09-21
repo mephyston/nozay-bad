@@ -2,7 +2,7 @@
 </script>
 <script lang="ts">
   import { Eye, ChevronRight, Receipt } from '@lucide/svelte';
-  import { Button, Badge, DropdownMenu, DataTable, Table, DataTableColumnHeader, DataTableRowActions, MemberAvatar, uiConfirm, toast, flashAndReload, softNavigate, openDocument } from '@nba/ui';
+  import { Button, Badge, DropdownMenu, DataTable, Table, DataTableColumnHeader, DataTableRowActions, MemberAvatar, uiConfirm, flashAndReload, softNavigate, openDocument, uiAlert } from '@nba/ui';
   import type { Member, Pagination, Filters, Season } from './members-table-types';
   import { membershipStatusLabel, membershipStatusVariant } from '../../shared/membership-status';
   import MembersTableFiltersPopover from './MembersTableFiltersPopover.svelte';
@@ -68,9 +68,9 @@
         return;
       }
       const txt = await res.text().catch(() => '');
-      toast.error(txt || `Échec de la mise à jour (HTTP ${res.status}).`);
+      uiAlert(txt || `Échec de la mise à jour (HTTP ${res.status}).`);
     } catch (e: any) {
-      toast.error('Erreur réseau : ' + (e?.message ?? String(e)));
+      uiAlert('Erreur réseau : ' + (e?.message ?? String(e)));
     }
     togglingId = null;
   }
