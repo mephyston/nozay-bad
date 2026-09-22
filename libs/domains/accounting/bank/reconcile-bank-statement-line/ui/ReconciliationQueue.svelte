@@ -2,6 +2,8 @@
   import { CheckCircle2, Inbox, Info, Search, TriangleAlert, X } from '@lucide/svelte';
   import { Amount, Badge, Button, Card, Input, SearchableCombobox } from '@nba/ui';
   import ReconciliationRow from './ReconciliationRow.svelte';
+  import ReconciliationList from './ReconciliationList.svelte';
+  import ReconciliationQueueFilters from './ReconciliationQueueFilters.svelte';
   import ReconciliationStatementSheet from '../../get-reconciliation-statement/ui/ReconciliationStatementSheet.svelte';
   import { isOneClickValidatable, parseSuggestion } from './reconciliation-suggestion';
   import ReconciliationRowDetail from './ReconciliationRowDetail.svelte';
@@ -207,65 +209,7 @@
     </div>
 
 
-    <!--
-      Le filtre par mois est retiré : il n'était pas utilisé, et sur mobile il tenait la ligne à
-      trois contrôles, dont deux illisibles. La recherche couvre le même besoin.
-    -->
-    <div class="flex items-center gap-2">
-      <div class="relative min-w-0 flex-1">
-        <!--
-          Aucune hauteur imposée : `Input` et le combobox portent tous deux `h-11 sm:h-8`, soit la
-          cible tactile de 44 px sur mobile. La forcer à `h-8` sur le seul champ de recherche le
-          désalignait du sélecteur de compte, juste à côté.
-
-          La loupe passe par la prop `icon` du composant, et non par un positionnement à la main.
-
-          Posée en absolu au-dessus du champ, elle chevauchait le texte : le `pl-7` de l'appelant
-          se faisait écraser dès le palier `sm` par le `sm:px-2.5` du composant — une classe non
-          préfixée ne l'emporte pas sur une variante responsive. `Input` applique `!pl-9` quand on
-          lui passe une icône, ce qui, lui, tranche.
-        -->
-        <Input
-          type="text"
-          icon={Search}
-          placeholder="Rechercher une opération…"
-          bind:value={reconState.searchQuery}
-          bind:ref={searchInput}
-          class="text-xs !pr-8"
-        />
-        {#if reconState.searchQuery}
-          <button
-            type="button"
-            class="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-            onclick={() => (reconState.searchQuery = '')}
-          >
-            <X class="h-3.5 w-3.5" />
-          </button>
-        {/if}
-      </div>
-      <!--
-        Le compte sur lequel on rapproche.
-
-        Un rapprochement se pose compte par compte : c'est l'unité sur laquelle l'état vérifie son
-        identité. Le filtre ne s'affiche que s'il y a matière à trancher, et chaque compte annonce
-        ce qu'il lui reste — c'est là que se lit où le travail attend.
-      -->
-      {#if !reconState.isSingleAccount}
-        <SearchableCombobox
-          class="text-xs w-32 shrink-0 sm:w-52"
-          items={[
-            { label: `Tous les comptes (${reconState.pendingCount})`, value: '' },
-            ...reconState.accountOptions.map((a) => ({
-              label: `${a.label} (${a.pendingCount})`,
-              value: a.id
-            }))
-          ]}
-          bind:value={reconState.accountFilter}
-        />
-      {/if}
-
-    </div>
-
+    <ReconciliationQueueFilters bind:state={reconState} bind:searchInput />
   </div>
 
   <!--
@@ -296,18 +240,30 @@
         {/if}
       </div>
     {:else}
-      {#each rows as line (line.id)}
-        <ReconciliationRow
-          bind:state={reconState}
-          {line}
-          isExpanded={reconState.selectedTx?.id === line.id}
-          isFocused={focusedLine?.id === line.id}
-          isDimmed={!!reconState.selectedTx && reconState.selectedTx.id !== line.id}
-          accountLabel={showAccountOnRows ? accountLabelOf(line) : null}
-        >
-          <ReconciliationRowDetail bind:state={reconState} {line} />
-        </ReconciliationRow>
-      {/each}
+      <!--
+        Deux présentations d'une même file. La rangée de bureau oppose le fait bancaire à
+        sa proposition sur une grille à colonnes fixes, et déplie la décision sous elle ;
+        au doigt, elle porterait quatre boutons d'icône muets et un formulaire plus haut
+        que l'écran. {@link ReconciliationList} y répond par le balayage et une fiche.
+      -->
+      <div class="hidden md:block">
+        {#each rows as line (line.id)}
+          <ReconciliationRow
+            bind:state={reconState}
+            {line}
+            isExpanded={reconState.selectedTx?.id === line.id}
+            isFocused={focusedLine?.id === line.id}
+            isDimmed={!!reconState.selectedTx && reconState.selectedTx.id !== line.id}
+            accountLabel={showAccountOnRows ? accountLabelOf(line) : null}
+          >
+            <ReconciliationRowDetail bind:state={reconState} {line} />
+          </ReconciliationRow>
+        {/each}
+      </div>
+
+      <div class="md:hidden">
+        <ReconciliationList bind:state={reconState} {rows} />
+      </div>
     {/if}
   </div>
 </Card.Root>

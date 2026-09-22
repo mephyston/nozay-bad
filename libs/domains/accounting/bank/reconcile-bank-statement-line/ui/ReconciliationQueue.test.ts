@@ -252,15 +252,17 @@ describe('le filtre par compte', () => {
   /*
     L'écran s'ouvre sur un compte, jamais sur un mélange.
 
-    « Tous les comptes » reste proposé, mais ne peut pas être le défaut : la file ne correspondrait
-    alors à aucun des états de rapprochement affichés au-dessus. Le combobox ne rend ses options
-    qu'à l'ouverture — seul le libellé sélectionné est dans le DOM au repos.
+    « Tous les comptes » reste proposé — c'est une option du choix — mais ne peut pas être le
+    défaut : la file ne correspondrait alors à aucun des états de rapprochement affichés
+    au-dessus. On vérifie donc l'option **retenue**, et non l'absence du libellé : le champ de
+    choix du design system rend toutes ses options, là où le combobox n'affichait que l'élue.
   */
   it('s\'ouvre sur le compte qui a le plus à traiter', () => {
     const target = render(multi(), { reconciliationStatements: statements });
 
-    expect(target.innerHTML).toContain('Compte Courant (2)');
-    expect(target.innerHTML).not.toContain('Tous les comptes');
+    const choix = target.querySelector('#recon-account-desktop') as HTMLSelectElement;
+    expect(choix, 'le choix de compte doit être rendu').not.toBeNull();
+    expect(choix.selectedOptions[0]?.textContent?.trim()).toBe('Compte Courant (2)');
     // Et la file se limite à ce compte.
     expect(target.innerHTML).toContain('COURANT UN');
     expect(target.innerHTML).not.toContain('LIVRET UN');
