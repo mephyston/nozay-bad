@@ -57,8 +57,12 @@
 <div class="mt-6">
   <PageHeader title={titre} description="">
     {#snippet actions()}
+      <!-- Au doigt, l'exercice se change depuis la barre du bas : un document qu'on
+           fait défiler sur plusieurs écrans n'a pas à garder ses contrôles en tête. -->
       {#if seasons.length}
-        <SeasonSelector {seasons} current={seasonId} />
+        <div class="hidden md:block">
+          <SeasonSelector {seasons} current={seasonId} />
+        </div>
       {/if}
     {/snippet}
   </PageHeader>

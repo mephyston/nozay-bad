@@ -1,7 +1,20 @@
 <script lang="ts">
   import { tick } from 'svelte';
-  import { ChevronDown } from '@lucide/svelte';
-  import { Tabs, Button, DropdownMenu, submitForm, uiConfirm, readApiError, openDocument } from '@nba/ui';
+  import { BarChart3, CalendarRange, ChevronDown, Printer } from '@lucide/svelte';
+  import {
+    Tabs,
+    Button,
+    ChoicePicker,
+    DropdownMenu,
+    dockDePage,
+    softNavigate,
+    submitForm,
+    toSeasonOptions,
+    uiConfirm,
+    readApiError,
+    openDocument,
+    type SwipeAction
+  } from '@nba/ui';
   import type { ReportData, Season, DbCategory, AccountClass, BudgetRecord } from './report-types';
   import { generatePieSlices } from './report-utils';
   import { defaultChargeClasses, defaultProduitClasses } from './report-constants';
@@ -197,6 +210,60 @@
     unclassifiedClass('recette')
   ]);
 
+  /**
+   * Imprimer et changer d'exercice descendent dans la barre du bas.
+   *
+   * Un rapport n'est pas une liste : il n'a ni recherche, ni critères à poser, et le
+   * reste de l'écran ne gagne rien à être repris. Ces deux-là, si — ce sont les seuls
+   * gestes de la page, et ils vivaient en haut d'un document qu'on fait défiler sur
+   * plusieurs écrans de haut.
+   *
+   * L'exercice y est une action et non un filtre : il ne réduit pas ce qu'on lit, il
+   * choisit quel document on lit.
+   */
+  let exerciceOuvert = $state(false);
+
+  const seasonOptions = $derived(
+    toSeasonOptions(seasons).map((o) => ({ value: String(o.value), label: o.label }))
+  );
+
+  $effect(() => {
+    const actions: SwipeAction[] = [];
+    if (view !== 'budget' && pdfDoc) {
+      const nom =
+        view === 'analytique'
+          ? 'Suivi analytique (PDF)'
+          : view === 'tresorerie'
+            ? 'Bilan de trésorerie (PDF)'
+            : 'Compte de résultat (PDF)';
+      actions.push({ id: 'pdf', label: nom, icon: Printer, run: openPdf });
+    }
+    if (view === 'resultat') {
+      actions.push({
+        id: 'graphiques',
+        label: 'Imprimer les graphiques',
+        icon: BarChart3,
+        run: () => printSection('graph-realise')
+      });
+    }
+    if (seasonOptions.length > 1) {
+      actions.push({
+        id: 'exercice',
+        label: "Changer d'exercice",
+        icon: CalendarRange,
+        run: () => (exerciceOuvert = true)
+      });
+    }
+    if (actions.length === 0) return;
+    return dockDePage.declarerActions(actions);
+  });
+
+  function choisirExercice(code: string) {
+    const url = new URL(window.location.href);
+    url.searchParams.set('season', code);
+    softNavigate(url.toString());
+  }
+
   const compResultatProps = $derived({
     report, prevReport, selectedSeason, seasons, categories, chargeClasses, produitClasses,
     isClosed, isSaving, saveStatus, getClassCategories, getClassSumRealise, getClassSumPrevisionnel,
@@ -207,7 +274,8 @@
 
 <div class="space-y-6 {printTarget ? `printing print-${printTarget}` : ''}">
   {#if view !== 'budget'}
-    <div class="flex justify-end mb-6 no-print">
+    <!-- Sur téléphone, ces impressions vivent dans la barre du bas. -->
+    <div class="mb-6 hidden justify-end no-print md:flex">
       <DropdownMenu.Root>
         <DropdownMenu.Trigger>
           {#snippet child({ props })}
@@ -253,6 +321,14 @@
       {/if}
     </div>
   </div>
+
+  <ChoicePicker
+    bind:open={exerciceOuvert}
+    title="Exercice"
+    value={selectedSeason}
+    options={seasonOptions}
+    onChoose={choisirExercice}
+  />
 
   <!--
     IMPRESSION : sections dédiées, toujours montées mais cachées à l'écran.
