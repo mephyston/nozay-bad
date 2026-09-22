@@ -260,7 +260,9 @@ describe('le filtre par compte', () => {
   it('s\'ouvre sur le compte qui a le plus à traiter', () => {
     const target = render(multi(), { reconciliationStatements: statements });
 
-    const choix = target.querySelector('#recon-account-desktop') as HTMLSelectElement;
+    // Le double passage est la convention du dépôt ici : `Element` de jsdom et celui
+    // des types du DOM ne se recouvrent pas assez pour tsc.
+    const choix = target.querySelector('#recon-account-desktop') as unknown as HTMLSelectElement;
     expect(choix, 'le choix de compte doit être rendu').not.toBeNull();
     expect(choix.selectedOptions[0]?.textContent?.trim()).toBe('Compte Courant (2)');
     // Et la file se limite à ce compte.
