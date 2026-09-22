@@ -24,7 +24,7 @@
     onDisclosure,
     nested = false,
     chevron = !!href || !!onclick,
-    selected = false,
+    selected = undefined,
     disabled = false,
     class: className,
     children
@@ -92,6 +92,16 @@
      * aux autres, et la colonne de droite cesse d'être une colonne.
      */
     chevron?: boolean | 'none';
+    /**
+     * Rangée retenue dans une sélection.
+     *
+     * Fournie — même à `false` — elle fait de la rangée un **interrupteur** : le bouton
+     * porte `aria-pressed`, et le lecteur d'écran annonce l'état au lieu de le taire.
+     * C'est ce dont une liste à sélection multiple a besoin : les chèques qu'on prépare
+     * pour une remise se cochent ligne à ligne, et rien ne le disait.
+     *
+     * Omise, la rangée reste une navigation ordinaire et n'annonce rien.
+     */
     selected?: boolean;
     disabled?: boolean;
     class?: string;
@@ -240,6 +250,7 @@
       <button
         type="button"
         {onclick}
+        aria-pressed={selected}
         class="flex min-h-[3.25rem] min-w-0 flex-1 items-center gap-3 py-2.5 text-left text-foreground"
       >
         {@render body()}

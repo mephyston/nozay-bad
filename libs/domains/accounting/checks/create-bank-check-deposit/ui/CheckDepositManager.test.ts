@@ -185,4 +185,112 @@ describe('CheckDepositManager Component', () => {
     const openButton = Array.from(buttons).find(btn => btn.textContent?.includes('Enregistrer un chèque'));
     expect(openButton).toBeDefined();
   });
+  /*
+    La vue au doigt. Les deux tableaux rendaient des cartes écrites à la main, dont le
+    menu d'actions était un bouton d'icône de 32 px posé dans un coin. La rangée de
+    liste dit la même chose, et son geste central — retenir un chèque pour une remise —
+    prend toute la ligne au lieu d'une case de 20 px.
+  */
+  const jeuComplet = {
+    seasonId: '25-26',
+    seasons: [{ id: '25-26', name: 'Saison 2025-2026', active: true }],
+    checks: [
+      {
+        id: 1,
+        checkDepositId: null,
+        seasonId: '25-26',
+        number: '1234567',
+        amount: 15000,
+        emitter: 'Dupont Marc',
+        bank: 'Société Générale',
+        memberId: 10,
+        ledgerEntryId: null,
+        status: 'received',
+        photoUrl: null,
+        createdAt: '2026-07-13T12:00:00Z',
+        memberName: 'Dupont Marc',
+        memberLicence: 'LIC-123'
+      }
+    ],
+    checkDeposits: [
+      {
+        id: 2,
+        seasonId: '25-26',
+        reference: 'REMISE-OLD-1',
+        date: '2026-07-12',
+        amount: 30000,
+        status: 'deposited' as const,
+        bankStatementLineId: null,
+        createdAt: '2026-07-12T12:00:00Z'
+      }
+    ],
+    members: [
+      { id: 10, licence: 'LIC-123', lastName: 'DUPONT', firstName: 'Marc', parent1Name: null, parent2Name: null }
+    ],
+    pendingBankTransactions: []
+  };
+
+  function monter(props: Record<string, unknown> = {}) {
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+    component = mount(CheckDepositManager, { target, props: { ...jeuComplet, ...props } });
+    flushSync();
+    return target;
+  }
+
+  const rangees = (t: HTMLElement) => Array.from(t.querySelectorAll('[data-list-row]'));
+  const libellesDeBalayage = (li: Element) =>
+    Array.from(li.querySelectorAll('[data-swipe-track] button')).map((b) => (b.textContent || '').trim());
+
+  it('projette un chèque en rangée : émetteur, numéro, banque, date et montant', () => {
+    const target = monter();
+    const cheque = rangees(target).find((li) => li.textContent?.includes('Dupont Marc'));
+    expect(cheque, 'la vue au doigt doit rendre une rangée par chèque').toBeTruthy();
+    const texte = (cheque!.textContent ?? '').replace(/[\u00a0\u202f]/g, ' ');
+    expect(texte).toContain('N° 1234567 · Société Générale');
+    expect(texte).toContain('150,00');
+  });
+
+  it("fait de la rangée l'interrupteur de sélection, et l'annonce", () => {
+    const target = monter();
+    const cheque = rangees(target).find((li) => li.textContent?.includes('Dupont Marc'))!;
+    const bouton = cheque.querySelector('[data-swipe-layer] > button') as HTMLButtonElement;
+
+    // `aria-pressed` : sans lui, un lecteur d'écran ne dit pas ce qui est retenu.
+    expect(bouton.getAttribute('aria-pressed')).toBe('false');
+    bouton.click();
+    flushSync();
+    expect(
+      (target.querySelector('[data-list-row] [data-swipe-layer] > button') as HTMLButtonElement)
+        .getAttribute('aria-pressed')
+    ).toBe('true');
+  });
+
+  it("retire tout geste à un chèque déjà inscrit sur un bordereau", () => {
+    const target = monter({
+      checks: [{ ...jeuComplet.checks[0], checkDepositId: 2 }]
+    });
+    const cheque = rangees(target).find((li) => li.textContent?.includes('Dupont Marc'))!;
+    expect(libellesDeBalayage(cheque)).toEqual([]);
+    // Et il ne se retient plus : il appartient à cette remise.
+    expect(cheque.querySelector('[data-swipe-layer] > button')).toBeNull();
+  });
+
+  it('révèle au balayage la modification puis la suppression', () => {
+    const target = monter();
+    const cheque = rangees(target).find((li) => li.textContent?.includes('Dupont Marc'))!;
+    expect(libellesDeBalayage(cheque)).toEqual(['Modifier', 'Supprimer']);
+  });
+
+  it("projette un bordereau, et son étape suivante vient en tête", () => {
+    const target = monter({ initialTab: 'deposits' });
+    const remise = rangees(target).find((li) => li.textContent?.includes('REMISE-OLD-1'));
+    expect(remise, 'la vue au doigt doit rendre une rangée par bordereau').toBeTruthy();
+    const texte = (remise!.textContent ?? '').replace(/[\u00a0\u202f]/g, ' ');
+    expect(texte).toContain('12/07/2026');
+    expect(texte).toContain('300,00');
+    expect(texte).toContain('Déposée');
+    // Déposée : l'étape suivante est l'encaissement.
+    expect(libellesDeBalayage(remise!)[0]).toBe('Encaisser (ligne du relevé)');
+  });
 });

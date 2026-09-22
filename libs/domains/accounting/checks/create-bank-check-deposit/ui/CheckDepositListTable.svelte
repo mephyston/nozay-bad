@@ -1,6 +1,23 @@
 <script lang="ts">
-  import { CheckCircle, Landmark, MoreVertical, FileText, Trash2 } from '@lucide/svelte';
-  import { Button, Badge, Amount, DropdownMenu, DataTable, Table, DataTableToolbar, FormField, SearchableCombobox, Card, softNavigate, openDocument, toSeasonOptions } from '@nba/ui';
+  import { CheckCircle } from '@lucide/svelte';
+  import {
+    Badge,
+    Amount,
+    ChoiceField,
+    DataTable,
+    DataTableRowActions,
+    DropdownMenu,
+    FilterSheet,
+    FormField,
+    RowActionItems,
+    Table,
+    DataTableToolbar,
+    softNavigate,
+    openDocument,
+    toSeasonOptions
+  } from '@nba/ui';
+  import DepositsList from './DepositsList.svelte';
+  import { gestesDeRemise, statutDeRemise } from './checks-row-model';
   import type { CheckDepositState } from './check-deposit-state.svelte';
   import type { CheckDeposit } from './check-deposit-types';
 
@@ -19,6 +36,32 @@
   let { depositState, seasonId, seasons, checkDeposits, onDeleteDeposit, onConfirmDeposit, tabsNav }: Props = $props();
 
   let depositSearchQuery = $state('');
+  let filtresOuverts = $state(false);
+
+  const seasonItems = $derived(
+    (seasons.length > 0 ? toSeasonOptions(seasons) : [{ label: 'Saison 2025-2026', value: '25-26' }]).map(
+      (o) => ({ value: String(o.value), label: o.label })
+    )
+  );
+
+  function changerSaison(code: string) {
+    /* On reste sur l'écran courant : `/cheques` est le hub qui mène aux deux tableaux. */
+    const params = new URLSearchParams(window.location.search);
+    params.set('season', code);
+    softNavigate(`${window.location.pathname}?${params.toString()}`);
+  }
+
+  /** Les gestes d'un bordereau, déclarés une fois pour la table comme pour la liste. */
+  const gestes = $derived({
+    isClosed: depositState.isClosed,
+    onConsulter: (dep: CheckDeposit) => openDocument(`/admin/accounting/cheques/deposits/${dep.id}`),
+    onConfirmer: onConfirmDeposit,
+    onEncaisser: (dep: CheckDeposit) => {
+      depositState.selectedDepositToClear = dep;
+      depositState.showClearModal = true;
+    },
+    onSupprimer: onDeleteDeposit
+  });
 
   const filteredDeposits = $derived.by(() => {
     if (!depositSearchQuery) return checkDeposits;
@@ -29,87 +72,46 @@
 
 <!-- Le statut et le menu d'une remise, partagés par la table et la carte mobile. -->
 {#snippet status(dep: CheckDeposit)}
-  <!-- à déposer → déposée → encaissée : la remise naît sur le bureau, pas au guichet. -->
-  {#if dep.status === 'cleared'}
-    <Badge variant="success">
-      <CheckCircle class="h-3 w-3" /> Encaissée
-    </Badge>
-  {:else if dep.status === 'deposited'}
-    <Badge variant="info">
-      Déposée
-    </Badge>
-  {:else}
-    <Badge variant="warning">
-      À déposer
-    </Badge>
-  {/if}
+  {@const st = statutDeRemise(dep)}
+  <Badge variant={st.variant as 'success'}>
+    {#if dep.status === 'cleared'}<CheckCircle class="h-3 w-3" />{/if}
+    {st.label}
+  </Badge>
 {/snippet}
 
 {#snippet actions(dep: CheckDeposit)}
-  <DropdownMenu.Root>
-    <DropdownMenu.Trigger asChild>
-      {#snippet child({ props })}
-        <Button 
-          {...props}
-          variant="ghost"
-          size="icon"
-          class="text-muted-foreground hover:text-foreground hover:bg-muted p-1 rounded-lg transition-colors cursor-pointer border-0 bg-transparent flex items-center justify-center inline-flex" 
-          aria-label="Actions"
-        >
-          <MoreVertical class="w-4 h-4" />
-          <span class="sr-only">Toggle menu</span>
-        </Button>
-      {/snippet}
-    </DropdownMenu.Trigger>
-
-    <DropdownMenu.Content class="w-48" align="end">
-      <DropdownMenu.Item
-        onclick={() => openDocument(`/admin/accounting/cheques/deposits/${dep.id}`)}
-        class="cursor-pointer"
-      >
-        <FileText class="w-3.5 h-3.5 mr-2" />
-        Consulter / Imprimer
-      </DropdownMenu.Item>
-      
-      {#if dep.status === 'pending' && !depositState.isClosed}
-        <DropdownMenu.Item
-          onclick={() => onConfirmDeposit(dep.id)}
-          class="text-primary focus:text-primary cursor-pointer"
-        >
-          <Landmark class="w-3.5 h-3.5 mr-2" />
-          Confirmer le dépôt en banque
-        </DropdownMenu.Item>
-      {/if}
-
-      {#if dep.status === 'deposited' && !depositState.isClosed}
-        <DropdownMenu.Item
-          onclick={() => {
-            depositState.selectedDepositToClear = dep;
-            depositState.showClearModal = true;
-          }}
-          class="text-primary focus:text-primary cursor-pointer"
-        >
-          <CheckCircle class="w-3.5 h-3.5 mr-2" />
-          Encaisser (ligne du relevé)
-        </DropdownMenu.Item>
-      {/if}
-
-      {#if !depositState.isClosed}
-        <DropdownMenu.Item
-          onclick={() => onDeleteDeposit(dep.id)}
-          class="text-destructive focus:text-destructive cursor-pointer"
-        >
-          <Trash2 class="w-3.5 h-3.5 mr-2" />
-          Supprimer la remise
-        </DropdownMenu.Item>
-      {/if}
-    </DropdownMenu.Content>
-  </DropdownMenu.Root>
+  {@const liste = gestesDeRemise(dep, gestes)}
+  <DataTableRowActions>
+    <DropdownMenu.Label>Actions</DropdownMenu.Label>
+    <RowActionItems actions={liste} item={dep} />
+  </DataTableRowActions>
 {/snippet}
+
+{#snippet criteresDeListe()}
+  <FormField id="filter-season-deposits" label="Saison">
+    <ChoiceField
+      id="filter-season-deposits"
+      label="Saison"
+      options={seasonItems}
+      value={seasonId}
+      onChange={changerSaison}
+    />
+  </FormField>
+{/snippet}
+
+<FilterSheet
+  bind:open={filtresOuverts}
+  description="La saison fixe le périmètre des bordereaux."
+  resultCount={filteredDeposits.length}
+  itemName="bordereau"
+  itemNamePlural="bordereaux"
+>
+  {@render criteresDeListe()}
+</FilterSheet>
 
 <DataTable
   data={filteredDeposits}
-  mobileSpacing="spaced"
+  mobileSpacing="list"
   emptyTitle="Aucun bordereau"
   emptyDescription="Aucun bordereau de remise enregistré."
 >
@@ -121,25 +123,16 @@
   {#snippet toolbar()}
     <DataTableToolbar
       bind:searchValue={depositSearchQuery}
-      searchPlaceholder="Rechercher par référence..."
+      searchPlaceholder="Rechercher un bordereau (référence…)"
+      dockSearch={depositState.activeTab === 'deposits'}
       hasFilters={true}
-      filtersActive={!!seasonId && seasons.length > 0}
+      filtersActive={false}
+      onOpenFilters={() => (filtresOuverts = true)}
     >
       {#snippet filters()}
-          <FormField id="filter-season" label="Saison">
-          <SearchableCombobox
-            id="filter-season"
-            items={seasons.length > 0 ? toSeasonOptions(seasons) : [{ label: 'Saison 2025-2026', value: '25-26' }]}
-            value={seasonId}
-            onValueChange={(v) => {
-              // On reste sur l'écran courant : `/cheques` est le hub qui mène aux deux tableaux,
-              // pas l'un d'eux — y renvoyer faisait perdre le tableau qu'on venait de filtrer.
-              const params = new URLSearchParams(window.location.search);
-              params.set('season', String(v));
-              softNavigate(`${window.location.pathname}?${params.toString()}`);
-            }}
-          />
-        </FormField>
+        <div class="space-y-4">
+          {@render criteresDeListe()}
+        </div>
       {/snippet}
     </DataTableToolbar>
   {/snippet}
@@ -153,41 +146,7 @@
   {/snippet}
 
   {#snippet mobileView()}
-    <!-- Même motif que la liste des chèques : à la largeur d'un téléphone, la table débordait et
-         cachait le montant comme le menu. -->
-    {#each filteredDeposits as dep (dep.id)}
-      <Card.Root size="sm" class="py-0">
-        <Card.Content class="p-3">
-          <div class="flex items-start gap-2">
-            <div class="min-w-0 flex-1">
-              <div class="flex items-start justify-between gap-2">
-                <div class="min-w-0">
-                  <div class="truncate text-sm font-semibold text-foreground">{dep.reference}</div>
-                  <div class="text-xs text-muted-foreground">
-                    {new Date(dep.date).toLocaleDateString('fr-FR')}
-                  </div>
-                </div>
-                <Amount cents={(dep as any).amountCents ?? dep.amount} class="shrink-0 text-base font-bold text-foreground" />
-              </div>
-              <div class="mt-2 flex flex-wrap items-center gap-2">
-                {@render status(dep)}
-                {#if dep.status === 'cleared'}
-                  <span class="text-xs text-success font-semibold flex items-center gap-1">
-                    <CheckCircle class="w-3.5 h-3.5" />
-                    Rapproché (SG #{dep.bankStatementLineId})
-                  </span>
-                {:else}
-                  <span class="text-xs text-muted-foreground italic">Non rapproché</span>
-                {/if}
-              </div>
-            </div>
-            <div class="-mr-2 -mt-1 shrink-0">
-              {@render actions(dep)}
-            </div>
-          </div>
-        </Card.Content>
-      </Card.Root>
-    {/each}
+    <DepositsList deposits={filteredDeposits} {...gestes} />
   {/snippet}
 
   {#snippet row(dep)}
