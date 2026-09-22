@@ -41,7 +41,15 @@
 </script>
 
 <ResponsiveSheet bind:open {title} {description} detents={[0.55, 0.92]} size="sm">
-  {@render children()}
+  <!--
+    L'espacement des critères appartient à la feuille, pas à ses appelants.
+
+    Chacun posait le sien, et l'un d'eux l'avait oublié : ses deux champs se touchaient.
+    Un écart qu'on peut omettre finit par l'être.
+  -->
+  <div class="space-y-4">
+    {@render children()}
+  </div>
 
   {#snippet footer()}
     <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">

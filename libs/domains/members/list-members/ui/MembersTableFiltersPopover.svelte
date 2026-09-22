@@ -144,7 +144,7 @@
   >
     {#snippet filters()}
       <h4 class="border-b border-border pb-2 text-sm font-semibold">Options de filtrage</h4>
-      <div class="space-y-3 pt-2">
+      <div class="space-y-4 pt-2">
         <MembersTableFilters
           bind:selectedSeason
           bind:selectedStatus
@@ -188,15 +188,14 @@
     filtresOuverts = false;
   }}
 >
-  <div class="space-y-3">
-    <MembersTableFilters
-      bind:selectedSeason
-      bind:selectedStatus
-      bind:selectedGender
-      bind:selectedType
-      bind:selectedCohort
-      {seasons}
-      {onApply}
-    />
-  </div>
+  <!-- Sans conteneur : l'espacement vient de la feuille, et un div nu l'annulerait. -->
+  <MembersTableFilters
+    bind:selectedSeason
+    bind:selectedStatus
+    bind:selectedGender
+    bind:selectedType
+    bind:selectedCohort
+    {seasons}
+    {onApply}
+  />
 </FilterSheet>
