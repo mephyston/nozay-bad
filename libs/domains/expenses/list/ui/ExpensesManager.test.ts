@@ -65,8 +65,14 @@ describe('ExpensesManager Component', () => {
     expect(target.innerHTML).toContain('120.00 €');
     expect(target.innerHTML).toContain('Achat de volants RSL');
     expect(target.innerHTML).toContain('Matériel (hors cordages)');
-    expect(target.innerHTML).toContain('Visualiser');
-    expect(target.innerHTML).toContain('Modifier');
+    /*
+      La carte mobile écrite à la main a laissé place à une rangée de liste : les gestes
+      sont dans sa piste de balayage, et ils se nomment comme leur résultat.
+    */
+    const piste = target.querySelector('[data-swipe-track]');
+    const gestes = Array.from(piste?.querySelectorAll('button') ?? []).map((b) => b.textContent?.trim());
+    expect(gestes).toContain('Rembourser');
+    expect(gestes).toContain('Modifier');
   });
 
   it('calls fetch on action click', async () => {
@@ -84,9 +90,9 @@ describe('ExpensesManager Component', () => {
     });
     flushSync();
 
-    const approveButton = Array.from(target.querySelectorAll('button')).find(
-      b => b.textContent?.trim() === 'Rembourser'
-    );
+    const approveButton = Array.from(
+      target.querySelectorAll('[data-swipe-track] button')
+    ).find((b) => b.textContent?.trim() === 'Rembourser') as HTMLButtonElement | undefined;
     expect(approveButton).toBeDefined();
 
     approveButton?.click();
@@ -124,5 +130,41 @@ describe('ExpensesManager Component', () => {
     expect(target.innerHTML).not.toContain('Modifier');
     expect(target.innerHTML).not.toContain('Rembourser');
     expect(target.innerHTML).not.toContain('Rejeter');
+  });
+  /*
+    L'édition se dépliait dans la ligne du tableau, sur toute sa largeur, et la carte
+    mobile en avait sa propre version. Il n'y en a plus qu'une, dans la coquille
+    commune, qui monte du bas au doigt et s'ouvre en panneau à la souris.
+  */
+  it("ouvre la modification dans une feuille, et non dans la ligne", async () => {
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+
+    mount(ExpensesManager, {
+      target,
+      props: { expenses, seasonId: '25-26', seasons, categories }
+    });
+    flushSync();
+
+    // Aucune feuille tant qu'on n'a rien demandé.
+    expect(document.querySelector('[role="dialog"]')).toBeNull();
+
+    const modifier = Array.from(
+      target.querySelectorAll('[data-swipe-track] button')
+    ).find((b) => b.textContent?.trim() === 'Modifier') as HTMLButtonElement;
+    expect(modifier, 'le balayage doit proposer la modification').toBeDefined();
+
+    modifier.click();
+    flushSync();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    const dialogue = document.querySelector('[role="dialog"]');
+    expect(dialogue, 'la modification doit ouvrir une feuille').not.toBeNull();
+    const texte = dialogue!.textContent ?? '';
+    expect(texte).toContain('Marie Curie');
+    expect(texte).toContain('Motif / description');
+    expect(texte).toContain("Saison d'affectation");
+    // Et la ligne du tableau n'a pas été remplacée par un formulaire.
+    expect(target.querySelector('tbody textarea')).toBeNull();
   });
 });

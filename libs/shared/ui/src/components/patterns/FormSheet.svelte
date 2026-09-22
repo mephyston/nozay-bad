@@ -43,6 +43,7 @@
     onSubmit,
     submitIcon,
     namedActions = false,
+    onOpenChange,
     children,
     footer: footerSnippet
   }: {
@@ -68,6 +69,12 @@
      * réserve le rouge aux actions sans retour dans `uiConfirm`.
      */
     namedActions?: boolean;
+    /**
+     * Prévenu de chaque ouverture et fermeture, celles que la feuille décide comprises.
+     * Nécessaire dès que l'ouverture reflète un état extérieur — la note qu'on modifie,
+     * par exemple : sans elle, il faudrait un miroir et deux effets qui se répondent.
+     */
+    onOpenChange?: (open: boolean) => void;
     children: Snippet;
     /**
      * Remplace les boutons par défaut lorsqu'un écran a besoin d'actions
@@ -96,7 +103,7 @@
   const cercles = $derived(requete.current && !namedActions);
 </script>
 
-<ResponsiveSheet bind:open {title} icon={Icon} {description} {size} footerHidden={cercles}>
+<ResponsiveSheet bind:open {title} icon={Icon} {description} {size} footerHidden={cercles} {onOpenChange}>
   {#snippet headerLeading()}
     {#if cercles}
       <Button

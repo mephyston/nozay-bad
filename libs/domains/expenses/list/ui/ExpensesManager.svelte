@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { FileText, AlertCircle } from '@lucide/svelte';
-  import { Alert, Card, uiConfirm, Badge, PageHeader, FormField, SearchableCombobox, Button, softNavigate, submitForm, toSeasonOptions } from '@nba/ui';
+  import { AlertCircle } from '@lucide/svelte';
+  import { Alert, uiConfirm, Badge, PageHeader, softNavigate, submitForm } from '@nba/ui';
   import type { Expense, Season, Category } from './expenses-types';
   import { getCategoryOptions, getCategoryLabels } from './expenses-types';
   import { ExpensesState } from './expenses-state.svelte';
@@ -10,7 +10,8 @@
   import ExpenseHistoryTable from './ExpenseHistoryTable.svelte';
   import ExpensePhotoModal from './ExpensePhotoModal.svelte';
   import AdminExpenseForm from './AdminExpenseForm.svelte';
-  import { Sheet } from '@nba/ui';
+  import ExpensesToolbar from './ExpensesToolbar.svelte';
+  import ExpenseEditSheet from './ExpenseEditSheet.svelte';
 
   let {
     expenses = [],
@@ -151,30 +152,20 @@
     {/snippet}
   </PageHeader>
 
-    {#snippet toolbarFilters()}
-      <FormField id="filter-season" label="Saison">
-        <SearchableCombobox id="filter-season" items={toSeasonOptions(seasons)} bind:value={selectedSeason} />
-      </FormField>
-      <FormField id="filter-status" label="Statut">
-        <SearchableCombobox 
-          id="filter-status" 
-          items={[
-            { label: `En attente (${pendingCount})`, value: 'pending' }, 
-            { label: 'Historique', value: 'history' }
-          ]} 
-          bind:value={viewState.activeTab} 
-        />
-      </FormField>
-    {/snippet}
-
-    {#snippet toolbarActions()}
-      <Button variant="default" class="h-9 gap-2 w-full sm:w-auto" onclick={() => isCreateSheetOpen = true}>
-        Créer une note de frais
-      </Button>
-      <Button href={`/admin/accounting/reports?season=${seasonId}&export=expenses`} class="h-9 gap-2 w-full sm:w-auto" variant="secondary" target="_blank" download>
-        Exporter (ZIP)
-      </Button>
-    {/snippet}
+  {#snippet barreDOutils()}
+    <ExpensesToolbar
+      bind:searchTerm={viewState.searchTerm}
+      bind:selectedSeason
+      bind:activeTab={viewState.activeTab}
+      {seasons}
+      {pendingCount}
+      historyCount={historyExpenses.length}
+      resultCount={viewState.activeTab === 'pending' ? pendingExpenses.length : historyExpenses.length}
+      {isClosed}
+      exportHref={`/admin/accounting/reports?season=${seasonId}&export=expenses`}
+      onCreate={() => (isCreateSheetOpen = true)}
+    />
+  {/snippet}
 
     {#if viewState.errorMsg}
       <Alert.Root variant="destructive">
@@ -189,21 +180,10 @@
         {pendingExpenses}
         {isClosed}
         submittingId={viewState.submittingId}
-        bind:editingId={viewState.editingId}
-        bind:editDescription={viewState.editDescription}
-        bind:editCategory={viewState.editCategory}
-        bind:editSeasonId={viewState.editSeasonId}
-        bind:editAmountStr={viewState.editAmountStr}
-        isSaving={viewState.isSaving}
-        {categoriesList}
         {categoryLabels}
-        {seasons}
-        bind:searchTerm={viewState.searchTerm}
-        {toolbarFilters}
-        {toolbarActions}
+        toolbar={barreDOutils}
         onSelectPhoto={(url) => viewState.selectedPhoto = url}
         onStartEdit={(e) => viewState.startEdit(e)}
-        onSaveEdit={saveEdit}
         onAction={handleAction}
       />
     {:else}
@@ -211,25 +191,33 @@
         {historyExpenses}
         {isClosed}
         {categoryLabels}
-        bind:searchTerm={viewState.searchTerm}
-        {toolbarFilters}
-        {toolbarActions}
+        toolbar={barreDOutils}
         onSelectPhoto={(url) => viewState.selectedPhoto = url}
         onCancelValidation={handleCancelValidation}
       />
     {/if}
 </div>
 
+<ExpenseEditSheet
+  open={viewState.editingId !== null}
+  expense={pendingExpenses.find((e) => e.id === viewState.editingId) ?? null}
+  bind:editDescription={viewState.editDescription}
+  bind:editCategory={viewState.editCategory}
+  bind:editSeasonId={viewState.editSeasonId}
+  bind:editAmountStr={viewState.editAmountStr}
+  isSaving={viewState.isSaving}
+  {categoriesList}
+  {seasons}
+  onSelectPhoto={(url) => (viewState.selectedPhoto = url)}
+  onSave={saveEdit}
+  onClose={() => (viewState.editingId = null)}
+/>
+
 <ExpensePhotoModal bind:selectedPhoto={viewState.selectedPhoto} />
 
-<Sheet.Root bind:open={isCreateSheetOpen}>
-  <Sheet.Content side="right" class="w-full sm:max-w-2xl overflow-y-auto p-0 flex flex-col h-full" onOpenAutoFocus={(e) => e.preventDefault()}>
-    <AdminExpenseForm
-      activeSeasonId={seasonId}
-      members={members}
-      categories={categories}
-      onClose={() => isCreateSheetOpen = false}
-      onSuccess={() => { isCreateSheetOpen = false; }}
-    />
-  </Sheet.Content>
-</Sheet.Root>
+<AdminExpenseForm
+  bind:open={isCreateSheetOpen}
+  activeSeasonId={seasonId}
+  {members}
+  {categories}
+/>
