@@ -36,10 +36,15 @@ export async function dispatchPendingNotifications(
       url: delivery.url ?? '/'
     });
 
+    // `urgency: 'high'` n'est pas décoratif : sans cet en-tête, la RFC 8030 impose
+    // `normal`, et Android garde alors le message en Doze jusqu'à ce que l'adhérent
+    // ouvre l'app — elles arrivent toutes d'un coup. Chaque push d'ici affiche une
+    // notification (`userVisibleOnly`), la haute priorité est donc légitime.
     const result = await sendWebPush(
       { endpoint: delivery.endpoint, p256dh: delivery.p256dh, auth: delivery.auth },
       payload,
-      vapid
+      vapid,
+      { urgency: 'high' }
     );
 
     if (result.ok) {

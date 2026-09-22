@@ -47,6 +47,8 @@ describe('dispatchPendingNotifications', () => {
     // Le corps part chiffré en aes128gcm, avec l'en-tête VAPID.
     const [, init] = fetchMock.mock.calls[0];
     expect(init.headers['Content-Encoding']).toBe('aes128gcm');
+    // Sans `Urgency: high`, Android diffère la remise jusqu'à l'ouverture de l'app.
+    expect(init.headers.Urgency).toBe('high');
     expect(init.headers.Authorization).toMatch(/^vapid t=[\w-]+\.[\w-]+\.[\w-]+, k=/);
     expect(init.body.byteLength).toBeGreaterThan(86);
 
