@@ -1,12 +1,11 @@
 <script lang="ts">
-  import { Plus, Edit, Trash2, Eye, EyeOff, ExternalLink, ImagePlus, X, Send } from '@lucide/svelte';
+  import { Plus, Edit, ImagePlus, X } from '@lucide/svelte';
   import { mediaPath, mediaUrl, websiteOrigin } from '../../../media/media-url';
   import MediaPicker, { type PickableMedia } from '../../../media/list-media/ui/MediaPicker.svelte';
   import {
     Button,
     Input,
     Badge,
-    Card,
     Checkbox,
     Label,
     Select,
@@ -14,15 +13,20 @@
     DataTable,
     DataTableToolbar,
     DataTableRowActions,
+    RowActionItems,
     DropdownMenu,
+    dockDePage,
     FormField,
     FormSheet,
     RichTextEditor,
     submitForm,
     uiConfirm,
     flashAndReload,
-    uiAlert
+    uiAlert,
+    type SwipeAction
   } from '@nba/ui';
+  import PostsList from './PostsList.svelte';
+  import { gestesDActualite, pastillesDeTableau } from './posts-row-model';
 
   interface PostRow {
     id: number;
@@ -283,10 +287,6 @@
     }
   }
 
-  /** Diffusable : réservée, en ligne, jamais encore envoyée, et le droit d'envoyer. */
-  const canNotifyRow = (row: PostRow) =>
-    canNotify && row.visibility === 'private' && row.status === 'published' && !row.notifiedAt;
-
   function resetForm() {
     editingId = null;
     title = '';
@@ -389,76 +389,64 @@
       uiAlert(error instanceof Error ? error.message : 'La suppression a échoué.');
     }
   }
+  const droits = $derived({ canWrite, canDelete, canNotify });
+
+  /*
+    Les gestes, dans le vocabulaire du modèle. « Voir sur le site » vise le domaine
+    public : l'adresse est relative au site, la résoudre sur celui de l'administration
+    donnerait un « Accès refusé ».
+  */
+  const gestes = {
+    onEdit: (row: PostRow) => startEdit(row),
+    onTogglePublish: (row: PostRow) => togglePublish(row),
+    onNotify: (row: PostRow) => notify(row),
+    onOpenSite: (row: PostRow) => window.open(`${websiteOrigin}${row.path}`, '_blank', 'noopener'),
+    onDelete: (row: PostRow) => remove(row)
+  };
+
+  /*
+    Créer descend dans la barre du bas : sur un téléphone, le bouton vivait en haut
+    d'une barre d'outils qui défile avec la liste et sortait de l'écran dès la
+    troisième actualité.
+  */
+  $effect(() => {
+    if (!canWrite) return;
+    const actions: SwipeAction[] = [
+      { id: 'nouvelle', label: 'Nouvelle actualité', icon: Plus, run: () => openAddForm() }
+    ];
+    return dockDePage.declarerActions(actions, { icon: Plus, label: 'Nouvelle actualité' });
+  });
 </script>
 
 <!--
-  Un seul jeu d'actions, rendu à l'identique dans la carte mobile et dans la ligne du
-  tableau. Le mobile alignait auparavant trois boutons pleine largeur qui ne tenaient
-  pas sur un téléphone, et il lui manquait « Prévenir les adhérents » : le menu replié
-  tient dans un coin et n'oublie rien.
+  Un seul jeu d'actions, déclaré en données et rendu de trois façons : le menu de la
+  ligne du tableau, le menu replié de la liste, et le balayage. Il vivait en markup
+  dans ce fichier — partagé entre la carte mobile et la table, ce qui était déjà un
+  progrès, mais le doigt n'y avait pas accès et rien ne se testait sans monter l'écran.
 -->
 {#snippet actionsMenu(row: PostRow)}
-  <DataTableRowActions>
-    <DropdownMenu.Label>Actions</DropdownMenu.Label>
-    {#if canWrite}
-      <DropdownMenu.Item onclick={() => startEdit(row)} class="cursor-pointer">
-        <Edit class="mr-2 h-3.5 w-3.5" />
-        Modifier
-      </DropdownMenu.Item>
-      <DropdownMenu.Item onclick={() => togglePublish(row)} class="cursor-pointer">
-        {#if row.status === 'published'}
-          <EyeOff class="mr-2 h-3.5 w-3.5" />
-          Repasser en brouillon
-        {:else}
-          <Eye class="mr-2 h-3.5 w-3.5" />
-          Publier
-        {/if}
-      </DropdownMenu.Item>
-    {/if}
-    {#if canNotifyRow(row)}
-      <DropdownMenu.Item onclick={() => notify(row)} class="cursor-pointer">
-        <Send class="mr-2 h-3.5 w-3.5" />
-        Prévenir les adhérents
-      </DropdownMenu.Item>
-    {/if}
-    {#if row.status === 'published' && row.visibility === 'public'}
-      <!-- Même raison que pour les pages : l'adresse est relative au site public, la
-           résoudre sur le domaine de l'administration donne un « Accès refusé ». -->
-      <DropdownMenu.Item
-        onclick={() => window.open(`${websiteOrigin}${row.path}`, '_blank', 'noopener')}
-        class="cursor-pointer"
-      >
-        <ExternalLink class="mr-2 h-3.5 w-3.5" />
-        Voir sur le site
-      </DropdownMenu.Item>
-    {/if}
-    {#if canDelete}
-      <DropdownMenu.Item
-        onclick={() => remove(row)}
-        class="cursor-pointer text-destructive focus:text-destructive"
-      >
-        <Trash2 class="mr-2 h-3.5 w-3.5" />
-        Supprimer
-      </DropdownMenu.Item>
-    {/if}
-  </DataTableRowActions>
+  {@const actions = gestesDActualite(row, droits, gestes)}
+  {#if actions.length > 0}
+    <DataTableRowActions>
+      <DropdownMenu.Label>Actions</DropdownMenu.Label>
+      <RowActionItems {actions} item={row} />
+    </DataTableRowActions>
+  {/if}
 {/snippet}
 
-<!-- Réservée / en ligne : deux informations distinctes, donc deux pastilles, sur une
-     ligne qui se replie plutôt que d'élargir la colonne. -->
-{#snippet statusBadges(row: PostRow, size: 'xs' | 'default')}
+<!-- Les mêmes pastilles que la liste au doigt, plus « En ligne » : le tableau a une
+     colonne pour ça, et l'y laisser vide ressemblerait à une donnée manquante. -->
+{#snippet statusBadges(row: PostRow)}
   <div class="flex flex-wrap items-center gap-1.5">
-    {#if row.visibility === 'private'}
-      <Badge variant="outline" {size}>Adhérents</Badge>
-    {/if}
-    <Badge variant={row.status === 'published' ? 'primary-soft' : 'outline'} {size}>
-      {row.status === 'published' ? 'En ligne' : 'Brouillon'}
-    </Badge>
+    {#each pastillesDeTableau(row, canNotify) as pastille (pastille.label)}
+      <Badge variant={pastille.variant}>{pastille.label}</Badge>
+    {/each}
   </div>
 {/snippet}
 
 <DataTable
   data={filteredPosts}
+  mobileSpacing="list"
   emptyTitle="Aucune actualité"
   emptyDescription={searchTerm.trim()
     ? 'Aucune actualité ne correspond à votre recherche.'
@@ -468,11 +456,13 @@
     <DataTableToolbar
       bind:searchValue={searchTerm}
       searchPlaceholder="Rechercher une actualité..."
+      dockSearch
       hasFilters={false}
     >
       {#snippet actions()}
+        <!-- Sur téléphone, ce geste vit dans la barre du bas. -->
         {#if canWrite}
-          <Button onclick={openAddForm} class="h-9 shrink-0 gap-1.5 font-bold">
+          <Button onclick={openAddForm} class="hidden h-9 shrink-0 gap-1.5 font-bold md:flex">
             <Plus class="h-4 w-4" />
             <span>Nouvelle actualité</span>
           </Button>
@@ -482,23 +472,7 @@
   {/snippet}
 
   {#snippet mobileView()}
-    {#each filteredPosts as row (row.id)}
-      <Card.Root>
-        <Card.Content class="flex items-start gap-2 p-4">
-          <div class="min-w-0 flex-1 space-y-1.5">
-            <h4 class="text-sm font-bold leading-snug text-foreground">{row.title}</h4>
-            <code class="block truncate text-xs text-muted-foreground">{row.path}</code>
-            <div class="flex flex-wrap items-center gap-x-2 gap-y-1.5">
-              {@render statusBadges(row, 'xs')}
-              <span class="text-xs text-muted-foreground">{when(row.publishedAt)}</span>
-            </div>
-          </div>
-          <div class="shrink-0">
-            {@render actionsMenu(row)}
-          </div>
-        </Card.Content>
-      </Card.Root>
-    {/each}
+    <PostsList posts={filteredPosts} {droits} {...gestes} />
   {/snippet}
 
   {#snippet header()}
@@ -520,7 +494,7 @@
         <code class="block max-w-[18rem] truncate text-xs text-muted-foreground" title={item.path}>{item.path}</code>
       </Table.Cell>
       <Table.Cell>
-        {@render statusBadges(item, 'default')}
+        {@render statusBadges(item)}
       </Table.Cell>
       <Table.Cell class="whitespace-nowrap text-muted-foreground">{when(item.publishedAt)}</Table.Cell>
       <Table.Cell class="relative text-right">
