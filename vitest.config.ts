@@ -231,6 +231,26 @@ export default defineConfig({
           exclude: ['**/ui/**', '**/node_modules/**'],
         }
       },
+      // Les composants des notifications n'avaient aucun projet : le seul qui couvrait
+      // ce domaine tourne dans le pool workers et écarte les dossiers `ui`. Un test
+      // écrit là n'était donc pas « en échec », il n'était jamais collecté — ce qui se
+      // voit mal, et explique que le plus gros écran du domaine n'en ait eu aucun.
+      {
+        extends: true,
+        plugins: [svelte()],
+        cacheDir: path.resolve(__dirname, 'node_modules/.vite/features-notifications-ui'),
+        resolve: {
+          conditions: ['browser'],
+        },
+        test: {
+          name: 'features-notifications-ui',
+          globals: true,
+          environment: 'jsdom',
+          setupFiles: [path.resolve(__dirname, 'vitest.setup.clock.ts'), path.resolve(__dirname, 'vitest.setup.ts')],
+          root: path.resolve(__dirname, 'libs/domains/notifications'),
+          include: ['**/ui/**/*.test.ts'],
+        }
+      },
 
       // Inline project configs for announcements API and UI
       {

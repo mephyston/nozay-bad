@@ -59,7 +59,7 @@
     cancelLabel?: string;
     size?: SheetSize;
     onSubmit: (event: Event) => void;
-    /** Icône du bouton de soumission ; `Save` par défaut. */
+    /** Icône du bouton de soumission : le rond de la barre haute et le bouton du pied. `Check` / `Save` à défaut. */
     submitIcon?: Snippet;
     /**
      * Garde des boutons nommés sur téléphone, au lieu des deux cercles.
@@ -131,6 +131,13 @@
       >
         {#if isSubmitting}
           <Loader2 class="size-5 animate-spin" />
+        {:else if submitIcon}
+          <!--
+            L'acte n'est pas toujours « enregistrer ». Diffuser une notification part
+            vers les téléphones du club et ne se rappelle pas : le rond doit porter
+            l'avion en papier, et non la coche qui range un formulaire.
+          -->
+          {@render submitIcon()}
         {:else}
           <Check class="size-5" />
         {/if}

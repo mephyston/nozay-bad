@@ -105,7 +105,16 @@
     selected?: boolean;
     disabled?: boolean;
     class?: string;
-    /** Échappatoire : remplace entièrement titre / sous-titre / valeur. */
+    /**
+     * Échappatoire : remplace le bloc titre / sous-titre — la valeur, elle, reste.
+     *
+     * À ne poser que pour une rangée entièrement à soi. Un snippet se déclare
+     * toujours, même vide, et il suffit d'en ajouter un pour glisser une note sous
+     * le sous-titre pour que **le titre disparaisse sans erreur** : la rangée ne
+     * montre plus que sa valeur. Pour une exception à expliquer, préférer une
+     * pastille, ou une phrase au-dessus de la liste — elle est le plus souvent la
+     * même pour toutes les rangées concernées.
+     */
     children?: Snippet;
   } = $props();
 

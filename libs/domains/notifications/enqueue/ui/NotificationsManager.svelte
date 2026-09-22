@@ -1,208 +1,158 @@
 <script lang="ts">
+  import { Plus, Send } from '@lucide/svelte';
   import {
-    Button,
-    Input,
-    Textarea,
-    Select,
-    Checkbox,
-    FormField,
-    Card,
-    Badge,
-    Dialog,
-    EmptyState,
-    CollapsibleSection,
+    ResponsiveSheet,
+    dockDePage,
     toast,
+    uiAlert,
     uiConfirm,
-    uiAlert
+    type SwipeAction
   } from '@nba/ui';
-  import { Bell, Send, ExternalLink, CalendarClock, Zap } from '@lucide/svelte';
-  import { NOTIFICATION_CATEGORIES } from '../../shared/categories';
-  import { STOREFRONT_PAGES } from '../../shared/storefront-pages';
   import type { ScheduledNotificationView } from '../../shared/scheduled-registry';
+  import NotificationRubricsList from './NotificationRubricsList.svelte';
+  import NotificationHistoryList from './NotificationHistoryList.svelte';
+  import NotificationSubscribersPanel from './NotificationSubscribersPanel.svelte';
+  import NotificationSendSheet from './NotificationSendSheet.svelte';
+  import ScheduledNotificationsList from './ScheduledNotificationsList.svelte';
+  import {
+    audienceDe,
+    refusDEnvoi,
+    rubriquesDeNotifications,
+    type AbonneLike,
+    type MessageLike,
+    type Rubrique,
+    type StatsLike
+  } from './notifications-row-model';
 
-  interface Stats {
-    devices: number;
-    accounts: number;
-    pending: number;
-  }
-
-  interface MessageRow {
-    id: number;
-    title: string;
-    body: string;
-    target: string;
-    targetDetail: string | null;
-    category: string;
-    source: string;
-    createdAt: string | number | Date;
-    sent: number;
-    failed: number;
-    pending: number;
-  }
-
-  interface Group {
-    type: string;
-    members: number;
-  }
-
-  interface Subscriber {
-    id: number;
-    email: string;
-    userAgent: string | null;
-    createdAt: string | number | Date;
-    lastSuccessAt: string | number | Date | null;
-    members: { name: string; group: string }[];
-  }
-
+  /**
+   * L'écran des notifications : un index de rubriques, et une action.
+   *
+   * Il empilait quatre blocs de trois formes — une carte-formulaire en tête, trois
+   * sections repliables, une carte à compteurs — dans une grille à deux colonnes, plus
+   * un dialogue d'appareils atteint par un lien souligné. On arrivait donc sur une page
+   * d'information par un formulaire d'envoi qu'il fallait dépasser pour lire quoi que
+   * ce soit. L'envoi est une action : il descend dans le menu, et les rubriques
+   * prennent toutes la même forme.
+   */
   let {
-    stats: initialStats,
-    messages: initialMessages,
-    groups: initialGroups = [],
+    stats: statsInitiales,
+    messages: messagesInitiaux,
+    groups: groupesInitiaux = [],
     canSend = false,
     scheduled = []
   }: {
-    stats: Stats;
-    messages: MessageRow[];
-    groups?: Group[];
+    stats: StatsLike;
+    messages: MessageLike[];
+    groups?: { type: string; members: number }[];
     canSend?: boolean;
     scheduled?: ScheduledNotificationView[];
   } = $props();
 
-  // Consultation seule : les envois automatiques sont câblés dans le code, seuls les
-  // drapeaux d'environnement les activent — rien n'est actionnable depuis cet écran.
-  const scheduledCron = scheduled.filter((s) => s.trigger === 'cron');
-  const scheduledEvents = scheduled.filter((s) => s.trigger === 'event');
+  let stats = $state<StatsLike>(statsInitiales);
+  let messages = $state<MessageLike[]>(messagesInitiaux);
+  const groupes = groupesInitiaux;
 
-  const STOREFRONT_URL = import.meta.env.PUBLIC_STOREFRONT_URL || '';
+  const rubriques = $derived(rubriquesDeNotifications({ stats, messages, programmees: scheduled }));
+  const cron = $derived(scheduled.filter((s) => s.trigger === 'cron'));
+  const evenements = $derived(scheduled.filter((s) => s.trigger === 'event'));
 
-  let stats = $state<Stats>(initialStats);
-  let messages = $state<MessageRow[]>(initialMessages);
-  const groups = initialGroups;
+  /** La rubrique ouverte, ou `null`. Une seule à la fois : c'est une navigation. */
+  let rubriqueOuverte = $state<Rubrique['id'] | null>(null);
+  const rubriqueCourante = $derived(rubriques.find((r) => r.id === rubriqueOuverte) ?? null);
 
+  let abonnes = $state<AbonneLike[] | null>(null);
+  let erreurAbonnes = $state('');
+
+  let envoiOuvert = $state(false);
+  let envoiEnCours = $state(false);
   let title = $state('');
   let body = $state('');
   let page = $state('');
-  // Un envoi manuel est toujours une communication du bureau : les autres catégories
-  // ne sont émises que par les crons et les événements métier. Les proposer ici
-  // n'offrirait que des façons de se tromper de destinataires.
-  const MANUAL_CATEGORY = 'announcement';
-  let target = $state<'all' | 'unpaid' | 'groups'>('all');
-  let selectedGroups = $state<string[]>([]);
-  let sending = $state(false);
+  let cible = $state<'all' | 'unpaid' | 'groups'>('all');
+  let groupesRetenus = $state<string[]>([]);
 
-  let historyOpen = $state(false);
-  let scheduledCronOpen = $state(false);
-  let scheduledEventsOpen = $state(false);
-  let subscribersOpen = $state(false);
-  let subscribers = $state<Subscriber[] | null>(null);
-  let subscribersError = $state('');
+  /*
+    Un envoi manuel est toujours une communication du bureau : les autres catégories
+    ne sont émises que par les crons et les événements métier. Les proposer ici
+    n'offrirait que des façons de se tromper de destinataires.
+  */
+  const CATEGORIE_MANUELLE = 'announcement';
 
-  const TARGET_LABELS: Record<string, string> = {
-    all: 'Tous les abonnés',
-    unpaid: 'Cotisation non soldée',
-    groups: 'Groupes',
-    emails: 'Destinataires ciblés'
-  };
+  /*
+    Envoyer descend dans la barre du bas. Le formulaire vivait en haut de la page et
+    poussait l'information sous le pli ; l'action, elle, est toujours à portée du pouce.
+  */
+  $effect(() => {
+    if (!canSend) return;
+    const actions: SwipeAction[] = [
+      { id: 'envoyer', label: 'Nouvelle notification', icon: Send, run: () => (envoiOuvert = true) }
+    ];
+    return dockDePage.declarerActions(actions, { icon: Plus, label: 'Nouvelle notification' });
+  });
 
-  const CATEGORY_LABELS = Object.fromEntries(
-    NOTIFICATION_CATEGORIES.map((c) => [c.id, c.label])
-  ) as Record<string, string>;
-
-  const dateFr = (value: string | number | Date) => {
-    const d = new Date(value);
-    return isNaN(d.getTime()) ? '' : d.toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' });
-  };
-
-  /** Réduit l'agent utilisateur à un appareil reconnaissable dans une liste. */
-  function deviceLabel(userAgent: string | null): string {
-    if (!userAgent) return 'Appareil inconnu';
-    const ua = userAgent.toLowerCase();
-    if (/iphone/.test(ua)) return 'iPhone';
-    if (/ipad/.test(ua)) return 'iPad';
-    if (/android/.test(ua)) return 'Android';
-    if (/macintosh|mac os/.test(ua)) return 'Mac';
-    if (/windows/.test(ua)) return 'Windows';
-    return 'Autre';
+  function ouvrirRubrique(id: Rubrique['id']) {
+    rubriqueOuverte = id;
+    if (id === 'abonnements') void chargerAbonnes();
   }
 
-  function toggleGroup(type: string) {
-    selectedGroups = selectedGroups.includes(type)
-      ? selectedGroups.filter((g) => g !== type)
-      : [...selectedGroups, type];
-  }
-
-  /** Ouvre la page dans un onglet : c'est le seul test honnête d'une destination. */
-  function testPage() {
-    if (!page) return;
-    window.open(`${STOREFRONT_URL}${page}`, '_blank', 'noopener,noreferrer');
-  }
-
-  async function readApiResponse(res: Response, fallback: string): Promise<any> {
-    const raw = await res.text();
+  async function lireReponse(res: Response, secours: string): Promise<any> {
+    const brut = await res.text();
     let json: any = null;
     try {
-      json = raw ? JSON.parse(raw) : null;
+      json = brut ? JSON.parse(brut) : null;
     } catch {
-      throw new Error(`${fallback} (HTTP ${res.status} — réponse inattendue du serveur).`);
+      throw new Error(`${secours} (HTTP ${res.status} — réponse inattendue du serveur).`);
     }
     if (!res.ok || !json?.success) {
-      throw new Error(json?.error || `${fallback} (HTTP ${res.status}).`);
+      throw new Error(json?.error || `${secours} (HTTP ${res.status}).`);
     }
     return json;
   }
 
-  async function refresh() {
+  async function rafraichir() {
     const res = await fetch('/api/notifications/overview');
-    const json = await readApiResponse(res, 'Actualisation impossible');
+    const json = await lireReponse(res, 'Actualisation impossible');
     stats = json.data.stats;
     messages = json.data.messages;
   }
 
-  async function openSubscribers() {
-    subscribersOpen = true;
-    if (subscribers) return;
-    subscribersError = '';
+  /** La liste des appareils ne se charge qu'à l'ouverture de sa rubrique. */
+  async function chargerAbonnes() {
+    if (abonnes) return;
+    erreurAbonnes = '';
     try {
       const res = await fetch('/api/notifications/subscribers');
-      const json = await readApiResponse(res, 'Liste des abonnés indisponible');
-      subscribers = json.data;
+      const json = await lireReponse(res, 'Liste des abonnés indisponible');
+      abonnes = json.data;
     } catch (e) {
-      subscribersError = e instanceof Error ? e.message : 'Liste des abonnés indisponible.';
+      erreurAbonnes = e instanceof Error ? e.message : 'Liste des abonnés indisponible.';
     }
   }
 
-  async function send() {
-    // Toute la fonction est protégée : une exception dans le dialogue de
-    // confirmation ou dans la lecture d'une réponse laissait le bouton sans
-    // réaction et sans message, impossible à diagnostiquer côté utilisateur.
+  async function envoyer(event: Event) {
+    event.preventDefault();
+    /*
+      Toute la fonction est protégée : une exception dans le dialogue de confirmation
+      ou dans la lecture d'une réponse laissait le bouton sans réaction et sans
+      message, impossible à diagnostiquer côté utilisateur.
+    */
     try {
-      if (!title.trim() || !body.trim()) {
-        uiAlert('Le titre et le message sont obligatoires.');
-        return;
-      }
-      if (target === 'groups' && selectedGroups.length === 0) {
-        uiAlert('Sélectionnez au moins un groupe.');
-        return;
-      }
-      if (target === 'all' && stats.devices === 0) {
-        toast.warning(
-          "Aucun appareil n'est abonné pour l'instant : les adhérents doivent activer les notifications depuis « Mon compte »."
-        );
+      const brouillon = { title, body, target: cible, selectedGroups: groupesRetenus };
+      const refus = refusDEnvoi(brouillon, stats);
+      if (refus) {
+        // Une cible sans abonné n'est pas une faute de saisie : elle s'annonce, et
+        // l'envoi s'arrête là plutôt que de partir dans le vide.
+        if (cible === 'all' && stats.devices === 0) toast.warning(refus);
+        else uiAlert(refus);
         return;
       }
 
-      const audience =
-        target === 'all'
-          ? `${stats.devices} appareil(s)`
-          : target === 'unpaid'
-            ? 'les foyers dont la cotisation reste due'
-            : `les groupes : ${selectedGroups.join(', ')}`;
-      const confirmed = await uiConfirm(
-        `Envoyer cette notification à ${audience} ? Une notification envoyée ne peut pas être rappelée.`
+      const confirme = await uiConfirm(
+        `Envoyer cette notification à ${audienceDe(brouillon, stats)} ? Une notification envoyée ne peut pas être rappelée.`
       );
-      if (!confirmed) return;
+      if (!confirme) return;
 
-      sending = true;
+      envoiEnCours = true;
 
       const res = await fetch('/api/notifications/messages', {
         method: 'POST',
@@ -211,12 +161,12 @@
           title: title.trim(),
           body: body.trim(),
           url: page || undefined,
-          target,
-          groups: target === 'groups' ? selectedGroups : undefined,
-          category: MANUAL_CATEGORY
+          target: cible,
+          groups: cible === 'groups' ? groupesRetenus : undefined,
+          category: CATEGORIE_MANUELLE
         })
       });
-      const json = await readApiResponse(res, "L'envoi a échoué");
+      const json = await lireReponse(res, "L'envoi a échoué");
 
       if (json.data.queued === 0) {
         toast.warning(
@@ -229,309 +179,70 @@
       title = '';
       body = '';
       page = '';
-      selectedGroups = [];
+      groupesRetenus = [];
+      envoiOuvert = false;
 
-      // Déclenche le drain immédiatement : sans cela l'envoi attendrait le prochain
-      // passage du cron, jusqu'à une minute plus tard. Un échec ici n'annule pas
-      // l'envoi (le cron reprendra la file) mais doit rester visible.
+      /*
+        Déclenche le drain immédiatement : sans cela l'envoi attendrait le prochain
+        passage du cron, jusqu'à une minute plus tard. Un échec ici n'annule pas
+        l'envoi (le cron reprendra la file) mais doit rester visible.
+      */
       try {
-        const dispatchRes = await fetch('/api/notifications/dispatch', { method: 'POST' });
-        await readApiResponse(dispatchRes, 'Envoi immédiat impossible');
+        const drain = await fetch('/api/notifications/dispatch', { method: 'POST' });
+        await lireReponse(drain, 'Envoi immédiat impossible');
       } catch (e) {
         console.error('[notifications] drain immédiat en échec', e);
         toast.info("Notifications en file : elles partiront d'ici une minute.");
       }
 
-      subscribers = null;
-      await refresh();
+      abonnes = null;
+      await rafraichir();
     } catch (e) {
       console.error('[notifications] envoi en échec', e);
       uiAlert(e instanceof Error ? e.message : "L'envoi a échoué.");
     } finally {
-      sending = false;
+      envoiEnCours = false;
     }
   }
 </script>
 
-<div class="grid gap-6 lg:grid-cols-3">
-  <div class="lg:col-span-2 space-y-6">
-    {#if canSend}
-      <Card.Root>
-        <Card.Header>
-          <Card.Title>Nouvelle notification</Card.Title>
-          <Card.Description>
-            Diffusée comme « communication du bureau » aux adhérents ayant activé les notifications.
-            Ceux qui ont coupé cette catégorie dans leurs réglages ne la recevront pas.
-          </Card.Description>
-        </Card.Header>
-        <Card.Content class="space-y-4">
-          <FormField id="notif-title" label="Titre">
-            <Input id="notif-title" bind:value={title} maxlength={80} placeholder="Tournoi interne samedi" />
-          </FormField>
+<NotificationRubricsList {rubriques} onOuvrir={ouvrirRubrique} />
 
-          <FormField id="notif-body" label="Message">
-            <Textarea
-              id="notif-body"
-              bind:value={body}
-              maxlength={300}
-              rows={3}
-              placeholder="Inscriptions ouvertes jusqu'à vendredi soir."
-            />
-          </FormField>
-
-          <FormField id="notif-target" label="Destinataires">
-            <Select id="notif-target" bind:value={target}>
-              <option value="all">Tous les abonnés ({stats.devices})</option>
-              <option value="unpaid">Cotisation non soldée</option>
-              <option value="groups">Groupes d'adhérents…</option>
-            </Select>
-          </FormField>
-
-          {#if target === 'groups'}
-            <div class="rounded-lg border border-border p-3 space-y-2 max-h-64 overflow-y-auto">
-              {#if groups.length === 0}
-                <p class="text-xs text-muted-foreground">
-                  Aucun groupe dans la saison active. Importez les adhérents depuis Poona.
-                </p>
-              {:else}
-                {#each groups as group (group.type)}
-                  <label class="flex items-center gap-3 text-sm cursor-pointer">
-                    <Checkbox
-                      checked={selectedGroups.includes(group.type)}
-                      onCheckedChange={() => toggleGroup(group.type)}
-                      aria-label={group.type}
-                    />
-                    <span class="flex-1 text-foreground">{group.type}</span>
-                    <span class="text-xs text-muted-foreground">{group.members}</span>
-                  </label>
-                {/each}
-              {/if}
-            </div>
-          {/if}
-
-          <FormField id="notif-page" label="Page à ouvrir (optionnel)">
-            <div class="flex items-center gap-2">
-              <Select id="notif-page" bind:value={page}>
-                <option value="">Aucune (ouvre l'accueil)</option>
-                {#each STOREFRONT_PAGES as storefrontPage (storefrontPage.path)}
-                  <option value={storefrontPage.path}>{storefrontPage.label}</option>
-                {/each}
-              </Select>
-              <Button variant="outline" size="sm" class="shrink-0" disabled={!page} onclick={testPage}>
-                <ExternalLink class="w-3.5 h-3.5 mr-1" /> Tester
-              </Button>
-            </div>
-          </FormField>
-        </Card.Content>
-        <Card.Footer>
-          <Button onclick={send} disabled={sending}>
-            <Send class="w-4 h-4 mr-2" />
-            {sending ? 'Envoi…' : 'Envoyer'}
-          </Button>
-        </Card.Footer>
-      </Card.Root>
-    {/if}
-
-    <CollapsibleSection
-      title="Historique des envois"
-      description="Les notifications déjà diffusées et leur distribution."
-      badge={messages.length}
-      bind:open={historyOpen}
-    >
-      {#if messages.length === 0}
-        <EmptyState
-          icon={Bell}
-          title="Aucune notification envoyée"
-          description="Les envois apparaîtront ici avec leur statut de distribution."
-        />
-      {:else}
-        <div class="divide-y divide-border">
-          {#each messages as message (message.id)}
-            <div class="py-3 first:pt-0 last:pb-0">
-              <div class="flex items-start justify-between gap-3">
-                <div class="min-w-0">
-                  <div class="text-sm font-semibold text-foreground truncate">{message.title}</div>
-                  <p class="text-xs text-muted-foreground mt-0.5 line-clamp-2">{message.body}</p>
-                  <div class="text-[11px] text-muted-foreground mt-1">
-                    {dateFr(message.createdAt)} · {CATEGORY_LABELS[message.category] ?? message.category}
-                    · {TARGET_LABELS[message.target] ?? message.target}{message.targetDetail
-                      ? ` (${message.targetDetail})`
-                      : ''}
-                    {#if message.source !== 'admin'}· {message.source}{/if}
-                  </div>
-                </div>
-                <div class="flex flex-wrap gap-1 justify-end shrink-0">
-                  <Badge variant="outline">{message.sent} envoyée(s)</Badge>
-                  {#if message.pending > 0}
-                    <Badge variant="secondary">{message.pending} en attente</Badge>
-                  {/if}
-                  {#if message.failed > 0}
-                    <Badge variant="destructive">{message.failed} en échec</Badge>
-                  {/if}
-                </div>
-              </div>
-            </div>
-          {/each}
-        </div>
-      {/if}
-    </CollapsibleSection>
-  </div>
-
-  <div class="space-y-6 h-fit">
-  <Card.Root>
-    <Card.Header>
-      <Card.Title>Abonnements</Card.Title>
-    </Card.Header>
-    <Card.Content class="space-y-3">
-      <button
-        type="button"
-        class="w-full text-left rounded-lg -mx-2 px-2 py-1 hover:bg-accent transition-colors"
-        onclick={openSubscribers}
-      >
-        <div class="text-2xl font-bold text-foreground">{stats.devices}</div>
-        <div class="text-xs text-muted-foreground underline underline-offset-2">
-          appareil(s) abonné(s) — voir le détail
-        </div>
-      </button>
-      <div>
-        <div class="text-2xl font-bold text-foreground">{stats.accounts}</div>
-        <div class="text-xs text-muted-foreground">compte(s) adhérent(s)</div>
-      </div>
-      {#if stats.pending > 0}
-        <div>
-          <div class="text-2xl font-bold text-foreground">{stats.pending}</div>
-          <div class="text-xs text-muted-foreground">envoi(s) en attente</div>
-        </div>
-      {/if}
-      <p class="text-[11px] text-muted-foreground pt-2 border-t border-border">
-        Les adhérents activent les notifications depuis « Mon compte » et choisissent les catégories
-        qu'ils souhaitent recevoir. Sur iPhone et iPad, cela nécessite d'avoir installé
-        l'application sur l'écran d'accueil.
-      </p>
-    </Card.Content>
-  </Card.Root>
-
-  <!-- Registre des envois automatiques, en consultation seule : les conditions de
-       déclenchement sont câblées dans le code, on ne peut pas agir dessus ici.
-       Replié par défaut : c'est une documentation, pas un tableau de bord. -->
-  {#if scheduledCron.length > 0}
-    <CollapsibleSection
-      title="Notifications programmées"
-      description="Envois récurrents automatiques et leur fréquence."
-      badge={scheduledCron.length}
-      bind:open={scheduledCronOpen}
-    >
-      <div class="space-y-3">
-        {#each scheduledCron as entry (entry.id)}
-          <div class="rounded-lg border border-border p-3 space-y-1">
-            <div class="flex items-start justify-between gap-2">
-              <div class="text-sm font-medium text-foreground">{entry.title}</div>
-              <Badge variant={entry.enabled ? 'outline' : 'secondary'} size="xs" class="shrink-0">
-                {entry.enabled ? 'Active' : 'Désactivée'}
-              </Badge>
-            </div>
-            <p class="text-xs text-muted-foreground line-clamp-3">{entry.body}</p>
-            <p class="text-[11px] font-medium text-foreground/80 flex items-center gap-1">
-              <CalendarClock class="w-3 h-3 shrink-0" />
-              {entry.schedule}
-            </p>
-            {#if entry.flag && !entry.enabled}
-              <p class="text-[11px] text-muted-foreground">
-                Ne part pas : fonctionnalité éteinte dans la configuration du club, ou envois programmés fermés sur cet environnement.
-              </p>
-            {/if}
-          </div>
-        {/each}
-      </div>
-    </CollapsibleSection>
+<!--
+  Une seule feuille pour les quatre rubriques : elles ne s'ouvrent jamais ensemble, et
+  quatre feuilles montées en permanence auraient chacune leur piège à focus.
+-->
+<ResponsiveSheet
+  open={rubriqueOuverte !== null}
+  onOpenChange={(ouvert) => {
+    if (!ouvert) rubriqueOuverte = null;
+  }}
+  title={rubriqueCourante?.titre ?? ''}
+  description={rubriqueCourante?.sousTitre}
+  size="lg"
+>
+  {#if rubriqueOuverte === 'historique'}
+    <NotificationHistoryList {messages} />
+  {:else if rubriqueOuverte === 'abonnements'}
+    <NotificationSubscribersPanel {stats} {abonnes} erreur={erreurAbonnes} />
+  {:else if rubriqueOuverte === 'programmees'}
+    <ScheduledNotificationsList entrees={cron} />
+  {:else if rubriqueOuverte === 'evenements'}
+    <ScheduledNotificationsList entrees={evenements} parCategorie />
   {/if}
+</ResponsiveSheet>
 
-  {#if scheduledEvents.length > 0}
-    <CollapsibleSection
-      title="Notifications sur événement"
-      description="Envois déclenchés par une action métier."
-      badge={scheduledEvents.length}
-      bind:open={scheduledEventsOpen}
-    >
-      <div class="space-y-3">
-        {#each scheduledEvents as entry (entry.id)}
-          <div class="rounded-lg border border-border p-3 space-y-1">
-            <div class="flex items-start justify-between gap-2">
-              <div class="text-sm font-medium text-foreground">{entry.title}</div>
-              <Badge variant="outline" size="xs" class="shrink-0">
-                {CATEGORY_LABELS[entry.category] ?? entry.category}
-              </Badge>
-            </div>
-            <p class="text-xs text-muted-foreground line-clamp-3">{entry.body}</p>
-            <p class="text-[11px] font-medium text-foreground/80 flex items-center gap-1">
-              <Zap class="w-3 h-3 shrink-0" />
-              {entry.schedule}
-            </p>
-          </div>
-        {/each}
-      </div>
-    </CollapsibleSection>
-  {/if}
-  </div>
-</div>
-
-<Dialog.Root bind:open={subscribersOpen}>
-  <Dialog.Content class="max-w-2xl">
-    <Dialog.Header>
-      <Dialog.Title>Appareils abonnés</Dialog.Title>
-      <Dialog.Description>
-        Adhérents joignables sur chaque appareil, d'après l'adresse du compte.
-      </Dialog.Description>
-    </Dialog.Header>
-
-    <div class="max-h-[60vh] overflow-y-auto">
-      {#if subscribersError}
-        <p class="text-sm text-destructive">{subscribersError}</p>
-      {:else if subscribers === null}
-        <p class="text-sm text-muted-foreground">Chargement…</p>
-      {:else if subscribers.length === 0}
-        <EmptyState
-          icon={Bell}
-          title="Aucun appareil abonné"
-          description="Les adhérents activent les notifications depuis leur espace."
-        />
-      {:else}
-        <div class="divide-y divide-border">
-          {#each subscribers as subscriber (subscriber.id)}
-            <div class="py-3 first:pt-0">
-              <div class="flex items-start justify-between gap-3">
-                <div class="min-w-0">
-                  {#if subscriber.members.length > 0}
-                    <div class="text-sm font-medium text-foreground">
-                      {subscriber.members.map((m) => m.name).join(', ')}
-                    </div>
-                    <div class="text-xs text-muted-foreground">
-                      {[...new Set(subscriber.members.map((m) => m.group))].join(' · ')}
-                    </div>
-                  {:else}
-                    <div class="text-sm font-medium text-foreground">Compte non rattaché</div>
-                    <div class="text-xs text-muted-foreground">
-                      Aucun adhérent à cette adresse dans la saison active.
-                    </div>
-                  {/if}
-                  <div class="text-[11px] text-muted-foreground mt-1 truncate">{subscriber.email}</div>
-                </div>
-                <div class="text-right shrink-0">
-                  <Badge variant="outline">{deviceLabel(subscriber.userAgent)}</Badge>
-                  <div class="text-[11px] text-muted-foreground mt-1">
-                    Depuis le {dateFr(subscriber.createdAt)}
-                  </div>
-                  {#if subscriber.lastSuccessAt}
-                    <div class="text-[11px] text-muted-foreground">
-                      Dernier envoi {dateFr(subscriber.lastSuccessAt)}
-                    </div>
-                  {/if}
-                </div>
-              </div>
-            </div>
-          {/each}
-        </div>
-      {/if}
-    </div>
-  </Dialog.Content>
-</Dialog.Root>
+{#if canSend}
+  <NotificationSendSheet
+    bind:open={envoiOuvert}
+    {stats}
+    {groupes}
+    {envoiEnCours}
+    onSubmit={envoyer}
+    bind:title
+    bind:body
+    bind:page
+    bind:cible
+    bind:groupesRetenus
+  />
+{/if}
