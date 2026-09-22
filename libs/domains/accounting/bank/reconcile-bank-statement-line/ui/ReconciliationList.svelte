@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Badge, ListView, ListRow } from '@nba/ui';
+  import { Badge, Button, ListView, ListRow } from '@nba/ui';
   import MemberTransferDialog from './MemberTransferDialog.svelte';
   import InternalTransferDialog from './InternalTransferDialog.svelte';
   import ReconciliationDecisionSheet from './ReconciliationDecisionSheet.svelte';
@@ -84,6 +84,28 @@
     }
   };
 
+  /**
+   * On n'en rend que vingt à la fois, et l'on accumule — la même forme que le journal et
+   * la liste des adhérents.
+   *
+   * Ici rien ne vient du serveur par tranches : le relevé arrive entier, et c'est le
+   * **rendu** qui coûte. Deux cents rangées, chacune avec sa piste de balayage et son
+   * menu escamoté, font une page qu'un téléphone met une seconde à poser. Le clavier de
+   * la version de bureau, lui, parcourt toujours la file entière : c'est par lui qu'on
+   * la vide, et le tronquer y serait une régression.
+   */
+  const PAR_TRANCHE = 20;
+  let visibles = $state(PAR_TRANCHE);
+
+  /* Un changement de vue ou de critère repart du début : la tranche d'une autre file n'a pas de sens. */
+  $effect(() => {
+    void rows;
+    visibles = PAR_TRANCHE;
+  });
+
+  const rangees = $derived(rows.slice(0, visibles));
+  const reste = $derived(Math.max(rows.length - rangees.length, 0));
+
   /* Le compte ne se dit que si la file en mélange plusieurs : filtrée, l'information est redondante. */
   const montrerLeCompte = $derived(!reconState.isSingleAccount && !reconState.accountFilter);
   const compteDe = (line: BankStatementLine) =>
@@ -91,7 +113,7 @@
 </script>
 
 <ListView
-  items={rows}
+  items={rangees}
   inset="plain"
   emptyTitle="La file est vide"
   emptyDescription="Toutes les opérations du relevé ont été traitées."
@@ -124,6 +146,15 @@
     </ListRow>
   {/snippet}
 </ListView>
+
+{#if reste > 0}
+  <div class="space-y-2 px-4 py-3">
+    <p class="text-center text-xs text-muted-foreground">{rangees.length} sur {rows.length}</p>
+    <Button variant="outline" class="w-full" onclick={() => (visibles += PAR_TRANCHE)}>
+      Afficher les {Math.min(reste, PAR_TRANCHE)} suivants
+    </Button>
+  </div>
+{/if}
 
 <ReconciliationDecisionSheet
   bind:state={reconState}

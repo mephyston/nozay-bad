@@ -549,3 +549,59 @@ describe("exercice déduit du motif", () => {
     expect(target.textContent).toContain('Aucun exercice ne convient à ce motif');
   });
 });
+/*
+  La file au doigt ne rend qu'une tranche à la fois.
+
+  Rien ne vient du serveur par morceaux — le relevé arrive entier — mais deux cents
+  rangées, chacune avec sa piste de balayage et son menu escamoté, font une page qu'un
+  téléphone met une seconde à poser. La version de bureau, elle, garde la file entière :
+  c'est au clavier qu'on la vide, et la tronquer y serait une régression.
+*/
+describe('la file au doigt, par tranches', () => {
+  const beaucoup = (statut: 'pending' | 'reconciled') =>
+    Array.from({ length: 45 }, (_, i) => line({ id: i + 1, name: `OPE ${i + 1}`, status: statut }));
+
+  const rangeesDeListe = (t: HTMLElement) => t.querySelectorAll('[data-list-row]').length;
+  const rangeesDeBureau = (t: HTMLElement) => t.querySelectorAll('[data-line-id]').length;
+
+  it("n'affiche que vingt opérations à rapprocher, puis les suivantes", () => {
+    const target = render(beaucoup('pending'));
+
+    expect(rangeesDeListe(target)).toBe(20);
+    // Le bureau ne perd rien : c'est au clavier qu'on vide la file.
+    expect(rangeesDeBureau(target)).toBe(45);
+    expect(target.textContent).toContain('20 sur 45');
+
+    btn(target, 'Afficher les 20 suivants').click();
+    flushSync();
+    expect(rangeesDeListe(target)).toBe(40);
+
+    btn(target, 'Afficher les 5 suivants').click();
+    flushSync();
+    expect(rangeesDeListe(target)).toBe(45);
+    expect(btn(target, 'Afficher les')).toBeUndefined();
+  });
+
+  it("s'applique aussi à l'historique", () => {
+    const target = render(beaucoup('reconciled'));
+
+    btn(target, "Voir l'historique").click();
+    flushSync();
+
+    expect(rangeesDeListe(target)).toBe(20);
+    expect(target.textContent).toContain('20 sur 45');
+  });
+
+  it('repart du début quand la vue change', () => {
+    const target = render([...beaucoup('pending'), ...beaucoup('reconciled').map((l, i) => line({ id: 100 + i, status: 'reconciled' }))]);
+
+    btn(target, 'Afficher les 20 suivants').click();
+    flushSync();
+    expect(rangeesDeListe(target)).toBe(40);
+
+    btn(target, "Voir l'historique").click();
+    flushSync();
+    // La tranche d'une autre file n'a pas de sens : on recommence.
+    expect(rangeesDeListe(target)).toBe(20);
+  });
+});
