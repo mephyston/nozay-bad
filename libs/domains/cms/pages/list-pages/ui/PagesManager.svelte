@@ -1,24 +1,37 @@
 <script lang="ts">
-  import { Plus, Edit, Trash2, ExternalLink } from '@lucide/svelte';
+  import { Plus, FilePlus } from '@lucide/svelte';
   import { websiteOrigin } from '../../../media/media-url';
   import {
     Button,
     Input,
     Badge,
-    Card,
     Table,
+    ChoiceField,
     DataTable,
     DataTableToolbar,
     DataTableRowActions,
     DropdownMenu,
+    FilterSheet,
     FormField,
     FormSheet,
+    RowActionItems,
+    dockDePage,
     submitForm,
     softNavigate,
     uiConfirm,
     flashAndReload,
-    uiAlert
+    uiAlert,
+    type SwipeAction
   } from '@nba/ui';
+  import PagesList from './PagesList.svelte';
+  import {
+    dateFr,
+    gestesDePage,
+    pagesFiltrees,
+    signalementsDePage,
+    STATUTS_DE_PAGE,
+    type StatutDePage
+  } from './pages-row-model';
 
   interface PageRow {
     id: number;
@@ -52,17 +65,35 @@
   let errorMsg = $state('');
   let searchTerm = $state('');
 
-  const formatter = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'short' });
-  const when = (v: number | string | null) =>
-    v ? formatter.format(new Date(typeof v === 'number' ? v * 1000 : v)) : '—';
+  let statut = $state<StatutDePage>('tous');
+  let filtresOuverts = $state(false);
 
-  const filteredPages = $derived(
-    pages.filter((row: PageRow) => {
-      const term = searchTerm.trim().toLowerCase();
-      if (!term) return true;
-      return row.title.toLowerCase().includes(term) || row.path.toLowerCase().includes(term);
-    })
-  );
+  const filteredPages = $derived(pagesFiltrees(pages as PageRow[], { recherche: searchTerm, statut }));
+
+  const droits = $derived({ canWrite, canDelete });
+
+  /* Les gestes, dans le vocabulaire du modèle : le menu du tableau et le balayage de la
+     liste les rendent tous deux, à partir d'une seule déclaration. */
+  const gestes = {
+    onEdit: (page: PageRow) => softNavigate(`/admin/website/pages/${page.id}`),
+    /* L'adresse d'une page est relative au *site public*. L'ouvrir telle quelle la
+       résolvait sur le domaine de l'administration, où le contrôle d'accès par page
+       refuse tout chemin non déclaré : « Voir sur le site » répondait « Accès refusé ». */
+    onOpenSite: (page: PageRow) => window.open(`${websiteOrigin}${page.path}`, '_blank', 'noopener'),
+    onDelete: (page: PageRow) => remove(page)
+  };
+
+  /*
+    Créer descend dans la barre du bas. Le bouton vivait en haut d'une barre d'outils
+    qui défile avec la liste.
+  */
+  $effect(() => {
+    if (!canWrite) return;
+    const actions: SwipeAction[] = [
+      { id: 'nouvelle', label: 'Nouvelle page', icon: FilePlus, run: () => openAddForm() }
+    ];
+    return dockDePage.declarerActions(actions, { icon: Plus, label: 'Nouvelle page' });
+  });
 
   async function post(body: unknown, fallback: string) {
     const response = await fetch(endpoint, {
@@ -126,16 +157,37 @@
 
 <DataTable
   data={filteredPages}
+  mobileSpacing="list"
   emptyTitle="Aucune page"
-  emptyDescription={searchTerm.trim()
-    ? 'Aucune page ne correspond à votre recherche.'
+  emptyDescription={searchTerm.trim() || statut !== 'tous'
+    ? 'Aucune page ne correspond à ces critères.'
     : 'Créez la première page du site.'}
 >
   {#snippet toolbar()}
-    <DataTableToolbar bind:searchValue={searchTerm} searchPlaceholder="Rechercher une page..." hasFilters={false}>
+    <DataTableToolbar
+      bind:searchValue={searchTerm}
+      searchPlaceholder="Rechercher une page..."
+      dockSearch
+      hasFilters={true}
+      filtersActive={statut !== 'tous'}
+      onOpenFilters={() => (filtresOuverts = true)}
+      activeFilters={statut === 'tous'
+        ? []
+        : [
+            {
+              id: 'statut',
+              label: STATUTS_DE_PAGE.find((o) => o.value === statut)?.label ?? '',
+              onRemove: () => (statut = 'tous')
+            }
+          ]}
+    >
+      {#snippet filters()}
+        {@render criteres()}
+      {/snippet}
       {#snippet actions()}
+        <!-- Sur téléphone, ce geste vit dans la barre du bas. -->
         {#if canWrite}
-          <Button onclick={openAddForm} class="h-9 shrink-0 gap-1.5 font-bold">
+          <Button onclick={openAddForm} class="hidden h-9 shrink-0 gap-1.5 font-bold md:flex">
             <Plus class="h-4 w-4" />
             <span>Nouvelle page</span>
           </Button>
@@ -145,49 +197,15 @@
   {/snippet}
 
   {#snippet mobileView()}
-    {#each filteredPages as row (row.id)}
-      <Card.Root>
-        <Card.Content class="space-y-3 p-4">
-          <div class="flex items-start justify-between gap-2">
-            <div class="min-w-0">
-              <a href={`/admin/website/pages/${row.id}`} class="text-sm font-bold text-foreground hover:underline">
-                {row.title}
-              </a>
-              <code class="mt-1 block truncate text-xs text-muted-foreground">{row.path}</code>
-            </div>
-            <div class="shrink-0 text-right">
-              <Badge variant={row.status === 'published' ? 'primary-soft' : 'outline'} size="xs">
-                {row.status === 'published' ? 'En ligne' : 'Brouillon'}
-              </Badge>
-              <span class="mt-1 block text-xs text-muted-foreground">{when(row.updatedAt)}</span>
-            </div>
-          </div>
-
-          <div class="flex items-center justify-end gap-2 border-t border-border/50 pt-2">
-            <Button
-              variant="outline"
-              size="sm"
-              href={`/admin/website/pages/${row.id}`}
-              class="h-8 flex-1 gap-1.5 text-xs font-semibold"
-            >
-              <Edit class="h-3.5 w-3.5" />
-              <span>Modifier</span>
-            </Button>
-            {#if canDelete}
-              <Button
-                variant="outline"
-                size="sm"
-                onclick={() => remove(row)}
-                class="h-8 flex-1 gap-1.5 border-destructive/30 text-xs font-semibold text-destructive hover:bg-destructive/10"
-              >
-                <Trash2 class="h-3.5 w-3.5" />
-                <span>Supprimer</span>
-              </Button>
-            {/if}
-          </div>
-        </Card.Content>
-      </Card.Root>
-    {/each}
+    <PagesList
+      pages={filteredPages}
+      {droits}
+      {...gestes}
+      emptyTitle="Aucune page"
+      emptyDescription={searchTerm.trim() || statut !== 'tous'
+        ? 'Aucune page ne correspond à ces critères.'
+        : 'Créez la première page du site.'}
+    />
   {/snippet}
 
   {#snippet header()}
@@ -207,42 +225,23 @@
         <code class="text-xs text-muted-foreground">{page.path}</code>
       </Table.Cell>
       <Table.Cell>
-        <Badge variant={page.status === 'published' ? 'primary-soft' : 'outline'}>
-          {page.status === 'published' ? 'En ligne' : 'Brouillon'}
-        </Badge>
+        <!-- Les mêmes pastilles que la liste au doigt : « En ligne » est le cas
+             courant et ne s'annonce pas. -->
+        <div class="flex flex-wrap items-center gap-1.5">
+          {#each signalementsDePage(page) as pastille (pastille.label)}
+            <Badge variant={pastille.variant} size="xs">{pastille.label}</Badge>
+          {/each}
+        </div>
       </Table.Cell>
-      <Table.Cell class="text-muted-foreground">{when(page.updatedAt)}</Table.Cell>
+      <Table.Cell class="text-muted-foreground">{dateFr(page.updatedAt)}</Table.Cell>
       <Table.Cell class="relative text-right">
-        <DataTableRowActions>
-          <DropdownMenu.Label>Actions</DropdownMenu.Label>
-          <DropdownMenu.Item onclick={() => softNavigate(`/admin/website/pages/${page.id}`)} class="cursor-pointer">
-            <Edit class="mr-2 h-3.5 w-3.5" />
-            Modifier
-          </DropdownMenu.Item>
-          {#if page.status === 'published'}
-            <!-- L'adresse d'une page est relative au *site public*. L'ouvrir telle
-                 quelle la résolvait sur le domaine de l'administration, où le contrôle
-                 d'accès par page refuse tout chemin non déclaré : « Voir sur le site »
-                 répondait « Accès refusé ». Le cas se voyait surtout pour une page hors
-                 menu, cette entrée étant alors le seul chemin pour l'atteindre. -->
-            <DropdownMenu.Item
-              onclick={() => window.open(`${websiteOrigin}${page.path}`, '_blank', 'noopener')}
-              class="cursor-pointer"
-            >
-              <ExternalLink class="mr-2 h-3.5 w-3.5" />
-              Voir sur le site
-            </DropdownMenu.Item>
-          {/if}
-          {#if canDelete}
-            <DropdownMenu.Item
-              onclick={() => remove(page)}
-              class="cursor-pointer text-destructive focus:text-destructive"
-            >
-              <Trash2 class="mr-2 h-3.5 w-3.5" />
-              Supprimer
-            </DropdownMenu.Item>
-          {/if}
-        </DataTableRowActions>
+        {@const actions = gestesDePage(page, droits, gestes)}
+        {#if actions.length > 0}
+          <DataTableRowActions>
+            <DropdownMenu.Label>Actions</DropdownMenu.Label>
+            <RowActionItems {actions} item={page} />
+          </DataTableRowActions>
+        {/if}
       </Table.Cell>
     </Table.Row>
   {/snippet}
@@ -263,3 +262,26 @@
     <Input id="page-title" bind:value={title} placeholder="Présentation" />
   </FormField>
 </FormSheet>
+
+<!-- Les critères se posent derrière la loupe, jamais ailleurs. -->
+{#snippet criteres()}
+  <FormField id="filter-statut-page" label="Statut">
+    <ChoiceField
+      id="filter-statut-page"
+      label="Statut"
+      value={statut}
+      onChange={(v) => (statut = v as StatutDePage)}
+      options={STATUTS_DE_PAGE}
+    />
+  </FormField>
+{/snippet}
+
+<FilterSheet
+  bind:open={filtresOuverts}
+  description="Un brouillon reste enregistré : il ne paraît simplement pas sur le site."
+  resultCount={filteredPages.length}
+  itemName="page"
+  onReset={() => (statut = 'tous')}
+>
+  {@render criteres()}
+</FilterSheet>
