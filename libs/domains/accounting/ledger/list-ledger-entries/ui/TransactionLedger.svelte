@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import { softNavigate, submitForm, toSeasonOptions, uiAlert } from '@nba/ui';
   import type { Transaction, Pagination, BalanceReport, Season, Category, AccountClass } from './ledger-types';
-  import { submitTransaction, validateTransaction, deleteTransaction, editValuesFor, changePage as actionChangePage, applySeasonChange as actionApplySeasonChange } from './ledger-actions';
+  import { submitTransaction, validateTransaction, deleteTransaction, editValuesFor, newValuesFor, changePage as actionChangePage, applySeasonChange as actionApplySeasonChange, type TransactionFormValues } from './ledger-actions';
   import TransactionLedgerBalances from './TransactionLedgerBalances.svelte';
   import TransactionLedgerHeader from './TransactionLedgerHeader.svelte';
   import TransactionLedgerTable from './TransactionLedgerTable.svelte';
@@ -135,31 +135,42 @@
   let editingId = $state<number | null>(null);
   let memberId = $state('');
 
+  /**
+   * Verse dans le formulaire un jeu de valeurs complet.
+   *
+   * Une seule affectation, pour la saisie comme pour la modification : c'est ce qui
+   * empêche qu'un champ soit remis à zéro d'un côté et pas de l'autre. `reference` ne
+   * l'était pas, et une saisie ouverte après une modification héritait de la référence
+   * bancaire de celle-ci.
+   */
+  function appliquer(v: TransactionFormValues) {
+    showPanel = v.showPanel;
+    editingId = v.editingId;
+    editingTransferId = v.editingTransferId ?? null;
+    amount = v.amount;
+    date = v.date;
+    category = v.category;
+    formAccountId = v.formAccountId;
+    destinationAccountId = v.destinationAccountId;
+    destinationDate = v.destinationDate;
+    paymentMethod = v.paymentMethod;
+    description = v.description;
+    reference = v.reference;
+    accrualType = v.accrualType;
+    accrualNote = v.accrualNote;
+    targetSeasonId = v.targetSeasonId;
+    memberId = v.memberId ?? '';
+  }
+
   function openPanel(type: 'recette' | 'depense' | 'transfert') {
-    showPanel = type;
-    amount = '';
-    description = '';
-    accrualType = 'normal';
-    accrualNote = '';
-    targetSeasonId = selectedSeason;
-    editingId = null;
-    editingTransferId = null;
-    /*
-     * Les comptes, le moyen de paiement et la catégorie sont remis à zéro eux aussi.
-     *
-     * Ils ne l'étaient pas : après avoir modifié une écriture, ouvrir « Virement Interne »
-     * héritait des comptes de la précédente — et du moyen de paiement, pourtant masqué à l'écran,
-     * dont le `default_entry_status` partait tel quel en base. Un virement pouvait ainsi naître
-     * `in_vault`, sans que rien ne le montre.
-     */
-    formAccountId = mainAccountId;
-    // Le premier autre compte actif : le formulaire ne propose jamais le compte de départ en face.
-    destinationAccountId = activeAccounts.find((a) => a.code !== mainAccountId)?.code ?? '';
-    destinationDate = '';
-    paymentMethod = paymentMethods.find((m) => m.kind === 'transfer')?.code ?? paymentMethods[0]?.code ?? '';
-    category = '1';
-    date = new Date().toISOString().split('T')[0];
-    memberId = '';
+    appliquer(
+      newValuesFor(type, {
+        mainAccountId,
+        seasonId: selectedSeason,
+        accounts: activeAccounts,
+        paymentMethods
+      })
+    );
   }
 
   let editingTransferId = $state<number | null>(null);
@@ -167,23 +178,7 @@
   // Une jambe de virement rouvre le virement entier : ses deux comptes et ses deux dates.
   function startEdit(tx: Transaction, e: MouseEvent) {
     e.stopPropagation();
-    const values = editValuesFor(tx, accounts, { accountId: mainAccountId, seasonId: selectedSeason });
-    editingId = values.editingId;
-    editingTransferId = values.editingTransferId ?? null;
-    amount = values.amount;
-    date = values.date;
-    category = values.category;
-    formAccountId = values.formAccountId;
-    destinationAccountId = values.destinationAccountId;
-    destinationDate = values.destinationDate;
-    paymentMethod = values.paymentMethod;
-    description = values.description;
-    reference = values.reference;
-    accrualType = values.accrualType;
-    accrualNote = values.accrualNote;
-    targetSeasonId = values.targetSeasonId;
-    memberId = values.memberId ?? '';
-    showPanel = values.showPanel;
+    appliquer(editValuesFor(tx, accounts, { accountId: mainAccountId, seasonId: selectedSeason }));
   }
 
   async function handleAddTransaction(e: Event) {

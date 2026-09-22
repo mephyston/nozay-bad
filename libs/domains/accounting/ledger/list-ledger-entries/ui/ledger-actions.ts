@@ -41,6 +41,48 @@ export interface TransactionFormValues {
 }
 
 /**
+ * Le formulaire vierge, pour une saisie neuve.
+ *
+ * Pendant de {@link editValuesFor}, et **écrit comme lui** : les deux rendent le même
+ * objet complet. L'écran remettait ses champs à zéro un par un, et en avait déjà oublié
+ * trois une première fois — comptes, moyen de paiement, catégorie, corrigés après coup —
+ * puis `reference` une seconde : après avoir modifié une écriture, ouvrir une saisie
+ * héritait de sa référence bancaire, qui partait en base sur la nouvelle et égarait le
+ * rapprochement. Un champ ajouté au type oblige désormais les deux fonctions.
+ */
+export function newValuesFor(
+  type: 'recette' | 'depense' | 'transfert',
+  contexte: {
+    mainAccountId: string;
+    seasonId: string;
+    /** Les comptes actifs : le destinataire d'un virement n'est jamais le compte de départ. */
+    accounts?: readonly AccountLike[];
+    paymentMethods?: readonly { code: string; kind?: string }[];
+  }
+): TransactionFormValues {
+  const { mainAccountId, seasonId, accounts = [], paymentMethods = [] } = contexte;
+  return {
+    editingId: null,
+    editingTransferId: null,
+    showPanel: type,
+    amount: '',
+    date: new Date().toISOString().split('T')[0],
+    category: '1',
+    formAccountId: mainAccountId,
+    destinationAccountId: accounts.find((a) => a.code !== mainAccountId)?.code ?? '',
+    destinationDate: '',
+    paymentMethod:
+      paymentMethods.find((m) => m.kind === 'transfer')?.code ?? paymentMethods[0]?.code ?? '',
+    description: '',
+    reference: '',
+    accrualType: 'normal',
+    accrualNote: '',
+    targetSeasonId: seasonId,
+    memberId: ''
+  };
+}
+
+/**
  * Ce qu'une écriture existante met dans le formulaire pour être modifiée.
  *
  * Une recette ou une dépense se recopie champ à champ. Un virement demande plus : la ligne

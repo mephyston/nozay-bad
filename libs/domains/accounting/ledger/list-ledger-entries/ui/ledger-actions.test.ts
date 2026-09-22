@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { editValuesFor, submitTransaction } from './ledger-actions';
+import { editValuesFor, newValuesFor, submitTransaction, type TransactionFormValues } from './ledger-actions';
 
 vi.mock('@nba/ui', () => ({ softNavigate: vi.fn() }));
 
@@ -7,6 +7,68 @@ const ACCOUNTS = [
   { id: 1, code: 'current', label: 'Compte Courant' },
   { id: 4, code: 'badnet', label: 'Porte-monnaie Badnet' }
 ];
+
+describe('newValuesFor', () => {
+  const contexte = {
+    mainAccountId: 'current',
+    seasonId: '9',
+    accounts: ACCOUNTS,
+    paymentMethods: [{ code: 'especes' }, { code: 'virement_interne', kind: 'transfer' }]
+  };
+
+  it('rend un formulaire entièrement vierge', () => {
+    const v = newValuesFor('recette', contexte);
+    expect(v).toMatchObject({
+      editingId: null,
+      editingTransferId: null,
+      showPanel: 'recette',
+      amount: '',
+      category: '1',
+      formAccountId: 'current',
+      destinationDate: '',
+      description: '',
+      reference: '',
+      accrualType: 'normal',
+      accrualNote: '',
+      targetSeasonId: '9',
+      memberId: ''
+    });
+  });
+
+  it('ne laisse aucun champ du formulaire hors de sa portée', () => {
+    /*
+      La garde qui manquait. L'écran remettait ses champs à zéro un par un et en avait
+      oublié `reference` : après avoir modifié une écriture, ouvrir une saisie héritait
+      de sa référence bancaire, qui partait en base sur la nouvelle écriture. Comparer
+      les clés des deux fonctions interdit qu'un champ ajouté plus tard soit oublié
+      d'un seul côté.
+    */
+    const neuf = newValuesFor('recette', contexte);
+    const modifie = editValuesFor(
+      {
+        id: 5, type: 'recette', accountId: 1, seasonId: 2, categoryId: 12, amount: 1750,
+        date: '2026-08-20', paymentMethod: 'especes', description: 'Cotisation',
+        reference: 'VIR-9988', memberId: 42
+      },
+      ACCOUNTS,
+      { accountId: 'current', seasonId: '9' }
+    );
+    expect(Object.keys(neuf).sort()).toEqual(Object.keys(modifie).sort());
+  });
+
+  it("ne propose jamais le compte de départ comme destinataire d'un virement", () => {
+    const v = newValuesFor('transfert', contexte);
+    expect(v.formAccountId).toBe('current');
+    expect(v.destinationAccountId).toBe('badnet');
+    // Un moyen de paiement de virement, quand le club en déclare un.
+    expect(v.paymentMethod).toBe('virement_interne');
+  });
+
+  it('retombe sur le premier moyen de paiement à défaut de virement déclaré', () => {
+    const v = newValuesFor('depense', { ...contexte, paymentMethods: [{ code: 'especes' }] });
+    expect(v.paymentMethod).toBe('especes');
+  });
+});
 
 describe('editValuesFor', () => {
   const fallback = { accountId: 'current', seasonId: '9' };

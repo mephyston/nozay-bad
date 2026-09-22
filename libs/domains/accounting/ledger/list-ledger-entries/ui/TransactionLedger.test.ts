@@ -377,4 +377,33 @@ describe('TransactionLedger Component', () => {
     unmount(component);
     target.remove();
   });
+  it("n'hérite d'aucun champ de l'écriture qu'on vient de modifier", async () => {
+    /*
+      Le scénario signalé : on ouvre une écriture pour la modifier, on abandonne, puis on
+      saisit une recette — et la référence bancaire de la première était encore là. Elle
+      serait partie en base sur la nouvelle écriture, où elle aurait égaré le rapprochement.
+    */
+    const avecReference = [
+      { id: 1, seasonId: '25-26', type: 'recette', accountId: 'current', categoryId: 3, category: 'adhesions', amount: 4500, date: '2026-10-02', paymentMethod: 'virement', description: 'Cotisation Martin', reference: 'VIR-9988', memberId: 42 }
+    ];
+    const { target, component } = monter({ transactions: avecReference });
+
+    const ligne = target.querySelector('[data-list-row] [data-swipe-layer] > button') as HTMLButtonElement;
+    ligne.click();
+    flushSync();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect((document.body.querySelector('#ref-input') as HTMLInputElement)?.value).toBe('VIR-9988');
+
+    window.dispatchEvent(new CustomEvent('open-new-recette'));
+    flushSync();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    const vierge = (id: string) => (document.body.querySelector(id) as HTMLInputElement)?.value;
+    expect(vierge('#ref-input'), 'la référence de la précédente ne doit pas rester').toBe('');
+    expect(vierge('#amount-input')).toBe('');
+    expect(vierge('#description-input')).toBe('');
+
+    unmount(component);
+    target.remove();
+  });
 });
