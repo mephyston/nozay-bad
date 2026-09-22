@@ -32,8 +32,16 @@ const coches = (target: HTMLElement) =>
     .map((b) => b.textContent?.trim().split('\n')[0]);
 
 describe('ChoicePicker', () => {
-  afterEach(() => {
+  afterEach(async () => {
     document.body.innerHTML = '';
+    /*
+      bits-ui rend au `body` son style 24 ms après la fermeture — son verrou de
+      défilement se relâche en différé. Sans cette attente, le minuteur se déclenche
+      une fois jsdom démonté : « document is not defined », une exception non
+      rattrapée qui fait sortir vitest en erreur alors que tous les tests passent.
+      Invisible en local, où l'ordre des fichiers diffère ; la CI l'a vue.
+    */
+    await new Promise((r) => setTimeout(r, 50));
   });
 
   it('se ferme au premier appui quand il n’y a qu’une réponse', () => {
