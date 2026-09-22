@@ -134,6 +134,39 @@ function code(valeur: unknown, quoi: string): string {
 }
 
 export const ECRANS: Record<string, Ecran> = {
+  /**
+   * La tranche suivante du journal, et rien d'autre.
+   *
+   * « Afficher les suivants » n'a besoin que des écritures : recharger l'écran entier en
+   * relirait cinq de plus — rapports, catégories, classes de compte, annuaire — pour une
+   * page de vingt lignes. Sur un plan où la contrainte est le nombre de lectures D1, la
+   * différence n'est pas théorique.
+   */
+  'ledger-page': {
+    feature: 'accounting',
+    permission: 'accounting:ledger:read',
+    charger: async (lire, _locals, params) => {
+      const saisonnier = await saison(lire, params);
+      const requete = new URLSearchParams({
+        season: saisonnier.seasonId,
+        page: params.get('page') || '1',
+        limit: params.get('limit') || '20'
+      });
+      if (params.get('accountId')) requete.set('accountId', params.get('accountId')!);
+      for (const cle of ['category', 'classCode', 'type', 'search', 'month', 'accrual'] as const) {
+        const valeur = params.get(cle);
+        if (valeur) requete.set(cle, valeur);
+      }
+      if (params.get('unreconciledCheques') === 'true') requete.set('unreconciledCheques', 'true');
+
+      const mouvements = await lire.detail(`/accounting/transactions?${requete}`);
+      return {
+        transactions: mouvements.data ?? [],
+        pagination: mouvements.enveloppe?.pagination ?? { total: 0, page: 1, limit: 20, totalPages: 1 }
+      };
+    }
+  },
+
   ledger: {
     feature: 'accounting',
     permission: 'accounting:ledger:read',

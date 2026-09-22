@@ -82,7 +82,15 @@
       <span class="text-xs font-medium uppercase tracking-wider text-muted-foreground">Disponibilités</span>
       <span class="text-lg font-bold text-foreground"><Amount cents={totalCents} /></span>
     </span>
-    <span class="flex flex-wrap items-center gap-1.5 min-w-0">
+    <!--
+      Le détail par compte ne s'affiche qu'à partir de 768 px.
+
+      Quatre pastilles à 390 px passent à la ligne deux ou trois fois et repoussent le
+      journal sous le pli — ce que la bande repliée était précisément censée éviter. Au
+      doigt, la bande ne dit donc que le total disponible ; le détail s'ouvre d'un appui,
+      et il est déjà là, complet, dans le panneau.
+    -->
+    <span class="hidden min-w-0 flex-wrap items-center gap-1.5 md:flex">
       {#each treasury as balance (balance.accountId)}
         <span
           class="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-2.5 py-0.5 text-xs whitespace-nowrap"

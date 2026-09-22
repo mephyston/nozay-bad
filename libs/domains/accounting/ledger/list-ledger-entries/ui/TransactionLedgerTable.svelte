@@ -8,7 +8,8 @@
     DataTableRowActions,
     DropdownMenu,
     RowActionItems,
-    Table
+    Table,
+    uiAlert
   } from '@nba/ui';
   import type { Transaction, Pagination } from './ledger-types';
   import { accountLabelOf, type AccountLike } from '../../../shared/account-labels';
@@ -58,7 +59,56 @@
     toolbar?: import('svelte').Snippet;
   } = $props();
 
-  const lignes = $derived(grouperVentilations(transactions));
+  /**
+   * « Afficher les suivants », comme sur la liste des adhérents.
+   *
+   * Les points de pagination d'iOS servent un petit nombre de pages sœurs qu'on
+   * feuillette, pas une liste qui défile ; et le défilement infini lit ce que personne
+   * n'a demandé, coûteux quand la contrainte est le nombre de lignes lues. Un appui
+   * explicite ne charge que ce qu'on demande. La pagination numérotée reste sur
+   * ordinateur : elle seule permet d'aller droit à la page 6.
+   *
+   * `transactions` porte la page rendue par le relais ; `supplement` ce qu'on a demandé
+   * ensuite. Elles se concatènent avant le regroupement des ventilations, pour qu'une
+   * opération à cheval sur deux tranches se réunisse quand même.
+   */
+  let supplement = $state<Transaction[]>([]);
+  let chargeEnCours = $state(false);
+  let dernierePage = $state(1);
+
+  /* Un changement de filtre relance la liste : le supplément d'un autre critère n'a plus lieu d'être. */
+  $effect(() => {
+    void transactions;
+    supplement = [];
+    dernierePage = 1;
+  });
+
+  const accumulees = $derived([...transactions, ...supplement]);
+  const lignes = $derived(grouperVentilations(accumulees));
+
+  async function chargerSuite() {
+    if (chargeEnCours || dernierePage >= pagination.totalPages) return;
+    chargeEnCours = true;
+    const params = new URLSearchParams(window.location.search);
+    params.set('page', String(dernierePage + 1));
+    try {
+      const res = await fetch(`/admin/api/accounting/ledger-page?${params.toString()}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      /*
+        Le relais enveloppe : `{ success, data: { transactions, pagination } }`. Lire
+        `transactions` à la racine rendrait `undefined`, et la liste ne grandirait jamais
+        — sans erreur, puisqu'un tableau vide s'ajoute sans rien changer.
+      */
+      const enveloppe = (await res.json()) as { data?: { transactions?: Transaction[] } };
+      const suite = enveloppe.data?.transactions;
+      if (!Array.isArray(suite)) throw new Error('réponse inattendue');
+      supplement = [...supplement, ...suite];
+      dernierePage += 1;
+    } catch {
+      uiAlert("La suite du journal n'a pas pu être chargée.");
+    }
+    chargeEnCours = false;
+  }
 
   let expandedGroups = $state<Record<number, boolean>>({});
   const toggleGroup = (bankLineId: number) => {
@@ -172,6 +222,9 @@
   mobileSpacing="list"
   {pagination}
   onPageChange={onChangePage}
+  onLoadMore={chargerSuite}
+  isLoadingMore={chargeEnCours}
+  loadedCount={accumulees.length}
   {toolbar}
   itemName="écriture(s)"
   emptyTitle="Aucune écriture"

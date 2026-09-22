@@ -43,7 +43,12 @@ describe('TransactionLedger Component', () => {
       }
     });
 
-    expect(target.innerHTML).toContain('Journal des écritures');
+    /*
+      Le titre a quitté le composant : l'écran en portait deux — « Comptabilité » et
+      « Journal des écritures » —, soit deux blocs empilés et une bande vide avant la
+      première écriture. Il n'en reste qu'un, « Grand livre », rendu par `LedgerScreen`.
+    */
+    expect(target.innerHTML).not.toContain('Journal des écritures');
     expect(target.innerHTML.replace(/&nbsp;|[\u00a0\u202f]/g, ' ')).toContain('1 045,00'); // Compte Courant final balance
     expect(target.innerHTML).toContain('Cotisation Martin');
     expect(target.innerHTML).toContain('+45,00');

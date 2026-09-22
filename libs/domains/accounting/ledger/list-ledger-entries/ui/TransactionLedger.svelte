@@ -4,7 +4,6 @@
   import type { Transaction, Pagination, BalanceReport, Season, Category, AccountClass } from './ledger-types';
   import { submitTransaction, validateTransaction, deleteTransaction, editValuesFor, newValuesFor, changePage as actionChangePage, applySeasonChange as actionApplySeasonChange, type TransactionFormValues } from './ledger-actions';
   import TransactionLedgerBalances from './TransactionLedgerBalances.svelte';
-  import TransactionLedgerHeader from './TransactionLedgerHeader.svelte';
   import TransactionLedgerTable from './TransactionLedgerTable.svelte';
   import TransactionFormSheet from './TransactionFormSheet.svelte';
   import LedgerToolbar from './LedgerToolbar.svelte';
@@ -231,8 +230,6 @@
 
 <div class="space-y-6">
   <TransactionLedgerBalances {balances} />
-
-  <TransactionLedgerHeader {isClosed} />
 
   <TransactionLedgerTable
     {transactions}
