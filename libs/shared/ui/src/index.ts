@@ -74,6 +74,7 @@ export { default as ChoicePicker } from "./components/patterns/ChoicePicker.svel
 export { default as FieldGroup } from "./components/patterns/FieldGroup.svelte";
 export { default as DateTimeField } from "./components/patterns/DateTimeField.svelte";
 export { default as MediaField } from "./components/patterns/MediaField.svelte";
+export { default as MultiChoiceField } from "./components/patterns/MultiChoiceField.svelte";
 export { default as InlineCalendar } from "./components/patterns/InlineCalendar.svelte";
 export { default as ActionSheet } from "./components/patterns/ActionSheet.svelte";
 export { default as ThemeToggle } from "./components/patterns/ThemeToggle.svelte";

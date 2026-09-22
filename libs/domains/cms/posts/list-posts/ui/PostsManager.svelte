@@ -1,14 +1,15 @@
 <script lang="ts">
-  import { Plus, Edit, ImagePlus, X } from '@lucide/svelte';
+  import { Plus, Edit } from '@lucide/svelte';
   import { mediaPath, mediaUrl, websiteOrigin } from '../../../media/media-url';
   import MediaPicker, { type PickableMedia } from '../../../media/list-media/ui/MediaPicker.svelte';
   import {
     Button,
     Input,
     Badge,
-    Checkbox,
-    Label,
-    Select,
+    ChoiceField,
+    MediaField,
+    MultiChoiceField,
+    SearchableCombobox,
     Table,
     DataTable,
     DataTableToolbar,
@@ -192,12 +193,6 @@
       resolveImagePick = null;
     }
   });
-
-  function toggleCategory(id: number, checked: boolean) {
-    selectedCategoryIds = checked
-      ? [...selectedCategoryIds, id]
-      : selectedCategoryIds.filter((value) => value !== id);
-  }
 
   const formatter = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'short' });
 
@@ -531,87 +526,67 @@
     />
   </FormField>
 
-  <FormField id="post-visibility" label="Qui peut la lire">
-    <div class="space-y-2">
-      <label class="flex items-start gap-2 text-sm">
-        <input
-          type="radio"
-          name="post-visibility"
-          value="public"
-          checked={visibility === 'public'}
-          onchange={() => (visibility = 'public')}
-          class="mt-1"
-        />
-        <span>
-          <span class="font-medium">Tout le monde</span>
-          <span class="text-muted-foreground block text-xs">
-            Publiée sur le site public et dans l'espace adhérent.
-          </span>
-        </span>
-      </label>
-      <label class="flex items-start gap-2 text-sm">
-        <input
-          type="radio"
-          name="post-visibility"
-          value="private"
-          checked={visibility === 'private'}
-          onchange={() => (visibility = 'private')}
-          class="mt-1"
-        />
-        <span>
-          <span class="font-medium">Adhérents seulement</span>
-          <span class="text-muted-foreground block text-xs">
-            Visible dans l'espace adhérent uniquement. Peut être diffusée en notification
-            depuis la liste, une fois publiée.
-          </span>
-        </span>
-      </label>
-    </div>
+  <!--
+    Deux boutons radio et leurs deux paragraphes tenaient cent pixels de haut pour
+    un choix binaire, avec des cibles de 16 px. Une rangée le porte : l'intitulé à
+    gauche, la réponse à droite, et le menu explique chaque option à l'ouverture.
+  -->
+  <FormField
+    id="post-visibility"
+    label="Qui peut la lire"
+    hint={visibility === 'private'
+      ? "Visible dans l'espace adhérent uniquement. Peut être diffusée en notification depuis la liste, une fois publiée."
+      : 'Publiée sur le site public et dans l’espace adhérent.'}
+  >
+    <ChoiceField
+      id="post-visibility"
+      label="Qui peut la lire"
+      value={visibility}
+      onChange={(v) => (visibility = v as 'public' | 'private')}
+      options={[
+        { value: 'public', label: 'Tout le monde', hint: 'Site public et espace adhérent' },
+        { value: 'private', label: 'Adhérents seulement', hint: 'Espace adhérent, diffusable' }
+      ]}
+    />
   </FormField>
 
+  <!--
+    La même rangée que l'image d'un produit, mais l'appui mène à la médiathèque et
+    non au sélecteur du système : une couverture se réemploie d'un article à
+    l'autre, et le site la sert depuis sa bibliothèque.
+  -->
   <FormField id="post-cover" label="Image de couverture">
-    {#if coverMedia}
-      <div class="border-border flex items-center gap-3 rounded-md border p-2">
-        <img
-          src={mediaUrl(coverMedia.key)}
-          alt={coverMedia.alt}
-          class="h-16 w-24 shrink-0 rounded object-cover"
-        />
-        <span class="min-w-0 flex-1 truncate text-sm">{coverMedia.alt || '(sans description)'}</span>
-        <Button type="button" variant="ghost" size="sm" onclick={() => (coverPickerOpen = true)}>
-          Remplacer
-        </Button>
-        <Button type="button" variant="ghost" size="icon-sm" onclick={() => (coverMediaId = null)}>
-          <X class="h-4 w-4" />
-          <span class="sr-only">Retirer la couverture</span>
-        </Button>
-      </div>
-    {:else}
-      <Button type="button" variant="outline" class="gap-1.5" onclick={() => (coverPickerOpen = true)}>
-        <ImagePlus class="h-4 w-4" />
-        Choisir une image
-      </Button>
-    {/if}
+    <MediaField
+      id="post-cover"
+      label="Image de couverture"
+      max={1}
+      preview={coverMedia ? mediaUrl(coverMedia.key) : null}
+      names={coverMedia ? [coverMedia.alt || 'Couverture'] : undefined}
+      onBrowse={() => (coverPickerOpen = true)}
+      onClear={() => (coverMediaId = null)}
+    />
   </FormField>
 
   {#if categories.length > 0}
-    <fieldset class="space-y-1.5">
-      <legend class="text-sm font-medium">Catégories</legend>
-      <div class="flex flex-wrap gap-x-4 gap-y-2 pt-1">
-        {#each categories as category (category.id)}
-          <div class="flex items-center gap-2">
-            <Checkbox
-              id={`post-cat-${category.id}`}
-              checked={selectedCategoryIds.includes(category.id)}
-              onCheckedChange={(checked) => toggleCategory(category.id, checked === true)}
-            />
-            <Label for={`post-cat-${category.id}`} class="cursor-pointer font-normal">
-              {category.name}
-            </Label>
-          </div>
-        {/each}
-      </div>
-    </fieldset>
+    <!--
+      Six cases à cocher en colonnes irrégulières, pour un ou deux choix : une
+      rangée dit ce qui est retenu et mène à l'écran de choix. La grille reste à la
+      souris, où voir les six d'un coup vaut mieux qu'une navigation.
+    -->
+    <FormField id="post-categories" label="Catégories">
+      <MultiChoiceField
+        id="post-categories"
+        label="Catégories"
+        title="Catégories de l'actualité"
+        description="Elles rangent l'actualité dans les rubriques du site."
+        values={selectedCategoryIds.map(String)}
+        onChange={(v) => (selectedCategoryIds = v.map(Number))}
+        options={categories.map((c: { id: number; name: string }) => ({
+          value: String(c.id),
+          label: c.name
+        }))}
+      />
+    </FormField>
   {/if}
 
   <!--
@@ -628,24 +603,38 @@
     </p>
   </FormField>
 
-  <FormField id="post-event" label="Événement lié (facultatif)">
-    <Select id="post-event" bind:value={eventId} disabled={events.length === 0}>
-      <option value={0}>Aucun</option>
-      {#each events as event (event.id)}
-        <option value={event.id}>
-          {event.title} — {eventWhen(event.startsAt)}{event.registration === 'open'
-            ? ' · inscriptions ouvertes'
-            : ''}
-        </option>
-      {/each}
-    </Select>
+  <!-- « (facultatif) » quitte l'intitulé : sur une rangée, il prenait la place de la
+       réponse, qui s'affichait « Tournoi … ». Le texte sous le champ le dit. -->
+  <FormField id="post-event" label="Événement lié">
+    <!--
+      Des intitulés de cette longueur — titre, date, heure, état des inscriptions —
+      ne tiennent pas dans un menu ancré : l'écran de choix leur donne la largeur,
+      et sa recherche retrouve un rendez-vous sans dérouler tout l'agenda.
+    -->
+    <SearchableCombobox
+      id="post-event"
+      value={String(eventId)}
+      onValueChange={(v) => (eventId = Number(v))}
+      disabled={events.length === 0}
+      placeholder="Aucun"
+      searchPlaceholder="Rechercher un rendez-vous…"
+      emptyText="Aucun rendez-vous ne correspond."
+      items={[
+        { value: '0', label: 'Aucun' },
+        ...events.map((event: { id: number; title: string; startsAt: string; registration: string }) => ({
+          value: String(event.id),
+          label: event.title,
+          hint: `${eventWhen(event.startsAt)}${event.registration === 'open' ? ' · inscriptions ouvertes' : ''}`
+        }))
+      ]}
+    />
     <p class="text-muted-foreground mt-1 text-xs">
       {#if events.length === 0}
-        Aucun rendez-vous à venir dans l'agenda. Créez-le d'abord dans
+        Facultatif. Aucun rendez-vous à venir dans l'agenda. Créez-le d'abord dans
         <a href="/admin/website/events" class="text-primary hover:underline">Agenda</a>,
         il sera alors proposé ici.
       {:else}
-        L'actualité annonce alors ce rendez-vous : si ses inscriptions sont ouvertes, le
+        Facultatif. L'actualité annonce alors ce rendez-vous : si ses inscriptions sont ouvertes, le
         bouton d'inscription apparaît au bout de l'article dans l'espace adhérent. Seuls
         les événements à venir sont proposés.
       {/if}

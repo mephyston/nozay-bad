@@ -18,6 +18,8 @@
     title,
     description,
     value = '',
+    values = [],
+    multiple = false,
     options,
     searchable = false,
     searchPlaceholder = 'Rechercher…',
@@ -26,7 +28,18 @@
     open?: boolean;
     title: string;
     description?: string;
+    /** Choix unique : la valeur retenue. */
     value?: string;
+    /** Choix multiple : les valeurs retenues. */
+    values?: string[];
+    /**
+     * Plusieurs réponses possibles.
+     *
+     * L'écran ne se ferme plus au premier appui — on en coche souvent deux — et
+     * `onChoose` devient une bascule : à l'appelant d'ajouter ou de retirer. Le
+     * chevron de retour vaut alors « terminé », comme dans Rappels.
+     */
+    multiple?: boolean;
     options: { value: string; label: string; hint?: string }[];
     searchable?: boolean;
     searchPlaceholder?: string;
@@ -46,9 +59,11 @@
     if (!open) recherche = '';
   });
 
+  const retenu = (v: string) => (multiple ? values.includes(v) : v === value);
+
   function choisir(v: string) {
     onChoose(v);
-    open = false;
+    if (!multiple) open = false;
   }
 </script>
 
@@ -111,6 +126,7 @@
             <button
               type="button"
               onclick={() => choisir(option.value)}
+              aria-pressed={multiple ? retenu(option.value) : undefined}
               class="flex min-h-[3.25rem] w-full items-center gap-3 px-4 py-2.5 text-left"
             >
               <span class="min-w-0 flex-1">
@@ -119,7 +135,7 @@
                   <span class="mt-0.5 block truncate text-xs text-muted-foreground">{option.hint}</span>
                 {/if}
               </span>
-              {#if option.value === value}
+              {#if retenu(option.value)}
                 <Check class="size-5 shrink-0 text-primary" aria-label="Choisi" />
               {/if}
             </button>

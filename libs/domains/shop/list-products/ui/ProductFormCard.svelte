@@ -116,6 +116,7 @@
     <MediaField
       id="image"
       label="Image"
+      max={1}
       {preview}
       hint="PNG, JPEG ou WebP, 8 Mo au plus. Réduite automatiquement."
       onSelect={onFile}
