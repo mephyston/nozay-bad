@@ -1,6 +1,8 @@
 <script lang="ts">
-  import { Search, ChevronDown, X } from '@lucide/svelte';
+  import { Search, ChevronDown, ChevronRight, X } from '@lucide/svelte';
   import { cn } from '../../../lib/utils';
+  import { creerIsMobile } from '../../../lib/hooks/is-mobile.svelte.js';
+  import ChoicePicker from '../../patterns/ChoicePicker.svelte';
   import type { ComboboxItem } from './types';
 
   let {
@@ -26,6 +28,18 @@
     class?: string;
     onselect?: (value: string, item?: ComboboxItem) => void;
   } = $props();
+
+  const requete = creerIsMobile();
+
+  /*
+    Au doigt, un choix est une navigation.
+
+    L'autocomplétion en place déroule un panneau sous un champ de saisie : le clavier
+    logiciel s'ouvre avec lui et le recouvre aussitôt. `ChoicePicker` pousse à la place
+    un écran plein cadre, avec sa propre recherche — c'est la forme qu'ont prise les
+    autres formulaires de l'admin.
+  */
+  let pickerOuvert = $state(false);
 
   let isOpen = $state(false);
   let searchQuery = $state('');
@@ -125,6 +139,45 @@
   }
 </script>
 
+{#if requete.current}
+  <!--
+    La rangée porte l'intitulé à gauche et la valeur à droite, suivie du chevron qui
+    annonce l'écran de choix. Le libellé n'est donc plus posé au-dessus : il est porté
+    par le champ lui-même, comme dans les autres formulaires repris.
+  -->
+  <button
+    type="button"
+    {id}
+    {disabled}
+    onclick={() => (pickerOuvert = true)}
+    data-field-row
+    class={cn(
+      'border-input dark:bg-input/30 flex min-h-11 w-full items-center justify-between gap-3 rounded-lg border bg-transparent px-3 text-base disabled:pointer-events-none disabled:opacity-50',
+      className
+    )}
+  >
+    {#if label}<span class="shrink-0 text-muted-foreground">{label}</span>{/if}
+    <span class="flex min-w-0 items-center gap-1">
+      <span class={cn('truncate', !selectedItem && 'text-muted-foreground')}>
+        {selectedItem ? selectedItem.label : placeholder}
+      </span>
+      <ChevronRight class="size-4 shrink-0 text-muted-foreground" />
+    </span>
+  </button>
+
+  <ChoicePicker
+    bind:open={pickerOuvert}
+    title={label || placeholder}
+    value={String(value ?? '')}
+    options={[
+      ...(allowClear ? [{ value: '', label: clearLabel }] : []),
+      ...items.map((item) => ({ value: String(item.value), label: item.label, hint: item.detail }))
+    ]}
+    searchable
+    searchPlaceholder={placeholder}
+    onChoose={(v) => selectOption(v)}
+  />
+{:else}
 <div class={cn("space-y-1.5 relative w-full", className)}>
   {#if label}
     <label for={id} class="block text-xs font-semibold text-muted-foreground uppercase tracking-wider">
@@ -235,3 +288,4 @@
     </div>
   {/if}
 </div>
+{/if}

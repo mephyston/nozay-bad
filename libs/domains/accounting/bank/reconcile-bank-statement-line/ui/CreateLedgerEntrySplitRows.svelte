@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Button, Badge, Amount, Combobox, type ComboboxItem } from '@nba/ui';
+  import { Button, Badge, Amount, Combobox, FormField, Input, type ComboboxItem } from '@nba/ui';
   import { Trash2, Plus, Split } from '@lucide/svelte';
   import type { SplitRow } from './reconciliation-types';
 
@@ -70,8 +70,11 @@
             <Combobox
               id="split-cat-{idx}"
               label="Catégorie"
-              placeholder="Rechercher une catégorie..."
-              items={categories.map((cat) => ({ label: cat.name || cat.adminLabel || `Catégorie ${cat.id}`, value: String(cat.id) }))}
+              placeholder="Rechercher une catégorie…"
+              items={categories.map((cat) => ({
+                label: cat.name || cat.adminLabel || `Catégorie ${cat.id}`,
+                value: String(cat.id)
+              }))}
               bind:value={sp.category}
               allowClear={false}
             />
@@ -82,7 +85,7 @@
               <Combobox
                 id="split-member-{idx}"
                 label="Adhérent (optionnel)"
-                placeholder="Tapez pour rechercher..."
+                placeholder="Rechercher un adhérent…"
                 items={memberItems}
                 value={sp.memberId != null ? String(sp.memberId) : ''}
                 onselect={(v) => (sp.memberId = v ? Number(v) : null)}
@@ -94,25 +97,21 @@
 
           <div class="w-full sm:w-28">
             <!--
-              L'étiquette reprend celle de `Combobox`, et non celle de `FormField`.
-
-              La première a la hauteur de ligne par défaut, la seconde `leading-none` : quatre
-              pixels d'écart, qui décalent le champ d'à côté. L'unité est dans l'étiquette — le
-              « € » flottant, lui, se calait sur le bloc entier et tombait au-dessus du champ.
+              Le champ du design system, comme les deux d'à côté : c'est lui qui porte
+              l'étiquette au doigt, et qui garantit la même hauteur d'un champ à l'autre.
+              Trois contrôles voisins, dont un écrit à la main, ne tombaient pas au même
+              endroit — quatre pixels d'écart qui se voient dès qu'ils se touchent.
             -->
-            <div class="space-y-1.5 w-full">
-              <label for="split-amount-{idx}" class="block text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                Montant en €
-              </label>
-              <input
+            <FormField id="split-amount-{idx}" label="Montant (€)">
+              <Input
+                id="split-amount-{idx}"
                 type="number"
                 step="0.01"
-                id="split-amount-{idx}"
                 placeholder="0.00"
                 bind:value={sp.amount}
-                class="no-spinner w-full bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground font-outfit tabular-nums text-right focus:ring-1 focus:ring-primary focus:outline-none"
+                class="text-right font-outfit tabular-nums"
               />
-            </div>
+            </FormField>
           </div>
 
           <button

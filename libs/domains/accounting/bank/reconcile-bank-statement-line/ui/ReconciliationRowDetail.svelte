@@ -74,9 +74,21 @@
     </p>
   {:else}
     <Tabs.Root value={reconState.activeRightTab} onValueChange={(v) => (reconState.activeRightTab = v as any)} class="w-full">
-      <Tabs.List class="flex w-full justify-start sm:justify-center overflow-x-auto no-scrollbar mb-4">
-        <Tabs.Trigger value="manual" class="text-xs cursor-pointer">Saisir / ventiler</Tabs.Trigger>
-        <Tabs.Trigger value="ledger" class="text-xs cursor-pointer">
+      <!--
+        Le segmented control d'iOS au doigt, comme sur la fiche adhérent : une pilule en
+        verre, des segments de largeur égale, l'actif surélevé par sa propre surface. Les
+        intitulés y sont courts pour tenir sur 390 px sans défiler — « Pointer » et son
+        compte disent assez, la feuille montrant la proposition juste au-dessus. À la
+        souris, la rangée d'onglets d'origine, qui a la place de nommer.
+      -->
+      <Tabs.List variant="glass" class="mb-4 w-full md:hidden">
+        <Tabs.Trigger variant="glass" value="manual">Saisir</Tabs.Trigger>
+        <Tabs.Trigger variant="glass" value="ledger">Pointer ({unpointedCount})</Tabs.Trigger>
+      </Tabs.List>
+
+      <Tabs.List class="mb-4 hidden w-full justify-start md:flex md:justify-center">
+        <Tabs.Trigger value="manual" class="cursor-pointer">Saisir / ventiler</Tabs.Trigger>
+        <Tabs.Trigger value="ledger" class="cursor-pointer">
           Pointer une écriture ({unpointedCount})
         </Tabs.Trigger>
       </Tabs.List>

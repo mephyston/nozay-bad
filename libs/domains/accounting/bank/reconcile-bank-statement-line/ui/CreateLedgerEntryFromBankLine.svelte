@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Sparkles } from '@lucide/svelte';
-  import { Button, Amount, Combobox, type ComboboxItem, FormField, SearchableCombobox, toSeasonOptions } from '@nba/ui';
+  import { Button, Amount, Combobox, type ComboboxItem, FormField, Input, SwitchField, toSeasonOptions } from '@nba/ui';
   import CreateLedgerEntrySplitRows from './CreateLedgerEntrySplitRows.svelte';
 
   let {
@@ -183,29 +183,54 @@
     d'un coup d'œil ce qui vient du modèle et ce qui vient de la comptable.
   */
   /* La bordure du champ lui-même, et non un cadre autour du bloc : c'est le contrôle qui porte
-     la valeur proposée, pas son étiquette. Le sélecteur descendant atteint l'`<input>` que
-     `Combobox` et `SearchableCombobox` rendent tous deux. */
+     la valeur proposée, pas son étiquette. Le sélecteur atteint aussi bien l'`<input>` d'un
+     champ de saisie que le bouton que `SearchableCombobox` rend — une rangée au doigt, un
+     déclencheur de popover à la souris. */
   const AI_RING = '[&_input]:!border-purple-500 [&_input]:!ring-1 [&_input]:!ring-purple-500/30 [&_button]:!border-purple-500';
+
+  /* Les régularisations possibles dépendent du sens : on ne constate pas d'avance un produit
+     sur une dépense. */
+  const accrualItems = $derived<ComboboxItem[]>([
+    { label: 'Normal', value: 'normal' },
+    ...(selectedTx && selectedTx.amount > 0
+      ? [
+          { label: "Produit constaté d'avance (ex : cotisation en avance)", value: 'produit_constate_avance' },
+          { label: 'Produit à recevoir (ex : subvention)', value: 'produit_a_recevoir' }
+        ]
+      : [
+          { label: "Charge constatée d'avance (ex : assurance en avance)", value: 'charge_constatee_avance' },
+          { label: 'Charge à payer (ex : facture non parvenue)', value: 'charge_a_payer' }
+        ])
+  ]);
 
   let splitSum = $derived(splits.reduce((sum, s) => sum + Math.round((s.amount || 0) * 100), 0));
 </script>
 
 <div class="space-y-4">
-  <div class="flex justify-between items-center">
-    <h4 class="text-sm font-semibold text-foreground">Créer et rapprocher une nouvelle écriture</h4>
-    <Button
-      variant="outline"
-      size="xs"
-      onclick={() => {
-        isSplitMode = !isSplitMode;
-        if (isSplitMode && splits.length === 0) {
-          splits = [{ category: '1', amount: 0 }, { category: '1', amount: 0 }];
-        }
-      }}
-    >
-      {isSplitMode ? 'Annuler la ventilation' : 'Ventiler'}
-    </Button>
-  </div>
+  <h4 class="text-sm font-semibold text-foreground">Créer et rapprocher une nouvelle écriture</h4>
+
+  <!--
+    Un interrupteur, et non un bouton.
+
+    « Ventiler » ne déclenche rien : il change la forme du formulaire, et cet état dure.
+    Un bouton dont l'intitulé bascule entre « Ventiler » et « Annuler la ventilation »
+    demande de lire pour savoir où l'on en est ; un interrupteur le montre.
+  -->
+  <SwitchField
+    id="split-mode"
+    label="Ventiler sur plusieurs catégories"
+    hint="Une seule opération bancaire, plusieurs imputations — et un adhérent par part."
+    checked={isSplitMode}
+    onChange={(v) => {
+      isSplitMode = v;
+      if (v && splits.length === 0) {
+        splits = [
+          { category: '1', amount: 0 },
+          { category: '1', amount: 0 }
+        ];
+      }
+    }}
+  />
 
   <!--
     Une seule ligne pour la proposition et son bouton.
@@ -253,8 +278,8 @@
     <div class={aiFields.category ? AI_RING : ''}>
       <Combobox
         id="category-search-input"
-        label="Catégorie Comptable"
-        placeholder="Rechercher une catégorie..."
+        label="Catégorie comptable"
+        placeholder="Rechercher une catégorie…"
         bind:value={category}
         items={categoryItems}
         allowClear={false}
@@ -292,7 +317,7 @@
     <Combobox
       id="target-season-input"
       label="Exercice de rattachement"
-      placeholder="Rechercher un exercice..."
+      placeholder="Rechercher un exercice…"
       bind:value={targetSeasonId}
       items={seasonItems}
       allowClear={false}
@@ -345,12 +370,12 @@
       <div class={aiFields.member ? AI_RING : ''}>
         <Combobox
           id="member-search-input"
-          label="Adhérent Associé (Optionnel)"
-          placeholder="Tapez pour rechercher un adhérent..."
+          label="Adhérent associé (optionnel)"
+          placeholder="Rechercher un adhérent…"
           bind:value={selectedMemberId}
           items={memberItems}
           allowClear={true}
-          clearLabel="Aucun adhérent (Écriture générale)"
+          clearLabel="Aucun adhérent (écriture générale)"
           onselect={() => (memberDroppedBySeason = false)}
         />
         <!--
@@ -373,10 +398,10 @@
     <div class={aiFields.accrual ? AI_RING : ''}>
       <Combobox
         id="accrual-type-input"
-        label="Régularisation (Cut-off)"
-        placeholder="Rechercher un motif..."
+        label="Régularisation (cut-off)"
+        placeholder="Rechercher un motif…"
         bind:value={accrualType}
-        items={[{ label: 'Normal', value: 'normal' }, ...(selectedTx && selectedTx.amount > 0 ? [{ label: "Produit constaté d'avance (Ex: Cotisation en avance)", value: 'produit_constate_avance' }, { label: 'Produit à recevoir (Ex: Subvention)', value: 'produit_a_recevoir' }] : [{ label: "Charge constatée d'avance (Ex: Assurance en avance)", value: 'charge_constatee_avance' }, { label: 'Charge à payer (Ex: Facture non parvenue)', value: 'charge_a_payer' }])]}
+        items={accrualItems}
         allowClear={false}
       />
     </div>
@@ -385,11 +410,11 @@
   {#if accrualType !== 'normal'}
     <!-- `FormField` n'accepte pas de `class` : un attribut inconnu serait ignoré sans un mot. -->
     <div class="mt-4 {aiFields.note ? AI_RING : ''}">
-      <FormField label="Note justificative *">
-        <input
+      <FormField id="accrual-note-input" label="Note justificative *">
+        <Input
+          id="accrual-note-input"
           type="text"
-          class="w-full px-3 py-2 border border-destructive/50 bg-background rounded-md text-sm focus:ring-1 focus:ring-destructive"
-          placeholder="Détail de la régularisation..."
+          placeholder="Détail de la régularisation…"
           bind:value={accrualNote}
           required
         />
@@ -397,8 +422,13 @@
     </div>
   {/if}
 
-  <div class="pt-2">
-    <Button 
+  <!--
+    Au doigt, cette validation vit dans la barre de navigation de la feuille : ancrée en
+    bas, elle passait sous le clavier logiciel dès qu'on saisissait un montant. Elle
+    reste ici au-dessus de 768 px, où le dépliage se fait en place.
+  -->
+  <div class="hidden pt-2 md:block">
+    <Button
       onclick={() => handleCreateAndMatch()}
       disabled={isSubmitting || (isSplitMode && splitSum !== remainingAmount)}
       class="w-full font-bold"

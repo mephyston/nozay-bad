@@ -45,6 +45,25 @@
   const verrouille = $derived(reconState.isClosed || reconState.isSubmitting);
 
   /*
+    « Valider » et « Créer et rapprocher » sont le même acte : créer l'écriture et pointer
+    la ligne. Le premier exécute la proposition telle quelle, le second le formulaire une
+    fois corrigé. La feuille n'en garde donc qu'un, dans sa barre de navigation — le
+    raccourci d'un geste reste sur le balayage, qui est fait pour ça.
+
+    La ventilation doit tomber juste avant d'être enregistrée : c'est la même garde que
+    porte le bouton de bureau.
+  */
+  const sommeDesParts = $derived(
+    reconState.splits.reduce((n: number, p: { amount?: number }) => n + Math.round((p.amount || 0) * 100), 0)
+  );
+  const validationPossible = $derived(
+    !!enAttente &&
+      reconState.activeRightTab === 'manual' &&
+      !verrouille &&
+      !(reconState.isSplitMode && sommeDesParts !== reconState.remainingAmount)
+  );
+
+  /*
     Aucun miroir : la ligne ouverte vit dans l'état partagé — c'est lui qui fait foi,
     puisque le tableau de bureau s'en sert aussi pour déplier sa ligne — et la feuille
     prévient de sa fermeture par `onOpenChange`.
@@ -62,6 +81,20 @@
   );
 </script>
 
+{#snippet headerTrailing()}
+  {#if enAttente && reconState.activeRightTab === 'manual'}
+    <Button
+      type="button"
+      disabled={!validationPossible}
+      onclick={() => reconState.handleCreateAndMatch()}
+      class="size-11 rounded-full p-0"
+      aria-label={reconState.isSplitMode ? 'Enregistrer la ventilation' : 'Créer et rapprocher'}
+    >
+      <Check class="size-5" />
+    </Button>
+  {/if}
+{/snippet}
+
 {#snippet rangee(label: string, valeur: string, selectable = false)}
   <div class="flex items-baseline justify-between gap-4 px-4 py-2.5">
     <span class="shrink-0 text-sm text-muted-foreground">{label}</span>
@@ -78,6 +111,7 @@
   }}
   title={line?.name ?? 'Opération'}
   detents={[0.6, 0.95]}
+  {headerTrailing}
   size="lg"
   footerHidden={!enAttente}
 >
@@ -120,35 +154,48 @@
   <!--
     Les gestes sont **nommés** ici, alors que le balayage les offre par leur seule icône.
     C'est le second chemin, celui qu'on prend quand on veut lire avant de décider.
+
+    Côte à côte, et non empilés : une ligne peut en proposer trois — encaisser, virement,
+    adhérente — soit, pleine largeur, cent cinquante pixels de pied sur un écran qui en
+    manque. Les intitulés sont donc courts ; la proposition qu'ils tranchent se lit
+    juste au-dessus, ils n'ont pas à la répéter.
   -->
   {#snippet footer()}
-    <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+    <div class="flex flex-row items-center justify-end gap-2">
       {#if line && contexte?.adherentePossible}
-        <Button type="button" variant="outline" disabled={verrouille} class="w-full gap-2 sm:w-auto" onclick={() => onAdherente(line)}>
-          <HandCoins class="size-4" />
-          Adhérente
+        <Button
+          type="button"
+          variant="outline"
+          disabled={verrouille}
+          class="min-w-0 flex-1 gap-1.5 sm:flex-none"
+          onclick={() => onAdherente(line)}
+        >
+          <HandCoins class="size-4 shrink-0" />
+          <span class="truncate">Adhérente</span>
         </Button>
       {/if}
       {#if line && contexte?.virementPossible}
-        <Button type="button" variant="outline" disabled={verrouille} class="w-full gap-2 sm:w-auto" onclick={() => onVirement(line)}>
-          <ArrowLeftRight class="size-4" />
-          Virement
+        <Button
+          type="button"
+          variant="outline"
+          disabled={verrouille}
+          class="min-w-0 flex-1 gap-1.5 sm:flex-none"
+          onclick={() => onVirement(line)}
+        >
+          <ArrowLeftRight class="size-4 shrink-0" />
+          <span class="truncate">Virement</span>
         </Button>
       {/if}
       {#if line && peutPointer}
+        <!-- Pointer n'est pas créer : le geste mène à la liste des écritures qui correspondent. -->
         <Button
           type="button"
           disabled={verrouille}
-          class="w-full gap-2 sm:w-auto"
+          class="min-w-0 flex-1 gap-1.5 sm:flex-none"
           onclick={() => (reconState.activeRightTab = 'ledger')}
         >
-          <Link2 class="size-4" />
-          Pointer une écriture
-        </Button>
-      {:else if line && peutValider}
-        <Button type="button" disabled={verrouille} class="w-full gap-2 sm:w-auto" onclick={() => reconState.validateSuggestion(line)}>
-          <Check class="size-4" />
-          Valider la proposition
+          <Link2 class="size-4 shrink-0" />
+          <span class="truncate">Pointer</span>
         </Button>
       {/if}
     </div>

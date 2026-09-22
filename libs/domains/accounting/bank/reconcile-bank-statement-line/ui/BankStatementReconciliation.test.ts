@@ -296,7 +296,8 @@ describe('BankStatementReconciliation Component', () => {
     expandRow(target, 'IONOS');
 
     // Focus sur l'input de recherche adhérent pour ouvrir le dropdown
-    const input = target.querySelector('input[placeholder="Tapez pour rechercher un adhérent..."]') as HTMLInputElement;
+    // Par identifiant, et non par placeholder : celui-ci est une formulation, qui change.
+    const input = target.querySelector('#member-search-input') as HTMLInputElement;
     expect(input).not.toBeNull();
     input.focus();
     flushSync();
@@ -580,8 +581,8 @@ describe('BankStatementReconciliation Component', () => {
     manualTabBtn.click();
     flushSync();
 
-    // Click "Ventiler" button
-    const ventilerBtn = Array.from(target.querySelectorAll('button')).find(b => b.textContent?.trim() === 'Ventiler') as HTMLButtonElement;
+    // « Ventiler » est désormais un interrupteur : un réglage qui dure, pas un déclencheur.
+    const ventilerBtn = target.querySelector('#split-mode') as HTMLButtonElement;
     expect(ventilerBtn).not.toBeNull();
     ventilerBtn.click();
     flushSync();
@@ -943,7 +944,7 @@ describe('BankStatementReconciliation Component', () => {
     expandRow(target, 'VIR RENARD SYLVAIN');
 
     // Le rattachement suggéré préremplit le formulaire, note comprise.
-    const note = target.querySelector('input[placeholder="Détail de la régularisation..."]') as HTMLInputElement;
+    const note = target.querySelector('#accrual-note-input') as HTMLInputElement;
     expect(note).not.toBeNull();
     expect(note.value).toContain('26-27');
 

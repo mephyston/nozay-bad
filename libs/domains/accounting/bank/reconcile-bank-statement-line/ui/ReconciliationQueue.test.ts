@@ -399,7 +399,13 @@ describe('formulaire en ventilation', () => {
   function expandAndSplit(target: HTMLElement) {
     (target.querySelector('[data-action="expand"]') as HTMLButtonElement).click();
     flushSync();
-    const ventiler = btn(target, 'Ventiler');
+    /*
+      « Ventiler » est un réglage, pas un déclencheur : c'est un interrupteur, dont
+      l'intitulé ne bascule plus entre deux formulations qu'il fallait lire pour savoir
+      où l'on en était.
+    */
+    const ventiler = target.querySelector('#split-mode') as HTMLButtonElement;
+    expect(ventiler, "l'interrupteur de ventilation doit exister").not.toBeNull();
     ventiler.click();
     flushSync();
   }

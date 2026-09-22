@@ -116,14 +116,22 @@
   <Popover bind:open>
     <PopoverTrigger>
       {#snippet child({ props })}
+        <!--
+          `{id}` **après** l'étalement : bits-ui y pose le sien, qui écrasait celui de
+          l'appelant. Le `<label for=…>` du bloc de champ ne désignait alors plus rien —
+          et aucun écran ne pouvait viser son propre champ, ce qui se voit dès qu'on le
+          teste. L'ancrage du popover passe par des références, pas par l'identifiant :
+          seul l'`aria-controls` du contenu perd sa cible, contre une étiquette qui
+          retrouve la sienne.
+        -->
         <Button
-          {id}
           {disabled}
           variant="outline"
           role="combobox"
           aria-expanded={open}
           class={cn('w-full justify-between font-normal', className)}
           {...props}
+          {id}
         >
           <span class={cn('truncate', selectedLabel === invite && 'text-muted-foreground')}>{selectedLabel}</span>
           <ChevronsUpDown class="ml-2 h-4 w-4 shrink-0 opacity-50" />
