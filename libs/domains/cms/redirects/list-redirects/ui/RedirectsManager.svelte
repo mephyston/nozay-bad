@@ -1,22 +1,36 @@
 <script lang="ts">
-  import { Plus, Edit, Trash2, Signpost } from '@lucide/svelte';
+  import { Plus, Signpost } from '@lucide/svelte';
   import {
     Button,
     Input,
     Badge,
-    Card,
     Table,
+    ChoiceField,
     DataTable,
     DataTableToolbar,
     DataTableRowActions,
     DropdownMenu,
+    FilterSheet,
     FormField,
     FormSheet,
+    RowActionItems,
+    dockDePage,
     submitForm,
     uiConfirm,
     flashAndReload,
-    uiAlert
+    uiAlert,
+    type SwipeAction
   } from '@nba/ui';
+  import RedirectsList from './RedirectsList.svelte';
+  import {
+    dateFr,
+    gestesDeRedirection,
+    redirectionsFiltrees,
+    signalementsDeRedirection,
+    visites,
+    NATURES,
+    type NatureDeRedirection
+  } from './redirects-row-model';
 
   interface RedirectRow {
     id: number;
@@ -49,9 +63,6 @@
   let errorMsg = $state('');
   let searchTerm = $state('');
   let page = $state(1);
-  // Adresses dépliées sur mobile : le survol n'existe pas au doigt, on déplie au toucher.
-  let expanded = $state<Set<number>>(new Set());
-
   const PAGE_SIZE = 20;
 
   // null = création ; sinon la ligne en cours de modification, dont la source est figée.
@@ -61,29 +72,33 @@
   let toPath = $state('');
   let note = $state('');
 
-  const formatter = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'short' });
-  const when = (v: number | string | null) =>
-    v ? formatter.format(new Date(typeof v === 'number' ? v * 1000 : v)) : '—';
-
-  const visits = (count: number) =>
-    count === 0 ? 'jamais empruntée' : `${count} visite${count > 1 ? 's' : ''}`;
+  let nature = $state<NatureDeRedirection>('toutes');
+  let filtresOuverts = $state(false);
 
   const filteredRedirects = $derived(
-    redirects.filter((row: RedirectRow) => {
-      const term = searchTerm.trim().toLowerCase();
-      if (!term) return true;
-      return (
-        row.fromPath.toLowerCase().includes(term) ||
-        (row.toPath ?? '').toLowerCase().includes(term) ||
-        (row.note ?? '').toLowerCase().includes(term)
-      );
-    })
+    redirectionsFiltrees(redirects as RedirectRow[], { recherche: searchTerm, nature })
   );
 
   // Une recherche redéfinit la liste : rester sur une page lointaine afficherait du vide.
   $effect(() => {
     searchTerm;
+    nature;
     page = 1;
+  });
+
+  const gestes = $derived({
+    canWrite,
+    onEdit: (r: RedirectRow) => openEditForm(r),
+    onDelete: (r: RedirectRow) => remove(r)
+  });
+
+  /* Créer descend dans la barre du bas. */
+  $effect(() => {
+    if (!canWrite) return;
+    const actions: SwipeAction[] = [
+      { id: 'nouvelle', label: 'Nouvelle redirection', icon: Signpost, run: () => openAddForm() }
+    ];
+    return dockDePage.declarerActions(actions, { icon: Plus, label: 'Nouvelle redirection' });
   });
 
   const pagination = $derived({
@@ -95,13 +110,6 @@
   const pagedRedirects = $derived(
     filteredRedirects.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
   );
-
-  function toggleExpanded(id: number) {
-    const next = new Set(expanded);
-    if (next.has(id)) next.delete(id);
-    else next.add(id);
-    expanded = next;
-  }
 
   async function post(body: unknown, fallback: string) {
     const response = await fetch(endpoint, {
@@ -184,7 +192,7 @@
       title: `Supprimer la redirection de « ${row.fromPath} » ?`,
       description:
         row.hitCount > 0
-          ? `Cette adresse a encore été empruntée (${visits(row.hitCount)}). Sans redirection, elle ne répondra plus du tout.`
+          ? `Cette adresse a encore été empruntée (${visites(row.hitCount)}). Sans redirection, elle ne répondra plus du tout.`
           : "L'ancienne adresse ne répondra plus du tout.",
       confirmLabel: 'Supprimer',
       destructive: true
@@ -203,21 +211,38 @@
   data={pagedRedirects}
   {pagination}
   onPageChange={(p: number) => (page = p)}
+  mobileSpacing="list"
   itemName="redirection(s)"
   emptyTitle="Aucune redirection"
-  emptyDescription={searchTerm.trim()
-    ? 'Aucune redirection ne correspond à votre recherche.'
+  emptyDescription={searchTerm.trim() || nature !== 'toutes'
+    ? 'Aucune redirection ne correspond à ces critères.'
     : 'Les redirections apparaissent au renommage des pages publiées, ou se créent ici.'}
 >
   {#snippet toolbar()}
     <DataTableToolbar
       bind:searchValue={searchTerm}
       searchPlaceholder="Rechercher une adresse..."
-      hasFilters={false}
+      dockSearch
+      hasFilters={true}
+      filtersActive={nature !== 'toutes'}
+      onOpenFilters={() => (filtresOuverts = true)}
+      activeFilters={nature === 'toutes'
+        ? []
+        : [
+            {
+              id: 'nature',
+              label: NATURES.find((o) => o.value === nature)?.label ?? '',
+              onRemove: () => (nature = 'toutes')
+            }
+          ]}
     >
+      {#snippet filters()}
+        {@render criteres()}
+      {/snippet}
       {#snippet actions()}
+        <!-- Sur téléphone, ce geste vit dans la barre du bas. -->
         {#if canWrite}
-          <Button onclick={openAddForm} class="h-9 shrink-0 gap-1.5 font-bold">
+          <Button onclick={openAddForm} class="hidden h-9 shrink-0 gap-1.5 font-bold md:flex">
             <Plus class="h-4 w-4" />
             <span>Nouvelle redirection</span>
           </Button>
@@ -227,70 +252,17 @@
   {/snippet}
 
   {#snippet mobileView()}
-    {#each pagedRedirects as row (row.id)}
-      <Card.Root>
-        <Card.Content class="space-y-3 p-4">
-          <div class="flex items-start justify-between gap-2">
-            <!-- Pas de survol au doigt : toucher l'adresse la déplie en entier. -->
-            <button
-              type="button"
-              class="min-w-0 text-left"
-              aria-expanded={expanded.has(row.id)}
-              aria-label="Afficher l'adresse complète"
-              onclick={() => toggleExpanded(row.id)}
-            >
-              <code
-                class={`block text-sm font-bold text-foreground ${expanded.has(row.id) ? 'break-all' : 'truncate'}`}
-              >
-                {row.fromPath}
-              </code>
-              {#if row.toPath === null}
-                <Badge variant="destructive" size="xs" class="mt-1">410 — supprimée</Badge>
-              {:else}
-                <code
-                  class={`mt-1 block text-xs text-muted-foreground ${expanded.has(row.id) ? 'break-all' : 'truncate'}`}
-                >
-                  → {row.toPath}
-                </code>
-              {/if}
-            </button>
-            <div class="shrink-0 text-right">
-              <Badge variant={row.toPath === null ? 'destructive' : 'outline'} size="xs">
-                {row.statusCode}
-              </Badge>
-              <span class="mt-1 block text-xs text-muted-foreground">{visits(row.hitCount)}</span>
-            </div>
-          </div>
-
-          {#if row.note}
-            <p class="text-xs text-muted-foreground">{row.note}</p>
-          {/if}
-
-          {#if canWrite}
-            <div class="flex items-center justify-end gap-2 border-t border-border/50 pt-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onclick={() => openEditForm(row)}
-                class="h-8 flex-1 gap-1.5 text-xs font-semibold"
-              >
-                <Edit class="h-3.5 w-3.5" />
-                <span>Modifier</span>
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onclick={() => remove(row)}
-                class="h-8 flex-1 gap-1.5 border-destructive/30 text-xs font-semibold text-destructive hover:bg-destructive/10"
-              >
-                <Trash2 class="h-3.5 w-3.5" />
-                <span>Supprimer</span>
-              </Button>
-            </div>
-          {/if}
-        </Card.Content>
-      </Card.Root>
-    {/each}
+    <!-- La liste reçoit l'ensemble filtré, pas la page courante : elle se rend par
+         tranches, un bouton poussant les suivantes — viser un numéro de page de huit
+         pixels n'est pas un geste de pouce. -->
+    <RedirectsList
+      redirections={filteredRedirects}
+      {...gestes}
+      emptyTitle="Aucune redirection"
+      emptyDescription={searchTerm.trim() || nature !== 'toutes'
+        ? 'Aucune redirection ne correspond à ces critères.'
+        : 'Les redirections apparaissent au renommage des pages publiées, ou se créent ici.'}
+    />
   {/snippet}
 
   {#snippet header()}
@@ -320,11 +292,15 @@
         {/if}
       </Table.Cell>
       <Table.Cell>
-        <Badge variant={redirect.toPath === null ? 'destructive' : 'outline'} size="xs">
-          {redirect.toPath === null ? '410 — supprimée' : '301'}
-        </Badge>
+        <!-- Les mêmes pastilles que la liste au doigt : rediriger est le cas courant
+             et ne s'annonce pas. -->
+        <div class="flex flex-wrap items-center gap-1.5">
+          {#each signalementsDeRedirection(redirect) as pastille (pastille.label)}
+            <Badge variant={pastille.variant} size="xs">{pastille.label}</Badge>
+          {/each}
+        </div>
       </Table.Cell>
-      <Table.Cell class="text-muted-foreground">{visits(redirect.hitCount)}</Table.Cell>
+      <Table.Cell class="text-muted-foreground">{visites(redirect.hitCount)}</Table.Cell>
       <Table.Cell class="max-w-[16rem]">
         {#if redirect.note}
           <span class="block truncate text-xs text-muted-foreground" title={redirect.note}>
@@ -334,22 +310,13 @@
           <span class="text-xs text-muted-foreground">—</span>
         {/if}
       </Table.Cell>
-      <Table.Cell class="text-muted-foreground">{when(redirect.createdAt)}</Table.Cell>
+      <Table.Cell class="text-muted-foreground">{dateFr(redirect.createdAt)}</Table.Cell>
       <Table.Cell class="relative text-right">
-        {#if canWrite}
+        {@const actions = gestesDeRedirection(redirect, gestes)}
+        {#if actions.length > 0}
           <DataTableRowActions>
             <DropdownMenu.Label>Actions</DropdownMenu.Label>
-            <DropdownMenu.Item onclick={() => openEditForm(redirect)} class="cursor-pointer">
-              <Edit class="mr-2 h-3.5 w-3.5" />
-              Modifier
-            </DropdownMenu.Item>
-            <DropdownMenu.Item
-              onclick={() => remove(redirect)}
-              class="cursor-pointer text-destructive focus:text-destructive"
-            >
-              <Trash2 class="mr-2 h-3.5 w-3.5" />
-              Supprimer
-            </DropdownMenu.Item>
+            <RowActionItems {actions} item={redirect} />
           </DataTableRowActions>
         {/if}
       </Table.Cell>
@@ -388,41 +355,28 @@
     </FormField>
   {/if}
 
-  <FormField id="redirect-kind" label="Que répond cette adresse ?">
-    <div class="space-y-2">
-      <label class="flex items-start gap-2 text-sm">
-        <input
-          type="radio"
-          name="redirect-kind"
-          value="redirect"
-          checked={kind === 'redirect'}
-          onchange={() => (kind = 'redirect')}
-          class="mt-1"
-        />
-        <span>
-          <span class="font-medium">Redirection (301)</span>
-          <span class="text-muted-foreground block text-xs">
-            Les visiteurs et les moteurs sont envoyés vers l'adresse cible.
-          </span>
-        </span>
-      </label>
-      <label class="flex items-start gap-2 text-sm">
-        <input
-          type="radio"
-          name="redirect-kind"
-          value="gone"
-          checked={kind === 'gone'}
-          onchange={() => (kind = 'gone')}
-          class="mt-1"
-        />
-        <span>
-          <span class="font-medium">Page supprimée (410)</span>
-          <span class="text-muted-foreground block text-xs">
-            Sans successeur : les moteurs retirent l'adresse de leur index.
-          </span>
-        </span>
-      </label>
-    </div>
+  <!--
+    Deux boutons radio et leurs deux paragraphes tenaient cent pixels pour un choix
+    binaire, avec des cibles de 16 px. Une rangée le porte, et le menu explique chaque
+    option à l'ouverture ; la conséquence du choix retenu reste sous le champ.
+  -->
+  <FormField
+    id="redirect-kind"
+    label="Que répond cette adresse ?"
+    hint={kind === 'gone'
+      ? "Sans successeur : les moteurs retirent l'adresse de leur index."
+      : 'Les visiteurs et les moteurs sont envoyés vers l’adresse cible.'}
+  >
+    <ChoiceField
+      id="redirect-kind"
+      label="Réponse"
+      value={kind}
+      onChange={(v) => (kind = v as 'redirect' | 'gone')}
+      options={[
+        { value: 'redirect', label: 'Redirection (301)', hint: 'Vers une autre adresse' },
+        { value: 'gone', label: 'Page supprimée (410)', hint: 'Sans successeur' }
+      ]}
+    />
   </FormField>
 
   {#if kind === 'redirect'}
@@ -431,7 +385,34 @@
     </FormField>
   {/if}
 
-  <FormField id="redirect-note" label="Note (facultative)">
-    <Input id="redirect-note" bind:value={note} placeholder="Pourquoi cette redirection existe" maxlength={500} />
+  <FormField
+    id="redirect-note"
+    label="Note"
+    hint="Facultative : pourquoi cette redirection existe."
+  >
+    <Input id="redirect-note" bind:value={note} placeholder="Migration WordPress" maxlength={500} />
   </FormField>
 </FormSheet>
+
+<!-- Les critères se posent derrière la loupe, jamais ailleurs. -->
+{#snippet criteres()}
+  <FormField id="filter-nature" label="Nature">
+    <ChoiceField
+      id="filter-nature"
+      label="Nature"
+      value={nature}
+      onChange={(v) => (nature = v as NatureDeRedirection)}
+      options={NATURES}
+    />
+  </FormField>
+{/snippet}
+
+<FilterSheet
+  bind:open={filtresOuverts}
+  description="Une redirection jamais empruntée peut se retirer sans risque."
+  resultCount={filteredRedirects.length}
+  itemName="redirection"
+  onReset={() => (nature = 'toutes')}
+>
+  {@render criteres()}
+</FilterSheet>

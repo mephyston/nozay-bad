@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { auPluriel } from './pluriel';
+import { accorder, auPluriel } from './pluriel';
 
 describe('auPluriel', () => {
   it('ajoute un x aux mots en -eau, -au et -eu', () => {
@@ -24,5 +24,27 @@ describe('auPluriel', () => {
 
   it('ne cale pas sur une chaîne vide', () => {
     expect(auPluriel('')).toBe('');
+  });
+});
+
+describe('accorder', () => {
+  it('accorde le mot avec le nombre', () => {
+    // « 1 visites » s'écrivait faute de connaître le compte.
+    expect(accorder(1, 'visite')).toBe('visite');
+    expect(accorder(3, 'visite')).toBe('visites');
+    expect(accorder(2, 'créneau')).toBe('créneaux');
+  });
+
+  it('met le singulier à zéro, comme le français le veut', () => {
+    expect(accorder(0, 'visite')).toBe('visite');
+  });
+
+  it('accepte un pluriel donné, pour les irréguliers', () => {
+    expect(accorder(3, 'cheval', 'chevaux')).toBe('chevaux');
+  });
+
+  it('compte en valeur absolue', () => {
+    expect(accorder(-1, 'visite')).toBe('visite');
+    expect(accorder(-3, 'visite')).toBe('visites');
   });
 });
