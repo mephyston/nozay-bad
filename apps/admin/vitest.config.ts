@@ -18,6 +18,10 @@ export default defineConfig({
       '@nba/security-headers': path.resolve(__dirname, '../../libs/shared/security-headers/src/index.ts'),
       '@nba/runtime-env': path.resolve(__dirname, '../../libs/shared/runtime-env/src/index.ts'),
       '@nba/iam-ui': path.resolve(__dirname, '../../libs/domains/iam/shared/ui.ts'),
+      // Sans cet alias, aucun écran de l'admin important un composant du CMS n'était
+      // montable en test — et c'est justement le câblage écran ↔ composant que ces
+      // tests-là vérifient.
+      '@nba/cms-ui': path.resolve(__dirname, '../../libs/domains/cms/shared/ui.ts'),
       '@nba/club-ui': path.resolve(__dirname, '../../libs/domains/club/shared/ui.ts'),
       '@nba/club/settings': path.resolve(__dirname, '../../libs/domains/club/shared/settings-api.ts'),
       '@nba/iam': path.resolve(__dirname, '../../libs/domains/iam/index.ts'),
