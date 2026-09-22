@@ -1,6 +1,19 @@
 <script lang="ts">
-  import { Plus } from '@lucide/svelte';
-  import { AlertDialog, Button, DataTableToolbar, FormField, SearchableCombobox, softNavigate, openDocument, submitForm, toSeasonOptions, uiAlert } from '@nba/ui';
+  import { Download, Plus } from '@lucide/svelte';
+  import {
+    Button,
+    ChoiceField,
+    DataTableToolbar,
+    FilterSheet,
+    FormField,
+    dockDePage,
+    softNavigate,
+    openDocument,
+    submitForm,
+    toSeasonOptions,
+    uiAlert,
+    type SwipeAction
+  } from '@nba/ui';
   import type { Invoice, Season } from './invoices-types';
   import { InvoiceFormState } from './invoices-form-state.svelte';
   import * as api from './invoices-api';
@@ -34,6 +47,66 @@
   let statusFilter = $state<'all' | 'draft' | 'sent' | 'paid' | 'cancelled'>('all');
   
   let isSubmitting = $state(false);
+  let filtresOuverts = $state(false);
+
+  const STATUTS = [
+    { value: 'all', label: 'Tous les statuts' },
+    { value: 'draft', label: 'Brouillon' },
+    { value: 'sent', label: 'En attente de règlement' },
+    { value: 'paid', label: 'Payée' },
+    { value: 'cancelled', label: 'Annulée' }
+  ];
+
+  const seasonItems = $derived(
+    (seasons.length > 0 ? toSeasonOptions(seasons) : [{ label: 'Saison 2025-2026', value: '25-26' }]).map(
+      (o) => ({ value: String(o.value), label: o.label })
+    )
+  );
+
+  const exportHref = $derived(
+    `/admin/api/accounting/download?doc=export&type=invoices&season=${seasonId}`
+  );
+
+  /* Seul le statut réduit la liste : la saison en fixe le périmètre. */
+  const filtreActif = $derived(statusFilter !== 'all');
+
+  const criteres = $derived(
+    filtreActif
+      ? [
+          {
+            id: 'statut',
+            label: STATUTS.find((s) => s.value === statusFilter)?.label ?? statusFilter,
+            onRemove: () => (statusFilter = 'all')
+          }
+        ]
+      : []
+  );
+
+  function changerSaison(code: string) {
+    const params = new URLSearchParams(window.location.search);
+    params.set('season', code);
+    softNavigate(`/admin/accounting/invoices?${params.toString()}`);
+  }
+
+  /*
+    Créer et exporter descendent dans la barre du bas : ce sont les deux actions de
+    l'écran, et elles vivaient en haut d'une barre d'outils qui défile.
+  */
+  $effect(() => {
+    const actions: SwipeAction[] = [];
+    if (!isClosed) {
+      actions.push({ id: 'creer', label: 'Nouvelle facture', icon: Plus, run: openCreateModal });
+    }
+    actions.push({
+      id: 'export',
+      label: 'Exporter (ZIP)',
+      icon: Download,
+      run: () => {
+        window.location.href = exportHref;
+      }
+    });
+    return dockDePage.declarerActions(actions);
+  });
 
   const form = new InvoiceFormState();
 
@@ -97,37 +170,20 @@
     isSubmitting = false;
   }
 
-  let statusDialogData = $state<{ id: number; newStatus: 'sent' | 'paid' | 'cancelled'; msg: string } | null>(null);
-  let deleteDialogData = $state<{ id: number; msg: string } | null>(null);
-
-  function handleStatusChange(id: number, newStatus: 'sent' | 'paid' | 'cancelled') {
-    const confirmMsg =
-      newStatus === 'cancelled'
-        ? "Êtes-vous sûr de vouloir annuler cette facture ?"
-        : newStatus === 'paid'
-          ? "Êtes-vous sûr de vouloir marquer cette facture comme payée ?"
-          : "Êtes-vous sûr de vouloir marquer cette facture comme en attente de règlement ?";
-    statusDialogData = { id, newStatus, msg: confirmMsg };
-  }
-
-  async function confirmStatusChange() {
-    if (!statusDialogData) return;
-    const { id, newStatus } = statusDialogData;
-    statusDialogData = null;
+  /*
+    Les questions sont portées par les actions de ligne — la même pour le balayage, le
+    menu de la liste et celui du tableau. Elles remplacent deux boîtes de dialogue que
+    cet écran portait à la main, et qui demandaient confirmation même pour avancer une
+    facture d'un cran, geste qui se défait.
+  */
+  async function handleStatusChange(id: number, newStatus: 'sent' | 'paid' | 'cancelled') {
     await submitForm({
       submit: () => api.updateInvoiceStatus(id, newStatus),
       success: (message) => message
     });
   }
 
-  function handleDelete(id: number, num: string) {
-    deleteDialogData = { id, msg: `Êtes-vous sûr de vouloir supprimer définitivement la facture ${num} ?` };
-  }
-
-  async function confirmDelete() {
-    if (!deleteDialogData) return;
-    const { id } = deleteDialogData;
-    deleteDialogData = null;
+  async function handleDelete(id: number) {
     await submitForm({
       submit: () => api.deleteInvoice(id),
       success: (message) => message
@@ -138,6 +194,22 @@
     openDocument(`/admin/accounting/invoices/${id}`);
   }
 </script>
+
+{#snippet criteresDeListe()}
+  <FormField id="filter-season" label="Saison">
+    <ChoiceField
+      id="filter-season"
+      label="Saison"
+      options={seasonItems}
+      value={seasonId}
+      onChange={changerSaison}
+    />
+  </FormField>
+
+  <FormField id="filter-status" label="Statut">
+    <ChoiceField id="filter-status" label="Statut" options={STATUTS} bind:value={statusFilter} />
+  </FormField>
+{/snippet}
 
 <div class="space-y-6">
   <InvoiceListTable
@@ -151,39 +223,30 @@
     {#snippet toolbar()}
       <DataTableToolbar
         bind:searchValue={searchTerm}
-        searchPlaceholder="Rechercher une facture..."
+        searchPlaceholder="Rechercher une facture (client, numéro…)"
+        dockSearch
         hasFilters={true}
-        filtersActive={statusFilter !== 'all' || (seasonId && seasons.length > 0)}
+        filtersActive={filtreActif}
+        activeFilters={criteres}
+        onOpenFilters={() => (filtresOuverts = true)}
       >
         {#snippet filters()}
-            <FormField id="filter-season" label="Saison">
-            <SearchableCombobox
-              id="filter-season"
-              items={seasons.length > 0 ? toSeasonOptions(seasons) : [{ label: 'Saison 2025-2026', value: '25-26' }]}
-              value={seasonId}
-              onValueChange={(v) => { const val = String(v); const params = new URLSearchParams(window.location.search); params.set('season', val); softNavigate(`/admin/accounting/invoices?${params.toString()}`); }}
-            />
-          </FormField>
-
-            <FormField id="filter-status" label="Statut">
-            <SearchableCombobox
-              id="filter-status"
-              items={[{ label: 'Tous les statuts', value: 'all' }, { label: 'Brouillon', value: 'draft' }, { label: 'En attente de règlement', value: 'sent' }, { label: 'Payée', value: 'paid' }, { label: 'Annulée', value: 'cancelled' }]}
-              bind:value={statusFilter}
-            />
-          </FormField>
+          <h4 class="border-b border-border pb-2 text-sm font-semibold">Options de filtrage</h4>
+          <div class="space-y-4 pt-2">
+            {@render criteresDeListe()}
+          </div>
         {/snippet}
 
         {#snippet actions()}
+          <!-- Sur téléphone, ces deux actions vivent dans la barre du bas. -->
           {#if !isClosed}
-            <Button 
-              onclick={openCreateModal}
-              class="inline-flex items-center justify-center gap-2 h-9 w-full sm:w-auto"
-            >
-              <Plus class="w-4 h-4" /> Nouvelle facture
+            <Button onclick={openCreateModal} class="hidden h-9 gap-2 md:inline-flex">
+              <Plus class="h-4 w-4" />
+              Nouvelle facture
             </Button>
           {/if}
-          <Button href={`/admin/api/accounting/download?doc=export&type=invoices&season=${seasonId}`} class="h-9 gap-2 w-full sm:w-auto" variant="secondary" target="_blank" download>
+          <Button href={exportHref} variant="secondary" target="_blank" download class="hidden h-9 gap-2 md:inline-flex">
+            <Download class="h-4 w-4" />
             Exporter (ZIP)
           </Button>
         {/snippet}
@@ -207,38 +270,16 @@
   onSubmit={handleSubmit}
 />
 
-<AlertDialog.Root open={!!statusDialogData} onOpenChange={(o) => { if(!o) statusDialogData = null; }}>
-  <AlertDialog.Content>
-    <AlertDialog.Header>
-      <AlertDialog.Title>Confirmation</AlertDialog.Title>
-      <AlertDialog.Description>
-        {statusDialogData?.msg}
-      </AlertDialog.Description>
-    </AlertDialog.Header>
-    <AlertDialog.Footer>
-      <AlertDialog.Cancel>Annuler</AlertDialog.Cancel>
-      <AlertDialog.Action onclick={confirmStatusChange} class="bg-primary text-primary-foreground hover:bg-primary/90">
-        Confirmer
-      </AlertDialog.Action>
-    </AlertDialog.Footer>
-  </AlertDialog.Content>
-</AlertDialog.Root>
-
-<AlertDialog.Root open={!!deleteDialogData} onOpenChange={(o) => { if(!o) deleteDialogData = null; }}>
-  <AlertDialog.Content>
-    <AlertDialog.Header>
-      <AlertDialog.Title>Suppression</AlertDialog.Title>
-      <AlertDialog.Description>
-        {deleteDialogData?.msg}
-        <br/><br/>
-        Cette action est irréversible.
-      </AlertDialog.Description>
-    </AlertDialog.Header>
-    <AlertDialog.Footer>
-      <AlertDialog.Cancel>Annuler</AlertDialog.Cancel>
-      <AlertDialog.Action onclick={confirmDelete} class="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-        Supprimer
-      </AlertDialog.Action>
-    </AlertDialog.Footer>
-  </AlertDialog.Content>
-</AlertDialog.Root>
+<FilterSheet
+  bind:open={filtresOuverts}
+  description="Ces critères s'ajoutent à la recherche."
+  resultCount={filteredInvoices.length}
+  itemName="facture"
+  hasActiveFilters={filtreActif}
+  onReset={() => {
+    statusFilter = 'all';
+    filtresOuverts = false;
+  }}
+>
+  {@render criteresDeListe()}
+</FilterSheet>

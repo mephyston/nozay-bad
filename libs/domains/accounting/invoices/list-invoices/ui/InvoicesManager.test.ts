@@ -113,4 +113,60 @@ describe('InvoicesManager Component', () => {
     expect(document.body.innerHTML).toContain('Nom du Client *');
     expect(document.body.innerHTML).toContain('Lignes de facturation');
   });
+  /*
+    La vue au doigt. Cette table n'en avait aucune : six colonnes défilaient
+    horizontalement, ce que la doctrine interdit — et le menu d'actions se trouvait au
+    bout de ce défilement, donc hors d'atteinte sans le chercher.
+  */
+  function monter(props: Record<string, unknown> = {}) {
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+    targets.push(target);
+    component = mount(InvoicesManager, {
+      target,
+      props: { invoices, seasonId: '25-26', seasons, ...props }
+    });
+    flushSync();
+    return target;
+  }
+
+  const libellesDeBalayage = (target: HTMLElement, rang = 0) => {
+    const pistes = Array.from(target.querySelectorAll('[data-swipe-track]'));
+    if (pistes.length <= rang) return [];
+    return Array.from(pistes[rang].querySelectorAll('button')).map((b) => (b.textContent || '').trim());
+  };
+
+  it('projette une facture en rangée : client, numéro, date et montant', () => {
+    const target = monter();
+
+    const rangees = Array.from(target.querySelectorAll('[data-list-row]'));
+    expect(rangees.length, 'la vue au doigt doit rendre une rangée par facture').toBe(1);
+    const texte = (rangees[0].textContent ?? '').replace(/[\u00a0\u202f]/g, ' ');
+    expect(texte).toContain('Mairie de Nozay');
+    expect(texte).toContain('FAC-2526-NBA91-0001 · 2026-07-14');
+    expect(texte).toContain('1 500,00');
+    expect(texte).toContain('Brouillon');
+  });
+
+  it("révèle au balayage l'avancement d'abord, puis ce qui est sans retour", () => {
+    const target = monter();
+    // Un brouillon : avancer, modifier, imprimer, annuler, supprimer — les trois
+    // premières révélées, le reste derrière « Plus… », règle de `ListRow`.
+    expect(libellesDeBalayage(target).slice(0, 2)).toEqual([
+      'Marquer en attente de règlement',
+      'Modifier'
+    ]);
+  });
+
+  it("ne laisse qu'imprimer sur une facture payée", () => {
+    const target = monter({ invoices: [{ ...invoices[0], status: 'paid' as const }] });
+    expect(libellesDeBalayage(target)).toEqual(['Imprimer']);
+  });
+
+  it('ne propose plus rien que la lecture sur une saison clôturée', () => {
+    const target = monter({
+      seasons: [{ id: '25-26', name: 'Saison 2025-2026', active: true, closed: true }]
+    });
+    expect(libellesDeBalayage(target)).toEqual(['Imprimer']);
+  });
 });
