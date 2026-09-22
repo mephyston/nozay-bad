@@ -158,7 +158,12 @@ describe('BankStatementReconciliation Component', () => {
 
     // `unknown` en pivot : dans ce fichier `Element` est celui de @cloudflare/workers-types
     // (HTMLRewriter), qui ne recouvre pas le DOM — le cast direct est refusé.
-    const select = target.querySelector('select[aria-label="Saison"]') as unknown as HTMLSelectElement;
+    /*
+      L'exercice a rejoint les critères, derrière la loupe : il réduit ce qu'on voit, et
+      sa place n'était pas dans une barre d'en-tête qui défile hors de vue. Il reste
+      rendu même sans ligne à rapprocher — c'est là qu'on va relire l'archive d'un autre.
+    */
+    const select = target.querySelector('#recon-season-desktop') as unknown as HTMLSelectElement;
     expect(select).toBeTruthy();
     expect(Array.from(select.options).map((o) => o.value)).toContain('24-25');
   });

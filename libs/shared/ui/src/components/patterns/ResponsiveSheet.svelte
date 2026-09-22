@@ -33,6 +33,7 @@
     headerLeading,
     headerTrailing,
     footerHidden = false,
+    onOpenChange,
     portalProps,
     class: className,
     header,
@@ -71,6 +72,14 @@
      * laisserait sa bordure et son fond en travers de la feuille.
      */
     footerHidden?: boolean;
+    /**
+     * Prévenu à chaque ouverture et fermeture, y compris celles que la feuille décide
+     * elle-même — voile, Échap, bouton de fermeture, geste vers le bas.
+     *
+     * Indispensable dès que l'ouverture reflète un état extérieur : sans elle, il fallait
+     * un miroir et deux effets qui se répondaient, et la feuille ne se refermait plus.
+     */
+    onOpenChange?: (open: boolean) => void;
     header?: Snippet;
     children: Snippet;
     footer?: Snippet;
@@ -107,7 +116,7 @@
   };
 </script>
 
-<Dialog.Root bind:open>
+<Dialog.Root bind:open {onOpenChange}>
   <Dialog.Portal {...portalProps}>
     <Dialog.Overlay
       class="bg-black/10 supports-backdrop-filter:backdrop-blur-xs fixed inset-0 z-50"
@@ -148,13 +157,40 @@
         </div>
       {/if}
 
-      {@const barreHaute = estMobile && (headerLeading || headerTrailing)}
+      <!--
+        Sur téléphone, une feuille doit porter une sortie **visible**.
+
+        Le bouton de fermeture n'était rendu qu'au-dessus de 768 px : au doigt, il ne
+        restait que le geste vers le bas et le voile. Or une feuille qui monte à 95 % de
+        l'écran ne laisse presque pas de voile, et un contenu défilant capte le
+        glissement — on s'y retrouvait enfermé. Les écrans qui fournissent leur propre
+        `headerLeading` gardent le leur : c'est le cas des formulaires, dont la croix
+        annule la saisie.
+      -->
+      {@const fermetureDoffice = estMobile && showCloseButton && !headerLeading}
+      {@const barreHaute = estMobile && (headerLeading || headerTrailing || fermetureDoffice)}
       <div class={cn('shrink-0 px-6', estMobile ? 'pb-2' : 'pt-6 pb-2')}>
         {#if barreHaute}
           <!-- Barre de navigation : retrait à gauche, titre au centre, validation à droite. -->
           <div class="flex items-center gap-2">
             <div class="flex w-14 shrink-0 justify-start">
-              {#if headerLeading}{@render headerLeading()}{/if}
+              {#if headerLeading}
+                {@render headerLeading()}
+              {:else if fermetureDoffice}
+                <Dialog.Close>
+                  {#snippet child({ props: propsFermeture })}
+                    <Button
+                      variant="ghost"
+                      {...propsFermeture}
+                      class="glass-surface size-11 rounded-full p-0"
+                      style="--glass-base: var(--card)"
+                      aria-label="Fermer"
+                    >
+                      <XIcon class="size-5" />
+                    </Button>
+                  {/snippet}
+                </Dialog.Close>
+              {/if}
             </div>
             <Dialog.Title class="min-w-0 flex-1 truncate text-center text-base font-semibold">
               {title}

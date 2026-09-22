@@ -6,6 +6,7 @@
   import ImportStatementDialog from './ImportStatementDialog.svelte';
   import ReconciliationHeader from './ReconciliationHeader.svelte';
   import ReconciliationQueue from './ReconciliationQueue.svelte';
+  import ReconciliationQueueFilters from './ReconciliationQueueFilters.svelte';
 
   let props: ReconciliationStateProps = $props();
   // svelte-ignore non_reactive_update
@@ -48,6 +49,13 @@
   <ReconciliationHeader bind:state />
 
   {#if state.bankStatementLines.length === 0}
+    <!--
+      Aucune ligne à rapprocher, mais l'exercice reste à portée : c'est même ici qu'on
+      veut aller relire l'archive d'un autre, son état de rapprochement et son écart.
+    -->
+    <!-- svelte-ignore non_reactive_update -->
+    <ReconciliationQueueFilters bind:state compact />
+
     <Card.Root class="p-12 text-center shadow-sm flex flex-col items-center justify-center min-h-[400px]">
       <div class="rounded-full bg-primary/10 p-4 mb-4 text-primary">
         <Upload class="h-8 w-8" />

@@ -45,17 +45,16 @@
   const verrouille = $derived(reconState.isClosed || reconState.isSubmitting);
 
   /*
-    `ResponsiveSheet` pilote son ouverture par une liaison, et la ligne ouverte vit dans
-    l'état partagé — c'est lui qui fait foi, puisque le tableau de bureau s'en sert aussi
-    pour déplier sa ligne. Le miroir descend l'un dans l'autre, et le renvoie à `null`
-    quand la feuille se referme d'elle-même (voile, Échap, geste vers le bas).
+    Aucun miroir : la ligne ouverte vit dans l'état partagé — c'est lui qui fait foi,
+    puisque le tableau de bureau s'en sert aussi pour déplier sa ligne — et la feuille
+    prévient de sa fermeture par `onOpenChange`.
+
+    Deux effets se renvoyaient la valeur l'un à l'autre : la feuille se rouvrait dans la
+    même passe, et ni le bouton de fermeture ni Échap n'en venaient à bout.
   */
-  let ouvert = $state(false);
+  let ouvert = $state(!!reconState.selectedTx);
   $effect(() => {
     ouvert = !!reconState.selectedTx;
-  });
-  $effect(() => {
-    if (!ouvert && reconState.selectedTx) reconState.selectedTx = null;
   });
 
   const compte = $derived(
@@ -74,6 +73,9 @@
 
 <ResponsiveSheet
   bind:open={ouvert}
+  onOpenChange={(v) => {
+    if (!v) reconState.selectedTx = null;
+  }}
   title={line?.name ?? 'Opération'}
   detents={[0.6, 0.95]}
   size="lg"
