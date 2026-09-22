@@ -176,6 +176,14 @@ export default defineConfig({
       exclude: [
         'astro:transitions',
         '@astrojs/cloudflare',
+        /*
+          Le nom du paquet ne couvre pas ses sous-chemins : `entrypoints/server` était
+          pré-bundlé malgré la ligne au-dessus, découvert tard, et sa ré-optimisation
+          renommait le chunk que le worker SSR réclamait encore — « The file does not
+          exist at …/deps_ssr/@astrojs_cloudflare_entrypoints_server.js ». Le serveur
+          mourait à chaque changement d'imports d'un écran.
+        */
+        '@astrojs/cloudflare/entrypoints/server',
         '@nba/ui',
         '@nba/members-ui',
         '@nba/accounting-ui',

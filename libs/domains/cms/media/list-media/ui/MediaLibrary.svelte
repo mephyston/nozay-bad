@@ -1,23 +1,35 @@
 <script lang="ts">
-  import { Plus, Trash2, ExternalLink, Upload, Pencil } from '@lucide/svelte';
+  import { Plus, Pencil, Upload } from '@lucide/svelte';
   import { mediaUrl } from '../../media-url';
   import {
+    ActionSheet,
     Button,
     Input,
     Card,
+    ChoiceField,
     EmptyState,
     DataTableToolbar,
-    DataTableRowActions,
-    DropdownMenu,
+    FilterSheet,
     FormField,
     FormSheet,
+    dockDePage,
     submitForm,
     uiConfirm,
     flashAndReload,
-    uiAlert
+    uiAlert,
+    type SwipeAction
   } from '@nba/ui';
   import { uploadFile, updateMediaAlt, deleteMedia } from './media-actions';
   import { humanSize } from './media-upload';
+  import {
+    detailDeMedia,
+    estImage,
+    gestesDeMedia,
+    mediasFiltres,
+    nomDeMedia,
+    NATURES_DE_MEDIA,
+    type NatureDeMedia
+  } from './media-row-model';
 
   interface MediaRow {
     id: number;
@@ -57,13 +69,38 @@
 
   const isImage = (mime: string) => mime.startsWith('image/');
 
+  let nature = $state<NatureDeMedia>('tous');
+  let filtresOuverts = $state(false);
+
   const filteredMedia = $derived(
-    media.filter((row: MediaRow) => {
-      const term = searchTerm.trim().toLowerCase();
-      if (!term) return true;
-      return row.alt.toLowerCase().includes(term) || row.key.toLowerCase().includes(term);
-    })
+    mediasFiltres(media as MediaRow[], { recherche: searchTerm, nature })
   );
+
+  const droits = $derived({ canWrite, canDelete });
+
+  /* La feuille d'actions de la vignette appuyée : une seule à la fois. */
+  let gestesOuverts = $state(false);
+  let medium = $state<MediaRow | null>(null);
+
+  const gestes = {
+    onOpen: (m: MediaRow) => window.open(mediaUrl(m.key), '_blank', 'noopener'),
+    onEdit: (m: MediaRow) => openEditForm(m),
+    onDelete: (m: MediaRow) => remove(m)
+  };
+
+  function ouvrirLesGestes(m: MediaRow) {
+    medium = m;
+    gestesOuverts = true;
+  }
+
+  /* Déposer descend dans la barre du bas. */
+  $effect(() => {
+    if (!canWrite) return;
+    const actions: SwipeAction[] = [
+      { id: 'deposer', label: 'Ajouter un média', icon: Upload, run: () => openAddForm() }
+    ];
+    return dockDePage.declarerActions(actions, { icon: Plus, label: 'Ajouter un média' });
+  });
 
   function pick(event: Event) {
     const input = event.currentTarget as HTMLInputElement;
@@ -214,11 +251,27 @@
   <DataTableToolbar
     bind:searchValue={searchTerm}
     searchPlaceholder="Rechercher un média..."
-    hasFilters={false}
+    dockSearch
+    hasFilters={true}
+    filtersActive={nature !== 'tous'}
+    onOpenFilters={() => (filtresOuverts = true)}
+    activeFilters={nature === 'tous'
+      ? []
+      : [
+          {
+            id: 'nature',
+            label: NATURES_DE_MEDIA.find((o) => o.value === nature)?.label ?? '',
+            onRemove: () => (nature = 'tous')
+          }
+        ]}
   >
+    {#snippet filters()}
+      {@render criteres()}
+    {/snippet}
     {#snippet actions()}
+      <!-- Sur téléphone, ce geste vit dans la barre du bas. -->
       {#if canWrite}
-        <Button onclick={openAddForm} class="h-9 shrink-0 gap-1.5 font-bold">
+        <Button onclick={openAddForm} class="hidden h-9 shrink-0 gap-1.5 font-bold md:flex">
           <Plus class="h-4 w-4" />
           <span>Ajouter un média</span>
         </Button>
@@ -237,72 +290,56 @@
         <EmptyState
           icon={Upload}
           title="Aucun média"
-          description={searchTerm.trim()
-            ? 'Aucun média ne correspond à votre recherche.'
+          description={searchTerm.trim() || nature !== 'tous'
+            ? 'Aucun média ne correspond à ces critères.'
             : 'Déposez une image ou un document pour commencer.'}
         />
       </Card.Content>
     </Card.Root>
   {:else}
+    <!--
+      La vignette **est** l'affordance : l'appuyer ouvre la feuille d'actions. Un menu
+      « … » était posé sur chacune — soixante boutons de douze pixels sur une grille à
+      deux colonnes, là où la règle en veut un seul par rangée. Au clavier et au
+      lecteur d'écran, le bouton porte le nom du média et la feuille nomme chaque geste.
+    -->
     <ul class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
       {#each filteredMedia as row, rang (row.id)}
         <li class="overflow-hidden rounded-lg border border-border">
-          <div class="flex aspect-video items-center justify-center overflow-hidden bg-muted">
-            {#if isImage(row.mimeType)}
-              <!--
-                Les vignettes du premier écran sont demandées tout de suite, les suivantes
-                paresseusement. `loading="lazy"` partout retardait justement celles qu'on
-                regarde : le navigateur attend d'avoir calculé la mise en page pour décider
-                si l'image est visible, et l'écran restait gris un instant de trop. Douze
-                couvre quatre colonnes sur trois rangs, la grille la plus large.
-              -->
-              <img
-                src={mediaUrl(row.key)}
-                alt={row.alt}
-                width={row.width ?? undefined}
-                height={row.height ?? undefined}
-                loading={rang < 12 ? 'eager' : 'lazy'}
-                fetchpriority={rang < 12 ? 'high' : 'auto'}
-                decoding="async"
-                class="h-full w-full object-cover"
-              />
-            {:else}
-              <span class="text-3xl" aria-hidden="true">📄</span>
-            {/if}
-          </div>
-          <div class="space-y-1 p-3 text-sm">
-            <div class="flex items-start justify-between gap-2">
-              <p class="min-w-0 flex-1 truncate font-medium">{row.alt || '(sans description)'}</p>
-              <DataTableRowActions>
-                <DropdownMenu.Label>Actions</DropdownMenu.Label>
-                <DropdownMenu.Item
-                  onclick={() => window.open(mediaUrl(row.key), '_blank', 'noopener')}
-                  class="cursor-pointer"
-                >
-                  <ExternalLink class="mr-2 h-3.5 w-3.5" />
-                  Ouvrir
-                </DropdownMenu.Item>
-                {#if canWrite}
-                  <DropdownMenu.Item onclick={() => openEditForm(row)} class="cursor-pointer">
-                    <Pencil class="mr-2 h-3.5 w-3.5" />
-                    Modifier la description
-                  </DropdownMenu.Item>
-                {/if}
-                {#if canDelete}
-                  <DropdownMenu.Item
-                    onclick={() => remove(row)}
-                    class="cursor-pointer text-destructive focus:text-destructive"
-                  >
-                    <Trash2 class="mr-2 h-3.5 w-3.5" />
-                    Supprimer
-                  </DropdownMenu.Item>
-                {/if}
-              </DataTableRowActions>
+          <button
+            type="button"
+            class="w-full text-left"
+            onclick={() => ouvrirLesGestes(row)}
+            aria-label={`${nomDeMedia(row)} — actions`}
+          >
+            <div class="flex aspect-video items-center justify-center overflow-hidden bg-muted">
+              {#if estImage(row)}
+                <!--
+                  Les vignettes du premier écran sont demandées tout de suite, les suivantes
+                  paresseusement. `loading="lazy"` partout retardait justement celles qu'on
+                  regarde : le navigateur attend d'avoir calculé la mise en page pour décider
+                  si l'image est visible, et l'écran restait gris un instant de trop. Douze
+                  couvre quatre colonnes sur trois rangs, la grille la plus large.
+                -->
+                <img
+                  src={mediaUrl(row.key)}
+                  alt={row.alt}
+                  width={row.width ?? undefined}
+                  height={row.height ?? undefined}
+                  loading={rang < 12 ? 'eager' : 'lazy'}
+                  fetchpriority={rang < 12 ? 'high' : 'auto'}
+                  decoding="async"
+                  class="h-full w-full object-cover"
+                />
+              {:else}
+                <span class="text-3xl" aria-hidden="true">📄</span>
+              {/if}
             </div>
-            <p class="text-xs text-muted-foreground">
-              {humanSize(row.sizeBytes)}{#if row.width} · {row.width}×{row.height}{/if}
-            </p>
-          </div>
+            <div class="space-y-1 p-3 text-sm">
+              <p class="truncate font-medium">{nomDeMedia(row)}</p>
+              <p class="text-xs text-muted-foreground">{detailDeMedia(row)}</p>
+            </div>
+          </button>
         </li>
       {/each}
     </ul>
@@ -370,3 +407,36 @@
     <Input id="media-edit-alt" bind:value={editAlt} placeholder="Ce que montre l'image, ou le nom du document" />
   </FormField>
 </FormSheet>
+
+{#if medium}
+  <ActionSheet
+    bind:open={gestesOuverts}
+    title={nomDeMedia(medium)}
+    actions={gestesDeMedia(medium, droits, gestes)}
+    item={medium}
+  />
+{/if}
+
+<!-- Les critères se posent derrière la loupe, jamais ailleurs. -->
+{#snippet criteres()}
+  <FormField id="filter-nature-media" label="Nature">
+    <ChoiceField
+      id="filter-nature-media"
+      label="Nature"
+      value={nature}
+      onChange={(v) => (nature = v as NatureDeMedia)}
+      options={NATURES_DE_MEDIA}
+    />
+  </FormField>
+{/snippet}
+
+<FilterSheet
+  bind:open={filtresOuverts}
+  description="Les documents n'ont pas de vignette : les isoler évite de les chercher entre deux photos."
+  resultCount={filteredMedia.length}
+  itemName="média"
+  itemNamePlural="médias"
+  onReset={() => (nature = 'tous')}
+>
+  {@render criteres()}
+</FilterSheet>

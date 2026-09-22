@@ -381,7 +381,7 @@ export const ECRANS: Record<string, Ecran> = {
     feature: 'website',
     permission: 'cms:media:read',
     charger: async (lire, locals) => ({
-      media: (await lire('/cms/media')) ?? [],
+      media: (await lire('/cms/media?limit=200')) ?? [],
       canWrite: can(locals, 'cms:media:write'),
       canDelete: can(locals, 'cms:media:delete')
     }),
