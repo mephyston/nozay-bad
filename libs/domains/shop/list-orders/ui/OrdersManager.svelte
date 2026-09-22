@@ -1,15 +1,14 @@
-<script module>
-</script>
 <script lang="ts">
-  import { AlertCircle } from "@lucide/svelte";
-  import { onMount } from "svelte";
-  import { Alert, Button, Sheet, flashAndReload, toSeasonOptions } from "@nba/ui";
+  import { onMount } from 'svelte';
+  import { softNavigate, uiAlert } from '@nba/ui';
   import type { OrderItem, OrdersTab, Season } from './orders-manager-types';
   import { validateOrder, payOrder, rejectOrder, cancelOrder, unpayOrder } from './orders-manager-actions';
+  import { codeDeSaison, estOuverte, etapeOuverte } from './orders-row-model';
   import OrdersOpenTable from './OrdersOpenTable.svelte';
   import OrdersHistoryTable from './OrdersHistoryTable.svelte';
+  import OrdersToolbar from './OrdersToolbar.svelte';
+  import OrderDetailSheet from './OrderDetailSheet.svelte';
   import AdminOrderForm from './AdminOrderForm.svelte';
-  import { SearchableCombobox, FormField, softNavigate } from "@nba/ui";
 
   let {
     seasons = [],
@@ -32,17 +31,20 @@
     activeTab?: OrdersTab;
   } = $props();
 
-  const isClosed = $derived(seasons.find(s => s.id === seasonId)?.closed || false);
+  const isClosed = $derived(seasons.find((s) => codeDeSaison(s) === seasonId)?.closed || false);
 
   // svelte-ignore state_referenced_locally
   let ordersList = $state<OrderItem[]>(orders);
   let searchTerm = $state('');
   let processingId = $state<number | null>(null);
-  let errorMsg = $state<string | null>(null);
   let isCreateSheetOpen = $state(initialAction === 'new-order');
 
+  /** La commande dont on regarde la fiche. Au doigt seulement : le tableau montre tout. */
+  let detailItem = $state<OrderItem | null>(null);
+  let detailOuvert = $state(false);
+
   onMount(() => {
-    const handleOpenNewOrder = () => isCreateSheetOpen = true;
+    const handleOpenNewOrder = () => (isCreateSheetOpen = true);
     window.addEventListener('open-new-order', handleOpenNewOrder);
     return () => window.removeEventListener('open-new-order', handleOpenNewOrder);
   });
@@ -56,7 +58,9 @@
       const params = new URLSearchParams(window.location.search);
       if (params.get('action') === 'new-order') {
         params.delete('action');
-        const newUrl = params.toString() ? `${window.location.pathname}?${params.toString()}` : window.location.pathname;
+        const newUrl = params.toString()
+          ? `${window.location.pathname}?${params.toString()}`
+          : window.location.pathname;
         window.history.replaceState({}, '', newUrl);
       }
     }
@@ -74,7 +78,7 @@
   });
 
   let filteredOrders = $derived(
-    ordersList.filter(item => {
+    ordersList.filter((item) => {
       const term = searchTerm.toLowerCase().trim();
       if (!term) return true;
 
@@ -94,32 +98,46 @@
     })
   );
 
-  let createdOrders = $derived(filteredOrders.filter(item => item.order.status === 'created'));
-  let awaitingPaymentOrders = $derived(filteredOrders.filter(item => item.order.status === 'awaiting_payment'));
+  const createdOrders = $derived(filteredOrders.filter((item) => item.order.status === 'created'));
+  const awaitingPaymentOrders = $derived(
+    filteredOrders.filter((item) => item.order.status === 'awaiting_payment')
+  );
   // Tout ce qui attend encore quelque chose du club : une décision, puis un règlement.
-  let openOrders = $derived(filteredOrders.filter(item => item.order.status === 'created' || item.order.status === 'awaiting_payment'));
-  let historyOrders = $derived(
-    filteredOrders.filter(item =>
-      item.order.status === 'paid' ||
-      item.order.status === 'rejected' ||
-      item.order.status === 'cancelled'
-    )
+  const openOrders = $derived(filteredOrders.filter(estOuverte));
+  const historyOrders = $derived(filteredOrders.filter((item) => !estOuverte(item)));
+
+  const counts = $derived({
+    open: openOrders.length,
+    created: createdOrders.length,
+    awaiting_payment: awaitingPaymentOrders.length,
+    history: historyOrders.length
+  });
+
+  const vueCourante = $derived(
+    activeTab === 'created'
+      ? createdOrders
+      : activeTab === 'awaiting_payment'
+        ? awaitingPaymentOrders
+        : activeTab === 'history'
+          ? historyOrders
+          : openOrders
   );
 
   /**
    * Toutes les transitions passent par ici : en cas de succès l'action a déjà
    * déclenché `flashAndReload`, la page est rechargée avec l'état frais. Seul un
-   * refus revient ici, et laisse la liste en l'état avec l'erreur affichée.
+   * refus revient ici, et se dit dans une alerte à acquitter — la liste peut être
+   * défilée loin de son sommet, où un message posé en tête passerait inaperçu.
    */
-  async function runTransition(orderId: number, action: (id: number) => Promise<{ success: boolean; error?: string }>) {
+  async function runTransition(
+    orderId: number,
+    action: (id: number) => Promise<{ success: boolean; error?: string }>
+  ) {
     if (processingId !== null || isClosed) return;
-    errorMsg = null;
     processingId = orderId;
 
     const res = await action(orderId);
-    if (!res.success && res.error) {
-      errorMsg = res.error;
-    }
+    if (!res.success && res.error) await uiAlert(res.error);
     processingId = null;
   }
 
@@ -130,109 +148,77 @@
   const handleUnpay = (orderId: number) => runTransition(orderId, unpayOrder);
 
   // Dans la vue réunie, chaque ligne suit les transitions de sa propre étape.
-  const isAwaitingPayment = (orderId: number) =>
-    ordersList.find(item => item.order.id === orderId)?.order.status === 'awaiting_payment';
-  const handleOpenPrimary = (orderId: number) => (isAwaitingPayment(orderId) ? handlePay : handleValidate)(orderId);
-  const handleOpenSecondary = (orderId: number) => (isAwaitingPayment(orderId) ? handleCancel : handleReject)(orderId);
+  const etapeDe = (orderId: number) => {
+    const item = ordersList.find((o) => o.order.id === orderId);
+    return item ? etapeOuverte(item) : 'created';
+  };
+  const handleOpenPrimary = (orderId: number) =>
+    (etapeDe(orderId) === 'awaiting_payment' ? handlePay : handleValidate)(orderId);
+  const handleOpenSecondary = (orderId: number) =>
+    (etapeDe(orderId) === 'awaiting_payment' ? handleCancel : handleReject)(orderId);
+
+  function ouvrirFiche(item: OrderItem) {
+    detailItem = item;
+    detailOuvert = true;
+  }
 </script>
 
+{#snippet barreDOutils()}
+  <OrdersToolbar
+    bind:searchTerm
+    bind:selectedSeason
+    bind:activeTab
+    {seasons}
+    {counts}
+    resultCount={vueCourante.length}
+    canCreate={!isClosed}
+    onCreate={() => (isCreateSheetOpen = true)}
+  />
+{/snippet}
+
 <div class="space-y-6">
-  {#if errorMsg}
-    <Alert.Root variant="destructive">
-      <AlertCircle class="w-5 h-5 shrink-0" />
-    <Alert.Description>{errorMsg}</Alert.Description>
-    </Alert.Root>
-  {/if}
-
-  {#snippet toolbarFilters()}
-    <FormField id="filter-season" label="Saison">
-      <SearchableCombobox 
-        id="filter-season" 
-        items={seasons.length > 0 ? toSeasonOptions(seasons, { value: 'id' }) : [{ label: 'Saison 2025-2026', value: '25-26' }]}
-        bind:value={selectedSeason} 
-      />
-    </FormField>
-    <FormField id="filter-status" label="Statut">
-      <SearchableCombobox 
-        id="filter-status" 
-        items={[
-          { label: `En cours (${openOrders.length})`, value: 'open' },
-          { label: `À valider (${createdOrders.length})`, value: 'created' },
-          { label: `En attente de paiement (${awaitingPaymentOrders.length})`, value: 'awaiting_payment' },
-          { label: 'Historique', value: 'history' }
-        ]}
-        bind:value={activeTab}
-      />
-    </FormField>
-  {/snippet}
-
-  {#snippet toolbarActions()}
-    <Button variant="default" class="h-9 gap-2 w-full sm:w-auto" onclick={() => isCreateSheetOpen = true}>
-      Créer une commande
-    </Button>
-  {/snippet}
-
-  {#if activeTab === 'open'}
-    <OrdersOpenTable
-      orders={openOrders}
-      stage="open"
-      {processingId}
+  {#if activeTab === 'history'}
+    <OrdersHistoryTable
+      {historyOrders}
       {isClosed}
-      {toolbarFilters}
-      {toolbarActions}
-      bind:searchTerm
-      onPrimary={handleOpenPrimary}
-      onSecondary={handleOpenSecondary}
-    />
-  {:else if activeTab === 'created'}
-    <OrdersOpenTable
-      orders={createdOrders}
-      stage="created"
-      {processingId}
-      {isClosed}
-      {toolbarFilters}
-      {toolbarActions}
-      bind:searchTerm
-      onPrimary={handleValidate}
-      onSecondary={handleReject}
-    />
-  {:else if activeTab === 'awaiting_payment'}
-    <OrdersOpenTable
-      orders={awaitingPaymentOrders}
-      stage="awaiting_payment"
-      {processingId}
-      {isClosed}
-      {toolbarFilters}
-      {toolbarActions}
-      bind:searchTerm
-      onPrimary={handlePay}
-      onSecondary={handleCancel}
+      toolbar={barreDOutils}
+      onUnpay={handleUnpay}
+      onOuvrir={ouvrirFiche}
     />
   {:else}
-    <OrdersHistoryTable 
-      {historyOrders}
-      {processingId}
+    <OrdersOpenTable
+      orders={vueCourante}
+      stage={activeTab}
       {isClosed}
-      {toolbarFilters}
-      {toolbarActions}
-      bind:searchTerm
-      onUnpay={handleUnpay}
+      toolbar={barreDOutils}
+      onPrimary={activeTab === 'open'
+        ? handleOpenPrimary
+        : activeTab === 'created'
+          ? handleValidate
+          : handlePay}
+      onSecondary={activeTab === 'open'
+        ? handleOpenSecondary
+        : activeTab === 'created'
+          ? handleReject
+          : handleCancel}
+      onOuvrir={ouvrirFiche}
     />
   {/if}
 </div>
 
-<Sheet.Root bind:open={isCreateSheetOpen}>
-  <Sheet.Content side="right" class="w-full sm:max-w-2xl overflow-y-auto p-0 flex flex-col h-full" onOpenAutoFocus={(e) => e.preventDefault()}>
-    <AdminOrderForm
-      products={products}
-      members={members}
-      {paymentMethods}
-      activeSeasonId={seasonId}
-      onClose={() => isCreateSheetOpen = false}
-      onSuccess={(msg) => {
-        isCreateSheetOpen = false;
-        flashAndReload(msg, 'success');
-      }}
-    />
-  </Sheet.Content>
-</Sheet.Root>
+<OrderDetailSheet
+  bind:open={detailOuvert}
+  item={detailItem}
+  verrouille={isClosed}
+  onPrimary={handleOpenPrimary}
+  onSecondary={handleOpenSecondary}
+  onUnpay={handleUnpay}
+/>
+
+<AdminOrderForm
+  bind:open={isCreateSheetOpen}
+  {products}
+  {members}
+  {paymentMethods}
+  activeSeasonId={seasonId}
+/>

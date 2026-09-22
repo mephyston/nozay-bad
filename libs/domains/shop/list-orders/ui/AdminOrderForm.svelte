@@ -1,53 +1,94 @@
 <script lang="ts">
-  import { ShoppingBag, AlertCircle, Check } from '@lucide/svelte';
-  import { Button, Alert, Sheet, Input, FormField } from '@nba/ui';
+  import { ShoppingBag } from '@lucide/svelte';
+  import { FormField, FormSheet, SearchableCombobox, submitForm } from '@nba/ui';
   import type { Member, Product } from '../../list-products/ui/catalog-types';
   import { formatMemberName } from '../../list-products/ui/catalog-utils';
   import { isOutOfStock, productLabel, type PaymentMethodOption } from '../../list-products/ui/catalog-types';
-  import { handleMemberKeyDown } from '../../list-products/ui/catalog-order-action';
   import ShopCatalogProductSelect from '../../list-products/ui/ShopCatalogProductSelect.svelte';
   import ShopCatalogSummary from '../../list-products/ui/ShopCatalogSummary.svelte';
 
-  let { products = [], members = [], activeSeasonId = '', paymentMethods = [], onClose, onSuccess }: { products: Product[]; members: Member[]; activeSeasonId: string; paymentMethods?: PaymentMethodOption[]; onClose: () => void; onSuccess: (msg: string) => void; } = $props();
+  /**
+   * Créer une commande au nom d'un adhérent, depuis le bureau.
+   *
+   * Le choix de l'adhérent passait par une liste déroulante écrite à la main —
+   * `<input>`, panneau absolu, navigation au clavier, fermeture au `blur` différée de
+   * 200 ms. `SearchableCombobox` fait tout cela, et au doigt il ouvre l'écran de choix
+   * plein cadre au lieu d'un panneau de 240 px qui passait sous le clavier.
+   *
+   * La coquille est celle de tous les formulaires de l'admin : sur téléphone elle monte
+   * du bas et porte ses actions dans sa barre de navigation, hors de portée du clavier.
+   */
+  let {
+    open = $bindable(false),
+    products = [],
+    members = [],
+    activeSeasonId = '',
+    paymentMethods = []
+  }: {
+    open?: boolean;
+    products: Product[];
+    members: Member[];
+    activeSeasonId: string;
+    paymentMethods?: PaymentMethodOption[];
+  } = $props();
 
-  let productsList = $derived(products);
-  let selectedMemberId = $state<string>('');
-  let memberSearchQuery = $state<string>('');
-  let isMemberDropdownOpen = $state<boolean>(false);
-  let highlightedIndex = $state<number>(-1);
-  let lastSelectedMember = $state<Member | null>(null);
-
+  let selectedMemberId = $state<string | number | undefined>(undefined);
   let selectedCategory = $state<number>(0);
   let selectedProductId = $state<number | null>(null);
   let selectedQuantity = $state<number>(1);
   let selectedPaymentMethod = $state<string>('');
-  $effect(() => {
-    if (!paymentMethods.some((pm) => pm.value === selectedPaymentMethod)) selectedPaymentMethod = paymentMethods[0]?.value ?? '';
-  });
   let submitting = $state<boolean>(false);
   let errorMessage = $state<string | null>(null);
 
-  let filteredProducts = $derived(selectedCategory === 0 ? productsList : productsList.filter(p => p.productCategoryId === selectedCategory));
-  let selectedProduct = $derived(selectedProductId !== null ? productsList.find(p => p.id === Number(selectedProductId)) || null : null);
-  let totalPriceCents = $derived(selectedProduct ? (selectedProduct.priceCents ?? (selectedProduct as any).price ?? 0) * selectedQuantity : 0);
-  let maxQuantity = $derived(selectedProduct ? (selectedProduct.trackStock ? Math.min(selectedProduct.stock, 99) : 99) : 1);
+  $effect(() => {
+    if (!paymentMethods.some((pm) => pm.value === selectedPaymentMethod)) {
+      selectedPaymentMethod = paymentMethods[0]?.value ?? '';
+    }
+  });
+
+  const filteredProducts = $derived(
+    selectedCategory === 0 ? products : products.filter((p) => p.productCategoryId === selectedCategory)
+  );
+  const selectedProduct = $derived(
+    selectedProductId !== null ? (products.find((p) => p.id === Number(selectedProductId)) ?? null) : null
+  );
+  const totalPriceCents = $derived(
+    selectedProduct ? (selectedProduct.priceCents ?? (selectedProduct as { price?: number }).price ?? 0) * selectedQuantity : 0
+  );
+  const maxQuantity = $derived(
+    selectedProduct ? (selectedProduct.trackStock ? Math.min(selectedProduct.stock, 99) : 99) : 1
+  );
+
+  const memberItems = $derived(
+    [...members]
+      .sort((a, b) => a.lastName.localeCompare(b.lastName))
+      .map((m) => ({ label: `${formatMemberName(m)} (${m.licence})`, value: m.id }))
+  );
 
   $effect(() => {
     if (filteredProducts.length > 0) {
       const currentId = selectedProductId !== null ? Number(selectedProductId) : null;
-      if (currentId === null || !filteredProducts.some(p => p.id === currentId)) selectedProductId = filteredProducts[0].id;
+      if (currentId === null || !filteredProducts.some((p) => p.id === currentId)) {
+        selectedProductId = filteredProducts[0].id;
+      }
     } else selectedProductId = null;
   });
 
   $effect(() => {
-    if (selectedProduct) {
-      const max = selectedProduct.trackStock ? Math.min(selectedProduct.stock, 99) : 99;
-      if (max > 0 && selectedQuantity > max) selectedQuantity = max;
-      else if (selectedQuantity < 1) selectedQuantity = 1;
-    }
+    if (!selectedProduct) return;
+    const max = selectedProduct.trackStock ? Math.min(selectedProduct.stock, 99) : 99;
+    if (max > 0 && selectedQuantity > max) selectedQuantity = max;
+    else if (selectedQuantity < 1) selectedQuantity = 1;
   });
 
-  let blockingReason = $derived.by(() => {
+  /**
+   * Ce qui empêche d'enregistrer, dit en une phrase.
+   *
+   * Rendu à la soumission plutôt qu'en grisant le bouton : un bouton éteint ne dit
+   * jamais pourquoi, et c'est précisément ce qu'on a besoin de savoir quand un article
+   * vient de passer en rupture.
+   */
+  function empechement(): string | null {
     if (!selectedMemberId) return "Sélectionnez l'adhérent pour lequel commander.";
     if (!selectedProduct) return 'Sélectionnez un article pour continuer.';
     if (isOutOfStock(selectedProduct)) return `« ${productLabel(selectedProduct)} » est en rupture de stock.`;
@@ -55,44 +96,7 @@
       return `Stock insuffisant : il ne reste que ${selectedProduct.stock} « ${productLabel(selectedProduct)} ».`;
     }
     return null;
-  });
-
-  $effect(() => { if (!isMemberDropdownOpen) highlightedIndex = -1; });
-  $effect(() => { if (highlightedIndex >= filteredMembers.length) highlightedIndex = filteredMembers.length - 1; });
-
-  function selectMember(m: Member) {
-    selectedMemberId = m.id.toString();
-    lastSelectedMember = m;
-    memberSearchQuery = formatMemberName(m);
-    isMemberDropdownOpen = false;
-    highlightedIndex = -1;
   }
-
-  function handleKeyDown(e: KeyboardEvent) {
-    if (e.key === 'Escape') { isMemberDropdownOpen = false; e.preventDefault(); return; }
-    handleMemberKeyDown(e, {
-      isMemberDropdownOpen, highlightedIndex, filteredMembersCount: filteredMembers.length,
-      onOpenDropdown: () => { isMemberDropdownOpen = true; highlightedIndex = 0; },
-      onSelectMember: (idx) => {
-        if (idx >= 0 && idx < filteredMembers.length) {
-          if (e.key === 'Enter') selectMember(filteredMembers[idx]);
-          else highlightedIndex = idx;
-        }
-      }
-    });
-  }
-
-  let sortedMembers = $derived([...members].sort((a, b) => a.lastName.localeCompare(b.lastName)));
-  let selectedMember = $derived(members.length > 0 ? (members.find(m => m.id.toString() === selectedMemberId) || null) : lastSelectedMember);
-  let memberDisplayVal = $derived(selectedMember ? formatMemberName(selectedMember) : '');
-  let filteredMembers = $derived(
-    memberSearchQuery.trim() === ''
-      ? sortedMembers
-      : sortedMembers.filter(m =>
-          `${m.lastName} ${m.firstName} ${m.licence}`.toLowerCase().includes(memberSearchQuery.toLowerCase()) ||
-          `${m.firstName} ${m.lastName} ${m.licence}`.toLowerCase().includes(memberSearchQuery.toLowerCase())
-        )
-  );
 
   function incrementQty() {
     if (selectedQuantity < maxQuantity) selectedQuantity += 1;
@@ -101,160 +105,87 @@
     if (selectedQuantity > 1) selectedQuantity -= 1;
   }
 
-  async function handleOrder(e: Event) {
-    e.preventDefault();
-    if (!selectedMemberId) { errorMessage = "Veuillez sélectionner un adhérent."; return; }
-    if (!selectedProduct) { errorMessage = "Veuillez sélectionner un produit."; return; }
-
-    errorMessage = null; submitting = true;
-    try {
-      /*
-        Le relais, et non la page hôte : `window.location.pathname` la visait, ce qui
-        liait ce formulaire à l'écran qui l'affiche sans que rien ne le rappelle.
-      */
-      const res = await fetch('/admin/api/shop/orders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          // La création se nomme désormais : elle se reconnaissait jusqu'ici à la seule
-          // présence d'un produit et d'une quantité, un implicite qui se serait défait à
-          // la première évolution du formulaire.
-          action: 'create-order',
-          seasonId: activeSeasonId,
-          memberId: parseInt(selectedMemberId),
-          productId: selectedProduct.id,
-          quantity: selectedQuantity,
-          paymentMethod: selectedPaymentMethod
-        })
-      });
-      const data = await res.json() as any;
-      if (!res.ok || !data.success) {
-        errorMessage = data.error || "Une erreur est survenue lors de l'enregistrement de la commande.";
-      } else {
-        onSuccess(data.message || "Commande créée avec succès.");
-        selectedQuantity = 1;
-      }
-    } catch (err: any) {
-      errorMessage = err.message || "Erreur réseau.";
+  /*
+    Le relais du domaine, et non la page hôte : `window.location.pathname` la visait,
+    ce qui liait ce formulaire à l'écran qui l'affiche sans que rien ne le rappelle.
+  */
+  async function creer(): Promise<string> {
+    const res = await fetch('/admin/api/shop/orders', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        // La création se nomme : elle se reconnaissait jusqu'ici à la seule présence
+        // d'un produit et d'une quantité, un implicite qui se serait défait à la
+        // première évolution du formulaire.
+        action: 'create-order',
+        seasonId: activeSeasonId,
+        memberId: Number(selectedMemberId),
+        productId: selectedProduct!.id,
+        quantity: selectedQuantity,
+        paymentMethod: selectedPaymentMethod
+      })
+    });
+    const data = (await res.json()) as { success?: boolean; error?: string; message?: string };
+    if (!res.ok || !data.success) {
+      throw new Error(data.error || "Une erreur est survenue lors de l'enregistrement de la commande.");
     }
+    return data.message || 'Commande créée.';
+  }
+
+  async function handleSubmit(e: Event) {
+    e.preventDefault();
+    errorMessage = null;
+    submitting = true;
+    await submitForm({
+      validate: empechement,
+      submit: creer,
+      success: (message) => message,
+      close: () => {
+        open = false;
+        selectedQuantity = 1;
+      },
+      // La feuille couvre la page : le refus s'affiche dans le formulaire lui-même.
+      onError: (message) => {
+        errorMessage = message;
+      }
+    });
     submitting = false;
   }
 </script>
 
-<Sheet.Header class="p-6 border-b border-border">
-  <Sheet.Title class="flex items-center gap-2">
-    <ShoppingBag class="w-5 h-5 text-primary" />
-    Créer une commande
-  </Sheet.Title>
-  <Sheet.Description class="hidden">Formulaire de création de commande (Admin).</Sheet.Description>
-</Sheet.Header>
-
-<form onsubmit={handleOrder} class="flex flex-col flex-1 overflow-hidden">
-  <div class="p-6 overflow-y-auto space-y-6 flex-1">
-    {#if errorMessage}
-      <Alert.Root variant="destructive" class="p-4 text-sm flex items-start gap-2.5">
-        <AlertCircle class="w-5 h-5 shrink-0 mt-0.5" />
-        <Alert.Description><span>{errorMessage}</span></Alert.Description>
-      </Alert.Root>
-    {/if}
-
-    <FormField id="order-member-input" label="Adhérent acheteur">
-      <div class="relative">
-        <Input
-          id="order-member-input"
-          type="text"
-          placeholder="🔍 Rechercher un adhérent par nom ou licence..."
-          class="pr-8 font-medium"
-          value={isMemberDropdownOpen ? memberSearchQuery : memberDisplayVal}
-          oninput={(e) => {
-            isMemberDropdownOpen = true;
-            memberSearchQuery = (e.target as HTMLInputElement).value;
-          }}
-          onfocus={() => {
-            isMemberDropdownOpen = true;
-            memberSearchQuery = '';
-          }}
-          onblur={() => {
-            setTimeout(() => { isMemberDropdownOpen = false; }, 200);
-          }}
-          onkeydown={handleKeyDown}
-        />
-        {#if selectedMemberId}
-          <Button
-            variant="ghost"
-            size="icon-xs"
-            onclick={() => {
-              selectedMemberId = '';
-              memberSearchQuery = '';
-              lastSelectedMember = null;
-            }}
-            class="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
-            title="Effacer la sélection"
-          >
-            ✕
-          </Button>
-        {/if}
-
-        {#if isMemberDropdownOpen}
-          <div class="absolute z-50 w-full mt-1 max-h-60 overflow-y-auto bg-popover border border-border rounded-lg shadow-lg divide-y divide-border">
-            {#each filteredMembers as member, idx}
-              <Button
-                variant="ghost"
-                class="w-full text-left justify-start rounded-none px-3 py-2 text-sm text-foreground transition-colors font-medium border-0 cursor-pointer {idx === highlightedIndex ? 'bg-muted' : 'bg-popover'} hover:bg-muted"
-                onmousedown={() => selectMember(member)}
-              >
-                {member.lastName} {member.firstName} ({member.licence})
-              </Button>
-            {:else}
-              <div class="px-3 py-2 text-xs text-muted-foreground italic bg-popover">Aucun adhérent trouvé</div>
-            {/each}
-          </div>
-        {/if}
-      </div>
-    </FormField>
-
-    <ShopCatalogProductSelect
-      {paymentMethods}
-      bind:selectedPaymentMethod
-      bind:selectedCategory
-      bind:selectedProductId
-      bind:selectedQuantity
-      {filteredProducts}
-      {selectedProduct}
-      {maxQuantity}
-      onIncrementQty={incrementQty}
-      onDecrementQty={decrementQty}
+<FormSheet
+  bind:open
+  title="Créer une commande"
+  icon={ShoppingBag}
+  error={errorMessage}
+  isSubmitting={submitting}
+  submitLabel="Créer la commande"
+  submittingLabel="Création…"
+  onSubmit={handleSubmit}
+>
+  <FormField id="order-member" label="Adhérent acheteur">
+    <SearchableCombobox
+      id="order-member"
+      items={memberItems}
+      bind:value={selectedMemberId}
+      placeholder="Choisir un adhérent…"
+      searchPlaceholder="Nom ou licence…"
+      emptyText="Aucun adhérent trouvé."
     />
+  </FormField>
 
-    <ShopCatalogSummary
-      {selectedProduct}
-      {totalPriceCents}
-    />
+  <ShopCatalogProductSelect
+    {paymentMethods}
+    bind:selectedPaymentMethod
+    bind:selectedCategory
+    bind:selectedProductId
+    bind:selectedQuantity
+    {filteredProducts}
+    {selectedProduct}
+    {maxQuantity}
+    onIncrementQty={incrementQty}
+    onDecrementQty={decrementQty}
+  />
 
-
-  </div>
-
-  <Sheet.Footer class="p-6 border-t border-border bg-muted/30 flex justify-end gap-2 shrink-0">
-    <Button
-      type="button"
-      variant="outline"
-      onclick={onClose}
-      disabled={submitting}
-    >
-      Annuler
-    </Button>
-    <Button
-      type="button"
-      onclick={handleOrder}
-      disabled={submitting || blockingReason !== null}
-      class="flex items-center gap-2"
-    >
-      {#if submitting}
-        <div class="w-4 h-4 border-2 border-background border-t-transparent rounded-full animate-spin"></div>
-      {:else}
-        <Check class="w-4 h-4" />
-      {/if}
-      Valider
-    </Button>
-  </Sheet.Footer>
-</form>
+  <ShopCatalogSummary {selectedProduct} {totalPriceCents} />
+</FormSheet>

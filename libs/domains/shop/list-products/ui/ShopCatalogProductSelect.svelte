@@ -47,9 +47,15 @@
   );
 </script>
 
-<!-- Section : Article & Quantité (produit + quantité sur la même ligne) -->
+<!--
+  Article et quantité.
+
+  Côte à côte à la souris, l'un sous l'autre au doigt : un champ par ligne est la
+  règle sur téléphone, et le pas-à-pas de quantité n'y tenait pas dans les 90 px que
+  lui laissait le combobox.
+-->
 <div class="space-y-3 pb-4 border-b border-border">
-  <div class="flex items-end gap-3">
+  <div class="flex flex-col gap-3 md:flex-row md:items-end">
     <div class="flex-1 min-w-0">
       <FormField id="product-select" label="Produit">
         <SearchableCombobox
@@ -61,13 +67,13 @@
     </div>
 
     <div class="shrink-0">
-    <FormField id="quantity-input" label="Qté">
-      <div class="flex items-center border border-border bg-background rounded-xl overflow-hidden shrink-0">
+    <FormField id="quantity-input" label="Quantité">
+      <div class="flex items-center justify-between border border-border bg-background rounded-xl overflow-hidden md:justify-start">
         <Button
           variant="ghost"
           onclick={onDecrementQty}
           disabled={selectedQuantity <= 1 || !selectedProduct || (selectedProduct.trackStock && selectedProduct.stock <= 0)}
-          class="px-3 py-1 h-10 text-sm hover:bg-muted disabled:opacity-30 font-bold rounded-none border-0"
+          class="h-11 px-4 text-base hover:bg-muted disabled:opacity-30 font-bold rounded-none border-0 md:h-10 md:px-3 md:text-sm"
         >
           -
         </Button>
@@ -78,13 +84,13 @@
           max={maxQuantity}
           bind:value={selectedQuantity}
           disabled={!selectedProduct || (selectedProduct.trackStock && selectedProduct.stock <= 0)}
-          class="w-12 h-10 text-center text-sm font-semibold border-0 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent p-0"
+          class="h-11 w-12 text-center text-base font-semibold border-0 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent p-0 md:h-10 md:text-sm"
         />
         <Button
           variant="ghost"
           onclick={onIncrementQty}
           disabled={!selectedProduct || selectedQuantity >= maxQuantity || (selectedProduct.trackStock && selectedProduct.stock <= 0)}
-          class="px-3 py-1 h-10 text-sm hover:bg-muted disabled:opacity-30 font-bold rounded-none border-0"
+          class="h-11 px-4 text-base hover:bg-muted disabled:opacity-30 font-bold rounded-none border-0 md:h-10 md:px-3 md:text-sm"
         >
           +
         </Button>

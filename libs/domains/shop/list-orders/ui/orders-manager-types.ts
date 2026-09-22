@@ -45,8 +45,19 @@ export interface OrderItem {
   product?: Product;
 }
 
+/**
+ * Une saison telle que le relais la sert.
+ *
+ * `id` est la clé primaire ; ce n'est **pas** ce qui identifie une saison hors de la
+ * base. Ce qui circule dans `?season=`, dans `seasonId` et dans les options de
+ * filtrage, c'est le `code` (« 26-27 »). Les confondre laissait le sélecteur de saison
+ * vide et, plus grave, faisait échouer la détection de clôture : une saison close
+ * proposait encore de valider et d'encaisser.
+ */
 export interface Season {
-  id: string;
+  id: number | string;
+  /** Le code de saison. Absent des jeux d'essai anciens, où `id` le portait déjà. */
+  code?: string;
   name: string;
   active: boolean;
   closed?: boolean;
