@@ -29,15 +29,8 @@
   } & GestesDeCreneau = $props();
 </script>
 
-<!--
-  `plain` et non le `grouped` par défaut : sept jours font sept sections, et sept blocs
-  arrondis encadraient chacun trois lignes — un cadre par jour, empilés sur toute la
-  hauteur. Bord à bord, les en-têtes se collent en haut pendant qu'on défile et disent
-  quel jour on lit, ce qu'un cadre ne fait pas.
--->
 <ListView
   items={creneaux}
-  inset="plain"
   sections={(slot) => String(slot.weekday)}
   sectionLabel={(cle) => libelleDeJour(Number(cle))}
   {emptyTitle}

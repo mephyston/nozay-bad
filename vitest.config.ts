@@ -306,6 +306,28 @@ export default defineConfig({
         }
       },
       {
+        // Le pendant `-ui` manquait aussi au domaine de l'agenda : `EventsManager` est
+        // le plus gros composant des deux écrans et n'a jamais eu un seul test, faute
+        // d'un projet pour les collecter. Un fichier posé à côté du composant était
+        // écarté par l'`exclude` ci-dessus sans que rien ne le reprenne.
+        extends: true,
+        plugins: [svelte()],
+        cacheDir: path.resolve(__dirname, 'node_modules/.vite/features-events-ui'),
+        // Sans la condition `browser`, Svelte résout sa build serveur et `mount()` échoue.
+        resolve: {
+          conditions: ['browser'],
+        },
+        test: {
+          name: 'features-events-ui',
+          globals: true,
+          environment: 'jsdom',
+          setupFiles: [path.resolve(__dirname, 'vitest.setup.clock.ts'), path.resolve(__dirname, 'vitest.setup.ts')],
+          root: path.resolve(__dirname, 'libs/domains/events'),
+          include: ['**/ui/**/*.test.ts'],
+          exclude: ['**/node_modules/**'],
+        }
+      },
+      {
         extends: true,
         plugins: [cloudflareTest({ wrangler: { configPath: wranglerConfig } })],
         cacheDir: path.resolve(__dirname, 'node_modules/.vite/features-club-api'),

@@ -73,9 +73,17 @@
     return [...par.values()];
   });
 
+  /*
+    Le bloc groupé se détache par son fond, pas par un trait.
+    
+    La bordure allait bien à une liste d'un seul tenant ; dès qu'il y a des sections,
+    elle en dessine une par groupe — sept cadres empilés pour une semaine de créneaux,
+    douze pour une année d'agenda. Le fond de carte suffit à séparer le bloc de la
+    page, et c'est ce que fait iOS depuis qu'il a abandonné les filets.
+  */
   const classesListe = $derived(
     inset === 'grouped'
-      ? 'divide-y divide-border overflow-hidden rounded-xl border border-border bg-card'
+      ? 'divide-y divide-border overflow-hidden rounded-xl bg-card'
       : 'divide-y divide-border border-y border-border bg-card'
   );
 </script>

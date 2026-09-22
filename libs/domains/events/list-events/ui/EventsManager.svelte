@@ -1,27 +1,43 @@
 <script lang="ts">
-  import { Plus, Edit, Trash2, Eye, Ban, Users, Copy } from '@lucide/svelte';
+  import { Plus, CalendarPlus, Edit } from '@lucide/svelte';
   import {
     Button,
     Input,
-    Select,
     Badge,
-    Card,
     Table,
-    Sheet,
+    ChoiceField,
+    DateTimeField,
     DataTable,
     DataTableToolbar,
     DataTableRowActions,
     DropdownMenu,
-    ErrorAlert,
+    FilterSheet,
     FormField,
     FormSheet,
+    RowActionItems,
+    dockDePage,
     submitForm,
     toast,
     uiConfirm,
     flashAndReload,
-    uiAlert
+    uiAlert,
+    type SwipeAction
   } from '@nba/ui';
   import { EVENT_CATEGORY_LABELS, EVENT_REGISTRATION_LABELS } from '../../shared/schema';
+  import EventsList from './EventsList.svelte';
+  import EventRegistrationsSheet from './EventRegistrationsSheet.svelte';
+  import {
+    evenementsFiltres,
+    gestesDEvenement,
+    libelleDeCategorie,
+    ligneDEvenement,
+    quand,
+    signalementsDEvenement,
+    PERIODES_FILTRE,
+    STATUTS_FILTRE,
+    type PeriodeFiltre,
+    type StatutFiltre
+  } from './events-row-model';
 
   interface EventRow {
     id: number; title: string; startsAt: string; endsAt: string | null; venueLabel: string | null;
@@ -85,26 +101,57 @@
     guests: registrations.reduce((total, row) => total + row.guests, 0)
   });
 
-  const formatter = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'medium', timeStyle: 'short' });
-  const when = (v: string) => formatter.format(new Date(`${v}:00`));
-
-  const STATUS: Record<EventRow['status'], { label: string; variant: 'primary-soft' | 'outline' | 'destructive' }> = {
-    published: { label: 'En ligne', variant: 'primary-soft' },
-    draft: { label: 'Brouillon', variant: 'outline' },
-    cancelled: { label: 'Annulé', variant: 'destructive' }
-  };
+  let statut = $state<StatutFiltre>('tous');
+  let periode = $state<PeriodeFiltre>('tous');
+  let filtresOuverts = $state(false);
 
   const filteredEvents = $derived(
-    events.filter((row: EventRow) => {
-      const term = searchTerm.trim().toLowerCase();
-      if (!term) return true;
-      return (
-        row.title.toLowerCase().includes(term) ||
-        EVENT_CATEGORY_LABELS[row.category].toLowerCase().includes(term) ||
-        (row.venueLabel ?? '').toLowerCase().includes(term)
-      );
-    })
+    evenementsFiltres(events as EventRow[], { recherche: searchTerm, statut, periode })
   );
+
+  const droits = $derived({ canWrite, canDelete, canReadRegistrations });
+
+  /* Les gestes, dans le vocabulaire du modèle : le menu du tableau et le balayage de
+     la liste les rendent tous deux, à partir d'une seule déclaration. */
+  const gestes = {
+    onEdit: (e: EventRow) => startEdit(e),
+    onSetStatus: (e: EventRow, s: EventRow['status']) => setStatus(e, s),
+    onRegistrations: (e: EventRow) => openRegistrations(e),
+    onDelete: (e: EventRow) => remove(e)
+  };
+
+  const critereActifs = $derived([
+    ...(statut === 'tous'
+      ? []
+      : [
+          {
+            id: 'statut',
+            label: STATUTS_FILTRE.find((o) => o.value === statut)?.label ?? '',
+            onRemove: () => (statut = 'tous' as StatutFiltre)
+          }
+        ]),
+    ...(periode === 'tous'
+      ? []
+      : [
+          {
+            id: 'periode',
+            label: PERIODES_FILTRE.find((o) => o.value === periode)?.label ?? '',
+            onRemove: () => (periode = 'tous' as PeriodeFiltre)
+          }
+        ])
+  ]);
+
+  /*
+    Créer descend dans la barre du bas. Le bouton vivait en haut d'une barre qui défile
+    avec la liste, et l'agenda charge le passé : il sortait de l'écran au deuxième mois.
+  */
+  $effect(() => {
+    if (!canWrite) return;
+    const actions: SwipeAction[] = [
+      { id: 'nouveau', label: 'Nouvel événement', icon: CalendarPlus, run: () => openAddForm() }
+    ];
+    return dockDePage.declarerActions(actions, { icon: Plus, label: 'Nouvel événement' });
+  });
 
   async function post<T = unknown>(body: unknown, fallback: string): Promise<T> {
     const response = await fetch(endpoint, {
@@ -158,9 +205,9 @@
    * ressaisir son heure de fin. Le décalage est **visible avant l'enregistrement**,
    * dans le champ voisin — rien ne bouge en silence, et il reste corrigeable.
    */
-  function onStartChange(event: Event) {
-    const next = (event.currentTarget as HTMLInputElement).value;
-
+  /** Déplacer le début décale la fin d'autant : la durée d'un rendez-vous ne change pas
+      parce qu'on le reporte. */
+  function decalerLaFin(next: string) {
     if (endsAt && previousStart && next) {
       const delta = new Date(`${next}:00`).getTime() - new Date(`${previousStart}:00`).getTime();
       const shifted = new Date(new Date(`${endsAt}:00`).getTime() + delta);
@@ -306,20 +353,29 @@
 
 <DataTable
   data={filteredEvents}
+  mobileSpacing="list"
   emptyTitle="Agenda vide"
-  emptyDescription={searchTerm.trim()
-    ? 'Aucun événement ne correspond à votre recherche.'
+  emptyDescription={searchTerm.trim() || statut !== 'tous' || periode !== 'tous'
+    ? 'Aucun événement ne correspond à ces critères.'
     : 'Ajoutez les compétitions et animations de la saison.'}
 >
   {#snippet toolbar()}
     <DataTableToolbar
       bind:searchValue={searchTerm}
       searchPlaceholder="Rechercher un événement..."
-      hasFilters={false}
+      dockSearch
+      hasFilters={true}
+      filtersActive={statut !== 'tous' || periode !== 'tous'}
+      onOpenFilters={() => (filtresOuverts = true)}
+      activeFilters={critereActifs}
     >
+      {#snippet filters()}
+        {@render criteres()}
+      {/snippet}
       {#snippet actions()}
+        <!-- Sur téléphone, ce geste vit dans la barre du bas. -->
         {#if canWrite}
-          <Button onclick={openAddForm} class="h-9 shrink-0 gap-1.5 font-bold">
+          <Button onclick={openAddForm} class="hidden h-9 shrink-0 gap-1.5 font-bold md:flex">
             <Plus class="h-4 w-4" />
             <span>Nouvel événement</span>
           </Button>
@@ -329,71 +385,15 @@
   {/snippet}
 
   {#snippet mobileView()}
-    {#each filteredEvents as row (row.id)}
-      <Card.Root>
-        <Card.Content class="space-y-3 p-4">
-          <div class="flex items-start justify-between gap-2">
-            <div class="min-w-0">
-              <h4 class="text-sm font-bold text-foreground">{row.title}</h4>
-              <p class="mt-1 text-xs text-muted-foreground">{when(row.startsAt)}</p>
-              <p class="text-xs text-muted-foreground">
-                {EVENT_CATEGORY_LABELS[row.category]}{#if row.venueLabel} · {row.venueLabel}{/if}
-              </p>
-              {#if row.registration !== 'none'}
-                <p class="mt-1 text-xs text-muted-foreground">
-                  Inscriptions {row.registration === 'open' ? 'ouvertes' : 'closes'} ·
-                  {row.registrationCount} inscrit{row.registrationCount > 1 ? 's' : ''}
-                  {#if row.attendeeCount !== row.registrationCount}
-                    ({row.attendeeCount} personnes)
-                  {/if}
-                </p>
-              {/if}
-            </div>
-            <Badge variant={STATUS[row.status].variant} size="xs">{STATUS[row.status].label}</Badge>
-          </div>
-
-          {#if canWrite || canDelete || canReadRegistrations}
-            <!-- Jusqu'à quatre actions quand les inscriptions sont ouvertes : on autorise le passage à la ligne. -->
-            <div class="flex flex-wrap items-center justify-end gap-2 border-t border-border/50 pt-2">
-              {#if canWrite}
-                <Button variant="outline" size="sm" onclick={() => startEdit(row)} class="h-8 flex-1 basis-[40%] gap-1.5 text-xs font-semibold">
-                  <Edit class="h-3.5 w-3.5" />
-                  <span>Modifier</span>
-                </Button>
-                {#if row.status !== 'published'}
-                  <Button variant="outline" size="sm" onclick={() => setStatus(row, 'published')} class="h-8 flex-1 basis-[40%] gap-1.5 text-xs font-semibold">
-                    <Eye class="h-3.5 w-3.5" />
-                    <span>Publier</span>
-                  </Button>
-                {:else}
-                  <Button variant="outline" size="sm" onclick={() => setStatus(row, 'cancelled')} class="h-8 flex-1 basis-[40%] gap-1.5 text-xs font-semibold">
-                    <Ban class="h-3.5 w-3.5" />
-                    <span>Annuler</span>
-                  </Button>
-                {/if}
-              {/if}
-              {#if canReadRegistrations && row.registration !== 'none'}
-                <Button variant="outline" size="sm" onclick={() => openRegistrations(row)} class="h-8 flex-1 basis-[40%] gap-1.5 text-xs font-semibold">
-                  <Users class="h-3.5 w-3.5" />
-                  <span>Inscrits</span>
-                </Button>
-              {/if}
-              {#if canDelete}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onclick={() => remove(row)}
-                  class="h-8 flex-1 basis-[40%] gap-1.5 border-destructive/30 text-xs font-semibold text-destructive hover:bg-destructive/10"
-                >
-                  <Trash2 class="h-3.5 w-3.5" />
-                  <span>Supprimer</span>
-                </Button>
-              {/if}
-            </div>
-          {/if}
-        </Card.Content>
-      </Card.Root>
-    {/each}
+    <EventsList
+      evenements={filteredEvents}
+      {droits}
+      {...gestes}
+      emptyTitle="Agenda vide"
+      emptyDescription={searchTerm.trim() || statut !== 'tous' || periode !== 'tous'
+        ? 'Aucun événement ne correspond à ces critères.'
+        : 'Ajoutez les compétitions et animations de la saison.'}
+    />
   {/snippet}
 
   {#snippet header()}
@@ -409,66 +409,35 @@
   {#snippet row(item)}
     <Table.Row>
       <Table.Cell class="font-medium">{item.title}</Table.Cell>
-      <Table.Cell class="text-muted-foreground">{when(item.startsAt)}</Table.Cell>
-      <Table.Cell>{EVENT_CATEGORY_LABELS[item.category]}</Table.Cell>
+      <Table.Cell class="text-muted-foreground">{quand(item.startsAt)}</Table.Cell>
+      <Table.Cell>{libelleDeCategorie(item.category)}</Table.Cell>
       <Table.Cell class="text-muted-foreground">{item.venueLabel ?? '—'}</Table.Cell>
       <Table.Cell>
-        <Badge variant={STATUS[item.status].variant}>{STATUS[item.status].label}</Badge>
+        <!-- Les mêmes pastilles que la liste au doigt : un écran, un vocabulaire.
+             « En ligne » est le cas courant et ne s'annonce pas. -->
+        <div class="flex flex-wrap items-center gap-1.5">
+          {#each signalementsDEvenement(item) as pastille (pastille.label)}
+            <Badge variant={pastille.variant} size="xs">{pastille.label}</Badge>
+          {/each}
+        </div>
       </Table.Cell>
       <Table.Cell>
-        {#if item.registration === 'none'}
+        {@const l = ligneDEvenement(item)}
+        {#if l.valeur === undefined}
           <span class="text-muted-foreground">—</span>
         {:else}
-          <div class="flex flex-col gap-1">
-            <Badge variant={item.registration === 'open' ? 'primary-soft' : 'outline'} size="xs">
-              {item.registration === 'open' ? 'Ouvertes' : 'Closes'}
-            </Badge>
-            <span class="text-muted-foreground text-xs">
-              {item.registrationCount} inscrit{item.registrationCount > 1 ? 's' : ''}
-              {#if item.attendeeCount !== item.registrationCount}
-                · {item.attendeeCount} personnes
-              {/if}
-            </span>
-          </div>
+          <span class="text-foreground tabular-nums">{l.valeur}</span>
+          <span class="text-muted-foreground text-xs"> {l.legende}</span>
         {/if}
       </Table.Cell>
       <Table.Cell class="relative text-right">
-        <DataTableRowActions>
-          <DropdownMenu.Label>Actions</DropdownMenu.Label>
-          {#if canWrite}
-            <DropdownMenu.Item onclick={() => startEdit(item)} class="cursor-pointer">
-              <Edit class="mr-2 h-3.5 w-3.5" />
-              Modifier
-            </DropdownMenu.Item>
-            {#if item.status !== 'published'}
-              <DropdownMenu.Item onclick={() => setStatus(item, 'published')} class="cursor-pointer">
-                <Eye class="mr-2 h-3.5 w-3.5" />
-                Publier
-              </DropdownMenu.Item>
-            {/if}
-            {#if item.status === 'published'}
-              <DropdownMenu.Item onclick={() => setStatus(item, 'cancelled')} class="cursor-pointer">
-                <Ban class="mr-2 h-3.5 w-3.5" />
-                Annuler l'événement
-              </DropdownMenu.Item>
-            {/if}
-          {/if}
-          {#if canReadRegistrations && item.registration !== 'none'}
-            <DropdownMenu.Item onclick={() => openRegistrations(item)} class="cursor-pointer">
-              <Users class="mr-2 h-3.5 w-3.5" />
-              Voir les inscrits
-            </DropdownMenu.Item>
-          {/if}
-          {#if canDelete}
-            <DropdownMenu.Item
-              onclick={() => remove(item)}
-              class="cursor-pointer text-destructive focus:text-destructive"
-            >
-              <Trash2 class="mr-2 h-3.5 w-3.5" />
-              Supprimer
-            </DropdownMenu.Item>
-          {/if}
-        </DataTableRowActions>
+        {@const actions = gestesDEvenement(item, droits, gestes)}
+        {#if actions.length > 0}
+          <DataTableRowActions>
+            <DropdownMenu.Label>Actions</DropdownMenu.Label>
+            <RowActionItems {actions} item={item} />
+          </DataTableRowActions>
+        {/if}
       </Table.Cell>
     </Table.Row>
   {/snippet}
@@ -492,23 +461,31 @@
   </FormField>
 
   <FormField id="ev-start" label="Début">
-    <Input id="ev-start" type="datetime-local" value={startsAt} onchange={onStartChange} />
+    <DateTimeField
+      id="ev-start"
+      label="Début"
+      type="datetime-local"
+      value={startsAt}
+      onChange={decalerLaFin}
+    />
   </FormField>
 
-  <FormField id="ev-end" label="Fin (facultative)">
-    <Input id="ev-end" type="datetime-local" bind:value={endsAt} min={startsAt} />
-    <p class="text-muted-foreground mt-1 text-xs">
-      À laisser vide pour un rendez-vous sans heure de fin. Déplacer le début décale la
-      fin d'autant, en conservant la durée — la valeur reste modifiable avant d'enregistrer.
-    </p>
+  <FormField
+    id="ev-end"
+    label="Fin"
+    hint="Facultative : à laisser vide pour un rendez-vous sans heure de fin. Déplacer le début décale la fin d'autant, en conservant la durée."
+  >
+    <DateTimeField id="ev-end" label="Fin" type="datetime-local" bind:value={endsAt} min={startsAt} />
   </FormField>
 
   <FormField id="ev-cat" label="Catégorie">
-    <Select id="ev-cat" bind:value={category}>
-      {#each Object.entries(EVENT_CATEGORY_LABELS) as [value, text]}
-        <option {value}>{text}</option>
-      {/each}
-    </Select>
+    <ChoiceField
+      id="ev-cat"
+      label="Catégorie"
+      value={category}
+      onChange={(v) => (category = v as typeof category)}
+      options={Object.entries(EVENT_CATEGORY_LABELS).map(([value, label]) => ({ value, label }))}
+    />
   </FormField>
 
   <FormField id="ev-venue" label="Lieu">
@@ -521,17 +498,18 @@
   </FormField>
 
   {#if editingId}
-    <FormField id="ev-registration" label="Inscriptions">
-      <Select id="ev-registration" bind:value={registration}>
-        {#each Object.entries(EVENT_REGISTRATION_LABELS) as [value, text]}
-          <option {value}>{text}</option>
-        {/each}
-      </Select>
-      <p class="text-muted-foreground mt-1 text-xs">
-        Ouvertes, les adhérents s'inscrivent depuis leur espace en indiquant s'ils
-        viennent accompagnés. Closes, la liste est arrêtée : plus personne ne s'ajoute
-        ni ne se retire, mais elle reste consultable ici.
-      </p>
+    <FormField
+      id="ev-registration"
+      label="Inscriptions"
+      hint="Ouvertes, les adhérents s'inscrivent depuis leur espace en indiquant s'ils viennent accompagnés. Closes, la liste est arrêtée : plus personne ne s'ajoute ni ne se retire, mais elle reste consultable ici."
+    >
+      <ChoiceField
+        id="ev-registration"
+        label="Inscriptions"
+        value={registration}
+        onChange={(v) => (registration = v as typeof registration)}
+        options={Object.entries(EVENT_REGISTRATION_LABELS).map(([value, label]) => ({ value, label }))}
+      />
     </FormField>
   {/if}
 </FormSheet>
@@ -541,58 +519,46 @@
   détourné — rien à soumettre ici, et un bouton « Enregistrer » sans effet serait un
   piège.
 -->
-<Sheet.Root bind:open={showRegistrations}>
-  <Sheet.Content size="md" class="overflow-y-auto">
-    <Sheet.Header>
-      <Sheet.Title class="flex items-center gap-2">
-        <Users class="h-5 w-5 text-primary" />
-        Inscrits
-      </Sheet.Title>
-      <Sheet.Description>
-        {registrationsOf?.title ?? ''}
-      </Sheet.Description>
-    </Sheet.Header>
+<EventRegistrationsSheet
+  bind:open={showRegistrations}
+  titre={registrationsOf?.title ?? ''}
+  inscrits={registrations}
+  chargement={loadingRegistrations}
+  erreur={registrationsError}
+  onCopier={copyRegistrations}
+/>
 
-    <div class="space-y-4 px-4 py-4">
-      {#if loadingRegistrations}
-        <p class="text-muted-foreground text-sm">Chargement…</p>
-      {:else if registrationsError}
-        <ErrorAlert message={registrationsError} />
-      {:else if registrations.length === 0}
-        <p class="text-muted-foreground text-sm">Personne ne s'est encore inscrit.</p>
-      {:else}
-        <Table.Root>
-          <Table.Header>
-            <Table.Row>
-              <Table.Head>Nom</Table.Head>
-              <Table.Head>Prénom</Table.Head>
-              <Table.Head class="text-right">Accompagnants</Table.Head>
-            </Table.Row>
-          </Table.Header>
-          <Table.Body>
-            {#each registrations as person (person.id)}
-              <Table.Row>
-                <Table.Cell class="font-medium">{person.lastName}</Table.Cell>
-                <Table.Cell>{person.firstName}</Table.Cell>
-                <Table.Cell class="text-right">{person.guests > 0 ? person.guests : '—'}</Table.Cell>
-              </Table.Row>
-            {/each}
-          </Table.Body>
-        </Table.Root>
+<!-- Les critères se posent derrière la loupe, jamais ailleurs. -->
+{#snippet criteres()}
+  <FormField id="filter-statut" label="Statut">
+    <ChoiceField
+      id="filter-statut"
+      label="Statut"
+      value={statut}
+      onChange={(v) => (statut = v as StatutFiltre)}
+      options={STATUTS_FILTRE}
+    />
+  </FormField>
+  <FormField id="filter-periode" label="Dates">
+    <ChoiceField
+      id="filter-periode"
+      label="Dates"
+      value={periode}
+      onChange={(v) => (periode = v as PeriodeFiltre)}
+      options={PERIODES_FILTRE}
+    />
+  </FormField>
+{/snippet}
 
-        <div class="border-border flex items-center justify-between gap-3 border-t pt-3">
-          <p class="text-sm font-medium">
-            {registrationTotals.members} inscrit{registrationTotals.members > 1 ? 's' : ''},
-            <span class="text-primary">
-              {registrationTotals.members + registrationTotals.guests} personnes
-            </span>
-          </p>
-          <Button variant="outline" size="sm" onclick={copyRegistrations} class="h-8 gap-1.5 text-xs font-semibold">
-            <Copy class="h-3.5 w-3.5" />
-            <span>Copier la liste</span>
-          </Button>
-        </div>
-      {/if}
-    </div>
-  </Sheet.Content>
-</Sheet.Root>
+<FilterSheet
+  bind:open={filtresOuverts}
+  description="L'agenda charge aussi le passé : la période le ramène à ce qui vient."
+  resultCount={filteredEvents.length}
+  itemName="événement"
+  onReset={() => {
+    statut = 'tous';
+    periode = 'tous';
+  }}
+>
+  {@render criteres()}
+</FilterSheet>
