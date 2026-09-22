@@ -1,6 +1,6 @@
 <script lang="ts">
   import { tick } from 'svelte';
-  import { BarChart3, CalendarRange, ChevronDown, Printer } from '@lucide/svelte';
+  import { BarChart3, ChevronDown, Printer } from '@lucide/svelte';
   import {
     Tabs,
     Button,
@@ -246,16 +246,23 @@
         run: () => printSection('graph-realise')
       });
     }
-    if (seasonOptions.length > 1) {
-      actions.push({
-        id: 'exercice',
-        label: "Changer d'exercice",
-        icon: CalendarRange,
-        run: () => (exerciceOuvert = true)
-      });
-    }
     if (actions.length === 0) return;
-    return dockDePage.declarerActions(actions);
+    // Ces gestes impriment : un « + » y annoncerait une création qui n'existe pas.
+    return dockDePage.declarerActions(actions, { icon: Printer, label: 'Imprimer' });
+  });
+
+  /*
+    L'exercice n'est ni une recherche ni une création : il dit ce qu'on regarde. Il a
+    donc sa propre pilule dans la barre, qui affiche la valeur courante — le `+` ne la
+    matérialisait pas, et un exercice qu'on ne voit pas ne se vérifie jamais.
+  */
+  $effect(() => {
+    if (seasonOptions.length <= 1) return;
+    return dockDePage.declarerPortee({
+      label: 'Exercice',
+      valeur: selectedSeason,
+      ouvrir: () => (exerciceOuvert = true)
+    });
   });
 
   function choisirExercice(code: string) {

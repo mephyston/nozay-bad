@@ -53,9 +53,41 @@ export type ActionDeListe = {
   run: () => void;
 };
 
+/**
+ * La **portée** de l'écran : ce qu'on regarde, et non ce qu'on y cherche.
+ *
+ * L'exercice d'un rapport financier en est l'exemple : il ne réduit pas ce qu'on lit
+ * — ce que fait la loupe — et il ne crée rien — ce que fait le `+`. Le loger dans l'un
+ * ou l'autre brouille les deux : une barre du bas perd son sens dès qu'un de ses
+ * boutons devient « divers ». Il lui faut donc sa place, et elle affiche la valeur
+ * courante, parce qu'une portée qu'on ne voit pas ne se vérifie jamais.
+ */
+export type PorteeDeListe = {
+  /** Nom accessible du bouton : « Exercice », « Compte ». */
+  label: string;
+  /** Ce qui s'affiche dans la pilule. Court : « 25-26 », pas « Saison 2025-2026 ». */
+  valeur: string;
+  ouvrir: () => void;
+};
+
+/**
+ * Comment le bouton d'actions se présente quand il en porte plusieurs.
+ *
+ * Par défaut un `+` : c'est la vérité des listes, où ces actions créent. Elle ne l'est
+ * plus sur un rapport financier, dont les deux gestes impriment — un `+` y annonce une
+ * création qui n'existe pas. L'écran qui sait le dit.
+ */
+export type GroupeDActions = {
+  icon?: unknown;
+  /** Nom accessible du bouton : « Ajouter » par défaut. */
+  label?: string;
+};
+
 export type EtatDuDock = {
   recherche: RechercheDeListe | null;
+  portee: PorteeDeListe | null;
   actions: ActionDeListe[];
+  groupe: GroupeDActions | null;
 };
 
 const CLE = Symbol.for('nba:dock-de-page');
@@ -63,7 +95,7 @@ const EVENEMENT = 'nba:dock-de-page';
 
 function etat(): EtatDuDock {
   const hote = globalThis as unknown as Record<symbol, EtatDuDock | undefined>;
-  hote[CLE] ??= { recherche: null, actions: [] };
+  hote[CLE] ??= { recherche: null, portee: null, actions: [], groupe: null };
   return hote[CLE]!;
 }
 
@@ -96,12 +128,25 @@ export const dockDePage = {
     };
   },
 
-  declarerActions(liste: ActionDeListe[]): () => void {
+  declarerPortee(p: PorteeDeListe): () => void {
+    etat().portee = p;
+    annoncer();
+    return () => {
+      if (etat().portee === p) {
+        etat().portee = null;
+        annoncer();
+      }
+    };
+  },
+
+  declarerActions(liste: ActionDeListe[], groupe?: GroupeDActions): () => void {
     etat().actions = liste;
+    etat().groupe = groupe ?? null;
     annoncer();
     return () => {
       if (etat().actions === liste) {
         etat().actions = [];
+        etat().groupe = null;
         annoncer();
       }
     };

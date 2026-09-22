@@ -46,19 +46,30 @@
     bundler duplique le module qui le porterait autrement.
   */
   let recherche = $state(dockDePage.lire().recherche);
+  let portee = $state(dockDePage.lire().portee);
   let actions = $state(dockDePage.lire().actions);
+  let groupe = $state(dockDePage.lire().groupe);
 
   $effect(() =>
     dockDePage.sAbonner(() => {
       const etat = dockDePage.lire();
       recherche = etat.recherche;
+      portee = etat.portee;
       actions = etat.actions;
+      groupe = etat.groupe;
     })
   );
-  /** Une seule action garde son icône ; plusieurs s'effacent derrière un « + ». */
-  const IconeAction = $derived(actions.length === 1 ? ((actions[0].icon as any) ?? Plus) : Plus);
+  /**
+   * Une seule action garde son icône ; plusieurs s'effacent derrière un « + ».
+   *
+   * Sauf si l'écran dit autre chose : un `+` annonce une création, ce que deux boutons
+   * d'impression ne sont pas.
+   */
+  const IconeAction = $derived(
+    actions.length === 1 ? ((actions[0].icon as any) ?? Plus) : ((groupe?.icon as any) ?? Plus)
+  );
   const libelleAction = $derived(
-    actions.length === 1 ? actions[0].label : 'Ajouter'
+    actions.length === 1 ? actions[0].label : (groupe?.label ?? 'Ajouter')
   );
   const CERCLE_ACTION = $derived(
     'dock-circle flex h-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary text-primary-foreground shadow-lg transition-[width,opacity] duration-300 ' +
@@ -146,6 +157,29 @@
     sauterait d'un coup et il n'y aurait plus rien à animer.
   -->
   <div class="relative flex min-w-0 flex-1 items-end justify-end gap-3">
+    {#if portee}
+      <!--
+        La portée : ce qu'on regarde, affiché en clair.
+
+        Ni la loupe — qui réduit — ni le `+` — qui crée. Elle affiche sa valeur plutôt
+        qu'une icône, parce qu'une portée qu'on ne voit pas ne se vérifie jamais : sur
+        un rapport, savoir quel exercice on lit vaut mieux que de savoir qu'on peut en
+        changer.
+      -->
+      <button
+        type="button"
+        class="glass-surface dock-circle flex h-14 shrink-0 items-center justify-center overflow-hidden rounded-full px-4 text-sm font-semibold text-foreground transition-[max-width,opacity,padding] duration-300 {open
+          ? 'pointer-events-none max-w-0 px-0 opacity-0'
+          : 'max-w-40'}"
+        aria-label="{portee.label} : {portee.valeur}"
+        aria-hidden={open}
+        tabindex={open ? -1 : 0}
+        onclick={portee.ouvrir}
+      >
+        <span class="truncate">{portee.valeur}</span>
+      </button>
+    {/if}
+
     {#if recherche}
       <!--
         La coquille porte la largeur, son contenu la remplit : de 3,5 rem à toute
