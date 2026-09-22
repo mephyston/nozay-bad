@@ -280,4 +280,101 @@ describe('TransactionLedger Component', () => {
     unmount(component);
     target.remove();
   });
+  /*
+    La vue au doigt. Elle est rendue en même temps que la table — c'est la feuille de
+    style qui choisit —, donc interrogeable ici : les rangées portent `data-list-row`,
+    les en-têtes de section le mois et son solde de clôture, et les actions révélables
+    vivent dans `[data-swipe-track]`.
+  */
+  const sansEspacesInsecables = (t: string | null) => (t ?? '').replace(/[\u00a0\u202f]/g, ' ');
+
+  const libellesDeBalayage = (target: HTMLElement, rang = 0) => {
+    const pistes = Array.from(target.querySelectorAll('[data-swipe-track]'));
+    if (pistes.length <= rang) return [];
+    return Array.from(pistes[rang].querySelectorAll('button')).map((b) => (b.textContent || '').trim());
+  };
+
+  it('groupe les écritures par mois et porte le solde de clôture en en-tête', () => {
+    const { target, component } = monter({});
+
+    const enTetes = Array.from(target.querySelectorAll('h3')).map((h) => sansEspacesInsecables(h.textContent));
+    // La liste descend dans le temps : octobre d'abord, et chaque mois porte le solde
+    // de sa ligne la plus récente — sa clôture.
+    expect(enTetes.some((t) => /octobre 2026/i.test(t) && t.includes('1 045,00'))).toBe(true);
+    expect(enTetes.some((t) => /septembre 2026/i.test(t) && t.includes('1 000,00'))).toBe(true);
+
+    unmount(component);
+    target.remove();
+  });
+
+  it('retire le solde des en-têtes dès que la liste est filtrée', () => {
+    const { target, component } = monter({ searchQuery: 'Martin' });
+    const enTetes = Array.from(target.querySelectorAll('h3')).map((h) => sansEspacesInsecables(h.textContent));
+    expect(enTetes.some((t) => /octobre 2026/i.test(t))).toBe(true);
+    expect(enTetes.some((t) => t.includes('1 045,00'))).toBe(false);
+    /*
+      À la place du solde, le compte — mais avec son unité. Un nombre nu à cet endroit
+      se lirait comme une somme, puisque c'en est une le reste du temps.
+    */
+    expect(enTetes.some((t) => /octobre 2026 1 écriture$/i.test(t))).toBe(true);
+    unmount(component);
+    target.remove();
+  });
+
+  it('projette une écriture en une rangée : libellé, date, catégorie, montant signé, solde', () => {
+    const { target, component } = monter({});
+
+    const rangees = Array.from(target.querySelectorAll('[data-list-row]'));
+    expect(rangees.length).toBeGreaterThan(0);
+    const texte = sansEspacesInsecables(rangees[0].textContent);
+    expect(texte).toContain('Cotisation Martin');
+    expect(texte).toContain('02/10 · adhesions');
+    expect(texte).toContain('+45,00');
+    expect(texte).toContain('1 045,00');
+
+    // La cible du retour depuis le rapprochement.
+    expect(target.querySelector('#tx-mobile-1')).not.toBeNull();
+
+    unmount(component);
+    target.remove();
+  });
+
+  it('révèle au balayage l’édition puis la suppression, la réversible en tête', () => {
+    const { target, component } = monter({});
+    expect(libellesDeBalayage(target)).toEqual(['Éditer', 'Supprimer']);
+    unmount(component);
+    target.remove();
+  });
+
+  it("n'offre plus rien au balayage sur une saison clôturée", () => {
+    const { target, component } = monter({
+      seasons: [{ id: '25-26', name: 'Saison 2025-2026', active: true, closed: true }]
+    });
+    expect(libellesDeBalayage(target)).toEqual([]);
+    unmount(component);
+    target.remove();
+  });
+
+  it('replie une opération ventilée au lieu d’aligner ses lignes', () => {
+    const ventilee = [
+      { id: 10, seasonId: '25-26', type: 'recette', accountId: 'current', category: 'adhesions', amount: 3000, date: '2026-10-02', paymentMethod: 'virement', description: 'Part cotisation', reference: null, bankStatementLineId: 77, runningBalanceCents: 105000 },
+      { id: 11, seasonId: '25-26', type: 'recette', accountId: 'current', category: 'adhesions', amount: 2000, date: '2026-10-02', paymentMethod: 'virement', description: 'Part boutique', reference: null, bankStatementLineId: 77 }
+    ];
+    const { target, component } = monter({ transactions: ventilee });
+
+    const texte = sansEspacesInsecables(target.textContent);
+    expect(texte).toContain('Opération ventilée');
+    expect(texte).toContain('2 lignes');
+    // Repliée par défaut : les deux lignes filles ne sont pas encore à l'écran.
+    expect(target.querySelectorAll('[data-list-row]').length).toBe(1);
+
+    const replier = target.querySelector('[data-list-row] button[aria-label="Déplier"]') as HTMLButtonElement;
+    expect(replier, 'le groupe doit porter un chevron de repli').not.toBeNull();
+    replier.click();
+    flushSync();
+    expect(target.querySelectorAll('[data-list-row]').length).toBe(3);
+
+    unmount(component);
+    target.remove();
+  });
 });

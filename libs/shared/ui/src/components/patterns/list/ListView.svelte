@@ -12,6 +12,7 @@
     listRow,
     sections,
     sectionLabel = (cle: string) => cle,
+    sectionValue,
     inset = 'grouped',
     stickyHeaders,
     isLoading = false,
@@ -28,6 +29,11 @@
     /** Clé de regroupement. Absente, la liste est plate. L'ordre d'apparition fait foi. */
     sections?: (item: T) => string;
     sectionLabel?: (cle: string) => string;
+    /**
+     * L'agrégat affiché à droite de l'en-tête, à la place du compte : un total, un
+     * solde de fin de mois. Reçoit la clé de section.
+     */
+    sectionValue?: (cle: string) => string | undefined;
     /**
      * `grouped` — chaque section est un bloc arrondi précédé de son en-tête, le
      * fond de page transparaît entre les blocs. C'est la forme par défaut.
@@ -88,7 +94,12 @@
       <!-- L'en-tête et sa liste restent solidaires ; `space-y-5` ne sépare que les sections. -->
       <div class={sections ? 'space-y-1.5' : ''}>
         {#if sections}
-          <ListSection label={groupe.libelle} sticky={collant} count={groupe.elements.length} />
+          <ListSection
+            label={groupe.libelle}
+            sticky={collant}
+            count={groupe.elements.length}
+            value={sectionValue?.(groupe.cle)}
+          />
         {/if}
         <!--
           Le balayage s'installe sur la liste, pas sur chaque ligne : quatre écouteurs

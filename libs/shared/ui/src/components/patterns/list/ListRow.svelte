@@ -7,6 +7,7 @@
   import { TONE_CLASS, type Tone, type SwipeAction } from './list-types.js';
 
   let {
+    id,
     item,
     href,
     onclick,
@@ -28,6 +29,12 @@
     class: className,
     children
   }: {
+    /**
+     * Identifiant de la rangée, pour qu'un écran puisse la viser — y revenir après un
+     * rechargement, la mettre en évidence. Le grand livre en a besoin : on y retourne
+     * depuis le rapprochement, sur une écriture précise.
+     */
+    id?: string;
     item?: T;
     href?: string;
     onclick?: (event: MouseEvent) => void;
@@ -78,8 +85,13 @@
      * Le chevron de queue dit que la ligne mène quelque part — fiche de détail ou
      * formulaire. Par défaut dès qu'elle est actionnable ; à mettre à `false` quand
      * l'appui ne fait qu'un changement sur place.
+     *
+     * `'none'` n'affiche rien mais **réserve la place**, comme `disclosure`. C'est ce
+     * qu'il faut dans une liste qui mêle des lignes navigables et des lignes qui ne le
+     * sont pas : sans cela, les montants des unes sont décalés de 16 px par rapport
+     * aux autres, et la colonne de droite cesse d'être une colonne.
      */
-    chevron?: boolean;
+    chevron?: boolean | 'none';
     selected?: boolean;
     disabled?: boolean;
     class?: string;
@@ -151,12 +163,15 @@
     </div>
   {/if}
 
-  {#if chevron}
+  {#if chevron === 'none'}
+    <span class="size-4 shrink-0" aria-hidden="true"></span>
+  {:else if chevron}
     <ChevronRight class="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
   {/if}
 {/snippet}
 
 <li
+  {id}
   data-list-row
   data-context-menu={actions.length > 0 ? '' : undefined}
   class={cn('relative bg-card', actions.length > 0 && 'overflow-hidden', className)}

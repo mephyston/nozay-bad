@@ -141,8 +141,9 @@ describe('AccountManager', () => {
     // La date du formulaire est celle du débit ; celle du crédit, distincte, s'affiche à part.
     expect((document.body.querySelector('#date-input') as HTMLInputElement).value).toBe('2026-07-13');
     expect((document.body.querySelector('#destination-date-input') as HTMLInputElement).value).toBe('2026-07-15');
-    expect(document.body.textContent).toContain('Compte Source');
-    expect(document.body.textContent).toContain('Compte Destinataire');
+    // Casse de phrase, comme les autres libellés du formulaire (« Compte financier »).
+    expect(document.body.textContent).toContain('Compte source');
+    expect(document.body.textContent).toContain('Compte destinataire');
   });
 
   it('ne propose pas « Modifier » sans le droit d\'écriture, mais garde « Supprimer »', async () => {

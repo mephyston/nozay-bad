@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { AlertCircle } from '@lucide/svelte';
-  import { Button, Input, Sheet, Label, Alert, Combobox, SearchableCombobox, FormField, toSeasonOptions } from '@nba/ui';
+  import { ArrowLeftRight, Minus, Plus } from '@lucide/svelte';
+  import { FormSheet, Input, SearchableCombobox, FormField, toSeasonOptions } from '@nba/ui';
   import type { Season, Category } from './ledger-types';
   import { toAccountOptions, type AccountLike } from '../../../shared/account-labels';
   import { membersForSeason, toMemberItems, type MemberLike } from './member-options';
@@ -93,6 +93,38 @@
       memberDroppedBySeason = true;
     }
   });
+  const NATURES = {
+    recette: { indefini: 'une recette', defini: 'la recette', icone: Plus },
+    depense: { indefini: 'une dépense', defini: 'la dépense', icone: Minus },
+    transfert: { indefini: 'un virement interne', defini: 'le virement interne', icone: ArrowLeftRight }
+  } as const;
+
+  const nature = $derived(NATURES[showPanel ?? 'recette']);
+  /*
+    Le titre nomme l'acte, sans emoji : la coquille porte déjà une icône, et un rond de
+    couleur dans un titre ne se lit pas au lecteur d'écran.
+  */
+  const titre = $derived(
+    editingId
+      ? `Modifier ${nature.defini}`
+      : showPanel === 'transfert'
+        ? 'Faire un virement interne'
+        : `Saisir ${nature.indefini}`
+  );
+
+  /**
+   * L'adhérent est facultatif : le « sans adhérent » devient une option du choix plutôt
+   * qu'un bouton d'effacement, parce que l'écran de choix plein cadre — celui qu'ouvre
+   * `SearchableCombobox` au doigt — n'a pas d'endroit où poser ce bouton.
+   */
+  const memberOptions = $derived([
+    { label: 'Aucun adhérent (recette générale)', value: '' },
+    ...memberItems.map((m) => ({
+      label: m.detail ? `${m.label} (${m.detail})` : m.label,
+      value: String(m.value)
+    }))
+  ]);
+
   const accrualItems = $derived([
     { label: 'Normal (Même exercice comptable)', value: 'normal' },
     ...(showPanel === 'recette'
@@ -110,142 +142,133 @@
   ]);
 </script>
 
-<Sheet.Root bind:open>
-  <Sheet.Content size="md" class="overflow-y-auto h-full">
-    <Sheet.Header>
-      <Sheet.Title>
-        {#if editingId}
-          {#if showPanel === 'recette'}🟢 Modifier la recette{:else if showPanel === 'depense'}🔴 Modifier la dépense{:else}🔵 Modifier le virement interne{/if}
-        {:else}
-          {#if showPanel === 'recette'}🟢 Saisir une recette{:else if showPanel === 'depense'}🔴 Saisir une dépense{:else}🔵 Faire un virement interne{/if}
-        {/if}
-      </Sheet.Title>
-      <Sheet.Description class="hidden">Formulaire de saisie d'écriture comptable</Sheet.Description>
-    </Sheet.Header>
+<!--
+  La coquille commune des formulaires de l'admin.
 
-    <form onsubmit={onSubmit} class="space-y-4">
-      {#if errorMsg}
-        <Alert.Root variant="destructive" class="p-3 text-xs rounded-md flex items-center gap-2">
-          <AlertCircle class="w-4 h-4 shrink-0" />
-        <Alert.Description>{errorMsg}</Alert.Description>
-        </Alert.Root>
-      {/if}
+  Cet écran gardait la sienne : `Sheet.Root` monté à la main, en-tête maison, et ses
+  deux boutons posés dans le flux, en bas du formulaire. Au doigt, une feuille est
+  ancrée au bas de l'écran : le clavier logiciel recouvrait donc « Valider » dès qu'on
+  saisissait un montant. `FormSheet` place les actions dans la barre de navigation,
+  hors de sa portée.
+-->
+<FormSheet
+  bind:open
+  title={titre}
+  icon={nature.icone}
+  error={errorMsg || null}
+  {isSubmitting}
+  submitLabel="Valider"
+  submittingLabel="Enregistrement…"
+  {onSubmit}
+>
+  <!-- Montant et date : côte à côte à la souris, l'un sous l'autre au doigt. -->
+  <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+    <FormField id="amount-input" label="Montant (€)">
+      <Input id="amount-input" type="number" step="0.01" min="0.01" bind:value={amount} required class="tabular-nums" />
+    </FormField>
+    <FormField id="date-input" label="Date">
+      <Input id="date-input" type="date" bind:value={date} required />
+    </FormField>
+  </div>
 
-      <!-- Ligne 1 : Montant et Date en Grille -->
-      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <FormField id="amount-input" label="Montant (€)">
-          <Input id="amount-input" type="number" step="0.01" min="0.01" bind:value={amount} required />
-          </FormField>
-          <FormField id="date-input" label="Date">
-          <Input id="date-input" type="date" bind:value={date} required />
-        </FormField>
-      </div>
+  <FormField id="season-select-panel" label="Saison d'affectation">
+    <SearchableCombobox id="season-select-panel" items={seasonItems} bind:value={targetSeasonId} />
+  </FormField>
 
-      <!-- Ligne 2 : Saison -->
-        <FormField id="season-select-panel" label="Saison d'affectation">
-        <SearchableCombobox id="season-select-panel" items={seasonItems} bind:value={targetSeasonId} />
+  {#if showPanel !== 'transfert'}
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <FormField id="category-select" label="Catégorie">
+        <SearchableCombobox
+          id="category-select"
+          items={categoryItems}
+          bind:value={category}
+          searchPlaceholder="Rechercher une catégorie…"
+        />
       </FormField>
-
-      <!-- Ligne 3 : Catégorie / Comptes en Grille -->
-      {#if showPanel !== 'transfert'}
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <FormField id="category-select" label="Catégorie">
-            <SearchableCombobox id="category-select" items={categoryItems} bind:value={category} searchPlaceholder="Rechercher une catégorie..." />
-            </FormField>
-            <FormField id="account-select" label="Compte financier">
-            <SearchableCombobox id="account-select" items={accountItems} bind:value={formAccountId} />
-          </FormField>
-        </div>
-      {:else}
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <FormField id="account-select" label="Compte Source">
-            <SearchableCombobox id="account-select" items={accountItems} bind:value={formAccountId} />
-            </FormField>
-            <FormField id="dest-account-select" label="Compte Destinataire">
-            <SearchableCombobox id="dest-account-select" items={destinationItems} bind:value={destinationAccountId} />
-          </FormField>
-        </div>
-
-        <!--
-          La date de crédit, distincte de celle du débit.
-
-          Un virement s'écrit désormais en deux écritures, une par compte : l'argent peut donc
-          sortir un jour et arriver un autre. C'est le cas courant du dépôt d'espèces, sorti de la
-          caisse le lundi et crédité en banque le jeudi. Laissée vide, elle vaut celle du débit —
-          le cas d'un virement de compte à compte, instantané.
-        -->
-        <FormField id="destination-date-input" label="Date de crédit (si différente)">
-          <Input id="destination-date-input" type="date" min={date} bind:value={destinationDate} />
-          <p class="text-xs text-muted-foreground">
-            L'écart entre les deux dates, c'est l'argent en transit : sorti d'un compte, pas encore
-            arrivé dans l'autre. Laissée vide, elle vaut celle du débit.
-          </p>
-        </FormField>
-      {/if}
-
-      <!-- Ligne 4 : Moyen de paiement -->
-      {#if showPanel !== 'transfert'}
-          <FormField id="payment-method-select" label="Moyen de paiement">
-          <SearchableCombobox id="payment-method-select" items={paymentItems} bind:value={paymentMethod} />
-        </FormField>
-      {/if}
-
-      <!-- Ligne 4 bis : l'adhérent qui paie -->
-      {#if showPanel === 'recette' && members.length > 0}
-        <div>
-          <Combobox
-            id="member-select"
-            label="Adhérent (optionnel)"
-            placeholder="Tapez pour rechercher un adhérent..."
-            bind:value={memberId}
-            items={memberItems}
-            allowClear={true}
-            clearLabel="Aucun adhérent (recette générale)"
-            onselect={() => (memberDroppedBySeason = false)}
-          />
-          {#if memberDroppedBySeason}
-            <p class="mt-1 text-xs text-warning">
-              L'adhérent choisi relevait d'un autre exercice : à choisir de nouveau dans celui-ci.
-            </p>
-          {:else}
-            <p class="mt-1 text-xs text-muted-foreground">
-              C'est ce rattachement qui fait apparaître le règlement sur sa fiche et son attestation.
-            </p>
-          {/if}
-        </div>
-      {/if}
-
-      <!-- Ligne Accrual (Régularisation) -->
-      {#if showPanel !== 'transfert'}
-        <div class="grid grid-cols-1 gap-4">
-            <FormField id="accrual-select" label="Régularisation (Cut-off)">
-            <SearchableCombobox id="accrual-select" items={accrualItems} bind:value={accrualType} />
-          </FormField>
-          {#if accrualType !== 'normal'}
-              <FormField id="accrual-note-input" label="Note justificative *">
-              <Input id="accrual-note-input" type="text" placeholder="Ex: Cotisation 2026-2027 payée en avance" bind:value={accrualNote} required />
-            </FormField>
-          {/if}
-        </div>
-      {/if}
-
-      <!-- Lignes 5 et 6 : Description & Référence -->
-        <FormField id="description-input" label="Description / Motif">
-        <Input id="description-input" type="text" placeholder="Ex: Cotisation annuelle..." bind:value={description} required />
+      <FormField id="account-select" label="Compte financier">
+        <SearchableCombobox id="account-select" items={accountItems} bind:value={formAccountId} />
       </FormField>
-
-        <FormField id="ref-input" label="Référence (Optionnel)">
-        <Input id="ref-input" type="text" placeholder="Ex: Chèque n°1234, Virement..." bind:value={reference} />
+    </div>
+  {:else}
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <FormField id="account-select" label="Compte source">
+        <SearchableCombobox id="account-select" items={accountItems} bind:value={formAccountId} />
       </FormField>
+      <FormField id="dest-account-select" label="Compte destinataire">
+        <SearchableCombobox id="dest-account-select" items={destinationItems} bind:value={destinationAccountId} />
+      </FormField>
+    </div>
 
-      <div class="flex gap-3 pt-4">
-        <Button type="submit" disabled={isSubmitting} class="flex-1">
-          {isSubmitting ? 'Enregistrement...' : 'Valider'}
-        </Button>
-        <Button type="button" variant="outline" onclick={() => showPanel = null}>
-          Annuler
-        </Button>
-      </div>
-    </form>
-  </Sheet.Content>
-</Sheet.Root>
+    <!--
+      La date de crédit, distincte de celle du débit.
+
+      Un virement s'écrit en deux écritures, une par compte : l'argent peut sortir un
+      jour et arriver un autre. C'est le cas courant du dépôt d'espèces, sorti de la
+      caisse le lundi et crédité en banque le jeudi. Laissée vide, elle vaut celle du
+      débit — le cas d'un virement de compte à compte, instantané.
+    -->
+    <FormField
+      id="destination-date-input"
+      label="Date de crédit (si différente)"
+      hint="L'écart entre les deux dates, c'est l'argent en transit : sorti d'un compte, pas encore arrivé dans l'autre."
+    >
+      <Input id="destination-date-input" type="date" min={date} bind:value={destinationDate} />
+    </FormField>
+  {/if}
+
+  {#if showPanel !== 'transfert'}
+    <FormField id="payment-method-select" label="Moyen de paiement">
+      <SearchableCombobox id="payment-method-select" items={paymentItems} bind:value={paymentMethod} />
+    </FormField>
+  {/if}
+
+  <!--
+    L'adhérent qui paie. Au doigt, `SearchableCombobox` ouvre l'écran de choix plein
+    cadre, avec sa recherche — l'autocomplétion en place qui vivait ici déroulait un
+    panneau que le clavier recouvrait aussitôt.
+  -->
+  {#if showPanel === 'recette' && members.length > 0}
+    <FormField
+      id="member-select"
+      label="Adhérent (optionnel)"
+      hint={memberDroppedBySeason
+        ? "L'adhérent choisi relevait d'un autre exercice : à choisir de nouveau dans celui-ci."
+        : "C'est ce rattachement qui fait apparaître le règlement sur sa fiche et son attestation."}
+    >
+      <SearchableCombobox
+        id="member-select"
+        items={memberOptions}
+        bind:value={memberId}
+        placeholder="Aucun adhérent (recette générale)"
+        searchPlaceholder="Nom ou licence…"
+        emptyText="Aucun adhérent trouvé."
+        onValueChange={() => (memberDroppedBySeason = false)}
+      />
+    </FormField>
+  {/if}
+
+  {#if showPanel !== 'transfert'}
+    <FormField id="accrual-select" label="Régularisation (cut-off)">
+      <SearchableCombobox id="accrual-select" items={accrualItems} bind:value={accrualType} />
+    </FormField>
+    {#if accrualType !== 'normal'}
+      <FormField id="accrual-note-input" label="Note justificative *">
+        <Input
+          id="accrual-note-input"
+          type="text"
+          placeholder="Ex : cotisation 2026-2027 payée en avance"
+          bind:value={accrualNote}
+          required
+        />
+      </FormField>
+    {/if}
+  {/if}
+
+  <FormField id="description-input" label="Description / motif">
+    <Input id="description-input" type="text" placeholder="Ex : cotisation annuelle…" bind:value={description} required />
+  </FormField>
+
+  <FormField id="ref-input" label="Référence (optionnel)">
+    <Input id="ref-input" type="text" placeholder="Ex : chèque n°1234, virement…" bind:value={reference} />
+  </FormField>
+</FormSheet>

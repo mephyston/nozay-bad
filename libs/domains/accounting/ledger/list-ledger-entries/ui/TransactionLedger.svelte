@@ -1,13 +1,20 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { Search, X, Filter, ChevronDown } from '@lucide/svelte';
-  import { Button, Dialog, Sheet, Tabs, Input, DropdownMenu, Checkbox, AlertDialog, DataTableToolbar, FormField, SearchableCombobox, softNavigate, submitForm, toSeasonOptions, uiAlert } from '@nba/ui';
+  import { softNavigate, submitForm, toSeasonOptions, uiAlert } from '@nba/ui';
   import type { Transaction, Pagination, BalanceReport, Season, Category, AccountClass } from './ledger-types';
   import { submitTransaction, validateTransaction, deleteTransaction, editValuesFor, changePage as actionChangePage, applySeasonChange as actionApplySeasonChange } from './ledger-actions';
   import TransactionLedgerBalances from './TransactionLedgerBalances.svelte';
   import TransactionLedgerHeader from './TransactionLedgerHeader.svelte';
   import TransactionLedgerTable from './TransactionLedgerTable.svelte';
   import TransactionFormSheet from './TransactionFormSheet.svelte';
+  import LedgerToolbar from './LedgerToolbar.svelte';
+  import { urlDuJournal } from './ledger-filters';
+  import {
+    criteresDeRapport,
+    ecouterPointsDEntree,
+    restaurerPosition,
+    retenirPosition
+  } from './ledger-navigation';
   import { toAccountOptions, type AccountLike } from '../../../shared/account-labels';
   import type { MemberLike } from './member-options';
 
@@ -56,10 +63,7 @@
 
   $effect(() => {
     if (selectedAccount !== (accountId || mainAccountId)) {
-      const params = new URLSearchParams(window.location.search);
-      params.set('accountId', selectedAccount);
-      params.set('page', '1');
-      softNavigate(`/admin/accounting?${params.toString()}`);
+      softNavigate(urlDuJournal(window.location.search, { accountId: selectedAccount }));
     }
   });
 
@@ -81,83 +85,19 @@
   );
 
   onMount(() => {
-    const params = new URLSearchParams(window.location.search);
-    filteredCategory = params.get('category');
-    filteredClassCode = params.get('classCode');
-    filteredAccrual = params.get('accrual');
-    filteredType = params.get('type');
-
-    // Handle PWA shortcuts
-    const action = params.get('action');
-    if (action === 'new-recette') {
-      openPanel('recette');
-      const newUrl = new URL(window.location.href);
-      newUrl.searchParams.delete('action');
-      window.history.replaceState({}, '', newUrl);
-    } else if (action === 'new-depense') {
-      openPanel('depense');
-      const newUrl = new URL(window.location.href);
-      newUrl.searchParams.delete('action');
-      window.history.replaceState({}, '', newUrl);
-    } else if (action === 'new-transfert') {
-      openPanel('transfert');
-      const newUrl = new URL(window.location.href);
-      newUrl.searchParams.delete('action');
-      window.history.replaceState({}, '', newUrl);
-    }
-
-    const onRecette = () => openPanel('recette');
-    const onDepense = () => openPanel('depense');
-    window.addEventListener('open-new-recette', onRecette);
-    window.addEventListener('open-new-depense', onDepense);
-    return () => {
-      window.removeEventListener('open-new-recette', onRecette);
-      window.removeEventListener('open-new-depense', onDepense);
-    };
+    const criteres = criteresDeRapport(window.location.search);
+    filteredCategory = criteres.category;
+    filteredClassCode = criteres.classCode;
+    filteredAccrual = criteres.accrual;
+    filteredType = criteres.type;
+    return ecouterPointsDEntree(openPanel);
   });
 
+  // La position se restaure après chaque rendu de liste : on revient du rapprochement
+  // sur une écriture précise, ou d'une suppression qui a rechargé la page.
   $effect(() => {
-    if (typeof history !== 'undefined' && 'scrollRestoration' in history) {
-      history.scrollRestoration = 'manual';
-    }
-
-    const scrollToTx = sessionStorage.getItem('scrollToTx');
-    if (scrollToTx && transactions.length > 0) {
-      sessionStorage.removeItem('scrollToTx');
-      const tryScroll = (highlight = false) => {
-        const isMobile = window.innerWidth < 640;
-        const el = document.getElementById(isMobile ? `tx-mobile-${scrollToTx}` : `tx-desktop-${scrollToTx}`);
-        if (el) {
-          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          if (highlight) {
-            el.classList.add('bg-muted', 'transition-colors', 'duration-1000');
-            setTimeout(() => el.classList.remove('bg-muted'), 2000);
-          }
-        }
-      };
-      setTimeout(() => tryScroll(true), 100);
-      setTimeout(() => tryScroll(false), 600);
-    }
-
-    const scrollYStr = sessionStorage.getItem('ledger_scroll_y');
-    if (scrollYStr && transactions.length > 0) {
-      sessionStorage.removeItem('ledger_scroll_y');
-      const targetY = parseInt(scrollYStr);
-      setTimeout(() => window.scrollTo({ top: targetY, behavior: 'instant' }), 100);
-      setTimeout(() => window.scrollTo({ top: targetY, behavior: 'instant' }), 600);
-    }
+    restaurerPosition(transactions.length > 0);
   });
-
-  function clearFilters() {
-    const params = new URLSearchParams(window.location.search);
-    params.delete('category');
-    params.delete('classCode');
-    params.delete('month');
-    params.delete('accrual');
-    params.delete('type');
-    params.set('page', '1');
-    softNavigate(`/admin/accounting?${params.toString()}`);
-  }
 
   let showPanel = $state<'recette' | 'depense' | 'transfert' | null>(null);
   let open = $state(false);
@@ -263,34 +203,20 @@
     isSubmitting = false;
   }
 
-  let deleteDialogData = $state<{ id: number } | null>(null);
-
   let currentSeasonObj = $derived(seasons.find(s => s.code === selectedSeason || String(s.id) === String(selectedSeason)));
   let currentSeasonNumericId = $derived(currentSeasonObj?.id);
 
-  function handleDelete(id: number) {
-    deleteDialogData = { id };
-  }
-
-  async function confirmDelete() {
-    if (!deleteDialogData) return;
-    const { id } = deleteDialogData;
-    sessionStorage.setItem('ledger_scroll_y', window.scrollY.toString());
+  /**
+   * La question est déjà posée par l'action de ligne, la même pour le balayage, le menu
+   * de la liste et celui de la table — c'est ce qui remplace la boîte de dialogue que
+   * cet écran portait à la main, et qui n'existait que pour lui.
+   */
+  async function handleDelete(id: number) {
+    retenirPosition();
     await submitForm({
       submit: () => deleteTransaction(id),
-      close: () => { deleteDialogData = null; },
-      onError: (message) => { deleteDialogData = null; uiAlert(message); }
+      onError: (message) => uiAlert(message)
     });
-  }
-
-  function handleAccountTabChange(newAcc: string) {
-    selectedAccount = newAcc;
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      params.set('accountId', newAcc);
-      params.set('page', '1');
-      softNavigate(`/admin/accounting?${params.toString()}`);
-    }
   }
 
   const seasonItems = $derived(
@@ -306,41 +232,12 @@
     balances.map((b) => ({ id: b.id, code: b.accountId, label: b.label ?? b.accountId }))
   );
   const accountItems = $derived(toAccountOptions(accounts));
-  const monthItems = [
-    { label: 'Tous les mois', value: '' },
-    { label: 'Janvier', value: '01' }, { label: 'Février', value: '02' }, { label: 'Mars', value: '03' },
-    { label: 'Avril', value: '04' }, { label: 'Mai', value: '05' }, { label: 'Juin', value: '06' },
-    { label: 'Juillet', value: '07' }, { label: 'Août', value: '08' }, { label: 'Septembre', value: '09' },
-    { label: 'Octobre', value: '10' }, { label: 'Novembre', value: '11' }, { label: 'Décembre', value: '12' }
-  ];
-
-  function applyMonthFilter(val: string) {
-    const params = new URLSearchParams(window.location.search);
-    if (val) params.set('month', val);
-    else params.delete('month');
-    params.set('page', '1');
-    softNavigate(`/admin/accounting?${params.toString()}`);
-  }
 </script>
 
 <div class="space-y-6">
   <TransactionLedgerBalances {balances} />
 
-  <TransactionLedgerHeader
-    bind:selectedSeason
-    {seasons}
-    {isClosed}
-    {filteredCategory}
-    {filteredClassCode}
-    {filteredAccrual}
-    {categories}
-    {accountClasses}
-    {unreconciledChequesOnly}
-    {searchQuery}
-    onOpenPanel={openPanel}
-    onApplySeasonChange={() => actionApplySeasonChange(selectedSeason)}
-    onClearFilters={clearFilters}
-  />
+  <TransactionLedgerHeader {isClosed} />
 
   <TransactionLedgerTable
     {transactions}
@@ -355,78 +252,25 @@
     onChangePage={(p) => actionChangePage(p, pagination.totalPages)}
   >
     {#snippet toolbar()}
-      <DataTableToolbar
-        bind:searchValue={searchQuery}
-        searchPlaceholder="Rechercher par libellé..."
-        hasFilters={true}
-        filtersActive={unreconciledChequesOnly || !!month || (!!selectedAccount && selectedAccount !== mainAccountId)}
-        onSearchSubmit={(val) => {
-          const params = new URLSearchParams(window.location.search);
-          if (val) params.set('search', val);
-          else params.delete('search');
-          params.set('page', '1');
-          softNavigate(`/admin/accounting?${params.toString()}`);
-        }}
-        onSearchClear={() => {
-          const params = new URLSearchParams(window.location.search);
-          params.delete('search');
-          params.set('page', '1');
-          softNavigate(`/admin/accounting?${params.toString()}`);
-        }}
-      >
-        {#snippet filters()}
-            <FormField id="filter-season" label="Saison">
-            <SearchableCombobox id="filter-season" items={seasonItems} bind:value={selectedSeason} onValueChange={() => actionApplySeasonChange(selectedSeason)} />
-          </FormField>
-
-            <FormField id="filter-account" label="Compte">
-            <SearchableCombobox id="filter-account" items={accountItems} value={selectedAccount || mainAccountId} onValueChange={(v) => handleAccountTabChange(String(v))} />
-          </FormField>
-
-            <FormField id="filter-month" label="Mois">
-            <SearchableCombobox id="filter-month" items={monthItems} value={month} onValueChange={(v) => applyMonthFilter(String(v))} />
-          </FormField>
-
-          <div class="space-y-1.5">
-            <span class="text-xs font-semibold text-muted-foreground">Options</span>
-            <label class="flex items-center gap-2 text-sm cursor-pointer mt-1">
-              <Checkbox
-                checked={unreconciledChequesOnly}
-                onCheckedChange={(v) => {
-                  const params = new URLSearchParams(window.location.search);
-                  if (v) params.set('unreconciledCheques', 'true');
-                  else params.delete('unreconciledCheques');
-                  params.set('page', '1');
-                  softNavigate(`/admin/accounting?${params.toString()}`);
-                }}
-              />
-              Chèques en circulation
-            </label>
-          </div>
-        {/snippet}
-
-        {#snippet actions()}
-          {#if !isClosed}
-            <DropdownMenu.Root>
-              <DropdownMenu.Trigger asChild>
-                {#snippet child({ props })}
-                  <Button {...props} class="h-9 gap-2 w-full sm:w-auto">
-                    Nouvelle écriture <ChevronDown class="w-4 h-4" />
-                  </Button>
-                {/snippet}
-              </DropdownMenu.Trigger>
-              <DropdownMenu.Content align="end">
-                <DropdownMenu.Item onclick={() => openPanel('recette')} class="text-success font-medium cursor-pointer">Saisir Recette</DropdownMenu.Item>
-                <DropdownMenu.Item onclick={() => openPanel('depense')} class="text-destructive font-medium cursor-pointer">Saisir Dépense</DropdownMenu.Item>
-                <DropdownMenu.Item onclick={() => openPanel('transfert')} class="font-medium cursor-pointer">Virement Interne</DropdownMenu.Item>
-              </DropdownMenu.Content>
-            </DropdownMenu.Root>
-          {/if}
-          <Button href={`/admin/api/accounting/download?doc=export&type=ledger&season=${selectedSeason}`} class="h-9 gap-2 w-full sm:w-auto" variant="secondary" target="_blank" download>
-            Exporter (CSV)
-          </Button>
-        {/snippet}
-      </DataTableToolbar>
+      <LedgerToolbar
+        searchQuery={searchQuery}
+        bind:selectedSeason
+        bind:selectedAccount
+        {month}
+        {unreconciledChequesOnly}
+        {filteredCategory}
+        {filteredClassCode}
+        {filteredAccrual}
+        {categories}
+        {accountClasses}
+        {seasonItems}
+        {accountItems}
+        {isClosed}
+        resultCount={pagination?.total ?? transactions.length}
+        exportHref={`/admin/api/accounting/download?doc=export&type=ledger&season=${selectedSeason}`}
+        onOpenPanel={openPanel}
+        onApplySeasonChange={() => actionApplySeasonChange(selectedSeason)}
+      />
     {/snippet}
   </TransactionLedgerTable>
 
@@ -457,22 +301,4 @@
     onSubmit={handleAddTransaction}
   />
 
-  <AlertDialog.Root open={!!deleteDialogData} onOpenChange={(o) => { if(!o) deleteDialogData = null; }}>
-    <AlertDialog.Content>
-      <AlertDialog.Header>
-        <AlertDialog.Title>Confirmation de suppression</AlertDialog.Title>
-        <AlertDialog.Description>
-          Êtes-vous sûr de vouloir supprimer cette écriture comptable ?
-          <br/><br/>
-          Cette action est irréversible.
-        </AlertDialog.Description>
-      </AlertDialog.Header>
-      <AlertDialog.Footer>
-        <AlertDialog.Cancel>Annuler</AlertDialog.Cancel>
-        <AlertDialog.Action onclick={confirmDelete} class="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-          Supprimer
-        </AlertDialog.Action>
-      </AlertDialog.Footer>
-    </AlertDialog.Content>
-  </AlertDialog.Root>
 </div>

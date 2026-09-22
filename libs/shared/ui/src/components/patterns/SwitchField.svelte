@@ -20,6 +20,7 @@
     id,
     checked = $bindable(false),
     hint,
+    onChange,
     disabled = false,
     class: className
   }: {
@@ -28,6 +29,12 @@
     checked?: boolean;
     /** Ce que le réglage change, en une phrase. */
     hint?: string;
+    /**
+     * Appelée après une bascule, pour les écrans qui appliquent à la volée — le
+     * pendant de `onChange` sur {@link ChoiceField}, qui manquait ici : un filtre
+     * porté par un interrupteur devait passer par un état miroir et un effet.
+     */
+    onChange?: (checked: boolean) => void;
     disabled?: boolean;
     class?: string;
   } = $props();
@@ -62,5 +69,6 @@
       <p class="mt-0.5 text-xs text-muted-foreground">{hint}</p>
     {/if}
   </div>
-  <Switch {id} bind:checked {disabled} />
+  <!-- La liaison reste celle d'avant ; `onChange` ne fait que prévenir en plus. -->
+  <Switch {id} bind:checked {disabled} onCheckedChange={(v) => onChange?.(v)} />
 </div>
