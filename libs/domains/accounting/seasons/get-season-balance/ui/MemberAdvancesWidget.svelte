@@ -22,7 +22,15 @@
   Ce que le club doit encore rendre : les virements reçus d'adhérentes que rien n'a rendus sur
   leur porte-monnaie. La liste vit ici, pas dans un carnet à côté de l'appli.
 -->
-<Card.Root class="border-dashed" data-testid="member-advances">
+<!--
+  Vide, l'encart disparaît au doigt : cent vingt-trois pixels pour dire qu'il n'y a rien
+  à rendre, c'est un sixième d'écran de téléphone pris par une absence. Il reste à la
+  souris, où la place ne manque pas et où le message rassure.
+-->
+<Card.Root
+  class="border-dashed {pending.length === 0 ? 'hidden md:block' : ''}"
+  data-testid="member-advances"
+>
   <Card.Header class="pb-2">
     <Card.Title class="text-sm font-medium text-muted-foreground flex items-center gap-2">
       <HandCoins class="w-4 h-4" />

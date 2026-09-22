@@ -31,7 +31,42 @@
   );
 </script>
 
-<div class="grid gap-4 md:grid-cols-3">
+<!--
+  Au doigt, une bande ; à la souris, trois encarts.
+
+  Empilés sur un téléphone, ces trois encarts font 564 px — mesurés — et l'on arrivait
+  sur un compte sans voir un seul mouvement : la liste commençait à 964 px du haut,
+  soit au-delà de la hauteur visible. Le solde est ce qu'on vient lire ; les deux
+  totaux et l'à-nouveau tiennent en pastilles sur la même ligne.
+-->
+<div class="rounded-xl border border-border bg-card px-4 py-3 md:hidden {thirdParty ? 'border-dashed' : ''}">
+  <div class="flex items-baseline justify-between gap-3">
+    <span class="text-xs font-medium uppercase tracking-wider text-muted-foreground">{soldeTitre}</span>
+    <span class="text-lg font-bold text-foreground">
+      {#if thirdParty}
+        <Amount cents={Math.abs(currentBalance)} />
+      {:else}
+        <Amount cents={currentBalance} colorize={true} />
+      {/if}
+    </span>
+  </div>
+  <div class="mt-2 flex flex-wrap items-center gap-1.5 text-xs">
+    <span class="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-2.5 py-0.5 whitespace-nowrap">
+      <TrendingUp class="size-3 text-primary" aria-hidden="true" />
+      <Amount cents={totalIn} showSign class="font-semibold text-foreground" />
+    </span>
+    <span class="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-2.5 py-0.5 whitespace-nowrap">
+      <TrendingDown class="size-3 text-destructive" aria-hidden="true" />
+      <Amount cents={-totalOut} showSign class="font-semibold text-foreground" />
+    </span>
+    <span class="inline-flex items-center gap-1.5 rounded-full border border-dashed border-border px-2.5 py-0.5 whitespace-nowrap">
+      <span class="text-muted-foreground">À-nouveau</span>
+      <Amount cents={initialBalance} class="font-semibold text-foreground" />
+    </span>
+  </div>
+</div>
+
+<div class="hidden gap-4 md:grid md:grid-cols-3">
   <Card.Root class="relative overflow-hidden flex flex-col justify-center p-5 shadow-sm transition-all hover:shadow-md group border-border/50 bg-gradient-to-b from-card/80 to-card {thirdParty ? 'border-dashed' : ''}">
     <div class="absolute -right-4 -top-4 opacity-5 group-hover:opacity-10 transition-opacity duration-300">
       {#if thirdParty}<HandCoins size={120} />{:else}<Wallet size={120} />{/if}
