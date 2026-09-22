@@ -14,3 +14,13 @@ useDefault = true
 description = "Jeu d'essai des notifications push : clé d'authentification de souscription fabriquée pour les tests, jamais utilisée hors vitest"
 regexTarget = "secret"
 regexes = ['''^BTBZMqHH6r4T''']
+
+# Sortie de build de Storybook, versionnée par erreur du 31/07 au 01/08/2026
+# (`ad5f2d3c` puis `4b98c56a` qui la retire, avant le .gitignore). Elle reste dans
+# l'historique, et un bundle minifié est le pire terrain pour la règle
+# `generic-api-key` : toute chaîne longue y passe pour une clé. Ici l'alphabet
+# base64 de lz-string, entropie 6,02. Ce répertoire est un artefact de build : il
+# n'a aucune raison d'être scanné.
+[[allowlists]]
+description = "Sortie de build de Storybook : bundles minifiés où toute chaîne longue est prise pour une clé"
+paths = ['''^storybook-static/''']

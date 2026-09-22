@@ -484,12 +484,21 @@ jobs:
           persist-credentials: false
 
       # Gratuit pour un compte personnel (une licence n'est exigée que des
-      # organisations). Sur un push, l'action ne relit que les commits poussés ; les
-      # exceptions vivent dans .gitleaks.toml et .gitleaksignore.
+      # organisations). Sur un push, l'action ne relit que les commits poussés ; sur un
+      # déclenchement manuel, elle relit tout l'historique — d'où l'importance des
+      # exceptions, qui vivent dans .gitleaks.toml et .gitleaksignore.
+      #
+      # GITLEAKS_VERSION est indispensable : sans elle, l'action installe la version
+      # qu'elle embarque (8.24.3), qui ignore silencieusement les `[[allowlists]]` de
+      # premier niveau — la forme au pluriel n'existe que depuis 8.25. Les exceptions
+      # du dépôt étaient donc sans effet en CI, et le job tombait sur des faux positifs
+      # que les hooks locaux, eux, ne voyaient pas. La version est à tenir alignée sur
+      # celle des postes (`gitleaks version`, installée par brew).
       - name: Secrets (gitleaks)
         uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          GITLEAKS_VERSION: 8.30.1
           GITLEAKS_CONFIG: .gitleaks.toml
           GITLEAKS_ENABLE_COMMENTS: "false"
           GITLEAKS_ENABLE_SUMMARY: "true"
