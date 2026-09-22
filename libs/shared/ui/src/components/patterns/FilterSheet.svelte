@@ -2,6 +2,7 @@
   import type { Snippet } from 'svelte';
   import { Button } from '../ui/button/index.js';
   import ResponsiveSheet from './ResponsiveSheet.svelte';
+  import { auPluriel } from '../../lib/pluriel.js';
 
   /**
    * Les filtres avancés d'une liste.
@@ -35,7 +36,7 @@
 
   const libelle = $derived.by(() => {
     if (resultCount === undefined) return 'Afficher';
-    const pluriel = itemNamePlural ?? `${itemName}s`;
+    const pluriel = itemNamePlural ?? auPluriel(itemName ?? '');
     return `Afficher ${resultCount} ${resultCount === 1 ? itemName : pluriel}`;
   });
 </script>

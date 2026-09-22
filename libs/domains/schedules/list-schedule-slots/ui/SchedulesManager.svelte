@@ -1,26 +1,39 @@
 <script lang="ts">
-  import { Plus, Edit, Trash2, Eye, EyeOff } from '@lucide/svelte';
+  import { Plus, Edit, CalendarClock } from '@lucide/svelte';
   import {
     Button,
     Input,
-    Select,
-    Checkbox,
-    Label,
     Badge,
-    Card,
     Table,
+    ChoiceField,
+    DateTimeField,
+    SwitchField,
     DataTable,
     DataTableToolbar,
     DataTableRowActions,
     DropdownMenu,
+    FilterSheet,
     FormField,
     FormSheet,
+    RowActionItems,
+    dockDePage,
     submitForm,
     uiConfirm,
     flashAndReload,
-    uiAlert
+    uiAlert,
+    type SwipeAction
   } from '@nba/ui';
   import { AUDIENCE_LABELS, WEEKDAY_LABELS } from '../../shared/schema';
+  import SchedulesList from './SchedulesList.svelte';
+  import {
+    creneauxFiltres,
+    gestesDeCreneau,
+    libelleDeGroupe,
+    libelleDeJour,
+    signalementsDeCreneau,
+    VISIBILITES,
+    type VisibiliteDeCreneau
+  } from './schedules-row-model';
 
   interface SlotRow {
     id: number; weekday: number; startTime: string; endTime: string;
@@ -60,18 +73,33 @@
   let errorMsg = $state('');
   let searchTerm = $state('');
 
+  let visibilite = $state<VisibiliteDeCreneau>('tous');
+  let filtresOuverts = $state(false);
+
   const filteredSlots = $derived(
-    slots.filter((row: SlotRow) => {
-      const term = searchTerm.trim().toLowerCase();
-      if (!term) return true;
-      return (
-        WEEKDAY_LABELS[row.weekday].toLowerCase().includes(term) ||
-        AUDIENCE_LABELS[row.audience].toLowerCase().includes(term) ||
-        (row.label ?? '').toLowerCase().includes(term) ||
-        (row.venue?.name ?? '').toLowerCase().includes(term)
-      );
-    })
+    creneauxFiltres(slots as SlotRow[], { recherche: searchTerm, visibilite })
   );
+
+  /* Les gestes, dans le vocabulaire du modèle : le menu du tableau et le balayage de
+     la liste les rendent tous deux, à partir d'une seule déclaration. */
+  const gestes = $derived({
+    canWrite,
+    onEdit: (slot: SlotRow) => startEdit(slot),
+    onToggle: (slot: SlotRow) => toggle(slot),
+    onDelete: (slot: SlotRow) => remove(slot)
+  });
+
+  /*
+    Créer descend dans la barre du bas. Le bouton vivait en haut d'une barre d'outils
+    qui défile avec la liste : passé le mercredi, il n'était plus à l'écran.
+  */
+  $effect(() => {
+    if (!canWrite || venues.length === 0) return;
+    const actions: SwipeAction[] = [
+      { id: 'nouveau', label: 'Nouveau créneau', icon: CalendarClock, run: () => openAddForm() }
+    ];
+    return dockDePage.declarerActions(actions, { icon: Plus, label: 'Nouveau créneau' });
+  });
 
   async function post(body: unknown, fallback: string) {
     const response = await fetch(endpoint, {
@@ -188,20 +216,37 @@
 
 <DataTable
   data={filteredSlots}
+  mobileSpacing="list"
   emptyTitle="Aucun créneau"
-  emptyDescription={searchTerm.trim()
-    ? 'Aucun créneau ne correspond à votre recherche.'
+  emptyDescription={searchTerm.trim() || visibilite !== 'tous'
+    ? 'Aucun créneau ne correspond à ces critères.'
     : 'Ajoutez les créneaux de la saison.'}
 >
   {#snippet toolbar()}
     <DataTableToolbar
       bind:searchValue={searchTerm}
       searchPlaceholder="Rechercher un créneau..."
-      hasFilters={false}
+      dockSearch
+      hasFilters={true}
+      filtersActive={visibilite !== 'tous'}
+      onOpenFilters={() => (filtresOuverts = true)}
+      activeFilters={visibilite === 'tous'
+        ? []
+        : [
+            {
+              id: 'visibilite',
+              label: VISIBILITES.find((v) => v.value === visibilite)?.label ?? '',
+              onRemove: () => (visibilite = 'tous')
+            }
+          ]}
     >
+      {#snippet filters()}
+        {@render criteres()}
+      {/snippet}
       {#snippet actions()}
+        <!-- Sur téléphone, ce geste vit dans la barre du bas. -->
         {#if canWrite && venues.length > 0}
-          <Button onclick={openAddForm} class="h-9 shrink-0 gap-1.5 font-bold">
+          <Button onclick={openAddForm} class="hidden h-9 shrink-0 gap-1.5 font-bold md:flex">
             <Plus class="h-4 w-4" />
             <span>Nouveau créneau</span>
           </Button>
@@ -211,58 +256,14 @@
   {/snippet}
 
   {#snippet mobileView()}
-    {#each filteredSlots as row (row.id)}
-      <Card.Root>
-        <Card.Content class="space-y-3 p-4">
-          <div class="flex items-start justify-between gap-2" class:opacity-50={!row.active}>
-            <div class="min-w-0">
-              <h4 class="text-sm font-bold text-foreground">
-                {WEEKDAY_LABELS[row.weekday]}
-                <span class="tabular-nums font-normal"> {row.startTime}–{row.endTime}</span>
-              </h4>
-              <p class="mt-1 text-xs text-muted-foreground">
-                {row.label ?? AUDIENCE_LABELS[row.audience]} · {row.venue?.name ?? '—'}
-              </p>
-            </div>
-            <div class="flex shrink-0 flex-wrap justify-end gap-1">
-              {#if row.indiv}
-                <Badge variant="secondary" size="xs">Indiv</Badge>
-              {/if}
-              <Badge variant={row.active ? 'primary-soft' : 'outline'} size="xs">
-                {row.active ? 'Affiché' : 'Masqué'}
-              </Badge>
-            </div>
-          </div>
-
-          {#if canWrite}
-            <div class="flex items-center justify-end gap-2 border-t border-border/50 pt-2">
-              <Button variant="outline" size="sm" onclick={() => startEdit(row)} class="h-8 flex-1 gap-1.5 text-xs font-semibold">
-                <Edit class="h-3.5 w-3.5" />
-                <span>Modifier</span>
-              </Button>
-              <Button variant="outline" size="sm" onclick={() => toggle(row)} class="h-8 flex-1 gap-1.5 text-xs font-semibold">
-                {#if row.active}
-                  <EyeOff class="h-3.5 w-3.5" />
-                  <span>Masquer</span>
-                {:else}
-                  <Eye class="h-3.5 w-3.5" />
-                  <span>Afficher</span>
-                {/if}
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onclick={() => remove(row)}
-                class="h-8 flex-1 gap-1.5 border-destructive/30 text-xs font-semibold text-destructive hover:bg-destructive/10"
-              >
-                <Trash2 class="h-3.5 w-3.5" />
-                <span>Supprimer</span>
-              </Button>
-            </div>
-          {/if}
-        </Card.Content>
-      </Card.Root>
-    {/each}
+    <SchedulesList
+      creneaux={filteredSlots}
+      {...gestes}
+      emptyTitle="Aucun créneau"
+      emptyDescription={searchTerm.trim() || visibilite !== 'tous'
+        ? 'Aucun créneau ne correspond à ces critères.'
+        : 'Ajoutez les créneaux de la saison.'}
+    />
   {/snippet}
 
   {#snippet header()}
@@ -276,49 +277,30 @@
 
   {#snippet row(slot)}
     <Table.Row class={slot.active ? '' : 'opacity-60'}>
-      <Table.Cell class="font-medium">{WEEKDAY_LABELS[slot.weekday]}</Table.Cell>
+      <Table.Cell class="font-medium">{libelleDeJour(slot.weekday)}</Table.Cell>
       <Table.Cell class="tabular-nums">{slot.startTime}–{slot.endTime}</Table.Cell>
       <Table.Cell>
-        <span class="block text-foreground">
-          {AUDIENCE_LABELS[slot.audience]}
-          {#if slot.indiv}
-            <Badge variant="secondary" size="xs" class="ml-1">Indiv</Badge>
-          {/if}
-        </span>
+        <span class="block text-foreground">{libelleDeGroupe(slot.audience)}</span>
         {#if slot.label}
           <span class="block text-xs text-muted-foreground">{slot.label}</span>
         {/if}
       </Table.Cell>
       <Table.Cell class="text-muted-foreground">{slot.venue?.name ?? '—'}</Table.Cell>
       <Table.Cell>
-        <Badge variant={slot.active ? 'primary-soft' : 'outline'}>
-          {slot.active ? 'Affiché' : 'Masqué'}
-        </Badge>
+        <!-- Les mêmes pastilles que la liste au doigt : un écran, un vocabulaire.
+             « Affiché » est le cas courant et ne s'annonce pas. -->
+        <div class="flex flex-wrap items-center gap-1.5">
+          {#each signalementsDeCreneau(slot) as pastille (pastille.label)}
+            <Badge variant={pastille.variant} size="xs">{pastille.label}</Badge>
+          {/each}
+        </div>
       </Table.Cell>
       <Table.Cell class="relative text-right">
-        {#if canWrite}
+        {@const actions = gestesDeCreneau(slot, gestes)}
+        {#if actions.length > 0}
           <DataTableRowActions>
             <DropdownMenu.Label>Actions</DropdownMenu.Label>
-            <DropdownMenu.Item onclick={() => startEdit(slot)} class="cursor-pointer">
-              <Edit class="mr-2 h-3.5 w-3.5" />
-              Modifier
-            </DropdownMenu.Item>
-            <DropdownMenu.Item onclick={() => toggle(slot)} class="cursor-pointer">
-              {#if slot.active}
-                <EyeOff class="mr-2 h-3.5 w-3.5" />
-                Masquer du site
-              {:else}
-                <Eye class="mr-2 h-3.5 w-3.5" />
-                Réafficher
-              {/if}
-            </DropdownMenu.Item>
-            <DropdownMenu.Item
-              onclick={() => remove(slot)}
-              class="cursor-pointer text-destructive focus:text-destructive"
-            >
-              <Trash2 class="mr-2 h-3.5 w-3.5" />
-              Supprimer
-            </DropdownMenu.Item>
+            <RowActionItems {actions} item={slot} />
           </DataTableRowActions>
         {/if}
       </Table.Cell>
@@ -340,36 +322,44 @@
   onSubmit={save}
 >
   <FormField id="slot-day" label="Jour">
-    <Select id="slot-day" bind:value={weekday}>
-      {#each [1, 2, 3, 4, 5, 6, 7] as day}
-        <option value={String(day)}>{WEEKDAY_LABELS[day]}</option>
-      {/each}
-    </Select>
+    <ChoiceField
+      id="slot-day"
+      label="Jour"
+      bind:value={weekday}
+      options={[1, 2, 3, 4, 5, 6, 7].map((day) => ({
+        value: String(day),
+        label: libelleDeJour(day)
+      }))}
+    />
   </FormField>
 
   <div class="grid grid-cols-2 gap-3">
     <FormField id="slot-start" label="Début">
-      <Input id="slot-start" type="time" bind:value={startTime} />
+      <DateTimeField id="slot-start" label="Début" type="time" bind:value={startTime} />
     </FormField>
     <FormField id="slot-end" label="Fin">
-      <Input id="slot-end" type="time" bind:value={endTime} />
+      <DateTimeField id="slot-end" label="Fin" type="time" bind:value={endTime} min={startTime} />
     </FormField>
   </div>
 
   <FormField id="slot-audience" label="Groupe">
-    <Select id="slot-audience" bind:value={audience}>
-      {#each Object.entries(AUDIENCE_LABELS) as [value, text]}
-        <option {value}>{text}</option>
-      {/each}
-    </Select>
+    <ChoiceField
+      id="slot-audience"
+      label="Groupe"
+      value={audience}
+      onChange={(v) => (audience = v as typeof audience)}
+      options={Object.entries(AUDIENCE_LABELS).map(([value, label]) => ({ value, label }))}
+    />
   </FormField>
 
   <FormField id="slot-venue" label="Gymnase">
-    <Select id="slot-venue" bind:value={venueId}>
-      {#each venues as venue}
-        <option value={String(venue.id)}>{venue.name}</option>
-      {/each}
-    </Select>
+    <ChoiceField
+      id="slot-venue"
+      label="Gymnase"
+      bind:value={venueId}
+      placeholder="Choisir un gymnase…"
+      options={venues.map((venue: VenueRow) => ({ value: String(venue.id), label: venue.name }))}
+    />
   </FormField>
 
   <FormField id="slot-label" label="Intitulé (facultatif)">
@@ -378,14 +368,38 @@
 
   <!-- Le public ne dit pas si le créneau ouvre des indiv : deux des quatre créneaux
        compétiteurs seulement en portent. Ce marqueur ne touche pas au site, il ne parle
-       qu'à la programmation des soirées. -->
-  <div class="flex items-start gap-2.5 rounded-md border border-border p-3">
-    <Checkbox id="slot-indiv" bind:checked={indiv} />
-    <div class="grid gap-0.5">
-      <Label for="slot-indiv" class="text-sm font-medium">Séances individuelles</Label>
-      <p class="text-xs text-muted-foreground">
-        L'entraîneur y prend des candidats au début du créneau. La programmation des soirées d'indiv ne propose que les créneaux cochés.
-      </p>
-    </div>
-  </div>
+       qu'à la programmation des soirées.
+
+       Un interrupteur et non une case : la question est « est-ce actif ? », pas
+       « lequel ? » — et son état se lit alors au même endroit que sur toute autre
+       rangée de réglage. -->
+  <SwitchField
+    id="slot-indiv"
+    label="Séances individuelles"
+    hint="L'entraîneur y prend des candidats au début du créneau. La programmation des soirées d'indiv ne propose que les créneaux retenus."
+    bind:checked={indiv}
+  />
 </FormSheet>
+
+<!-- Les critères se posent derrière la loupe, jamais ailleurs. -->
+{#snippet criteres()}
+  <FormField id="filter-visibilite" label="Affichage">
+    <ChoiceField
+      id="filter-visibilite"
+      label="Affichage"
+      value={visibilite}
+      onChange={(v) => (visibilite = v as VisibiliteDeCreneau)}
+      options={VISIBILITES}
+    />
+  </FormField>
+{/snippet}
+
+<FilterSheet
+  bind:open={filtresOuverts}
+  description="Un créneau masqué reste enregistré : il ne paraît simplement pas sur le site."
+  resultCount={filteredSlots.length}
+  itemName="créneau"
+  onReset={() => (visibilite = 'tous')}
+>
+  {@render criteres()}
+</FilterSheet>

@@ -59,11 +59,18 @@
   <DropdownMenu.Root>
     <DropdownMenu.Trigger>
       {#snippet child({ props })}
+        <!--
+          `{id}` **après** l'étalement : bits-ui pose le sien dans `props`, qui écrasait
+          celui de l'appelant. Le `<label for=…>` du bloc de champ ne désignait alors
+          plus rien — l'intitulé cessait d'être lu par les lecteurs d'écran, et aucun
+          écran ne pouvait viser son propre champ. Le même piège avait été corrigé sur
+          la variante cherchable.
+        -->
         <button
           type="button"
-          {id}
           {disabled}
           {...props}
+          {id}
           data-field-row
           class="border-input dark:bg-input/30 flex min-h-11 w-full items-center justify-between gap-3 rounded-lg border bg-transparent px-3 text-base disabled:pointer-events-none disabled:opacity-50"
         >
