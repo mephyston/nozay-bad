@@ -5,6 +5,7 @@
     Badge,
     ChoiceField,
     FormField,
+    FormSheet,
     EmptyState,
     ChoicePicker,
     ListRow,
@@ -16,7 +17,7 @@
     uiAlert,
     type SwipeAction
   } from '@nba/ui';
-  import { Check, Ellipsis, GripVertical, History, Plus, Signpost } from '@lucide/svelte';
+  import { Check, Ellipsis, GripVertical, History, Plus, Settings2, Signpost } from '@lucide/svelte';
   import { detailDeBloc, genreDeBloc } from './block-summary';
   import type { BlockPayload } from '../../../shared/blocks';
   import { BLOCK_KINDS } from './block-editor-registry';
@@ -132,6 +133,7 @@
   */
   let reorganise = $state(false);
   let choixDeBloc = $state(false);
+  let reglagesOuverts = $state(false);
   let historiqueOuvert = $state(false);
   let adressesOuvertes = $state(false);
 
@@ -158,6 +160,14 @@
   */
   $effect(() => {
     const actions: SwipeAction[] = [];
+    if (canWrite) {
+      actions.push({
+        id: 'reglages',
+        label: 'Réglages de la page',
+        icon: Settings2,
+        run: () => (reglagesOuverts = true)
+      });
+    }
     if (canWrite && !reorganise) {
       actions.push({
         id: 'ajouter',
@@ -226,7 +236,16 @@
 </script>
 
 <div class="space-y-6">
-  <div class="flex flex-wrap items-center gap-3">
+  <!--
+    La barre d'état et ses deux gestes restent en haut, et collent au défilement.
+    « Enregistrer » vivait au bout du flux : sur cette page, à plus de quatre mille
+    pixels du haut — cinq écrans de téléphone — et il fallait traverser tous les blocs
+    pour l'atteindre. Les formulaires des autres écrans portent leur validation en
+    haut de leur feuille ; celui-ci n'en est pas une, mais la règle est la même.
+  -->
+  <div
+    class="sticky top-0 z-20 flex flex-wrap items-center gap-3 border-b border-border bg-background py-3"
+  >
     <Badge variant={page.status === 'published' ? 'default' : 'secondary'}>
       {page.status === 'published' ? 'En ligne' : 'Brouillon'}
     </Badge>
@@ -251,9 +270,184 @@
     {#if dirty}
       <span class="text-muted-foreground text-sm">Modifications non enregistrées</span>
     {/if}
+
+    {#if canWrite}
+      <div class="ml-auto flex items-center gap-2">
+        <!--
+          Réorganiser vit aussi ici : la barre du bas est masquée au-dessus de 768 px,
+          et le mode y serait sinon inatteignable à la souris.
+        -->
+        {#if blocks.length > 1}
+          <Button
+            variant={reorganise ? 'default' : 'outline'}
+            size="sm"
+            class="hidden gap-1.5 md:inline-flex"
+            onclick={() => (reorganise = !reorganise)}
+          >
+            {#if reorganise}
+              <Check class="size-4" />
+              Terminer
+            {:else}
+              <GripVertical class="size-4" />
+              Réorganiser
+            {/if}
+          </Button>
+        {/if}
+        <!-- Le tiroir des réglages s'ouvre aussi d'ici : la barre du bas est masquée
+             au-dessus de 768 px. -->
+        <Button
+          variant="outline"
+          size="sm"
+          class="hidden gap-1.5 md:inline-flex"
+          onclick={() => (reglagesOuverts = true)}
+        >
+          <Settings2 class="size-4" />
+          Réglages
+        </Button>
+        <Button variant="secondary" size="sm" onclick={togglePublished} disabled={busy}>
+          {page.status === 'published' ? 'Retirer du site' : 'Publier'}
+        </Button>
+        <Button size="sm" onclick={save} disabled={busy}>
+          {busy ? 'Enregistrement…' : 'Enregistrer'}
+        </Button>
+      </div>
+    {/if}
   </div>
 
-  {#if canWrite}
+
+  {#if blocks.length === 0}
+    <EmptyState title="Page vide" description="Ajoutez un bloc pour commencer." />
+  {:else if reorganise}
+    <!--
+      Repliés, les blocs tiennent tous à l'écran : c'est ce qui permet de voir le
+      trajet d'un déplacement au lieu de le deviner. Chaque rangée dit le genre du
+      bloc et ce qui le distingue de son voisin du même genre.
+    -->
+    <div class="space-y-3">
+      <p class="px-4 text-xs text-muted-foreground">
+        Tirez un bloc par sa poignée pour le déplacer. L'ordre s'applique à
+        l'enregistrement, comme le reste de la page.
+      </p>
+      <ListView items={blocks} onReorder={deplacerBloc}>
+        {#snippet listRow(bloc, index)}
+          <ListRow
+            item={bloc}
+            reorder={{ groupe: 'blocs', rang: index }}
+            title={`${index + 1}. ${genreDeBloc(bloc)}`}
+            subtitle={detailDeBloc(bloc)}
+          />
+        {/snippet}
+      </ListView>
+    </div>
+  {:else}
+    <div class="space-y-3">
+      {#each blocks as block, index (index)}
+        <BlockCard
+          bind:block={blocks[index]}
+          {index}
+          total={blocks.length}
+          {media}
+          {canUploadMedia}
+          {targets}
+          {categories}
+          onMove={move}
+          onRemove={removeBlock}
+        />
+      {/each}
+    </div>
+  {/if}
+
+  {#if canWrite && !reorganise}
+    <!--
+      Une rangée de douze boutons dont la description ne vivait qu'en infobulle — donc
+      nulle part au doigt. Un seul geste ouvre l'écran de choix, où chaque genre a sa
+      ligne, son nom et la phrase qui dit à quoi il sert.
+
+      Sur téléphone, ce geste vit dans la barre du bas : le garder ici en doublait
+      l'offre, et l'éloignait du pouce d'autant que la page est longue.
+    -->
+    <Button
+      variant="outline"
+      class="hidden w-full gap-1.5 md:inline-flex"
+      onclick={() => (choixDeBloc = true)}
+    >
+      <Plus class="size-4" />
+      Ajouter un bloc
+    </Button>
+  {/if}
+
+  <!--
+    Les anciennes adresses et l'historique quittent le bas de l'écran pour des
+    tiroirs, atteints depuis le menu de la barre du bas ou les boutons du haut. Ils
+    étaient posés après les blocs : sur une page de dix blocs, on ne les atteignait
+    qu'après un long défilement, et on ne les y cherchait donc jamais.
+  -->
+</div>
+
+<ResponsiveSheet
+  bind:open={adressesOuvertes}
+  title="Anciennes adresses"
+  description="Elles redirigent vers cette page. Une redirection encore empruntée ne doit pas être retirée."
+  size="lg"
+>
+  <ListView items={redirects}>
+    {#snippet listRow(redirect)}
+      <ListRow
+        item={redirect}
+        title={redirect.fromPath}
+        subtitle={redirect.statusCode === 410 ? 'Ne répond plus' : `→ ${page.path}`}
+        value={String(redirect.hitCount)}
+        valueTone={redirect.hitCount > 0 ? 'foreground' : 'muted'}
+        valueCaption={redirect.hitCount === 0 ? 'jamais' : 'visites'}
+        chevron="none"
+      />
+    {/snippet}
+  </ListView>
+</ResponsiveSheet>
+
+<RevisionsPanel
+  bind:open={historiqueOuvert}
+  {revisions}
+  pageId={page.id}
+  canRestore={canWrite}
+/>
+
+<!--
+  Le catalogue des blocs : douze genres, chacun avec la phrase qui dit à quoi il sert.
+  Elle n'existait qu'en `title=` sur un bouton — une infobulle, donc rien au doigt.
+-->
+<ChoicePicker
+  bind:open={choixDeBloc}
+  title="Ajouter un bloc"
+  description="Le bloc s'ajoute en fin de page ; le mode de rangement permet de le déplacer."
+  options={BLOCK_KINDS.map((kind) => ({ value: kind.type, label: kind.label, hint: kind.hint }))}
+  onChoose={ajouterLeGenre}
+/>
+
+<!--
+  Le formulaire de la page est un tiroir, comme ceux des autres écrans : il porte donc
+  sa validation en haut, et non au bout d'un flux de quatre mille pixels. Ce qui reste
+  à l'écran est le contenu — les blocs —, que l'on vient éditer ; le titre, l'adresse
+  et les réglages pour les moteurs se règlent une fois et se revoient rarement.
+
+  Sa validation enregistre **toute la page**, blocs compris : les deux écritures sont
+  distinctes côté serveur, mais n'enregistrer que les réglages ici puis recharger
+  perdrait les blocs modifiés entre-temps.
+-->
+<FormSheet
+  bind:open={reglagesOuverts}
+  title="Réglages de la page"
+  description="Le titre, l'adresse et ce que les moteurs de recherche affichent."
+  icon={Settings2}
+  isSubmitting={busy}
+  submitLabel="Enregistrer"
+  submittingLabel="Enregistrement…"
+  onSubmit={(event) => {
+    event.preventDefault();
+    void save();
+  }}
+  size="lg"
+>
     <div class="grid gap-3 sm:grid-cols-2">
       <FormField id="page-title" label="Titre">
         <Input id="page-title" bind:value={title} oninput={touch} />
@@ -323,132 +517,4 @@
         </FormField>
       </div>
     </div>
-  {/if}
-
-  {#if blocks.length === 0}
-    <EmptyState title="Page vide" description="Ajoutez un bloc pour commencer." />
-  {:else if reorganise}
-    <!--
-      Repliés, les blocs tiennent tous à l'écran : c'est ce qui permet de voir le
-      trajet d'un déplacement au lieu de le deviner. Chaque rangée dit le genre du
-      bloc et ce qui le distingue de son voisin du même genre.
-    -->
-    <div class="space-y-3">
-      <p class="px-4 text-xs text-muted-foreground">
-        Tirez un bloc par sa poignée pour le déplacer. L'ordre s'applique à
-        l'enregistrement, comme le reste de la page.
-      </p>
-      <ListView items={blocks} onReorder={deplacerBloc}>
-        {#snippet listRow(bloc, index)}
-          <ListRow
-            item={bloc}
-            reorder={{ groupe: 'blocs', rang: index }}
-            title={`${index + 1}. ${genreDeBloc(bloc)}`}
-            subtitle={detailDeBloc(bloc)}
-          />
-        {/snippet}
-      </ListView>
-    </div>
-  {:else}
-    <div class="space-y-3">
-      {#each blocks as block, index (index)}
-        <BlockCard
-          bind:block={blocks[index]}
-          {index}
-          total={blocks.length}
-          {media}
-          {canUploadMedia}
-          {targets}
-          {categories}
-          onMove={move}
-          onRemove={removeBlock}
-        />
-      {/each}
-    </div>
-  {/if}
-
-  {#if canWrite && !reorganise}
-    <!--
-      Une rangée de douze boutons dont la description ne vivait qu'en infobulle — donc
-      nulle part au doigt. Un seul geste ouvre l'écran de choix, où chaque genre a sa
-      ligne, son nom et la phrase qui dit à quoi il sert.
-    -->
-    <Button variant="outline" class="w-full gap-1.5" onclick={() => (choixDeBloc = true)}>
-      <Plus class="size-4" />
-      Ajouter un bloc
-    </Button>
-
-    <div class="flex flex-wrap items-center gap-2">
-      <!--
-        Réorganiser vit aussi ici : la barre du bas est masquée au-dessus de 768 px, et
-        le mode y serait sinon inatteignable à la souris.
-      -->
-      {#if blocks.length > 1}
-        <Button
-          variant={reorganise ? 'default' : 'outline'}
-          class="hidden gap-1.5 md:inline-flex"
-          onclick={() => (reorganise = !reorganise)}
-        >
-          {#if reorganise}
-            <Check class="size-4" />
-            Terminer le rangement
-          {:else}
-            <GripVertical class="size-4" />
-            Réorganiser
-          {/if}
-        </Button>
-      {/if}
-      <Button onclick={save} disabled={busy}>{busy ? 'Enregistrement…' : 'Enregistrer'}</Button>
-      <Button variant="secondary" onclick={togglePublished} disabled={busy}>
-        {page.status === 'published' ? 'Retirer du site' : 'Publier'}
-      </Button>
-    </div>
-  {/if}
-
-  <!--
-    Les anciennes adresses et l'historique quittent le bas de l'écran pour des
-    tiroirs, atteints depuis le menu de la barre du bas ou les boutons du haut. Ils
-    étaient posés après les blocs : sur une page de dix blocs, on ne les atteignait
-    qu'après un long défilement, et on ne les y cherchait donc jamais.
-  -->
-</div>
-
-<ResponsiveSheet
-  bind:open={adressesOuvertes}
-  title="Anciennes adresses"
-  description="Elles redirigent vers cette page. Une redirection encore empruntée ne doit pas être retirée."
-  size="lg"
->
-  <ListView items={redirects}>
-    {#snippet listRow(redirect)}
-      <ListRow
-        item={redirect}
-        title={redirect.fromPath}
-        subtitle={redirect.statusCode === 410 ? 'Ne répond plus' : `→ ${page.path}`}
-        value={String(redirect.hitCount)}
-        valueTone={redirect.hitCount > 0 ? 'foreground' : 'muted'}
-        valueCaption={redirect.hitCount === 0 ? 'jamais' : 'visites'}
-        chevron="none"
-      />
-    {/snippet}
-  </ListView>
-</ResponsiveSheet>
-
-<RevisionsPanel
-  bind:open={historiqueOuvert}
-  {revisions}
-  pageId={page.id}
-  canRestore={canWrite}
-/>
-
-<!--
-  Le catalogue des blocs : douze genres, chacun avec la phrase qui dit à quoi il sert.
-  Elle n'existait qu'en `title=` sur un bouton — une infobulle, donc rien au doigt.
--->
-<ChoicePicker
-  bind:open={choixDeBloc}
-  title="Ajouter un bloc"
-  description="Le bloc s'ajoute en fin de page ; le mode de rangement permet de le déplacer."
-  options={BLOCK_KINDS.map((kind) => ({ value: kind.type, label: kind.label, hint: kind.hint }))}
-  onChoose={ajouterLeGenre}
-/>
+</FormSheet>
