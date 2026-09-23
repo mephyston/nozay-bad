@@ -17,7 +17,18 @@
     uiAlert,
     type SwipeAction
   } from '@nba/ui';
-  import { Check, Ellipsis, GripVertical, History, Plus, Settings2, Signpost } from '@lucide/svelte';
+  import {
+    Check,
+    Ellipsis,
+    Eye,
+    EyeOff,
+    GripVertical,
+    History,
+    Plus,
+    Save,
+    Settings2,
+    Signpost
+  } from '@lucide/svelte';
   import { detailDeBloc, genreDeBloc } from './block-summary';
   import type { BlockPayload } from '../../../shared/blocks';
   import { BLOCK_KINDS } from './block-editor-registry';
@@ -162,6 +173,13 @@
     const actions: SwipeAction[] = [];
     if (canWrite) {
       actions.push({
+        id: 'enregistrer',
+        label: busy ? 'Enregistrement…' : 'Enregistrer la page',
+        icon: Save,
+        tone: 'primary',
+        run: () => void save()
+      });
+      actions.push({
         id: 'reglages',
         label: 'Réglages de la page',
         icon: Settings2,
@@ -198,6 +216,16 @@
         label: 'Anciennes adresses',
         icon: Signpost,
         run: () => (adressesOuvertes = true)
+      });
+    }
+    if (canWrite) {
+      /* En dernier, et sans question : `togglePublished` en pose déjà une, et la
+         sienne dit ce qu'un retrait fait au site. */
+      actions.push({
+        id: 'publication',
+        label: page.status === 'published' ? 'Retirer du site' : 'Publier',
+        icon: page.status === 'published' ? EyeOff : Eye,
+        run: () => void togglePublished()
       });
     }
     return dockDePage.declarerActions(actions, { icon: Ellipsis, label: 'Actions de la page' });
@@ -304,10 +332,21 @@
           <Settings2 class="size-4" />
           Réglages
         </Button>
-        <Button variant="secondary" size="sm" onclick={togglePublished} disabled={busy}>
+        <!--
+          Publier et enregistrer vivent dans la barre du bas au doigt : une pilule dans
+          le flux n'est pas la forme d'une action principale, et la validation d'un
+          formulaire est ailleurs un rond dans la barre haute de sa feuille.
+        -->
+        <Button
+          variant="secondary"
+          size="sm"
+          class="hidden md:inline-flex"
+          onclick={togglePublished}
+          disabled={busy}
+        >
           {page.status === 'published' ? 'Retirer du site' : 'Publier'}
         </Button>
-        <Button size="sm" onclick={save} disabled={busy}>
+        <Button size="sm" class="hidden md:inline-flex" onclick={save} disabled={busy}>
           {busy ? 'Enregistrement…' : 'Enregistrer'}
         </Button>
       </div>
