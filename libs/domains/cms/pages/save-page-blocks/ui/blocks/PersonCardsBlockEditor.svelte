@@ -112,7 +112,7 @@
             id={`${uid}-person-${index}-email`}
             type="email"
             bind:value={person.email}
-            placeholder="tresorerie@nozaybad.fr"
+            placeholder="tresorerie@exemple.fr"
           />
         </FormField>
         <FormField id={`${uid}-person-${index}-phone`} label="Téléphone">
