@@ -1,5 +1,5 @@
 import { Ban, Pencil, RotateCcw, Users } from '@lucide/svelte';
-import type { SwipeAction, Tone } from '@nba/ui';
+import { jourCourt, moisEnToutesLettres, type SwipeAction, type Tone } from '@nba/ui';
 
 /**
  * Le vocabulaire des séances de jeu libre.
@@ -27,35 +27,9 @@ export type SeanceLike = {
   needsOpener: boolean;
 };
 
-/**
- * Les composantes d'une date ISO, ou `null` si ce n'en est pas une.
- *
- * Extraites à la main **et non par `new Date(chaîne)`**, qui se lit en UTC : à l'ouest
- * de Greenwich, minuit UTC tombe la veille et la séance s'affiche un jour trop tôt.
- *
- * Aucun test ne peut attraper cette variante ici : sur un runner en UTC comme à Paris,
- * les deux lectures donnent le même jour. C'est pourquoi la date est construite par ses
- * composantes, où la question ne se pose pas — le commentaire tient lieu de garde, et
- * `composantesDeDate` est, elle, testable.
- */
-export const composantesDeDate = (date: string): { annee: number; mois: number; jour: number } | null => {
-  const trouve = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date.trim());
-  if (!trouve) return null;
-  const [, annee, mois, jour] = trouve;
-  return { annee: Number(annee), mois: Number(mois), jour: Number(jour) };
-};
-
-/** Le jour, écrit comme on le dit. */
-export const jourDeSeance = (date: string): string => {
-  const parts = composantesDeDate(date);
-  if (!parts) return date;
-  const d = new Date(parts.annee, parts.mois - 1, parts.jour);
-  return d.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
-};
-
 /** L'identité d'une séance : son jour, et son intitulé quand elle en porte un. */
 export const titreDeSeance = (s: SeanceLike): string =>
-  s.label?.trim() ? `${jourDeSeance(s.date)} · ${s.label.trim()}` : jourDeSeance(s.date);
+  s.label?.trim() ? `${jourCourt(s.date)} · ${s.label.trim()}` : jourCourt(s.date);
 
 /** Sous le titre : l'horaire et le gymnase, les deux choses qu'on vérifie avant de venir. */
 export const detailDeSeance = (s: SeanceLike): string =>
@@ -101,15 +75,7 @@ export const pastilleDeSeance = (
 /** Clé de regroupement : le mois. Une saison tient sur dix sections, pas trois cents lignes. */
 export const moisDeSeance = (s: SeanceLike): string => s.date.slice(0, 7);
 
-/** `2026-10` → `octobre 2026`. Même construction par composantes que le jour. */
-export const libelleDeMois = (cle: string): string => {
-  const parts = composantesDeDate(`${cle}-01`);
-  if (!parts) return cle;
-  return new Date(parts.annee, parts.mois - 1, 1).toLocaleDateString('fr-FR', {
-    month: 'long',
-    year: 'numeric'
-  });
-};
+
 
 export type DroitsSurSeances = { canWrite?: boolean; canReadRegistrations?: boolean };
 

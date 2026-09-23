@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Dumbbell } from '@lucide/svelte';
-  import { Input, Select, Textarea, FormField, FormSheet, submitForm, flashAndReload } from '@nba/ui';
+  import { ChoiceField, Input, Textarea, FormField, FormSheet, submitForm, flashAndReload } from '@nba/ui';
   import { DEFAULT_CAPACITY_PER_SLOT, DEFAULT_SLOT_COUNT, DEFAULT_SLOT_MINUTES, MAX_CAPACITY_PER_SLOT, MAX_SLOT_COUNT, MAX_SLOT_MINUTES, isValidLayout } from '../../../shared/indiv';
   import type { SessionRow } from './IndivManager.svelte';
 
@@ -81,10 +81,22 @@
 </script>
 
 <FormSheet bind:open title={session ? 'Modifier la soirée' : 'Nouvelle soirée d’indiv'} description="Une soirée, ses créneaux de trente minutes et les places de chacun." icon={Dumbbell} {error} isSubmitting={submitting} onSubmit={save}>
+  <!--
+    Un `<select>` natif ouvre la roulette du système : au doigt, on y vise un gymnase
+    dans une bande de trente pixels. La rangée mène à un écran de choix où chaque
+    gymnase a sa ligne de 44 points.
+  -->
   <FormField label="Gymnase" id="indiv-venue">
-    <Select id="indiv-venue" bind:value={venueId}>
-      {#each venues as venue (venue.id)}<option value={String(venue.id)}>{venue.name}</option>{/each}
-    </Select>
+    <ChoiceField
+      id="indiv-venue"
+      label="Gymnase"
+      value={venueId}
+      onChange={(v) => (venueId = v)}
+      options={venues.map((venue: { id: number; name: string }) => ({
+        value: String(venue.id),
+        label: venue.name
+      }))}
+    />
   </FormField>
   <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
     <FormField label="Date" id="indiv-date"><Input id="indiv-date" type="date" bind:value={date} /></FormField>

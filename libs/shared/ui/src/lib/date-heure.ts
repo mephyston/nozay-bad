@@ -32,3 +32,43 @@ export function composerDateHeure(
   const j = jour || aujourdhui().toISOString().slice(0, 10);
   return `${j}T${heure || heureParDefaut}`;
 }
+
+/**
+ * Les composantes d'une date ISO (`AAAA-MM-JJ`), ou `null` si ce n'en est pas une.
+ *
+ * Extraites à la main **et non par `new Date(chaîne)`**, qui se lit en UTC : à l'ouest
+ * de Greenwich, minuit UTC tombe la veille et la date affichée recule d'un jour.
+ *
+ * Aucun test ne peut attraper cette variante — sur un runner en UTC comme à Paris, les
+ * deux lectures donnent le même jour, et forcer `process.env.TZ` dans une suite ne sert
+ * à rien : Node fige le fuseau au premier `Date` du processus. D'où cette construction
+ * par composantes, où la question ne se pose pas.
+ */
+export const composantesDeDate = (
+  valeur: string
+): { annee: number; mois: number; jour: number } | null => {
+  const trouve = /^(\d{4})-(\d{2})-(\d{2})$/.exec(valeur.trim());
+  if (!trouve) return null;
+  return { annee: Number(trouve[1]), mois: Number(trouve[2]), jour: Number(trouve[3]) };
+};
+
+/** `2026-10-11` → `dim. 11 oct.`. Rend la valeur telle quelle si ce n'est pas une date. */
+export const jourCourt = (valeur: string): string => {
+  const parts = composantesDeDate(valeur);
+  if (!parts) return valeur;
+  return new Date(parts.annee, parts.mois - 1, parts.jour).toLocaleDateString('fr-FR', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short'
+  });
+};
+
+/** `2026-10` → `octobre 2026`. Sert d'en-tête aux listes groupées par mois. */
+export const moisEnToutesLettres = (cle: string): string => {
+  const parts = composantesDeDate(`${cle}-01`);
+  if (!parts) return cle;
+  return new Date(parts.annee, parts.mois - 1, 1).toLocaleDateString('fr-FR', {
+    month: 'long',
+    year: 'numeric'
+  });
+};

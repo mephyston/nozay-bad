@@ -1,6 +1,6 @@
 <script lang="ts">
   import { CalendarPlus } from '@lucide/svelte';
-  import { Input, Checkbox, Label, FormField, FormSheet, submitForm, flashAndReload } from '@nba/ui';
+  import { Input, MultiChoiceField, FormField, FormSheet, submitForm, flashAndReload } from '@nba/ui';
   import { DEFAULT_CAPACITY_PER_SLOT, DEFAULT_SLOT_COUNT, DEFAULT_SLOT_MINUTES, MAX_CAPACITY_PER_SLOT, MAX_SLOT_COUNT, MAX_SLOT_MINUTES } from '../../../shared/indiv';
 
   /**
@@ -33,10 +33,6 @@
     startTime = '';
     error = null;
   });
-
-  function toggle(id: number) {
-    slotIds = slotIds.includes(id) ? slotIds.filter((s) => s !== id) : [...slotIds, id];
-  }
 
   async function generate(event: Event) {
     event.preventDefault();
@@ -83,15 +79,31 @@
     <FormField label="Du" id="gen-from"><Input id="gen-from" type="date" bind:value={from} /></FormField>
     <FormField label="Au" id="gen-to"><Input id="gen-to" type="date" bind:value={to} /></FormField>
   </div>
-  <div class="space-y-2">
-    <Label class="text-sm font-medium">Créneaux d’indiv</Label>
-    {#each slots as slot (slot.id)}
-      <label class="flex items-center gap-2 text-sm">
-        <Checkbox checked={slotIds.includes(slot.id)} onCheckedChange={() => toggle(slot.id)} aria-label={`${WEEKDAYS[slot.weekday]} ${slot.startTime}`} />
-        <span>{WEEKDAYS[slot.weekday]} {slot.startTime}–{slot.endTime}{slot.label ? ` · ${slot.label}` : ''}{slot.venue?.name ? ` · ${slot.venue.name}` : ''}</span>
-      </label>
-    {/each}
-  </div>
+  <!--
+    Les cases à cocher faisaient des cibles de 16 px empilées, et leur intitulé n'était
+    pas un libellé de champ. Une rangée dit ce qui est retenu et mène à l'écran de
+    choix, où chaque créneau a sa ligne.
+  -->
+  <FormField
+    id="gen-slots"
+    label="Créneaux d’indiv"
+    hint="Chaque créneau retenu devient une soirée à chacune de ses dates dans la période."
+  >
+    <MultiChoiceField
+      id="gen-slots"
+      label="Créneaux d’indiv"
+      title="Créneaux à dérouler"
+      description="Seuls les créneaux marqués « séances individuelles » dans les horaires sont proposés."
+      placeholder="Aucun"
+      values={slotIds.map(String)}
+      onChange={(v) => (slotIds = v.map(Number))}
+      options={slots.map((slot: { id: number; weekday: number; startTime: string; endTime: string; label: string | null; venue?: { name: string } | null }) => ({
+        value: String(slot.id),
+        label: `${WEEKDAYS[slot.weekday]} ${slot.startTime}–${slot.endTime}`,
+        hint: [slot.label, slot.venue?.name].filter(Boolean).join(' · ') || undefined
+      }))}
+    />
+  </FormField>
   <FormField label="Heure de début (vide = celle du créneau)" id="gen-start"><Input id="gen-start" type="time" bind:value={startTime} /></FormField>
   <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
     <FormField label="Créneaux" id="gen-count"><Input id="gen-count" type="number" min="1" max={MAX_SLOT_COUNT} bind:value={slotCount} /></FormField>

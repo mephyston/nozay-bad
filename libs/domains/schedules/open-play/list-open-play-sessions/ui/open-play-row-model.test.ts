@@ -4,9 +4,6 @@ import {
   gestePrincipal,
   gestesAuBalayage,
   gestesPourSeance,
-  composantesDeDate,
-  jourDeSeance,
-  libelleDeMois,
   moisDeSeance,
   ouvreurDeSeance,
   pastilleDeSeance,
@@ -33,33 +30,6 @@ const seance = (patch: Partial<SeanceLike> = {}): SeanceLike => ({
 });
 
 describe('projection d’une séance', () => {
-  it('écrit le jour en français', () => {
-    expect(jourDeSeance('2026-10-11')).toContain('11');
-    expect(jourDeSeance('2026-10-11')).toContain('oct');
-  });
-
-  it('lit la date par ses composantes, jamais par new Date(chaîne)', () => {
-    /*
-      `new Date('2026-10-11')` se lit en UTC : à l'ouest de Greenwich, minuit UTC tombe
-      la veille et la séance s'affiche un jour trop tôt.
-
-      Ce test ne peut pas attraper cette variante — sur un runner en UTC comme à Paris,
-      les deux lectures donnent le même jour, et forcer `process.env.TZ` ici ne sert à
-      rien : Node fige le fuseau au premier `Date` du processus, bien avant ce fichier.
-      Ce qui se teste, c'est l'extraction elle-même, sur laquelle la construction
-      locale repose.
-    */
-    expect(composantesDeDate('2026-10-11')).toEqual({ annee: 2026, mois: 10, jour: 11 });
-    expect(composantesDeDate('2026-10-11 ')).toEqual({ annee: 2026, mois: 10, jour: 11 });
-    expect(composantesDeDate('11/10/2026')).toBeNull();
-    expect(composantesDeDate('2026-10')).toBeNull();
-    expect(composantesDeDate('')).toBeNull();
-  });
-
-  it('rend la date telle quelle quand elle n’en est pas une', () => {
-    expect(jourDeSeance('pas une date')).toBe('pas une date');
-  });
-
   it('porte l’intitulé dans le titre, quand il y en a un', () => {
     expect(titreDeSeance(seance())).not.toContain('·');
     expect(titreDeSeance(seance({ label: 'Jeu libre des vacances' }))).toContain(
@@ -141,15 +111,10 @@ describe('pastille', () => {
 });
 
 describe('regroupement par mois', () => {
-  it('groupe sur le mois et l’écrit en toutes lettres', () => {
+  it('groupe sur le mois', () => {
     expect(moisDeSeance(seance({ date: '2026-10-11' }))).toBe('2026-10');
-    expect(libelleDeMois('2026-10')).toContain('octobre');
-    expect(libelleDeMois('2026-10')).toContain('2026');
   });
 
-  it('rend la clé telle quelle quand elle n’est pas un mois', () => {
-    expect(libelleDeMois('bricole')).toBe('bricole');
-  });
 });
 
 describe('gestes', () => {

@@ -1,10 +1,9 @@
 <script lang="ts">
-  import { Badge, ListView, ListRow } from '@nba/ui';
+  import { Badge, ListView, ListRow, moisEnToutesLettres } from '@nba/ui';
   import {
     detailDeSeance,
     gestePrincipal,
     gestesAuBalayage,
-    libelleDeMois,
     moisDeSeance,
     ouvreurDeSeance,
     pastilleDeSeance,
@@ -53,7 +52,7 @@
 <ListView
   items={sessions}
   sections={moisDeSeance}
-  sectionLabel={libelleDeMois}
+  sectionLabel={moisEnToutesLettres}
   {emptyTitle}
   {emptyDescription}
 >

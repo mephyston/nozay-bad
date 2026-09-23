@@ -42,7 +42,13 @@ describe('IndivManager', () => {
     expect(rows).toHaveLength(1);
     expect(rows[0].querySelectorAll('td').length).toBeGreaterThanOrEqual(6);
     expect(host.textContent).toContain('2 × 2 places');
-    expect(host.textContent).toContain('Candidatures ouvertes');
+    /*
+      « À annoncer » et non plus « Candidatures ouvertes » : le tableau et la liste
+      disaient deux mots pour le même état. Une seule déclaration les sert désormais —
+      la colonne la rend toujours, la pastille du téléphone seulement quand l'état
+      réclame un geste.
+    */
+    expect(host.textContent).toContain('À annoncer');
   });
 
   it('mène à la sélection de la soirée', () => {

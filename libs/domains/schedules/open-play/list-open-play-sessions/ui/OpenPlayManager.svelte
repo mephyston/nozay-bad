@@ -18,6 +18,7 @@
     ResponsiveSheet,
     SwitchField,
     dockDePage,
+    jourCourt,
     submitForm,
     uiConfirm,
     flashAndReload,
@@ -26,7 +27,7 @@
   } from '@nba/ui';
   import { DEFAULT_MIN_PLAYERS } from '../../../shared/open-play';
   import OpenPlaySessionsList from './OpenPlaySessionsList.svelte';
-  import { gestesPourSeance, jourDeSeance, type SeanceLike } from './open-play-row-model';
+  import { gestesPourSeance, type SeanceLike } from './open-play-row-model';
 
   /**
    * Les séances de jeu libre, vues du bureau.
@@ -485,7 +486,7 @@
   title="Inscrits"
   icon={Users}
   description={openedSession
-    ? `${jourDeSeance(openedSession.date)} · ${openedSession.startTime}–${openedSession.endTime}`
+    ? `${jourCourt(openedSession.date)} · ${openedSession.startTime}–${openedSession.endTime}`
     : ''}
   size="md"
 >
@@ -498,7 +499,7 @@
   {#snippet header()}
     {#if openedSession}
       <p class="text-muted-foreground mt-1 text-sm">
-        {jourDeSeance(openedSession.date)} · {openedSession.startTime}–{openedSession.endTime}
+        {jourCourt(openedSession.date)} · {openedSession.startTime}–{openedSession.endTime}
       </p>
     {/if}
   {/snippet}
@@ -650,7 +651,7 @@
   bind:open={annulationOuverte}
   title="Annuler la séance"
   description={seanceAAnnuler
-    ? `${jourDeSeance(seanceAAnnuler.date)} · ${seanceAAnnuler.startTime}–${seanceAAnnuler.endTime}`
+    ? `${jourCourt(seanceAAnnuler.date)} · ${seanceAAnnuler.startTime}–${seanceAAnnuler.endTime}`
     : ''}
   icon={Ban}
   error={errorMsg}

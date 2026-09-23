@@ -3,18 +3,28 @@
   import {
     Button,
     Badge,
-    Card,
     Table,
+    Textarea,
     DataTable,
     DataTableToolbar,
     DataTableRowActions,
     DropdownMenu,
+    FilterSheet,
+    FormField,
+    FormSheet,
+    SwitchField,
+    dockDePage,
+    jourCourt,
+    submitForm,
     uiConfirm,
     flashAndReload,
-    uiAlert
+    uiAlert,
+    type SwipeAction
   } from '@nba/ui';
   import IndivSessionForm from './IndivSessionForm.svelte';
   import IndivGenerateForm from './IndivGenerateForm.svelte';
+  import IndivSessionsList from './IndivSessionsList.svelte';
+  import { etatDeSoiree, gestesDeSoiree, resteAAnnoncer, type SoireeLike } from './indiv-row-model';
 
   /**
    * Les soirées d'indiv, vues de l'entraîneur.
@@ -58,7 +68,7 @@
 
   const filtered = $derived(
     sessions.filter((row: SessionRow) => {
-      if (onlyToAnnounce && !(row.status === 'open' && row.date >= today)) return false;
+      if (onlyToAnnounce && !resteAAnnoncer(row as SoireeLike, today)) return false;
       const term = searchTerm.trim().toLowerCase();
       if (!term) return true;
       return row.date.includes(term) || (row.venue?.name ?? '').toLowerCase().includes(term) || (row.label ?? '').toLowerCase().includes(term);
@@ -74,15 +84,51 @@
     }
   }
 
-  async function cancel(row: SessionRow) {
-    const reason = window.prompt("Pourquoi la soirée est-elle annulée ? Les candidats liront ce motif.", row.cancelledReason ?? '');
-    if (reason === null || !reason.trim()) return;
-    try {
-      await post({ action: 'update', id: row.id, status: 'cancelled', cancelledReason: reason.trim() }, "L'annulation a échoué.");
-      flashAndReload('Soirée annulée.');
-    } catch (error) {
-      uiAlert(error instanceof Error ? error.message : "L'annulation a échoué.");
-    }
+  /**
+   * Annuler : un formulaire, et non plus `window.prompt`.
+   *
+   * La boîte native n'a ni le style de l'application, ni de place pour dire à qui ce
+   * motif s'adresse, et sur un téléphone elle s'ouvre au milieu de l'écran — loin du
+   * pouce — en bloquant tout le reste. Or les candidats vont lire ce texte.
+   */
+  let annulationOuverte = $state(false);
+  let soireeAAnnuler = $state<SessionRow | null>(null);
+  let motif = $state('');
+  let busy = $state(false);
+  let errorMsg = $state('');
+
+  function openCancelForm(row: SessionRow) {
+    soireeAAnnuler = row;
+    motif = row.cancelledReason ?? '';
+    errorMsg = '';
+    annulationOuverte = true;
+  }
+
+  async function cancel(event: Event) {
+    event.preventDefault();
+    const row = soireeAAnnuler;
+    if (!row) return;
+    errorMsg = '';
+    busy = true;
+
+    await submitForm({
+      // Le serveur refuse un motif vide ; autant le dire avant l'aller-retour.
+      validate: () => (motif.trim() ? null : 'Dites pourquoi la soirée est annulée.'),
+      submit: () =>
+        post(
+          { action: 'update', id: row.id, status: 'cancelled', cancelledReason: motif.trim() },
+          "L'annulation a échoué."
+        ),
+      close: () => {
+        annulationOuverte = false;
+        soireeAAnnuler = null;
+        motif = '';
+      },
+      success: 'Soirée annulée.',
+      onError: (message) => { errorMsg = message; }
+    });
+
+    busy = false;
   }
 
   async function reopen(row: SessionRow) {
@@ -100,12 +146,26 @@
     }
   }
 
-  function statusLabel(row: SessionRow): { text: string; variant: 'primary-soft' | 'outline' | 'destructive' | 'secondary' } {
-    if (row.status === 'cancelled') return { text: 'Annulée', variant: 'destructive' };
-    if (row.status === 'announced') return { text: 'Annoncée', variant: 'primary-soft' };
-    if (row.date < today) return { text: 'Passée', variant: 'secondary' };
-    return { text: 'Candidatures ouvertes', variant: 'outline' };
-  }
+  /*
+    Créer et programmer descendent dans la barre du bas : ils vivaient en haut d'une
+    barre d'outils qui défile avec la liste, donc hors de vue dès la troisième soirée.
+  */
+  $effect(() => {
+    if (!canWrite) return;
+    const actions: SwipeAction[] = [];
+    if (venues.length > 0) {
+      actions.push({ id: 'nouvelle', label: 'Nouvelle soirée', icon: Plus, run: () => { editing = null; showForm = true; } });
+    }
+    if (slots.length > 0) {
+      actions.push({ id: 'programmer', label: 'Programmer les soirées', icon: CalendarPlus, run: () => (showGenerate = true) });
+    }
+    if (actions.length === 0) return;
+    return dockDePage.declarerActions(actions, { icon: Plus, label: 'Ajouter des soirées' });
+  });
+
+  let filtresOuverts = $state(false);
+
+
 </script>
 
 {#if canWrite && venues.length === 0}
@@ -114,24 +174,35 @@
 
 <DataTable
   data={filtered}
-  mobileSpacing="spaced"
+  mobileSpacing="list"
   emptyTitle="Aucune soirée"
   emptyDescription={searchTerm.trim() || onlyToAnnounce ? 'Aucune soirée ne correspond à votre recherche.' : 'Programmez les soirées d’indiv depuis les créneaux marqués « séances individuelles » dans les horaires.'}
 >
   {#snippet toolbar()}
-    <DataTableToolbar bind:searchValue={searchTerm} searchPlaceholder="Rechercher une soirée..." hasFilters={false}>
+    <DataTableToolbar
+      bind:searchValue={searchTerm}
+      searchPlaceholder="Rechercher une soirée..."
+      dockSearch
+      hasFilters={true}
+      filtersActive={onlyToAnnounce}
+      onOpenFilters={() => (filtresOuverts = true)}
+      activeFilters={onlyToAnnounce
+        ? [{ id: 'annoncer', label: 'À annoncer', onRemove: () => (onlyToAnnounce = false) }]
+        : []}
+    >
+      {#snippet filters()}
+        {@render criteres()}
+      {/snippet}
       {#snippet actions()}
-        <Button variant={onlyToAnnounce ? 'default' : 'outline'} onclick={() => (onlyToAnnounce = !onlyToAnnounce)} class="h-9 shrink-0 gap-1.5 text-sm font-semibold">
-          À annoncer
-        </Button>
+        <!-- Sur téléphone, ces deux gestes vivent dans la barre du bas. -->
         {#if canWrite && slots.length > 0}
-          <Button variant="outline" onclick={() => (showGenerate = true)} class="h-9 shrink-0 gap-1.5 font-semibold">
+          <Button variant="outline" onclick={() => (showGenerate = true)} class="hidden h-9 shrink-0 gap-1.5 font-semibold md:flex">
             <CalendarPlus class="h-4 w-4" />
             <span>Programmer les soirées</span>
           </Button>
         {/if}
         {#if canWrite && venues.length > 0}
-          <Button onclick={() => { editing = null; showForm = true; }} class="h-9 shrink-0 gap-1.5 font-bold">
+          <Button onclick={() => { editing = null; showForm = true; }} class="hidden h-9 shrink-0 gap-1.5 font-bold md:flex">
             <Plus class="h-4 w-4" />
             <span>Nouvelle soirée</span>
           </Button>
@@ -141,30 +212,19 @@
   {/snippet}
 
   {#snippet mobileView()}
-    {#each filtered as row (row.id)}
-      {@const status = statusLabel(row)}
-      <Card.Root>
-        <Card.Content class="space-y-3 p-4">
-          <div class="flex items-start justify-between gap-2">
-            <div class="min-w-0">
-              <h4 class="text-sm font-bold text-foreground">{row.date} <span class="tabular-nums font-normal">{row.startTime}–{row.endTime}</span></h4>
-              <p class="mt-1 text-xs text-muted-foreground">{row.venue?.name ?? '—'} · {row.requestCount} candidat{row.requestCount > 1 ? 's' : ''}, {row.selectedCount} retenu{row.selectedCount > 1 ? 's' : ''}</p>
-            </div>
-            <Badge variant={status.variant} size="xs">{status.text}</Badge>
-          </div>
-          <div class="flex items-center justify-end gap-2 border-t border-border/50 pt-2">
-            <Button href={selectionHref(row.id)} variant="outline" size="sm" class="h-8 flex-1 gap-1.5 text-xs font-semibold">
-              <Users class="h-3.5 w-3.5" /><span>Candidats</span>
-            </Button>
-            {#if canWrite}
-              <Button variant="outline" size="sm" onclick={() => { editing = row; showForm = true; }} class="h-8 flex-1 gap-1.5 text-xs font-semibold">
-                <Edit class="h-3.5 w-3.5" /><span>Modifier</span>
-              </Button>
-            {/if}
-          </div>
-        </Card.Content>
-      </Card.Root>
-    {/each}
+    <IndivSessionsList
+      sessions={filtered}
+      droits={{ canWrite }}
+      {selectionHref}
+      aujourdhui={today}
+      emptyTitle="Aucune soirée"
+      emptyDescription={searchTerm.trim() || onlyToAnnounce
+        ? 'Aucune soirée ne correspond à ces critères.'
+        : 'Programmez les soirées d’indiv depuis les créneaux marqués « séances individuelles » dans les horaires.'}
+      onEdit={(x) => { editing = x as SessionRow; showForm = true; }}
+      onCancel={(x) => openCancelForm(x as SessionRow)}
+      onReopen={(x) => void reopen(x as SessionRow)}
+    />
   {/snippet}
 
   {#snippet header()}
@@ -178,7 +238,7 @@
   {/snippet}
 
   {#snippet row(session)}
-    {@const status = statusLabel(session)}
+    {@const status = etatDeSoiree(session as SoireeLike, today)}
     <Table.Row class={session.status === 'cancelled' ? 'opacity-60' : ''}>
       <Table.Cell class="font-medium tabular-nums">{session.date}</Table.Cell>
       <Table.Cell class="tabular-nums">{session.startTime}–{session.endTime}</Table.Cell>
@@ -188,27 +248,27 @@
         <span class="text-foreground">{session.requestCount}</span>
         <span class="block text-xs text-muted-foreground">{session.selectedCount} retenu{session.selectedCount > 1 ? 's' : ''}</span>
       </Table.Cell>
-      <Table.Cell><Badge variant={status.variant}>{status.text}</Badge></Table.Cell>
+      <Table.Cell><Badge variant={status.variante}>{status.texte}</Badge></Table.Cell>
       <Table.Cell class="relative text-right">
         <DataTableRowActions>
           <DropdownMenu.Label>Actions</DropdownMenu.Label>
           <DropdownMenu.Item onclick={() => (window.location.href = selectionHref(session.id))} class="cursor-pointer">
             <Users class="mr-2 h-3.5 w-3.5" />Candidats et sélection
           </DropdownMenu.Item>
-          {#if canWrite}
-            <DropdownMenu.Item onclick={() => { editing = session; showForm = true; }} class="cursor-pointer">
-              <Edit class="mr-2 h-3.5 w-3.5" />Modifier
+          <!--
+            Le menu du tableau et le balayage de la liste sont nourris par la **même**
+            déclaration : c'est ce qui empêche leurs libellés de diverger.
+          -->
+          {#each gestesDeSoiree(session as SoireeLike, { canWrite }, { onEdit: (x) => { editing = x as SessionRow; showForm = true; }, onCancel: (x) => openCancelForm(x as SessionRow), onReopen: (x) => void reopen(x as SessionRow) }) as action (action.id)}
+            {@const Icone = action.icon}
+            <DropdownMenu.Item
+              onclick={() => action.run(session as SoireeLike)}
+              class={`cursor-pointer ${action.tone === 'destructive' ? 'text-destructive focus:text-destructive' : ''}`}
+            >
+              {#if Icone}<Icone class="mr-2 h-3.5 w-3.5" />{/if}
+              {action.label}
             </DropdownMenu.Item>
-            {#if session.status === 'cancelled'}
-              <DropdownMenu.Item onclick={() => reopen(session)} class="cursor-pointer">
-                <RotateCcw class="mr-2 h-3.5 w-3.5" />Rouvrir
-              </DropdownMenu.Item>
-            {:else}
-              <DropdownMenu.Item onclick={() => cancel(session)} class="cursor-pointer text-destructive focus:text-destructive">
-                <Ban class="mr-2 h-3.5 w-3.5" />Annuler la soirée
-              </DropdownMenu.Item>
-            {/if}
-          {/if}
+          {/each}
         </DataTableRowActions>
       </Table.Cell>
     </Table.Row>
@@ -217,3 +277,56 @@
 
 <IndivSessionForm bind:open={showForm} session={editing} {venues} {endpoint} />
 <IndivGenerateForm bind:open={showGenerate} {slots} {endpoint} />
+
+<!--
+  « Revenir » et non « Annuler » pour le renoncement : le pied porterait sinon
+  « Annuler » — renoncer — à côté d'« Annuler la soirée » — confirmer.
+-->
+<FormSheet
+  bind:open={annulationOuverte}
+  title="Annuler la soirée"
+  description={soireeAAnnuler
+    ? `${jourCourt(soireeAAnnuler.date)} · ${soireeAAnnuler.startTime}–${soireeAAnnuler.endTime}`
+    : ''}
+  icon={Ban}
+  error={errorMsg}
+  isSubmitting={busy}
+  submitLabel="Annuler la soirée"
+  submittingLabel="Annulation…"
+  cancelLabel="Revenir"
+  onSubmit={cancel}
+>
+  <FormField
+    id="indiv-cancel-reason"
+    label="Motif"
+    hint="Les candidats liront ce motif. Dites ce qui les concerne : gymnase fermé, entraîneur absent."
+  >
+    <Textarea
+      id="indiv-cancel-reason"
+      bind:value={motif}
+      rows={3}
+      placeholder="Gymnase réquisitionné pour le tournoi départemental"
+      maxlength={500}
+    />
+  </FormField>
+</FormSheet>
+
+{#snippet criteres()}
+  <SwitchField
+    id="filter-a-annoncer"
+    label="Seulement les soirées à annoncer"
+    hint="Celles dont les candidatures sont ouvertes et dont la date n’est pas passée."
+    checked={onlyToAnnounce}
+    onChange={(v) => (onlyToAnnounce = v)}
+  />
+{/snippet}
+
+<FilterSheet
+  bind:open={filtresOuverts}
+  description="Une soirée « à annoncer » attend que vous préveniez les retenus."
+  resultCount={filtered.length}
+  itemName="soirée"
+  onReset={() => (onlyToAnnounce = false)}
+>
+  {@render criteres()}
+</FilterSheet>
