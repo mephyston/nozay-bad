@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { mount, flushSync } from 'svelte';
+import { mount, unmount, flushSync } from 'svelte';
+import { dockDePage } from '@nba/ui';
 import RankingsManager from './RankingsManager.svelte';
 import type { ChampionshipSettingsItem } from '../../list-championship-settings/dto';
 import type { ListRankingsOutput } from '../dto';
@@ -46,69 +47,77 @@ const rankings: ListRankingsOutput = {
 
 describe('RankingsManager', () => {
   let host: HTMLElement;
+  /* La barre du bas est un singleton de module : un composant jamais démonté y laisse
+     ses actions pour le test suivant. */
+  let monte: Record<string, unknown> | null = null;
 
   beforeEach(() => {
     sessionStorage.clear();
     host = document.createElement('div');
     document.body.appendChild(host);
   });
-  afterEach(() => host.remove());
+
+  afterEach(async () => {
+    if (monte) unmount(monte);
+    monte = null;
+    host.remove();
+    document.body.innerHTML = '';
+    await new Promise((r) => setTimeout(r, 50));
+  });
 
   function render(props: Record<string, unknown> = {}) {
-    mount(RankingsManager, {
+    monte = mount(RankingsManager, {
       target: host,
       props: { rankings, settings: settings(), seasonCode: '26-27', canImport: true, canWrite: true, ...props }
     });
     flushSync();
   }
 
-  /** L'en-tête d'une section repliable est un vrai bouton, porteur de `aria-expanded`. */
-  function section(title: string): HTMLButtonElement | undefined {
-    return [...host.querySelectorAll('button')].find((b) => b.textContent?.includes(title)) as
-      | HTMLButtonElement
-      | undefined;
-  }
+  const bouton = (texte: string) =>
+    [...host.querySelectorAll('button')].find((b) => b.textContent?.includes(texte));
 
-  it('présente les deux zones repliables', () => {
+  it('mène aux dates de référence des deux côtés du seuil', () => {
+    /*
+      Les dates vivent dans un tiroir. Sur téléphone il s'ouvre depuis la barre du bas,
+      qui est `md:hidden` : sans le bouton de bureau, elles n'auraient plus aucune porte
+      au-dessus de 768 px.
+    */
     render();
 
-    expect(section('Dates de référence')).toBeDefined();
-    expect(section('Classements')).toBeDefined();
+    expect(bouton('Dates de référence'), 'aucun bouton hors de la barre du bas').toBeDefined();
+    expect(dockDePage.lire().actions.map((a) => a.id)).toContain('dates');
   });
 
-  it('renvoie les règlements vers leur propre page, avec leur décompte', () => {
+  it('dit combien de dates sont épinglées, et lesquelles manquent', () => {
+    render();
+    expect(bouton('Dates de référence')?.textContent).toContain('3/4');
+
+    document.body.innerHTML = '';
+    if (monte) unmount(monte);
+    host = document.createElement('div');
+    document.body.appendChild(host);
+    render({ settings: settings({ referenceEloDate: null }) });
+    expect(bouton('Dates de référence')?.textContent).toContain('à compléter');
+  });
+
+  it('ne renvoie plus vers les règlements : ils ont leur propre page', () => {
+    /*
+      Dupliquer une entrée du menu de l'application dans le menu d'un écran fait de la
+      barre du bas un second sommaire, et lui retire ce qui la rend lisible — ne porter
+      que les gestes de l'écran où l'on se trouve.
+    */
     render({ settings: settings({ rulesUrl: 'https://x/r.pdf' }) });
 
-    const link = [...host.querySelectorAll('a')].find((a) => a.textContent?.includes('Règlements'));
-    expect(link?.getAttribute('href')).toBe('/admin/teams/reglements?season=26-27');
-    expect(link?.textContent).toContain('1/4');
+    expect([...host.querySelectorAll('a')].some((a) => a.textContent?.includes('Règlements'))).toBe(
+      false
+    );
+    expect(dockDePage.lire().actions.map((a) => a.id)).not.toContain('reglements');
   });
 
-  it('laisse les règlements accessibles à qui ne peut pas importer', () => {
-    // Consulter les règlements ne demande pas le droit d'importer des classements.
-    render({ canImport: false });
-
-    expect([...host.querySelectorAll('a')].some((a) => a.textContent?.includes('Règlements'))).toBe(true);
-  });
-
-  it('laisse les classements ouverts : c’est ce que le coach vient consulter', () => {
+  it('n’enferme plus les classements dans un pli', () => {
+    // Ils n'ont plus personne avec qui se disputer la colonne : le pli n'a plus d'objet.
     render();
-
-    expect(section('Classements')?.getAttribute('aria-expanded')).toBe('true');
-  });
-
-  it('replie les réglages quand toutes les dates sont épinglées', () => {
-    render();
-
-    expect(section('Dates de référence')?.getAttribute('aria-expanded')).toBe('false');
-  });
-
-  it('ouvre les réglages d’office quand une date manque', () => {
-    // Sans date de référence, aucune valeur d'équipe n'est calculable : replier ce bloc
-    // cacherait précisément ce qu'il faut corriger.
-    render({ settings: settings({ referenceEloDate: null }) });
-
-    expect(section('Dates de référence')?.getAttribute('aria-expanded')).toBe('true');
+    expect(bouton('Classements')).toBeUndefined();
   });
 
   it('renvoie l’import vers sa propre page', () => {
@@ -163,28 +172,4 @@ describe('RankingsManager', () => {
     });
   });
 
-  describe('mémoire du pli', () => {
-    it('retient une section dépliée d’un rechargement à l’autre', () => {
-      // Enregistrer un réglage recharge la page : sans mémoire, la section se refermait
-      // sous les doigts à chaque enregistrement.
-      sessionStorage.setItem('collapse:rankings.settings', '1');
-      render();
-
-      expect(section('Dates de référence')?.getAttribute('aria-expanded')).toBe('true');
-    });
-
-    it('retient une section repliée', () => {
-      sessionStorage.setItem('collapse:rankings.table', '0');
-      render();
-
-      expect(section('Classements')?.getAttribute('aria-expanded')).toBe('false');
-    });
-
-    it('rouvre malgré tout les réglages quand une date manque', () => {
-      sessionStorage.setItem('collapse:rankings.settings', '0');
-      render({ settings: settings({ referenceEloDate: null }) });
-
-      expect(section('Dates de référence')?.getAttribute('aria-expanded')).toBe('true');
-    });
-  });
 });

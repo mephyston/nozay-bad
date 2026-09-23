@@ -122,3 +122,42 @@ describe('plusieurs déclarations d’actions', () => {
     autre();
   });
 });
+
+describe('plusieurs portées', () => {
+  it('les cumule au lieu de les écraser', async () => {
+    /*
+      Un écran en porte souvent deux : la saison qu'on lit **et** la journée du
+      championnat. Tant qu'il n'y avait qu'un emplacement, la seconde déclaration
+      écrasait la première — et la saison se retrouvait reléguée dans le menu des
+      créations, à côté de « Créer une équipe », ce qu'elle n'est pas.
+    */
+    const { dockDePage } = await import('./page-dock.svelte');
+    const retirerSaison = dockDePage.declarerPortee({
+      label: 'Saison',
+      valeur: '26-27',
+      ouvrir: () => {}
+    });
+    const retirerJournee = dockDePage.declarerPortee({
+      label: 'Journée',
+      valeur: 'J1',
+      ouvrir: () => {}
+    });
+
+    expect(dockDePage.lire().portees.map((p) => p.valeur)).toEqual(['26-27', 'J1']);
+
+    retirerJournee();
+    expect(dockDePage.lire().portees.map((p) => p.valeur)).toEqual(['26-27']);
+    retirerSaison();
+    expect(dockDePage.lire().portees).toEqual([]);
+  });
+
+  it('ne retire rien deux fois', async () => {
+    const { dockDePage } = await import('./page-dock.svelte');
+    const retirer = dockDePage.declarerPortee({ label: 'A', valeur: 'a', ouvrir: () => {} });
+    const autre = dockDePage.declarerPortee({ label: 'B', valeur: 'b', ouvrir: () => {} });
+    retirer();
+    retirer();
+    expect(dockDePage.lire().portees.map((p) => p.valeur)).toEqual(['b']);
+    autre();
+  });
+});

@@ -85,7 +85,16 @@ export type GroupeDActions = {
 
 export type EtatDuDock = {
   recherche: RechercheDeListe | null;
-  portee: PorteeDeListe | null;
+  /**
+   * Les portées de l'écran, dans l'ordre où elles ont été déclarées.
+   *
+   * Plusieurs, parce qu'un écran en a souvent deux : la saison qu'on lit **et** la
+   * journée du championnat, ou la date des classements. Tant qu'il n'y avait qu'un
+   * emplacement, la seconde déclaration écrasait la première — et la saison se
+   * retrouvait reléguée dans le menu des créations, à côté de « Créer une équipe »,
+   * ce qu'elle n'est pas.
+   */
+  portees: PorteeDeListe[];
   actions: ActionDeListe[];
   groupe: GroupeDActions | null;
 };
@@ -107,7 +116,7 @@ type Interne = EtatDuDock & { declarations: Declaration[] };
 
 function etat(): Interne {
   const hote = globalThis as unknown as Record<symbol, Interne | undefined>;
-  hote[CLE] ??= { recherche: null, portee: null, actions: [], groupe: null, declarations: [] };
+  hote[CLE] ??= { recherche: null, portees: [], actions: [], groupe: null, declarations: [] };
   return hote[CLE]!;
 }
 
@@ -154,13 +163,17 @@ export const dockDePage = {
   },
 
   declarerPortee(p: PorteeDeListe): () => void {
-    etat().portee = p;
+    etat().portees.push(p);
     annoncer();
     return () => {
-      if (etat().portee === p) {
-        etat().portee = null;
-        annoncer();
-      }
+      const liste = etat().portees;
+      const rang = liste.indexOf(p);
+      // Retrait ciblé : à la navigation douce, l'écran qui arrive se monte avant que
+      // le précédent ne se démonte, et un retrait aveugle effacerait ce qui vient
+      // d'être posé.
+      if (rang === -1) return;
+      liste.splice(rang, 1);
+      annoncer();
     };
   },
 

@@ -1,16 +1,13 @@
 <script lang="ts">
   import {
-    CollapsibleSection,
     Button,
     dockDePage,
     softNavigate,
-    readCollapseState,
-    writeCollapseState,
     ResponsiveSheet,
     uiAlert,
     type SwipeAction
   } from '@nba/ui';
-  import { Upload, FileText, CalendarCheck } from '@lucide/svelte';
+  import { Upload, CalendarCheck, Ellipsis } from '@lucide/svelte';
   import RankingsTable from './RankingsTable.svelte';
   import ReferenceDatesPanel from '../../list-championship-settings/ui/ReferenceDatesPanel.svelte';
   import type { ListRankingsOutput } from '../dto';
@@ -59,13 +56,6 @@
   );
   const pinnedDates = $derived(settings.filter((s) => s.referenceEloDate).length);
 
-  /*
-   * Le pli survit au rechargement.
-   *
-   * Enregistrer un réglage recharge la page — c'est ce qui garde l'écran d'accord avec le
-   * serveur — mais l'île est alors remontée. Sans mémoire, la section se refermait sous
-   * les doigts à chaque enregistrement.
-   */
   const publishedRules = $derived(settings.filter((s) => s.rulesUrl).length);
 
   /*
@@ -139,13 +129,13 @@
         label: settingsIncomplete ? 'Dates de référence — à compléter' : 'Dates de référence',
         icon: CalendarCheck,
         run: () => (datesOuvertes = true)
-      },
-      {
-        id: 'reglements',
-        label: `Règlements (${publishedRules}/${settings.length})`,
-        icon: FileText,
-        run: () => softNavigate(`/admin/teams/reglements?season=${seasonCode}`)
       }
+      /*
+        Pas de lien vers les règlements ici : ils ont leur propre entrée dans le menu
+        de l'application. Le dupliquer dans le menu d'un autre écran fait de la barre
+        du bas un second sommaire, et lui retire ce qui la rend lisible — ne porter
+        que les gestes de l'écran où l'on se trouve.
+      */
     ];
     if (canImport) {
       actions.push({
@@ -155,20 +145,15 @@
         run: () => softNavigate(`/admin/teams/classements/import?season=${seasonCode}`)
       });
     }
-    return dockDePage.declarerActions(actions, { icon: Upload, label: 'Gestes des classements' });
+    /*
+      Une ellipse, et non le `+` par défaut ni la flèche de l'import : rien ne se crée
+      ici, et les deux gestes ne sont pas de même nature — l'un dépose un fichier,
+      l'autre règle une date. Une icône qui n'annonce qu'un seul des deux ment sur le
+      second.
+    */
+    return dockDePage.declarerActions(actions, { icon: Ellipsis, label: 'Gestes des classements' });
   });
 
-  let settingsOpen = $state(readCollapseState('rankings.settings', false));
-  let tableOpen = $state(readCollapseState('rankings.table', true));
-
-  // Une date manquante rouvre le bloc, quel qu'ait été le choix précédent : sans elle,
-  // aucune valeur d'équipe n'est calculable, et la cacher serait cacher le problème.
-  $effect(() => {
-    if (settingsIncomplete) settingsOpen = true;
-  });
-
-  $effect(() => writeCollapseState('rankings.settings', settingsOpen));
-  $effect(() => writeCollapseState('rankings.table', tableOpen));
 </script>
 
 <div class="space-y-4">
@@ -178,8 +163,13 @@
   -->
   <!-- Sur téléphone, ces deux détours vivent dans la barre du bas. -->
   <div class="hidden flex-wrap justify-end gap-2 md:flex">
-    <Button variant="outline" href={`/admin/teams/reglements?season=${seasonCode}`}>
-      <FileText class="w-4 h-4" /> Règlements ({publishedRules}/{settings.length})
+    <!--
+      La barre du bas est `md:hidden` : sans ce bouton, les dates de référence
+      n'auraient plus aucune porte au-dessus de 768 px. Il ouvre le même tiroir.
+    -->
+    <Button variant="outline" onclick={() => (datesOuvertes = true)}>
+      <CalendarCheck class="w-4 h-4" />
+      Dates de référence{settingsIncomplete ? ' — à compléter' : ` (${pinnedDates}/${settings.length})`}
     </Button>
     {#if canImport}
       <Button variant="outline" href={`/admin/teams/classements/import?season=${seasonCode}`}>
@@ -188,34 +178,14 @@
     {/if}
   </div>
 
-  <!-- Sur téléphone, ce réglage vit dans le menu de la barre du bas. -->
-  <div class="hidden md:block">
-  <CollapsibleSection
-    title="Dates de référence"
-    description="Le classement qui fait foi pour chaque championnat, et qui décide si une composition est conforme."
-    badge={settingsIncomplete ? 'à compléter' : `${pinnedDates}/${settings.length}`}
-    bind:open={settingsOpen}
-  >
-    <ReferenceDatesPanel
-      items={settings}
-      availableDates={rankings.availableDates}
-      {seasonCode}
-      {canWrite}
-      onSaved={() => reload()}
-    />
-  </CollapsibleSection>
-  </div>
+  <!--
+    Plus de blocs repliables.
 
-  <CollapsibleSection
-    title="Classements"
-    description={rankings.eloDate
-      ? `Arrêtés au ${rankings.eloDate}.`
-      : 'Aucun classement importé pour le moment.'}
-    badge={rankings.unmatchedCount > 0
-      ? `${rankings.unmatchedCount} sans adhérent`
-      : rankings.rows.length}
-    bind:open={tableOpen}
-  >
+    Les dates de référence vivaient au-dessus des classements, dans un pli qui se
+    rouvrait tout seul dès qu'une date manquait — c'est-à-dire au moment précis où l'on
+    vient chercher un joueur. Elles sont dans un tiroir ; les classements n'ont donc
+    plus personne avec qui se disputer la colonne, et leur propre pli n'a plus d'objet.
+  -->
     <RankingsTable
       {rows}
       {saving}
@@ -225,7 +195,6 @@
       onEdit={edit}
       onDateChange={(eloDate) => reload({ eloDate })}
     />
-  </CollapsibleSection>
 </div>
 
 <!--

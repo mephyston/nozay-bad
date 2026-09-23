@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Badge, Select, uiAlert } from '@nba/ui';
+  import { Badge, ChoiceField, FormField, uiAlert } from '@nba/ui';
   import { CalendarClock } from '@lucide/svelte';
   import { saveChampionshipSetting } from './championship-settings-api';
   import type { ChampionshipSettingsItem } from '../dto';
@@ -53,43 +53,55 @@
 -->
 <div class="space-y-3">
   {#each items as item (item.championship)}
-    <div class="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3">
-      <div class="min-w-[220px]">
-        <p class="font-medium text-sm">{item.label}</p>
-        <p class="text-xs text-muted-foreground">
-          {#if item.rankingPolicy === 'season_fixed'}
-            Arrêté pour toute la saison (art. 6.1.3)
-          {:else}
-            Le jeudi précédant chaque journée (art. 4.4.2)
-          {/if}
-        </p>
-      </div>
+    <!--
+      Un vrai champ par championnat, et non une rangée à deux colonnes.
 
+      Le nom du championnat était un paragraphe à gauche, la liste déroulante un bloc de
+      240 px à droite : à 390 px l'un se repliait sous l'autre en laissant une colonne
+      de vide, et surtout **le champ n'avait plus de nom** dès qu'on a quitté la liste
+      déroulante native et son `aria-label` — `ChoiceField` ne porte son intitulé que
+      sous un `FormField`, qui l'associe par `for`/`id`.
+    -->
+    <div class="rounded-lg border p-3">
       {#if item.rankingPolicy === 'per_day'}
         <!--
           Aucune date à épingler : le régional recalcule sa référence à chaque journée.
           Proposer un champ ici laisserait croire à un réglage qui ne serait jamais lu.
         -->
-        <Badge variant="info">
-          <CalendarClock class="w-3 h-3 mr-1" />
-          Résolue par journée
-        </Badge>
+        <p class="text-sm font-medium">{item.label}</p>
+        <p class="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+          <Badge variant="info">
+            <CalendarClock class="w-3 h-3 mr-1" />
+            Résolue par journée
+          </Badge>
+          Le jeudi précédant chaque journée (art. 4.4.2)
+        </p>
       {:else if availableDates.length === 0}
-        <Badge variant="warning">Aucun classement importé</Badge>
+        <p class="text-sm font-medium">{item.label}</p>
+        <p class="mt-1"><Badge variant="warning">Aucun classement importé</Badge></p>
       {:else}
-        <div class="w-[240px]">
-          <Select
+        <FormField
+          id={`date-reference-${item.championship}`}
+          label={`Date de référence — ${item.label}`}
+          keepLabel
+          hint="Arrêtée pour toute la saison (art. 6.1.3)"
+        >
+          <ChoiceField
+            id={`date-reference-${item.championship}`}
+            label={item.label}
             value={item.referenceEloDate ?? ''}
             disabled={!canWrite || saving === item.championship}
-            onchange={(e) => save(item.championship, (e.currentTarget as HTMLSelectElement).value || null)}
-            aria-label={`Date de référence — ${item.label}`}
-          >
-            <option value="">— Aucune date épinglée —</option>
-            {#each availableDates as date (date.eloDate)}
-              <option value={date.eloDate}>{date.eloDate}</option>
-            {/each}
-          </Select>
-        </div>
+            onChange={(v) => save(item.championship, v || null)}
+            options={[
+              { value: '', label: 'Aucune date épinglée' },
+              ...availableDates.map((date) => ({
+                value: date.eloDate,
+                label: date.eloDate,
+                hint: `${date.players} ${date.players > 1 ? 'joueurs' : 'joueur'}`
+              }))
+            ]}
+          />
+        </FormField>
       {/if}
     </div>
   {/each}

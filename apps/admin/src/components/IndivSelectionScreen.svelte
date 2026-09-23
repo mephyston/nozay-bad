@@ -13,7 +13,15 @@
   let description = $state('');
 </script>
 
-<PageHeader {title} {description} />
+<!--
+  Le retour en rond, sur téléphone : le lien de texte vivait en bas de page, donc après
+  trente candidats. Au-dessus de 768 px, le fil d'Ariane de la barre du haut suffit.
+-->
+<PageHeader
+  {title}
+  {description}
+  retour={{ href: '/admin/entrainement/indiv', libelle: 'Retour aux soirées' }}
+/>
 
 <div class="mt-6">
   <EcranDistant
@@ -34,7 +42,13 @@
       {#if d.session}
         <IndivSelection session={d.session} candidates={d.candidates} canWrite={d.canWrite} />
       {/if}
-      <p class="mt-6 text-sm"><a href="/admin/entrainement/indiv" class="font-semibold text-primary hover:underline">← Toutes les soirées</a></p>
+      <!-- Le retour est en haut ; ce lien ne sert plus qu'à la souris, où il double
+           le fil d'Ariane sans coûter de place. -->
+      <p class="mt-6 hidden text-sm md:block">
+        <a href="/admin/entrainement/indiv" class="font-semibold text-primary hover:underline">
+          ← Toutes les soirées
+        </a>
+      </p>
     {/snippet}
   </EcranDistant>
 </div>

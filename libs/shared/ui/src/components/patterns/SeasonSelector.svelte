@@ -1,5 +1,4 @@
 <script lang="ts">
-  import CalendarRange from "@lucide/svelte/icons/calendar-range";
   import { Select } from "../ui/select";
   import ChoicePicker from "./ChoicePicker.svelte";
   import { softNavigate } from "../../lib/navigation";
@@ -38,33 +37,29 @@
   }
 
   /**
-   * Sur téléphone, la saison descend dans le menu de la barre du bas.
+   * Sur téléphone, la saison descend dans la barre du bas — **en pilule**.
    *
-   * Elle occupait le coin haut droit du bandeau de page — le point le plus loin du
+   * Elle occupait le coin haut droit du bandeau de page : le point le plus loin du
    * pouce, et le premier à disparaître dès qu'on défile. C'est pourtant une décision
-   * qu'on prend en cours de lecture : « et l'an dernier ? ».
+   * qu'on prend en cours de lecture — « et l'an dernier ? ».
    *
-   * Une action et non la pilule de portée : celle-ci est souvent déjà prise par un
-   * autre axe — la journée d'un championnat, le compte d'un rapport — et deux pilules
-   * côte à côte ne se distinguent plus. Le dock cumule les déclarations, donc celle-ci
-   * ne chasse pas celles de l'écran qui l'héberge.
+   * Une pilule et non une action du `+` : la saison ne crée rien, elle dit **ce qu'on
+   * regarde**. Rangée parmi les créations, elle se lisait « Saison 2026-2027 » à côté
+   * de « Créer une équipe », et sa valeur courante n'était plus visible sans ouvrir le
+   * menu — or une portée qu'on ne voit pas ne se vérifie jamais.
+   *
+   * Un écran peut en porter deux : la saison **et** la journée du championnat. Le dock
+   * les affiche toutes, quitte à les tronquer, plutôt que d'en cacher une.
    */
   let choixOuvert = $state(false);
 
-  const libelleCourant = $derived(
-    options.find((o) => o.value === current)?.label ?? `Saison ${current}`
-  );
-
   $effect(() => {
     if (options.length === 0) return;
-    return dockDePage.declarerActions([
-      {
-        id: "saison",
-        label: libelleCourant,
-        icon: CalendarRange,
-        run: () => (choixOuvert = true)
-      }
-    ]);
+    return dockDePage.declarerPortee({
+      label: "Saison",
+      valeur: current,
+      ouvrir: () => (choixOuvert = true)
+    });
   });
 </script>
 

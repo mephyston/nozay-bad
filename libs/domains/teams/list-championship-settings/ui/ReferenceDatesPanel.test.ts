@@ -37,25 +37,36 @@ describe('ReferenceDatesPanel', () => {
     flushSync();
   }
 
+  /**
+   * Le champ d'un championnat, trouvé par son intitulé.
+   *
+   * Et non par un `aria-label` : la liste déroulante native est devenue un écran de
+   * choix sous `FormField`, qui associe un vrai `<label for>` — une association que les
+   * technologies d'assistance suivent mieux qu'un attribut recopié.
+   */
+  function champDeDate(championnat: string): HTMLElement | null {
+    const intitule = [...host.querySelectorAll('label')].find(
+      (l) => l.textContent?.trim() === `Date de référence — ${championnat}`
+    );
+    const id = intitule?.getAttribute('for');
+    return id ? document.getElementById(id) : null;
+  }
+
   it('n’offre le champ de date qu’aux championnats qui en épinglent une', () => {
     render();
 
-    expect(
-      host.querySelector('[aria-label="Date de référence — Interclubs Départemental Mixte"]')
-    ).not.toBeNull();
+    expect(champDeDate('Interclubs Départemental Mixte')).not.toBeNull();
     // Le régional recalcule sa référence par journée : aucun champ à proposer.
-    expect(
-      host.querySelector('[aria-label="Date de référence — Interclubs Régional Séniors"]')
-    ).toBeNull();
+    expect(champDeDate('Interclubs Régional Séniors')).toBeNull();
   });
 
-  it('verrouille le sélecteur en lecture seule', () => {
+  it('verrouille le champ en lecture seule', () => {
     render({ canWrite: false });
 
-    const select = host.querySelector(
-      '[aria-label="Date de référence — Interclubs Départemental Mixte"]'
-    ) as HTMLSelectElement | null;
-    expect(select?.disabled).toBe(true);
+    const champ = champDeDate('Interclubs Départemental Mixte');
+    expect(champ?.hasAttribute('disabled') || champ?.getAttribute('aria-disabled') === 'true').toBe(
+      true
+    );
   });
 
   it('avertit tant qu’une date départementale manque', () => {

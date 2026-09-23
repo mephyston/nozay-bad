@@ -46,7 +46,7 @@
     bundler duplique le module qui le porterait autrement.
   */
   let recherche = $state(dockDePage.lire().recherche);
-  let portee = $state(dockDePage.lire().portee);
+  let portees = $state(dockDePage.lire().portees);
   let actions = $state(dockDePage.lire().actions);
   let groupe = $state(dockDePage.lire().groupe);
 
@@ -54,7 +54,7 @@
     dockDePage.sAbonner(() => {
       const etat = dockDePage.lire();
       recherche = etat.recherche;
-      portee = etat.portee;
+      portees = etat.portees;
       actions = etat.actions;
       groupe = etat.groupe;
     })
@@ -155,9 +155,15 @@
     Toujours `flex-1`, même fermé : c'est ce qui permet au champ de s'étirer depuis
     le cercle. Dans un conteneur dimensionné sur son contenu, la largeur du parent
     sauterait d'un coup et il n'y aurait plus rien à animer.
+
+    L'espacement tombe à zéro à l'ouverture, comme celui du rang extérieur. Les voisins
+    du champ se réduisent bien à une largeur nulle, mais un `gap` s'applique **entre des
+    éléments, pas entre leurs largeurs** : trois voisins invisibles réservaient quand
+    même 36 px, et la recherche démarrait d'autant trop à droite. Le défaut grandissait
+    avec le nombre de pilules, donc il ne s'est vu qu'à la seconde.
   -->
-  <div class="relative flex min-w-0 flex-1 items-end justify-end gap-3">
-    {#if portee}
+  <div class="relative flex min-w-0 flex-1 items-end justify-end {open ? 'gap-0' : 'gap-3'}">
+    {#each portees as portee (portee.label)}
       <!--
         La portée : ce qu'on regarde, affiché en clair.
 
@@ -165,12 +171,20 @@
         qu'une icône, parce qu'une portée qu'on ne voit pas ne se vérifie jamais : sur
         un rapport, savoir quel exercice on lit vaut mieux que de savoir qu'on peut en
         changer.
+
+        Plusieurs pilules se partagent la place au lieu de la prendre chacune : un
+        écran qui porte la saison **et** la journée les montre toutes deux, quitte à
+        les tronquer, plutôt que d'en cacher une. Le plafond tombe de 10 rem à 7 dès
+        qu'il y en a deux, et elles peuvent se rétrécir — `min-w-0` et `shrink` —
+        dans un parent lui-même `min-w-0` : rien ne défile horizontalement.
       -->
       <button
         type="button"
-        class="glass-surface dock-circle flex h-14 shrink-0 items-center justify-center overflow-hidden rounded-full px-4 text-sm font-semibold text-foreground transition-[max-width,opacity,padding] duration-300 {open
+        class="glass-surface dock-circle flex h-14 min-w-0 shrink items-center justify-center overflow-hidden rounded-full px-4 text-sm font-semibold text-foreground transition-[max-width,opacity,padding] duration-300 {open
           ? 'pointer-events-none max-w-0 px-0 opacity-0'
-          : 'max-w-40'}"
+          : portees.length > 1
+            ? 'max-w-28'
+            : 'max-w-40'}"
         aria-label="{portee.label} : {portee.valeur}"
         aria-hidden={open}
         tabindex={open ? -1 : 0}
@@ -178,7 +192,7 @@
       >
         <span class="truncate">{portee.valeur}</span>
       </button>
-    {/if}
+    {/each}
 
     {#if recherche}
       <!--

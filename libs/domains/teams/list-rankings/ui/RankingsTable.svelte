@@ -98,6 +98,7 @@
       bind:searchValue={search}
       searchPlaceholder="Nom, prénom ou licence…"
       hasSearch
+      dockSearch
     >
       {#snippet actions()}
         <!-- Sur téléphone, la date vit dans la pilule de la barre du bas. -->
