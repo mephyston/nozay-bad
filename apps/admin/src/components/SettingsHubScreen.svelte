@@ -1,10 +1,11 @@
 <script lang="ts">
-  import { ListRow, ListView, softNavigate } from '@nba/ui';
+  import { ListRow, ListView, ResponsiveSheet, softNavigate } from '@nba/ui';
   import { can, type Permission } from '@nba/iam-ui';
   import { SECTION_SPECS } from '@nba/club-ui';
   import { chargerIdentite, derniereIdentite } from '../lib/identite';
   import ClubSettingsScreen from './ClubSettingsScreen.svelte';
   import EcranDistant from './EcranDistant.svelte';
+  import VenuesScreen from './VenuesScreen.svelte';
 
   /**
    * Les destinations de la configuration, en trois rubriques et filtrées sur les droits.
@@ -63,7 +64,8 @@
           permission: 'settings:club:read'
         },
         {
-          href: '/admin/settings/gymnases',
+          href: '/admin/settings?section=gymnases',
+          section: 'gymnases',
           title: 'Gymnases',
           description: 'Les salles du club : nom, adresse et position, pour le site et les convocations.',
           permission: 'schedules:slots:write'
@@ -138,6 +140,20 @@
    * quitter la configuration.
    */
   let sectionOuverte = $state<string | null>(null);
+
+  /**
+   * Les réglages qui vivent dans la ligne de configuration du club.
+   *
+   * Les autres tiroirs portent un écran entier — une liste et ses propres formulaires —
+   * et lisent leurs données eux-mêmes.
+   */
+  const SECTIONS_DU_CLUB = new Set([
+    ...SECTION_SPECS.map((s) => s.section),
+    'fonctionnalites',
+    'documents'
+  ]);
+
+  const sectionDuClub = $derived(sectionOuverte !== null && SECTIONS_DU_CLUB.has(sectionOuverte));
 
   $effect(() => {
     if (typeof window === 'undefined') return;
@@ -217,10 +233,27 @@
   {/snippet}
 
   {#snippet pret(d)}
-    {#if sectionOuverte}
+    {#if sectionOuverte && sectionDuClub}
       {#key sectionOuverte}
         <ClubSettingsScreen section={sectionOuverte} donnees={d} open onClose={fermer} />
       {/key}
     {/if}
   {/snippet}
 </EcranDistant>
+
+<!--
+  Les écrans qui portent une liste montent dans une feuille nue : ils lisent leurs
+  données eux-mêmes — le squelette s'affiche alors **dans** le tiroir, et non au milieu
+  du hub — et gardent leurs propres formulaires, qui s'ouvrent par-dessus.
+-->
+{#if sectionOuverte === 'gymnases'}
+  <ResponsiveSheet
+    open
+    onOpenChange={(v) => !v && fermer()}
+    title="Gymnases"
+    description="Les salles où le club joue. Les créneaux, l’agenda et le site public y renvoient."
+    size="lg"
+  >
+    <div class="py-2"><VenuesScreen /></div>
+  </ResponsiveSheet>
+{/if}
