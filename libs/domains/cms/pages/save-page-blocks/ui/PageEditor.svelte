@@ -8,6 +8,7 @@
     FormSheet,
     EmptyState,
     ChoicePicker,
+    DropdownMenu,
     ListRow,
     ListView,
     ResponsiveSheet,
@@ -213,7 +214,7 @@
     vivaient en bas de page : l'historique et les anciennes adresses n'étaient
     atteints qu'après avoir défilé tous les blocs, et on ne les y cherchait donc pas.
   */
-  $effect(() => {
+  const actionsDePage = $derived.by<SwipeAction[]>(() => {
     const actions: SwipeAction[] = [];
     if (canWrite) {
       /* Enregistrer n'est pas dans le menu : c'est la validation du formulaire, et
@@ -267,7 +268,26 @@
         run: () => void togglePublished()
       });
     }
-    return dockDePage.declarerActions(actions, { icon: Ellipsis, label: 'Actions de la page' });
+    return actions;
+  });
+
+  /*
+    En tiroir, ces gestes ne descendent **pas** dans la barre du bas.
+
+    Elle appartient à l'écran qui porte le tiroir — la liste des pages —, et le voile
+    de la feuille la recouvre : le menu était là, dessiné derrière, et aucun doigt ne
+    pouvait l'atteindre. Sur ordinateur il n'y avait même plus de barre du bas, et le
+    groupe de boutons est masqué en tiroir : les six gestes avaient disparu.
+
+    Ils remontent alors sous l'ellipse de la barre du formulaire, juste avant la
+    validation — la même liste, le même ordre, la même présentation que le dock.
+  */
+  $effect(() => {
+    if (enTiroir) return;
+    return dockDePage.declarerActions(actionsDePage, {
+      icon: Ellipsis,
+      label: 'Actions de la page'
+    });
   });
 
   /**
@@ -370,6 +390,37 @@
         <span class="min-w-0 flex-1 truncate text-base font-semibold">{title || 'Page'}</span>
       {:else}
         <span class="flex-1"></span>
+      {/if}
+
+      {#if enTiroir && actionsDePage.length > 0}
+        <DropdownMenu.Root>
+          <DropdownMenu.Trigger>
+            <!-- Le spread reste le dernier mot : posé avant, un `onclick` écraserait
+                 les gestionnaires de bits-ui et le menu ne s'ouvrirait plus. -->
+            {#snippet child({ props })}
+              <Button
+                variant="outline"
+                class="size-11 shrink-0 rounded-full p-0"
+                aria-label="Actions de la page"
+                {...props}
+              >
+                <Ellipsis class="size-5" />
+              </Button>
+            {/snippet}
+          </DropdownMenu.Trigger>
+          <DropdownMenu.Content align="end" sideOffset={8} class="min-w-52 rounded-2xl p-1.5">
+            {#each actionsDePage as action (action.id)}
+              {@const Icone = action.icon as any}
+              <DropdownMenu.Item
+                onclick={action.run}
+                class="cursor-pointer gap-2.5 rounded-xl py-2.5"
+              >
+                {#if Icone}<Icone class="size-4" />{/if}
+                {action.label}
+              </DropdownMenu.Item>
+            {/each}
+          </DropdownMenu.Content>
+        </DropdownMenu.Root>
       {/if}
 
       <Button
