@@ -615,7 +615,7 @@
   </div>
 
   <!--
-    Un `<select>` natif ouvre la roulette du système : au doigt, on y vise un gymnase
+    Une liste déroulante native ouvre la roulette du système : au doigt, on y vise un gymnase
     dans une bande de trente pixels. La rangée mène à un écran de choix où chaque
     gymnase a sa ligne de 44 points.
   -->
