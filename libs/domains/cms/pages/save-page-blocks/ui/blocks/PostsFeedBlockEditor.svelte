@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Input, Label, Select, Checkbox } from '@nba/ui';
+  import { ChoiceField, FormField, Input, SwitchField } from '@nba/ui';
   import type { PostsFeedBlock } from '../../../../shared/blocks';
 
   let { block = $bindable(), categories = [] } = $props<{
@@ -17,61 +17,48 @@
   const uid = $props.id();
 </script>
 
-<div class="space-y-3">
-  <div class="space-y-1.5">
-    <Label for={`${uid}-feed-heading`}>Titre de section</Label>
+<div class="space-y-4">
+  <FormField id={`${uid}-feed-heading`} label="Titre de section">
     <Input id={`${uid}-feed-heading`} bind:value={block.heading} placeholder="Actualités du club" />
-  </div>
+  </FormField>
 
-  <div class="grid gap-3 sm:grid-cols-2">
-    <div class="space-y-1.5">
-      <Label for={`${uid}-feed-limit`}>Nombre d'actualités</Label>
-      <Select
+  <div class="grid gap-4 sm:grid-cols-2">
+    <FormField id={`${uid}-feed-limit`} label="Nombre d'actualités">
+      <ChoiceField
         id={`${uid}-feed-limit`}
+        label="Nombre d'actualités"
         value={String(block.limit)}
-        onchange={(e) => (block.limit = Number((e.currentTarget as HTMLSelectElement).value))}
-      >
-        {#each [3, 6, 9, 12] as count}
-          <option value={String(count)}>{count} actualités</option>
-        {/each}
-      </Select>
-    </div>
+        onChange={(v) => (block.limit = Number(v))}
+        options={[3, 6, 9, 12].map((n) => ({ value: String(n), label: `${n} actualités` }))}
+      />
+    </FormField>
 
-    <div class="space-y-1.5">
-      <Label for={`${uid}-feed-category`}>Catégorie</Label>
-      <Select
+    <FormField id={`${uid}-feed-category`} label="Catégorie">
+      <ChoiceField
         id={`${uid}-feed-category`}
+        label="Catégorie"
         value={block.categorySlug ?? ''}
-        onchange={(e) => {
-          const value = (e.currentTarget as HTMLSelectElement).value;
-          block.categorySlug = value === '' ? undefined : value;
-        }}
-      >
-        <option value="">Toutes les catégories</option>
-        {#each categories as category (category.slug)}
-          <option value={category.slug}>{category.name}</option>
-        {/each}
-      </Select>
-    </div>
+        onChange={(v) => (block.categorySlug = v === '' ? undefined : v)}
+        options={[
+          { value: '', label: 'Toutes les catégories' },
+          ...categories.map((c: { slug: string; name: string }) => ({ value: c.slug, label: c.name }))
+        ]}
+      />
+    </FormField>
   </div>
 
-  <div class="flex items-center gap-2">
-    <Checkbox
-      id={`${uid}-feed-images`}
-      checked={block.showImages !== false}
-      onCheckedChange={(checked) => (block.showImages = checked === true)}
-    />
-    <Label for={`${uid}-feed-images`} class="cursor-pointer font-normal">Afficher les images de couverture</Label>
-  </div>
+  <SwitchField
+    id={`${uid}-feed-images`}
+    label="Afficher les images de couverture"
+    checked={block.showImages !== false}
+    onChange={(v) => (block.showImages = v)}
+  />
 
-  <div class="flex items-center gap-2">
-    <Checkbox
-      id={`${uid}-feed-archive`}
-      checked={block.showArchiveLink !== false}
-      onCheckedChange={(checked) => (block.showArchiveLink = checked === true)}
-    />
-    <Label for={`${uid}-feed-archive`} class="cursor-pointer font-normal">
-      Afficher le lien « Toutes les actualités »
-    </Label>
-  </div>
+  <SwitchField
+    id={`${uid}-feed-archive`}
+    label="Afficher le lien « Toutes les actualités »"
+    hint="Renvoie vers la page qui liste l'ensemble des actualités."
+    checked={block.showArchiveLink !== false}
+    onChange={(v) => (block.showArchiveLink = v)}
+  />
 </div>

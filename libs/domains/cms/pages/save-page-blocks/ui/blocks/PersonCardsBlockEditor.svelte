@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { Input, Label, Button, Textarea } from '@nba/ui';
-  import { ImagePlus, X } from '@lucide/svelte';
+  import { Input, Button, FormField, Textarea } from '@nba/ui';
+  import { ImagePlus, Plus, Trash2, X } from '@lucide/svelte';
   import MediaPicker, { type PickableMedia } from '../../../../media/list-media/ui/MediaPicker.svelte';
   import { mediaUrl } from '../../../../media/media-url';
   import type { PersonCardsBlock } from '../../../../shared/blocks';
@@ -16,6 +16,10 @@
     /** `cms:media:write` : autorise le dépôt depuis le sélecteur. */
     canUploadMedia?: boolean;
   }>();
+
+  /* Identifiants uniques : deux blocs « personnes » sur la même page auraient sinon
+     les mêmes, et un `<label for=…>` désignerait le champ de l'autre. */
+  const uid = $props.id();
 
   /**
    * Personne dont le sélecteur d'image est ouvert.
@@ -51,10 +55,9 @@
 </script>
 
 <div class="space-y-3">
-  <div>
-    <Label for="people-heading">Titre de section</Label>
-    <Input id="people-heading" bind:value={block.heading} placeholder="Le bureau" />
-  </div>
+  <FormField id={`${uid}-people-heading`} label="Titre de section">
+    <Input id={`${uid}-people-heading`} bind:value={block.heading} placeholder="Le bureau" />
+  </FormField>
 
   {#each block.people as person, index (index)}
     {@const portrait = portraitOf(person.mediaId)}
@@ -95,23 +98,58 @@
         {/if}
       </div>
 
-      <div class="grid gap-2 sm:grid-cols-2">
-        <Input bind:value={person.name} placeholder="Nom" />
-        <Input bind:value={person.role} placeholder="Fonction" />
+      <!-- Les cinq champs n'avaient que leur placeholder pour intitulé : au lecteur
+           d'écran, cette carte annonçait cinq zones de saisie sans nom. -->
+      <div class="grid gap-4 sm:grid-cols-2">
+        <FormField id={`${uid}-person-${index}-name`} label="Nom">
+          <Input id={`${uid}-person-${index}-name`} bind:value={person.name} placeholder="Marie Dupont" />
+        </FormField>
+        <FormField id={`${uid}-person-${index}-role`} label="Fonction">
+          <Input id={`${uid}-person-${index}-role`} bind:value={person.role} placeholder="Trésorière" />
+        </FormField>
+        <FormField id={`${uid}-person-${index}-email`} label="Adresse électronique">
+          <Input
+            id={`${uid}-person-${index}-email`}
+            type="email"
+            bind:value={person.email}
+            placeholder="tresorerie@nozaybad.fr"
+          />
+        </FormField>
+        <FormField id={`${uid}-person-${index}-phone`} label="Téléphone">
+          <Input
+            id={`${uid}-person-${index}-phone`}
+            type="tel"
+            bind:value={person.phone}
+            placeholder="06 12 34 56 78"
+          />
+        </FormField>
       </div>
-      <div class="grid gap-2 sm:grid-cols-2">
-        <Input bind:value={person.email} placeholder="Adresse électronique" />
-        <Input bind:value={person.phone} placeholder="Téléphone" />
-      </div>
-      <Textarea
-        value={person.responsibilities.join('\n')}
-        oninput={(e) => (person.responsibilities = (e.currentTarget as HTMLTextAreaElement).value.split('\n').filter(Boolean))}
-        placeholder="Une responsabilité par ligne"
-      />
-      <Button variant="ghost" onclick={() => remove(index)}>Retirer cette personne</Button>
+
+      <FormField
+        id={`${uid}-person-${index}-responsibilities`}
+        label="Responsabilités"
+        hint="Une par ligne."
+      >
+        <Textarea
+          id={`${uid}-person-${index}-responsibilities`}
+          value={person.responsibilities.join('\n')}
+          oninput={(e) => (person.responsibilities = (e.currentTarget as HTMLTextAreaElement).value.split('\n').filter(Boolean))}
+          placeholder={'Comptabilité\nLicences'}
+        />
+      </FormField>
+
+      <Button type="button" variant="ghost" class="w-full gap-1.5 text-destructive" onclick={() => remove(index)}>
+        <Trash2 class="size-4" />
+        Retirer cette personne
+      </Button>
     </div>
   {/each}
-  <Button variant="secondary" onclick={add}>Ajouter une personne</Button>
+  <!-- Le geste d'ajout prend toute la largeur et porte son signe : c'est la forme
+       qu'ont désormais les mêmes boutons dans tous les blocs. -->
+  <Button type="button" variant="outline" class="w-full gap-1.5" onclick={add}>
+    <Plus class="size-4" />
+    Ajouter une personne
+  </Button>
 </div>
 
 <MediaPicker

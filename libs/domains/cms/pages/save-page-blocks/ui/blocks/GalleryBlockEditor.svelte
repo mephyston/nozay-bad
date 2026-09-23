@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Input, Label, Button, Select, Checkbox } from '@nba/ui';
+  import { Input, Label, Button, ChoiceField, FormField, SwitchField } from '@nba/ui';
   import { mediaUrl } from '../../../../media/media-url';
   import { ImagePlus, X } from '@lucide/svelte';
   import MediaPicker, { type PickableMedia } from '../../../../media/list-media/ui/MediaPicker.svelte';
@@ -63,66 +63,62 @@
 </script>
 
 <div class="space-y-4">
-  <div class="grid gap-3 sm:grid-cols-2">
-    <div class="space-y-1.5">
-      <Label for={`${uid}-gallery-heading`}>Titre de section</Label>
+  <div class="grid gap-4 sm:grid-cols-2">
+    <FormField id={`${uid}-gallery-heading`} label="Titre de section">
       <Input id={`${uid}-gallery-heading`} bind:value={block.heading} placeholder="Le tournoi 2026 en images" />
-    </div>
-    <div class="space-y-1.5">
-      <Label for={`${uid}-gallery-layout`}>Disposition</Label>
-      <Select
-        id={`${uid}-gallery-layout`}
-        value={block.layout ?? 'grid'}
-        onchange={(e) =>
-          (block.layout = (e.currentTarget as HTMLSelectElement).value as 'grid' | 'carousel')}
-      >
-        <option value="grid">Grille — toutes visibles d'un coup</option>
-        <option value="carousel">Ruban — défilement horizontal</option>
-      </Select>
-      <p class="text-muted-foreground text-xs">
-        En ruban, chaque image garde ses proportions : une photo en portrait donne une
-        carte étroite, un panoramique une carte large, et aucune n'est recadrée.
-      </p>
-    </div>
+    </FormField>
 
-    <div class="space-y-1.5" class:opacity-50={block.layout === 'carousel'}>
-      <Label for={`${uid}-gallery-columns`}>Images par rangée</Label>
-      <Select
+    <FormField
+      id={`${uid}-gallery-layout`}
+      label="Disposition"
+      hint="En ruban, chaque image garde ses proportions : une photo en portrait donne une carte étroite, un panoramique une carte large, et aucune n'est recadrée."
+    >
+      <ChoiceField
+        id={`${uid}-gallery-layout`}
+        label="Disposition"
+        value={block.layout ?? 'grid'}
+        onChange={(v) => (block.layout = v as 'grid' | 'carousel')}
+        options={[
+          { value: 'grid', label: 'Grille', hint: "Toutes visibles d'un coup" },
+          { value: 'carousel', label: 'Ruban', hint: 'Défilement horizontal' }
+        ]}
+      />
+    </FormField>
+
+    <!--
+      Le réglage disparaît en ruban au lieu de s'y griser : un champ à demi effacé
+      qu'on peut encore ouvrir promet un effet qu'il n'a pas.
+    -->
+    {#if block.layout !== 'carousel'}
+      <FormField
         id={`${uid}-gallery-columns`}
-        value={String(block.columns ?? 3)}
-        onchange={(e) =>
-          (block.columns = Number((e.currentTarget as HTMLSelectElement).value) as 1 | 2 | 3 | 4)}
+        label="Images par rangée"
+        hint="C'est ce réglage qui décide de la taille des images. Sur téléphone, jamais plus de deux."
       >
-        <option value="1">1 — pleine largeur</option>
-        <option value="2">2 — grandes</option>
-        <option value="3">3 — moyennes</option>
-        <option value="4">4 — petites</option>
-      </Select>
-      <p class="text-muted-foreground text-xs">
-        {#if block.layout === 'carousel'}
-          Sans effet en ruban : la hauteur y est commune et la largeur suit l'image.
-        {:else}
-          C'est ce réglage qui décide de la taille des images. Sur téléphone, jamais plus de deux.
-        {/if}
-      </p>
-    </div>
+        <ChoiceField
+          id={`${uid}-gallery-columns`}
+          label="Images par rangée"
+          value={String(block.columns ?? 3)}
+          onChange={(v) => (block.columns = Number(v) as 1 | 2 | 3 | 4)}
+          options={[
+            { value: '1', label: '1', hint: 'Pleine largeur' },
+            { value: '2', label: '2', hint: 'Grandes' },
+            { value: '3', label: '3', hint: 'Moyennes' },
+            { value: '4', label: '4', hint: 'Petites' }
+          ]}
+        />
+      </FormField>
+    {/if}
   </div>
 
   {#if block.layout === 'carousel'}
-    <label class="flex items-start gap-2 text-sm">
-      <Checkbox
-        checked={block.autoScroll === true}
-        onCheckedChange={(v) => (block.autoScroll = v === true)}
-      />
-      <span>
-        <span class="font-medium">Faire défiler automatiquement</span>
-        <span class="text-muted-foreground block text-xs">
-          Le ruban glisse de la droite vers la gauche. Il s'arrête au survol, et un
-          bouton de pause reste disponible — le mouvement est désactivé d'office pour
-          les visiteurs qui demandent moins d'animation.
-        </span>
-      </span>
-    </label>
+    <SwitchField
+      id={`${uid}-gallery-autoscroll`}
+      label="Faire défiler automatiquement"
+      hint="Le ruban glisse de la droite vers la gauche. Il s'arrête au survol, et un bouton de pause reste disponible — le mouvement est désactivé d'office pour les visiteurs qui demandent moins d'animation."
+      checked={block.autoScroll === true}
+      onChange={(v) => (block.autoScroll = v)}
+    />
   {/if}
 
   <div class="space-y-2">
@@ -181,8 +177,8 @@
     {/if}
 
     {#if block.mediaIds.length < MAX}
-      <Button type="button" variant="outline" class="gap-1.5" onclick={() => (pickerOpen = true)}>
-        <ImagePlus class="h-4 w-4" />
+      <Button type="button" variant="outline" class="w-full gap-1.5" onclick={() => (pickerOpen = true)}>
+        <ImagePlus class="size-4" />
         Ajouter une image
       </Button>
     {:else}

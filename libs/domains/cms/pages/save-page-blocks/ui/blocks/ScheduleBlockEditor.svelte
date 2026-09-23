@@ -1,6 +1,7 @@
 <script lang="ts">
-  import { Input, Label } from '@nba/ui';
+  import { FormField, Input, MultiChoiceField } from '@nba/ui';
   import type { ScheduleBlock } from '../../../../shared/blocks';
+  import { PUBLICS_DE_CRENEAU } from './schedule-audiences';
 
   let { block = $bindable() } = $props<{ block: ScheduleBlock }>();
 
@@ -13,23 +14,37 @@
    */
   const uid = $props.id();
 
-  let raw = $state(block.audiences.join(', '));
-  $effect(() => {
-    block.audiences = raw.split(',').map((p) => p.trim()).filter(Boolean);
-  });
+  /*
+    Les publics se choisissaient dans une ligne de texte, séparés par des virgules, et
+    un `$effect` la redécoupait à chaque frappe. Trois façons de se tromper sans que
+    rien ne le dise : une faute de frappe, un libellé au lieu de la valeur, un public
+    qui n'existe plus. La liste est désormais fermée.
+  */
+  const rangerDansLOrdreDuCatalogue = (valeurs: readonly string[]) =>
+    PUBLICS_DE_CRENEAU.filter((p) => valeurs.includes(p.value)).map((p) => p.value);
+
+  const retenus = $derived(rangerDansLOrdreDuCatalogue(block.audiences ?? []));
 </script>
 
-<div class="space-y-3">
-  <div>
-    <Label for={`${uid}-schedule-heading`}>Titre de section</Label>
+<div class="space-y-4">
+  <FormField id={`${uid}-schedule-heading`} label="Titre de section">
     <Input id={`${uid}-schedule-heading`} bind:value={block.heading} placeholder="Les créneaux" />
-  </div>
-  <div>
-    <Label for={`${uid}-schedule-audiences`}>Publics</Label>
-    <Input id={`${uid}-schedule-audiences`} bind:value={raw} placeholder="minibad, poussins, jeunes" />
-    <p class="text-muted-foreground mt-1 text-xs">
-      Ce bloc n'enregistre pas d'horaires : il affiche ceux tenus à jour dans la
-      rubrique « Créneaux », pour qu'ils ne soient saisis qu'à un seul endroit.
-    </p>
-  </div>
+  </FormField>
+
+  <FormField
+    id={`${uid}-schedule-audiences`}
+    label="Publics"
+    hint="Aucun retenu : tous les créneaux s'affichent. Ce bloc n'enregistre pas d'horaires — il affiche ceux tenus à jour dans la rubrique « Créneaux », pour qu'ils ne soient saisis qu'à un seul endroit."
+  >
+    <MultiChoiceField
+      id={`${uid}-schedule-audiences`}
+      label="Publics"
+      title="Publics affichés"
+      description="Le bloc ne montrera que les créneaux de ces publics."
+      placeholder="Tous"
+      values={retenus}
+      onChange={(v) => (block.audiences = rangerDansLOrdreDuCatalogue(v))}
+      options={PUBLICS_DE_CRENEAU}
+    />
+  </FormField>
 </div>

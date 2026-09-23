@@ -46,10 +46,12 @@
   }
 </script>
 
-<FormField {id} label={label}>
+<FormField {id} {label}>
+  <!-- La rangée porte un intitulé court : « Cible du bouton » y laissait une dizaine
+       de caractères à la réponse, qui s'affichait « Une adresse … ». -->
   <ChoiceField
     {id}
-    {label}
+    label="Cible"
     value={mode}
     onChange={changerDeMode}
     options={[

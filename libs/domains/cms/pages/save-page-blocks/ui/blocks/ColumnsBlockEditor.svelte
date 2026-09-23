@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Button, Input, Label, Select, RichTextEditor } from '@nba/ui';
+  import { Button, ChoiceField, FormField, Input, Label, MediaField, RichTextEditor } from '@nba/ui';
   import { Plus, Trash2, ImagePlus, X } from '@lucide/svelte';
   import MediaPicker, { type PickableMedia } from '../../../../media/list-media/ui/MediaPicker.svelte';
   import { mediaUrl, websiteOrigin } from '../../../../media/media-url';
@@ -126,33 +126,33 @@
 
 <div class="space-y-4">
   <div class="grid gap-3 sm:grid-cols-2">
-    <div class="space-y-1.5">
-      <Label for={`${uid}-columns-heading`}>Titre (facultatif)</Label>
+    <FormField id={`${uid}-columns-heading`} label="Titre" hint="Facultatif.">
       <Input
         id={`${uid}-columns-heading`}
         bind:value={block.heading}
         placeholder="Titre affiché au-dessus des colonnes"
         maxlength={160}
       />
-    </div>
+    </FormField>
 
     {#if block.items.length === 2}
-      <div class="space-y-1.5">
-        <Label for={`${uid}-columns-ratio`}>Largeur des colonnes</Label>
-        <Select
+      <FormField
+        id={`${uid}-columns-ratio`}
+        label="Largeur des colonnes"
+        hint="Pour poser les actualités sur deux tiers de la page et l'agenda sur le dernier tiers, choisissez « Première colonne large »."
+      >
+        <ChoiceField
           id={`${uid}-columns-ratio`}
+          label="Largeur des colonnes"
           value={block.ratio ?? 'equal'}
-          onchange={(e) => (block.ratio = (e.currentTarget as HTMLSelectElement).value as ColumnsBlock['ratio'])}
-        >
-          <option value="equal">Colonnes égales</option>
-          <option value="wide-first">Première colonne large (deux tiers)</option>
-          <option value="wide-last">Dernière colonne large (deux tiers)</option>
-        </Select>
-        <p class="text-muted-foreground text-xs">
-          Pour poser les actualités sur deux tiers de la page et l'agenda sur le dernier
-          tiers, choisissez « Première colonne large ».
-        </p>
-      </div>
+          onChange={(v) => (block.ratio = v as ColumnsBlock['ratio'])}
+          options={[
+            { value: 'equal', label: 'Colonnes égales' },
+            { value: 'wide-first', label: 'Première large', hint: 'Deux tiers' },
+            { value: 'wide-last', label: 'Dernière large', hint: 'Deux tiers' }
+          ]}
+        />
+      </FormField>
     {/if}
   </div>
 
@@ -174,19 +174,21 @@
           {/if}
         </div>
 
-        <div class="space-y-1.5">
-          <Label for={`${uid}-columns-kind-${index}`}>Contenu de la colonne</Label>
-          <Select
+        <FormField id={`${uid}-columns-kind-${index}`} label="Contenu de la colonne">
+          <ChoiceField
             id={`${uid}-columns-kind-${index}`}
+            label="Contenu"
             value={kindOf(column)}
-            onchange={(e) => changeKind(index, (e.currentTarget as HTMLSelectElement).value)}
-          >
-            <option value="text">Texte</option>
-            {#each CONTENT_KINDS as kind (kind.type)}
-              <option value={kind.type}>{kind.label}</option>
-            {/each}
-          </Select>
-        </div>
+            onChange={(v) => changeKind(index, v)}
+            options={[
+              { value: 'text', label: 'Texte' },
+              ...CONTENT_KINDS.map((k: { type: string; label: string }) => ({
+                value: k.type,
+                label: k.label
+              }))
+            ]}
+          />
+        </FormField>
 
         {#if isBlockColumn(column)}
           <div class="border-border space-y-2 rounded-md border border-dashed p-3">
@@ -207,36 +209,21 @@
           </div>
         {:else}
           {@const image = imageOf(column.mediaId)}
-          {#if image}
-            <div class="flex items-center gap-2">
-              <img
-                src={mediaUrl(image.key)}
-                alt={image.alt}
-                class="border-border h-16 w-24 shrink-0 rounded border object-cover"
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                class="gap-1.5"
-                onclick={() => (block.items[index].mediaId = undefined)}
-              >
-                <X class="h-4 w-4" />
-                Retirer l'image
-              </Button>
-            </div>
-          {:else}
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              class="gap-1.5"
-              onclick={() => openPicker(index)}
-            >
-              <ImagePlus class="h-4 w-4" />
-              Ajouter une image
-            </Button>
-          {/if}
+          <FormField
+            id={`${uid}-columns-media-${index}`}
+            label="Image de la colonne"
+            hint="Facultative : elle se pose au-dessus du texte."
+          >
+            <MediaField
+              id={`${uid}-columns-media-${index}`}
+              label="Image de la colonne"
+              max={1}
+              preview={image ? [mediaUrl(image.key)] : null}
+              names={image ? [image.alt || 'Image'] : undefined}
+              onBrowse={() => openPicker(index)}
+              onClear={() => (block.items[index].mediaId = undefined)}
+            />
+          </FormField>
 
           <RichTextEditor
             bind:value={block.items[index].html}
@@ -249,8 +236,8 @@
   </div>
 
   {#if block.items.length < 3}
-    <Button type="button" variant="outline" size="sm" class="gap-1.5" onclick={addColumn}>
-      <Plus class="h-4 w-4" />
+    <Button type="button" variant="outline" class="w-full gap-1.5" onclick={addColumn}>
+      <Plus class="size-4" />
       Ajouter une colonne
     </Button>
   {/if}

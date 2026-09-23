@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { Input, Label, Button, ChoiceField, FormField } from '@nba/ui';
+  import { Input, Button, ChoiceField, FormField, MediaField } from '@nba/ui';
   import { mediaUrl } from '../../../../media/media-url';
-  import { ImagePlus, X, Trash2 } from '@lucide/svelte';
+  import { ImagePlus, Plus, X, Trash2 } from '@lucide/svelte';
   import MediaPicker, { type PickableMedia } from '../../../../media/list-media/ui/MediaPicker.svelte';
   import type { CtaGridBlock } from '../../../../shared/blocks';
   import LinkTargetField from './LinkTargetField.svelte';
@@ -73,42 +73,25 @@
     </FormField>
   </div>
 
-  <div class="space-y-1.5">
-    <Label>Image de fond (bannière)</Label>
-    {#if background}
-      <div class="border-border flex items-center gap-3 rounded-md border p-2">
-        <img
-          src={mediaUrl(background.key)}
-          alt={background.alt}
-          class="h-16 w-28 shrink-0 rounded object-cover"
-        />
-        <span class="min-w-0 flex-1 truncate text-sm">{background.alt || '(sans description)'}</span>
-        <Button type="button" variant="ghost" size="sm" onclick={() => (backgroundPickerOpen = true)}>
-          Remplacer
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon-sm"
-          onclick={() => (block.backgroundMediaId = undefined)}
-        >
-          <X class="h-4 w-4" />
-          <span class="sr-only">Retirer l'image de fond</span>
-        </Button>
-      </div>
-    {:else}
-      <Button type="button" variant="outline" class="gap-1.5" onclick={() => (backgroundPickerOpen = true)}>
-        <ImagePlus class="h-4 w-4" />
-        Choisir une image
-      </Button>
-      <p class="text-muted-foreground text-xs">
-        Sans image, la grille s'affiche sur fond neutre. Avec, les boutons se posent devant la bannière.
-      </p>
-    {/if}
-  </div>
+  <!-- La même rangée que l'image d'un produit ou la couverture d'une actualité. -->
+  <FormField
+    id={`${uid}-grid-background`}
+    label="Image de fond"
+    hint="Facultative : sans elle, la grille s'affiche sur fond neutre. Avec, les boutons se posent devant la bannière."
+  >
+    <MediaField
+      id={`${uid}-grid-background`}
+      label="Image de fond"
+      max={1}
+      preview={background ? [mediaUrl(background.key)] : null}
+      names={background ? [background.alt || 'Bannière'] : undefined}
+      onBrowse={() => (backgroundPickerOpen = true)}
+      onClear={() => (block.backgroundMediaId = undefined)}
+    />
+  </FormField>
 
   <div class="space-y-3">
-    <Label>Boutons</Label>
+    <h4 class="text-sm font-medium">Boutons</h4>
     {#each block.items as item, index (index)}
       <div class="border-border space-y-2 rounded-md border p-3">
         <div class="flex items-center gap-2">
@@ -142,7 +125,10 @@
         </FormField>
       </div>
     {/each}
-    <Button type="button" variant="secondary" onclick={add}>Ajouter un bouton</Button>
+    <Button type="button" variant="outline" class="w-full gap-1.5" onclick={add}>
+      <Plus class="size-4" />
+      Ajouter un bouton
+    </Button>
   </div>
 </div>
 

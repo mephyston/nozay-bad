@@ -1,6 +1,7 @@
 <script lang="ts">
-  import { Input, Label, Select, Checkbox } from '@nba/ui';
+  import { ChoiceField, FormField, Input, MultiChoiceField, SwitchField } from '@nba/ui';
   import type { EventsBlock } from '../../../../shared/blocks';
+  import { CATEGORIES_DAGENDA } from './events-categories';
 
   /**
    * Agenda : le bloc porte une requête, jamais des événements.
@@ -20,75 +21,67 @@
    */
   const uid = $props.id();
 
-  /** Reprises telles quelles du domaine `events` : les deux listes doivent coïncider. */
-  const CATEGORIES: { value: string; label: string }[] = [
-    { value: 'competition', label: 'Compétition' },
-    { value: 'interclubs', label: 'Interclubs' },
-    { value: 'tournoi', label: 'Tournoi' },
-    { value: 'stage', label: 'Stage' },
-    { value: 'vie_du_club', label: 'Vie du club' },
-    { value: 'assemblee', label: 'Assemblée' }
-  ];
+  /*
+    Les catégories retenues, rangées dans l'ordre du catalogue.
 
-  function toggle(value: string, checked: boolean) {
-    const current = block.categories ?? [];
-    block.categories = checked ? [...current, value] : current.filter((c: string) => c !== value);
-  }
+    Elles l'étaient dans l'ordre des clics : deux blocs portant les mêmes catégories
+    donnaient deux tableaux différents, et la page changeait à l'enregistrement sans
+    que rien n'ait changé pour le lecteur.
+  */
+  const rangerDansLOrdreDuCatalogue = (valeurs: readonly string[]) =>
+    CATEGORIES_DAGENDA.filter((c) => valeurs.includes(c.value)).map((c) => c.value);
+
+  const retenues = $derived(rangerDansLOrdreDuCatalogue(block.categories ?? []));
 </script>
 
 <div class="space-y-4">
-  <div class="grid gap-3 sm:grid-cols-2">
-    <div class="space-y-1.5">
-      <Label for={`${uid}-events-heading`}>Titre de section</Label>
+  <div class="grid gap-4 sm:grid-cols-2">
+    <FormField id={`${uid}-events-heading`} label="Titre de section">
       <Input id={`${uid}-events-heading`} bind:value={block.heading} placeholder="Prochains rendez-vous" />
-    </div>
+    </FormField>
 
-    <div class="space-y-1.5">
-      <Label for={`${uid}-events-limit`}>Nombre affiché</Label>
-      <Select
+    <FormField
+      id={`${uid}-events-limit`}
+      label="Nombre affiché"
+      hint="Seuls les rendez-vous à venir s'affichent : la liste se met à jour toute seule."
+    >
+      <ChoiceField
         id={`${uid}-events-limit`}
+        label="Nombre affiché"
         value={String(block.limit ?? 6)}
-        onchange={(e) => (block.limit = Number((e.currentTarget as HTMLSelectElement).value))}
-      >
-        {#each [3, 4, 5, 6, 8, 10, 12] as n (n)}
-          <option value={String(n)}>{n} événements</option>
-        {/each}
-      </Select>
-      <p class="text-muted-foreground text-xs">
-        Seuls les rendez-vous <strong>à venir</strong> s'affichent : la liste se met à jour
-        toute seule, sans intervention.
-      </p>
-    </div>
+        onChange={(v) => (block.limit = Number(v))}
+        options={[3, 4, 5, 6, 8, 10, 12].map((n) => ({ value: String(n), label: `${n} événements` }))}
+      />
+    </FormField>
   </div>
 
-  <fieldset class="space-y-2">
-    <legend class="text-sm font-medium">Catégories</legend>
-    <p class="text-muted-foreground text-xs">
-      Aucune cochée : toutes les catégories s'affichent.
-    </p>
-    <div class="grid gap-2 sm:grid-cols-3">
-      {#each CATEGORIES as category (category.value)}
-        <label class="flex items-center gap-2 text-sm">
-          <Checkbox
-            checked={(block.categories ?? []).includes(category.value)}
-            onCheckedChange={(v) => toggle(category.value, v === true)}
-          />
-          <span>{category.label}</span>
-        </label>
-      {/each}
-    </div>
-  </fieldset>
-
-  <label class="flex items-start gap-2 text-sm">
-    <Checkbox
-      checked={block.showArchiveLink !== false}
-      onCheckedChange={(v) => (block.showArchiveLink = v === true)}
+  <!--
+    Six cases à cocher en grille de trois colonnes, avec des cibles de 16 px et une
+    `<legend>` qui n'est pas un libellé de champ. Une rangée dit ce qui est retenu et
+    mène à l'écran de choix, où chaque catégorie a sa ligne de 44 points.
+  -->
+  <FormField
+    id={`${uid}-events-categories`}
+    label="Catégories"
+    hint="Aucune retenue : toutes les catégories s'affichent."
+  >
+    <MultiChoiceField
+      id={`${uid}-events-categories`}
+      label="Catégories"
+      title="Catégories affichées"
+      description="Le bloc ne montrera que les rendez-vous de ces catégories."
+      placeholder="Toutes"
+      values={retenues}
+      onChange={(v) => (block.categories = rangerDansLOrdreDuCatalogue(v))}
+      options={CATEGORIES_DAGENDA}
     />
-    <span>
-      <span class="font-medium">Afficher le lien « Tout l'agenda »</span>
-      <span class="text-muted-foreground block text-xs">
-        Renvoie vers la page /agenda/, qui liste l'ensemble des rendez-vous.
-      </span>
-    </span>
-  </label>
+  </FormField>
+
+  <SwitchField
+    id={`${uid}-events-archive`}
+    label="Afficher le lien « Tout l'agenda »"
+    hint="Renvoie vers la page /agenda/, qui liste l'ensemble des rendez-vous."
+    checked={block.showArchiveLink !== false}
+    onChange={(v) => (block.showArchiveLink = v)}
+  />
 </div>

@@ -32,6 +32,7 @@
     preview = null,
     accept = 'image/png,image/jpeg,image/webp',
     max = Infinity,
+    icon: Icone,
     hint,
     disabled = false,
     names,
@@ -41,9 +42,17 @@
   }: {
     label: string;
     id: string;
-    /** Adresse de l'aperçu courant, ou la liste des aperçus. */
-    preview?: string | string[] | null;
+    /**
+     * Adresse de l'aperçu courant, ou la liste des aperçus.
+     *
+     * Une entrée `null` vaut « retenu, mais sans vignette » : c'est le cas d'un PDF
+     * ou d'un tableur, qui n'en a pas. La rangée existe alors comme les autres et
+     * montre `icon` à la place de l'image.
+     */
+    preview?: string | (string | null)[] | null;
     accept?: string;
+    /** Ce qu'on montre à la place d'une vignette absente. */
+    icon?: unknown;
     /**
      * Combien d'images le champ admet.
      *
@@ -76,6 +85,10 @@
     preview === null || preview === undefined ? [] : Array.isArray(preview) ? preview : [preview]
   );
 
+  /* La clé d'une rangée : l'adresse quand il y en a une, le rang sinon — deux
+     fichiers sans vignette auraient autrement la même. */
+  const cleDe = (apercu: string | null, index: number) => apercu ?? `sans-apercu-${index}`;
+
   /** Le nom affiché d'une image : celui que l'écran donne, « Image » à défaut. */
   const noms = $derived(
     apercus.map((_, i) => names?.[i] || (apercus.length > 1 ? `Image ${i + 1}` : 'Image'))
@@ -100,7 +113,7 @@
 <input {id} bind:this={saisie} type="file" {accept} class="sr-only" onchange={choisir} {disabled} />
 
 {#snippet lignesImages()}
-  {#each apercus as apercu, index (apercu)}
+  {#each apercus as apercu, index (cleDe(apercu, index))}
     <div data-field-row class="flex min-h-11 items-center gap-3 px-3 py-2">
       {#if onClear}
         <!-- La pastille au signe moins d'iOS, en tête de la rangée qu'elle retire. -->
@@ -113,11 +126,26 @@
           <Minus class="size-4" aria-hidden="true" />
         </button>
       {/if}
-      <img
-        src={apercu}
-        alt=""
-        class="size-9 shrink-0 rounded-md border border-border bg-muted/30 object-contain"
-      />
+      {#if apercu}
+        <img
+          src={apercu}
+          alt=""
+          class="size-9 shrink-0 rounded-md border border-border bg-muted/30 object-contain"
+        />
+      {:else}
+        <!-- Un document n'a pas de vignette : la rangée garde sa place et son gabarit. -->
+        <span
+          class="flex size-9 shrink-0 items-center justify-center rounded-md border border-border bg-muted/30 text-muted-foreground"
+          aria-hidden="true"
+        >
+          {#if Icone}
+            {@const I = Icone as any}
+            <I class="size-4" />
+          {:else}
+            <span class="text-base">📄</span>
+          {/if}
+        </span>
+      {/if}
       <span class="min-w-0 flex-1 truncate text-base">{noms[index]}</span>
     </div>
   {/each}

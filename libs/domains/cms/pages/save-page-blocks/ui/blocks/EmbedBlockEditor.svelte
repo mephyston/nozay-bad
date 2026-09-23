@@ -1,8 +1,12 @@
 <script lang="ts">
-  import { Input, Label, Select, Checkbox } from '@nba/ui';
+  import { ChoiceField, FormField, Input, SwitchField } from '@nba/ui';
   import type { EmbedBlock } from '../../../../shared/blocks';
 
   let { block = $bindable() } = $props<{ block: EmbedBlock }>();
+
+  /* Identifiants uniques : deux intégrations sur la même page auraient sinon les
+     mêmes, et un `<label for=…>` désignerait le champ de l'autre. */
+  const uid = $props.id();
 
   const HINTS: Record<string, string> = {
     youtube: "Identifiant de la vidéo, pas son adresse : dans youtu.be/T4_qiRVEXcI, c'est T4_qiRVEXcI.",
@@ -23,75 +27,88 @@
   }
 </script>
 
-<div class="space-y-3">
-  <div>
-    <Label for="embed-provider">Service</Label>
-    <Select id="embed-provider" bind:value={block.provider}>
-      <option value="youtube">YouTube</option>
-      <option value="google_sheet">Google Sheets</option>
-      <option value="google_calendar">Google Agenda</option>
-    </Select>
-  </div>
-  <div>
-    <Label for="embed-resource">Identifiant</Label>
-    <Input id="embed-resource" bind:value={block.resourceId} />
-    <p class="text-muted-foreground mt-1 text-xs">{HINTS[block.provider]}</p>
-  </div>
-  <div>
-    <Label for="embed-title">Titre</Label>
-    <Input id="embed-title" bind:value={block.title} placeholder="Décrit le contenu pour les lecteurs d'écran" />
-  </div>
+<div class="space-y-4">
+  <FormField id={`${uid}-embed-provider`} label="Service">
+    <ChoiceField
+      id={`${uid}-embed-provider`}
+      label="Service"
+      value={block.provider}
+      onChange={(v) => (block.provider = v as typeof block.provider)}
+      options={[
+        { value: 'youtube', label: 'YouTube' },
+        { value: 'google_sheet', label: 'Google Sheets' },
+        { value: 'google_calendar', label: 'Google Agenda' }
+      ]}
+    />
+  </FormField>
 
-  <div class="grid gap-3 sm:grid-cols-2">
-    <div>
-      <Label for="embed-aspect">Format du cadre</Label>
-      <Select
-        id="embed-aspect"
+  <FormField id={`${uid}-embed-resource`} label="Identifiant" hint={HINTS[block.provider]}>
+    <Input id={`${uid}-embed-resource`} bind:value={block.resourceId} />
+  </FormField>
+
+  <FormField
+    id={`${uid}-embed-title`}
+    label="Titre"
+    hint="Décrit le contenu pour les lecteurs d'écran."
+  >
+    <Input id={`${uid}-embed-title`} bind:value={block.title} placeholder="Calendrier des compétitions" />
+  </FormField>
+
+  <div class="grid gap-4 sm:grid-cols-2">
+    <FormField
+      id={`${uid}-embed-aspect`}
+      label="Format du cadre"
+      hint="16/9 pour une vidéo. Un agenda mensuel ou une grande feuille de calcul demandent une hauteur fixe."
+    >
+      <ChoiceField
+        id={`${uid}-embed-aspect`}
+        label="Format du cadre"
         value={block.aspect}
-        onchange={(e) => setAspect((e.currentTarget as HTMLSelectElement).value)}
-      >
-        <option value="16/9">16/9 — vidéo</option>
-        <option value="4/3">4/3 — plus haut</option>
-        <option value="fixed">Hauteur fixe</option>
-      </Select>
-      <p class="text-muted-foreground mt-1 text-xs">
-        16/9 pour une vidéo. Un agenda mensuel ou une grande feuille de calcul demandent
-        une hauteur fixe.
-      </p>
-    </div>
-
-    {#if block.provider === 'google_sheet'}
-      <label class="flex items-start gap-2 text-sm sm:col-span-2">
-        <Checkbox
-          checked={block.editable === true}
-          onCheckedChange={(v) => (block.editable = v === true)}
-        />
-        <span>
-          <span class="font-medium">Autoriser la modification</span>
-          <span class="text-muted-foreground block text-xs">
-            Le tableau s'affiche en écriture au lieu de la lecture seule. Ce réglage ne
-            donne aucun droit par lui-même : c'est le partage du document côté Google qui
-            décide. Si la feuille est ouverte en modification à toute personne disposant
-            du lien, <strong>n'importe quel visiteur de la page pourra l'écrire</strong>,
-            sans compte ni nom. L'historique des versions de Google reste le seul recours.
-          </span>
-        </span>
-      </label>
-    {/if}
+        onChange={setAspect}
+        options={[
+          { value: '16/9', label: '16/9', hint: 'Vidéo' },
+          { value: '4/3', label: '4/3', hint: 'Plus haut' },
+          { value: 'fixed', label: 'Hauteur fixe' }
+        ]}
+      />
+    </FormField>
 
     {#if block.aspect === 'fixed'}
-      <div>
-        <Label for="embed-height">Hauteur (pixels)</Label>
+      <FormField
+        id={`${uid}-embed-height`}
+        label="Hauteur (pixels)"
+        hint="Entre 200 et 2000. Environ 600 pour un agenda."
+      >
         <Input
-          id="embed-height"
+          id={`${uid}-embed-height`}
           type="number"
           min="200"
           max="2000"
           value={block.heightPx ?? 600}
           onchange={(e) => (block.heightPx = Number((e.currentTarget as HTMLInputElement).value))}
         />
-        <p class="text-muted-foreground mt-1 text-xs">Entre 200 et 2000. Environ 600 pour un agenda.</p>
-      </div>
+      </FormField>
     {/if}
   </div>
+
+  {#if block.provider === 'google_sheet'}
+    <!--
+      L'avertissement reste entier et sous l'interrupteur : ce réglage peut ouvrir la
+      feuille à l'écriture pour n'importe quel visiteur, et c'est la seule chose de cet
+      écran qui engage des données hors du site.
+    -->
+    <SwitchField
+      id={`${uid}-embed-editable`}
+      label="Autoriser la modification"
+      checked={block.editable === true}
+      onChange={(v) => (block.editable = v)}
+    />
+    <p class="text-muted-foreground px-1 text-xs">
+      Le tableau s'affiche en écriture au lieu de la lecture seule. Ce réglage ne donne
+      aucun droit par lui-même : c'est le partage du document côté Google qui décide. Si
+      la feuille est ouverte en modification à toute personne disposant du lien,
+      <strong>n'importe quel visiteur de la page pourra l'écrire</strong>, sans compte ni
+      nom. L'historique des versions de Google reste le seul recours.
+    </p>
+  {/if}
 </div>
