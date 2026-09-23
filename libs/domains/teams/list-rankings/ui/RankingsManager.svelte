@@ -2,10 +2,12 @@
   import {
     CollapsibleSection,
     Button,
+    dockDePage,
     softNavigate,
     readCollapseState,
     writeCollapseState,
-    uiAlert
+    uiAlert,
+    type SwipeAction
   } from '@nba/ui';
   import { Upload, FileText } from '@lucide/svelte';
   import RankingsTable from './RankingsTable.svelte';
@@ -114,6 +116,31 @@
     }
   }
 
+  /*
+    Les deux détours — règlements, import — descendent dans la barre du bas. Ils
+    vivaient en haut de page, donc hors de vue dès qu'on faisait défiler deux cents
+    classements, c'est-à-dire chaque fois qu'on en cherche un.
+  */
+  $effect(() => {
+    const actions: SwipeAction[] = [
+      {
+        id: 'reglements',
+        label: `Règlements (${publishedRules}/${settings.length})`,
+        icon: FileText,
+        run: () => softNavigate(`/admin/teams/reglements?season=${seasonCode}`)
+      }
+    ];
+    if (canImport) {
+      actions.push({
+        id: 'importer',
+        label: 'Importer des classements',
+        icon: Upload,
+        run: () => softNavigate(`/admin/teams/classements/import?season=${seasonCode}`)
+      });
+    }
+    return dockDePage.declarerActions(actions, { icon: Upload, label: 'Gestes des classements' });
+  });
+
   let settingsOpen = $state(readCollapseState('rankings.settings', false));
   let tableOpen = $state(readCollapseState('rankings.table', true));
 
@@ -132,7 +159,8 @@
     L'import a sa propre page : c'est un geste rare — quelques fois par saison — et
     volumineux, qui n'a pas à occuper le haut d'un écran consulté chaque semaine.
   -->
-  <div class="flex flex-wrap justify-end gap-2">
+  <!-- Sur téléphone, ces deux détours vivent dans la barre du bas. -->
+  <div class="hidden flex-wrap justify-end gap-2 md:flex">
     <Button variant="outline" href={`/admin/teams/reglements?season=${seasonCode}`}>
       <FileText class="w-4 h-4" /> Règlements ({publishedRules}/{settings.length})
     </Button>

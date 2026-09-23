@@ -1,5 +1,21 @@
 <script lang="ts">
-  import { Table, Badge, DataTable, DataTableToolbar, Select } from '@nba/ui';
+  import {
+    Table,
+    Badge,
+    ChoiceField,
+    DataTable,
+    DataTableToolbar,
+    ResponsiveSheet,
+    Select,
+    dockDePage
+  } from '@nba/ui';
+  import RankingsList from './RankingsList.svelte';
+  import {
+    choixDeDate,
+    classementOuTiret,
+    signalementsDeJoueur,
+    type ClassementLike
+  } from './rankings-row-model';
   import { Trophy } from '@lucide/svelte';
   import { RANKINGS, type Ranking } from '../../shared/ranking';
   import type { RankingListItem, RankingDateSummary } from '../dto';
@@ -52,14 +68,26 @@
         })
   );
 
-  /** Un classement absent n'est pas `NC` : c'est un licencié non compétiteur. */
-  function rankingLabel(value: string | null): string {
-    return value ?? '—';
-  }
+  /*
+    La date des classements est la **portée** de l'écran : ce qu'on regarde, et non ce
+    qu'on y cherche ni ce qu'on y crée. Elle prend donc la pilule de la barre du bas,
+    qui affiche la date courante — une portée qu'on ne voit pas ne se vérifie jamais.
+  */
+  let porteeOuverte = $state(false);
+
+  $effect(() => {
+    if (availableDates.length === 0) return;
+    return dockDePage.declarerPortee({
+      label: 'Classements arrêtés au',
+      valeur: eloDate ?? '—',
+      ouvrir: () => (porteeOuverte = true)
+    });
+  });
 </script>
 
 <DataTable
   data={filtered}
+  mobileSpacing="list"
   itemName="classement"
   emptyIcon={Trophy}
   emptyTitle="Aucun classement"
@@ -72,18 +100,9 @@
       hasSearch
     >
       {#snippet actions()}
+        <!-- Sur téléphone, la date vit dans la pilule de la barre du bas. -->
         {#if availableDates.length > 0}
-          <div class="w-[220px]">
-            <Select
-              value={eloDate ?? ''}
-              onchange={(e) => onDateChange((e.currentTarget as HTMLSelectElement).value)}
-              aria-label="Date des classements"
-            >
-              {#each availableDates as date (date.eloDate)}
-                <option value={date.eloDate}>{date.eloDate} — {date.players} joueur(s)</option>
-              {/each}
-            </Select>
-          </div>
+          <div class="hidden w-[260px] md:block">{@render choixDeLaDate()}</div>
         {/if}
       {/snippet}
     </DataTableToolbar>
@@ -124,7 +143,7 @@
               {/each}
             </Select>
           {:else}
-            {rankingLabel(item[field])}
+            {classementOuTiret(item[field])}
           {/if}
         </Table.Cell>
       {/each}
@@ -132,52 +151,44 @@
         {item.cpphSingles ?? '—'} / {item.cpphDoubles ?? '—'} / {item.cpphMixed ?? '—'}
       </Table.Cell>
       <Table.Cell>
+        <!-- Les mêmes signalements que la liste, depuis la même déclaration. -->
         <div class="flex flex-wrap gap-1">
-          {#if !item.isMember}
-            <!-- Signalé en permanence : ce joueur n'est alignable dans aucune composition. -->
-            <Badge variant="destructive">Pas adhérent</Badge>
-          {/if}
-          {#if item.mutation !== 'none'}
-            <Badge variant="warning">Muté</Badge>
-          {/if}
-          {#if item.source === 'manuel'}
-            <Badge variant="outline">Saisi à la main</Badge>
-          {/if}
+          {#each signalementsDeJoueur(item as ClassementLike) as pastille (pastille.label)}
+            <Badge variant={pastille.variant}>{pastille.label}</Badge>
+          {/each}
         </div>
       </Table.Cell>
     </Table.Row>
   {/snippet}
 
   {#snippet mobileView()}
-    <!--
-      `Card.Root` n'espace que le haut et le bas : le retrait horizontal vient de
-      `Card.Content`, que cette liste ne traverse pas. Sans `px-4` ici, les lignes
-      touchent le bord du cadre.
-    -->
-    <div class="divide-y divide-border">
-      {#each filtered as item (item.id)}
-        <div class="px-4 py-3 space-y-1">
-          <p class="font-medium">{item.lastName} {item.firstName}</p>
-          <p class="text-xs text-muted-foreground">
-            {item.category ?? '—'} · {rankingLabel(item.singles)} /
-            {rankingLabel(item.doubles)} / {rankingLabel(item.mixed)}
-          </p>
-          <!-- Les mêmes signalements que le tableau : ils décident d'une composition. -->
-          {#if !item.isMember || item.mutation !== 'none' || item.source === 'manuel'}
-            <div class="flex flex-wrap gap-1">
-              {#if !item.isMember}
-                <Badge variant="destructive">Pas adhérent</Badge>
-              {/if}
-              {#if item.mutation !== 'none'}
-                <Badge variant="warning">Muté</Badge>
-              {/if}
-              {#if item.source === 'manuel'}
-                <Badge variant="outline">Saisi à la main</Badge>
-              {/if}
-            </div>
-          {/if}
-        </div>
-      {/each}
-    </div>
+    <RankingsList
+      joueurs={filtered as ClassementLike[]}
+      {canEdit}
+      {saving}
+      onEdit={(licence, field, valeur) => onEdit?.(licence, field, valeur as never)}
+      emptyIcon={Trophy}
+      emptyTitle="Aucun classement"
+      emptyDescription="Importez un export ELO Poona pour alimenter les valeurs d'équipe."
+    />
   {/snippet}
 </DataTable>
+
+{#snippet choixDeLaDate()}
+  <ChoiceField
+    id="portee-date-classements"
+    label="Date des classements"
+    value={eloDate ?? ''}
+    onChange={(v) => onDateChange(v)}
+    options={choixDeDate(availableDates)}
+  />
+{/snippet}
+
+<ResponsiveSheet
+  bind:open={porteeOuverte}
+  title="Classements affichés"
+  description="Deux imports d’une même semaine se distinguent par leur nombre de joueurs ; choisir le mauvais fausse toutes les valeurs d’équipe."
+  size="md"
+>
+  <div class="py-2">{@render choixDeLaDate()}</div>
+</ResponsiveSheet>
