@@ -6,8 +6,13 @@ import { SECTION_SPECS } from '@nba/club-ui';
   comme tous les autres formulaires : croix et validation en haut, à portée du pouce.
 
   L'adresse reste servie pour les liens gardés — un signet, un lien dans une note — et
-  renvoie vers le hub avec la section demandée, qu'il ouvre aussitôt. Une redirection
-  301 : la page n'a pas été déplacée un instant, elle a changé de forme pour de bon.
+  renvoie vers le hub avec la section demandée, qu'il ouvre aussitôt.
+
+  Une redirection **temporaire**, et non permanente. Une 301 est mise en cache par le
+  navigateur sans expiration et sans revalidation : elle ne redemande jamais au serveur.
+  Si la réorganisation est un jour défaite — cela vient d'arriver pour les gymnases —
+  l'ancienne adresse reste détournée chez tous ceux qui l'ont visitée entre-temps, et
+  aucun correctif serveur ne les atteint.
 */
 export const prerender = true;
 
@@ -23,5 +28,5 @@ export function getStaticPaths() {
 }
 
 const { section } = Astro.params;
-return Astro.redirect(`/admin/settings?section=${section}`, 301);
+return Astro.redirect(`/admin/settings?section=${section}`);
 ---

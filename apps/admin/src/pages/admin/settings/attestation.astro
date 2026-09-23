@@ -4,9 +4,12 @@
   était une page à part, en JavaScript natif : deux formulaires câblés à la main, deux
   boutons d'enregistrement, et des messages d'état posés par `textContent`.
 
-  L'adresse reste servie pour les liens gardés et y renvoie.
+  L'adresse reste servie pour les liens gardés et y renvoie — par une redirection
+  **temporaire** : une 301 est mise en cache par le navigateur sans expiration ni
+  revalidation, et si la réorganisation est un jour défaite, l'ancienne adresse reste
+  détournée chez tous ceux qui l'ont visitée, hors d'atteinte de tout correctif serveur.
 */
 export const prerender = true;
 
-return Astro.redirect('/admin/settings?section=attestation', 301);
+return Astro.redirect('/admin/settings?section=attestation');
 ---
