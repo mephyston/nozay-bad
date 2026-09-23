@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Settings, Plus } from "@lucide/svelte";
-  import { Card, Button, Sheet } from "@nba/ui";
+  import { Card, Button, Sheet, dockDePage } from "@nba/ui";
   import type { Category, AccountClass } from "./settings-types";
   import CategoryListTable from "./CategoryListTable.svelte";
   import CategoryAddForm from "./CategoryAddForm.svelte";
@@ -48,6 +48,18 @@
       if (await onUpdateCategory(editingCategory.id, data)) editingCategory = null;
     }
   }
+
+  /*
+    La création descend dans la barre du bas, comme sur tous les autres écrans : le
+    bouton vivait en haut d'une barre d'outils qui défile avec la liste, donc hors de
+    vue dès qu'on en parcourt le contenu — c'est-à-dire chaque fois qu'on vient y ajouter
+    quelque chose.
+  */
+  $effect(() =>
+    dockDePage.declarerActions([
+      { id: 'categorie', label: 'Nouvelle catégorie', icon: Plus, run: () => (showAddSheet = true) }
+    ])
+  );
 </script>
 
 <div class="space-y-6">
@@ -61,7 +73,7 @@
     {tabsNav}
   >
     {#snippet actions()}
-      <Button onclick={() => showAddSheet = true} size="sm" class="font-bold flex items-center gap-1.5 shrink-0 self-start sm:self-auto">
+      <Button onclick={() => showAddSheet = true} size="sm" class="hidden md:flex font-bold flex items-center gap-1.5 shrink-0 self-start sm:self-auto">
         <Plus class="w-4 h-4" />
         Nouvelle catégorie
       </Button>

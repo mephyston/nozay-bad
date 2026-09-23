@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Check, Edit2, Trash2, X } from "@lucide/svelte";
-  import { Button, Input, Badge, AlertDialog, DataTable, DataTableToolbar, Table, DataTableColumnHeader, Card, uiAlert } from '@nba/ui';
+  import { Button, Input, Badge, AlertDialog, DataTable, DataTableToolbar, Table, DataTableColumnHeader, uiAlert } from '@nba/ui';
+  import AccountClassList from './AccountClassList.svelte';
   import type { AccountClass } from "./settings-types";
 
   let {
@@ -39,6 +40,7 @@
 
 <DataTable
   data={accountClasses || []}
+  mobileSpacing="list"
   emptyTitle="Aucune classe"
   emptyDescription="Aucune classe de compte définie."
 >
@@ -53,44 +55,7 @@
   {/snippet}
 
   {#snippet mobileView()}
-    <div class="flex flex-col gap-4">
-      {#each (accountClasses || []) as ac}
-        <Card.Root class="flex flex-col gap-3 relative">
-        <Card.Content class="p-4 flex flex-col gap-3">
-          <div class="flex justify-between items-start gap-2">
-            <div class="flex flex-col gap-1">
-              <span class="font-bold text-lg text-foreground">{ac.code}</span>
-              <span class="font-semibold text-sm text-foreground">{ac.label}</span>
-            </div>
-            <div>
-              {#if ac.type === 'recette'}
-                <Badge variant="success" size="sm">
-                  Produit (7)
-                </Badge>
-              {:else if ac.type === 'tresorerie'}
-                <Badge variant="info" size="sm">
-                  Trésorerie (5)
-                </Badge>
-              {:else}
-                <Badge variant="destructive" size="sm">
-                  Charge (6)
-                </Badge>
-              {/if}
-            </div>
-          </div>
-          
-          <div class="flex justify-end gap-2 pt-2 border-t border-border mt-1">
-            <Button variant="destructive-outline" size="sm" class="flex-1" onclick={() => deletingAccountClass = ac} disabled={isSubmitting}>
-              Supprimer
-            </Button>
-            <Button variant="outline" size="sm" class="flex-1" onclick={() => onEditAccountClass(ac)}>
-              Modifier
-            </Button>
-          </div>
-        </Card.Content>
-        </Card.Root>
-      {/each}
-    </div>
+    <AccountClassList accountClasses={accountClasses || []} onEdit={onEditAccountClass} />
   {/snippet}
 
   {#snippet header()}

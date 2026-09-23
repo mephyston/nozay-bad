@@ -1,7 +1,8 @@
 <script lang="ts">
   import { Settings, Plus, Save, Trash2, Edit } from "@lucide/svelte";
-  import { Badge, Button, Input, DataTable, DataTableToolbar, DataTableColumnHeader, Checkbox, Sheet, AlertDialog, FormField, Card, Table, SearchableCombobox } from '@nba/ui';
+  import { Badge, Button, Input, DataTable, DataTableToolbar, DataTableColumnHeader, Checkbox, Sheet, AlertDialog, FormField, Card, Table, SearchableCombobox , dockDePage } from '@nba/ui';
   import type { Category, ProductCategory } from "./settings-types";
+  import ProductCategoryList from './ProductCategoryList.svelte';
 
   let {
     productCategories = [],
@@ -94,9 +95,22 @@
   function getCategoryLabel(id: number) {
     return categories.find(c => c.id === id)?.adminLabel || 'Inconnu';
   }
+
+  /*
+    La création descend dans la barre du bas, comme sur tous les autres écrans : le
+    bouton vivait en haut d'une barre d'outils qui défile avec la liste, donc hors de
+    vue dès qu'on en parcourt le contenu — c'est-à-dire chaque fois qu'on vient y ajouter
+    quelque chose.
+  */
+  $effect(() =>
+    dockDePage.declarerActions([
+      { id: 'produit', label: 'Nouvelle catégorie', icon: Plus, run: () => (showAddSheet = true) }
+    ])
+  );
 </script>
 
   <DataTable
+    mobileSpacing="list"
     data={productCategories}
     emptyTitle="Aucune catégorie"
     emptyDescription="Aucune catégorie de produit n'a encore été créée."
@@ -110,7 +124,7 @@
     {#snippet toolbar()}
       <DataTableToolbar hasSearch={false}>
         {#snippet actions()}
-          <Button onclick={() => showAddSheet = true} size="sm" class="font-bold flex items-center gap-1.5 shrink-0 self-start sm:self-auto">
+          <Button onclick={() => showAddSheet = true} size="sm" class="hidden md:flex font-bold flex items-center gap-1.5 shrink-0 self-start sm:self-auto">
             <Plus class="w-4 h-4" />
             Nouvelle catégorie
           </Button>
@@ -119,39 +133,12 @@
     {/snippet}
 
     {#snippet mobileView()}
-      <div class="flex flex-col gap-4">
-        {#each productCategories as cat}
-          <Card.Root class="flex flex-col gap-3 relative">
-          <Card.Content class="p-4 flex flex-col gap-3">
-            <div class="flex justify-between items-start gap-2">
-              <div>
-                <div class="font-bold text-base text-foreground">{cat.label}</div>
-                <div class="text-sm text-muted-foreground mt-0.5">
-                  <Badge variant="outline">
-                    {getCategoryLabel(cat.accountingCategoryId)}
-                  </Badge>
-                </div>
-              </div>
-              <div>
-                {#if cat.active}
-                  <Badge variant="success" size="xs">Actif</Badge>
-                {:else}
-                  <Badge variant="secondary" size="xs">Inactif</Badge>
-                {/if}
-              </div>
-            </div>
-            <div class="flex justify-end gap-2 pt-2 border-t border-border mt-1">
-              <Button variant="destructive-outline" size="sm" class="flex-1" onclick={() => confirmDelete(cat.id)} disabled={isSubmitting}>
-                Supprimer
-              </Button>
-              <Button variant="outline" size="sm" class="flex-1" onclick={() => startEdit(cat)}>
-                Modifier
-              </Button>
-            </div>
-          </Card.Content>
-          </Card.Root>
-        {/each}
-      </div>
+      <ProductCategoryList
+        {productCategories}
+        accountingCategories={categories}
+        onEdit={startEdit}
+        onDelete={(cat) => confirmDelete(cat.id)}
+      />
     {/snippet}
 
     {#snippet header()}

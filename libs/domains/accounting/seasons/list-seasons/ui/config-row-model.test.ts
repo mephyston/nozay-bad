@@ -1,7 +1,12 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import type { AccountClass } from './settings-types';
 import {
   classeDe,
+  detailDeCompte,
+  gestesDExercice,
+  libelleDeType,
+  rattachementDeProduit,
+  signalementsDExercice,
   codesDeCategorie,
   libelleAdherent,
   parLibelle,
@@ -93,5 +98,93 @@ describe('ordre de lecture', () => {
     const liste = [{ adminLabel: 'b' }, { adminLabel: 'a' }];
     parLibelle(liste);
     expect(liste.map((c) => c.adminLabel)).toEqual(['b', 'a']);
+  });
+});
+
+describe('type d’une classe de compte', () => {
+  it('l’écrit en français', () => {
+    // Les tableaux affichaient la valeur brute de l'API — « depense », sans accent.
+    expect(libelleDeType('recette')).toBe('Recette');
+    expect(libelleDeType('depense')).toBe('Dépense');
+    expect(libelleDeType('tresorerie')).toBe('Trésorerie');
+  });
+
+  it('rend telle quelle une valeur qu’il ne connaît pas', () => {
+    // Mieux vaut montrer la donnée que de la taire : c'est un type à ajouter.
+    expect(libelleDeType('bricole')).toBe('bricole');
+  });
+});
+
+describe('compte de trésorerie', () => {
+  it('situe le compte par sa classe', () => {
+    expect(detailDeCompte({ classCode: '512', classType: 'tresorerie' })).toBe('512 · Trésorerie');
+  });
+});
+
+describe('exercice comptable', () => {
+  it('ne signale que ce qui compte', () => {
+    /*
+      Un seul exercice est actif à la fois, et c'est celui sur lequel tout s'impute :
+      le savoir d'un coup d'œil est la raison d'être de cet écran.
+    */
+    expect(signalementsDExercice({ active: false })).toEqual([]);
+    expect(signalementsDExercice({ active: true }).map((s) => s.label)).toEqual(['Active']);
+  });
+
+  it('dit l’actif avant le clos, et l’à-nouveau en dernier', () => {
+    expect(
+      signalementsDExercice({ active: true, closed: true, isAutoFilled: true }).map((s) => s.label)
+    ).toEqual(['Active', 'Clos', 'À-nouveau repris']);
+  });
+});
+
+describe('catégorie de produits', () => {
+  const comptables = [{ id: 7, adminLabel: 'Volants' }];
+
+  it('nomme sa catégorie comptable, avec son intitulé', () => {
+    // Les deux libellés sont souvent identiques : « Volants » sous « Volants » se lit
+    // comme une répétition sans objet.
+    expect(rattachementDeProduit({ accountingCategoryId: 7 }, comptables)).toBe(
+      'Comptabilité : Volants'
+    );
+  });
+
+  it('dit l’absence de rattachement plutôt que de la taire', () => {
+    // Une catégorie de produits sans rattachement ne se comptabilise nulle part.
+    expect(rattachementDeProduit({ accountingCategoryId: 99 }, comptables)).toBe(
+      'Sans catégorie comptable'
+    );
+  });
+});
+
+describe('gestes d’un exercice', () => {
+  const gestes = () => ({ onSoldes: vi.fn(), onActiver: vi.fn(), onCloturer: vi.fn() });
+
+  it('met la consultation en tête', () => {
+    // C'est elle qu'un balayage long exécute : elle ne doit rien changer.
+    const liste = gestesDExercice({ id: '1', active: false }, gestes());
+    expect(liste[0].id).toBe('soldes');
+  });
+
+  it('n’offre plus que les soldes sur un exercice clos', () => {
+    // On n'y écrit plus : proposer « Activer » ou « Clôturer » serait une promesse vide.
+    expect(gestesDExercice({ id: '1', active: false, closed: true }, gestes()).map((a) => a.id)).toEqual([
+      'soldes'
+    ]);
+  });
+
+  it('n’offre pas d’activer ce qui l’est déjà', () => {
+    expect(gestesDExercice({ id: '1', active: true }, gestes()).map((a) => a.id)).toEqual([
+      'soldes',
+      'cloturer'
+    ]);
+  });
+
+  it('offre l’activation d’un exercice dormant', () => {
+    expect(gestesDExercice({ id: '1', active: false }, gestes()).map((a) => a.id)).toEqual([
+      'soldes',
+      'activer',
+      'cloturer'
+    ]);
   });
 });

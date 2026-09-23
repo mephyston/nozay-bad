@@ -1,6 +1,7 @@
 <script lang="ts">
+  import SeasonList from './SeasonList.svelte';
   import { Calendar, Plus, Wallet2 } from "@lucide/svelte";
-  import { Button, Input, Badge, Sheet, AlertDialog, DataTable, DataTableToolbar, Table, DataTableColumnHeader, FormField, Alert, Card , Checkbox } from '@nba/ui';
+  import { Button, Input, Badge, Sheet, AlertDialog, DataTable, DataTableToolbar, Table, DataTableColumnHeader, FormField, Alert, Card , Checkbox , dockDePage } from '@nba/ui';
   import InitialBalancesConfig from "./InitialBalancesConfig.svelte";
 
   let {
@@ -73,9 +74,23 @@
   }
 
   const sortedSeasons = $derived([...seasons].sort((a, b) => String(b.id).localeCompare(String(a.id))));
+
+
+  /*
+    La création descend dans la barre du bas, comme sur tous les autres écrans : le
+    bouton vivait en haut d'une barre d'outils qui défile avec la liste, donc hors de
+    vue dès qu'on en parcourt le contenu — c'est-à-dire chaque fois qu'on vient y ajouter
+    quelque chose.
+  */
+  $effect(() =>
+    dockDePage.declarerActions([
+      { id: 'saison', label: 'Nouvelle saison', icon: Plus, run: () => (showAddSheet = true) }
+    ])
+  );
 </script>
 
   <DataTable
+    mobileSpacing="list"
     data={sortedSeasons}
     emptyTitle="Aucune saison"
     emptyDescription="Aucun exercice comptable n'a encore été créé."
@@ -89,7 +104,7 @@
     {#snippet toolbar()}
       <DataTableToolbar hasSearch={false}>
         {#snippet actions()}
-          <Button onclick={() => showAddSheet = true} size="sm" class="font-bold flex items-center gap-1.5 shrink-0 self-start sm:self-auto">
+          <Button onclick={() => showAddSheet = true} size="sm" class="hidden md:flex font-bold flex items-center gap-1.5 shrink-0 self-start sm:self-auto">
             <Plus class="w-4 h-4" />
             Nouvelle saison
           </Button>
@@ -98,51 +113,12 @@
     {/snippet}
 
     {#snippet mobileView()}
-      <div class="flex flex-col gap-4">
-        {#each sortedSeasons as s}
-          <Card.Root class="flex flex-col gap-3 relative">
-          <Card.Content class="p-4 flex flex-col gap-3">
-            <div class="flex justify-between items-start gap-2">
-              <span class="font-bold text-sm text-foreground">{s.name}</span>
-              <div class="flex items-center gap-3">
-                {#if s.closed}
-                  <Badge variant="secondary">
-                    Clôturée
-                  </Badge>
-                {:else}
-                  {#if s.active}
-                    <Badge variant="primary-soft">
-                      Active
-                    </Badge>
-                  {/if}
-                {/if}
-              </div>
-            </div>
-            {#if !s.closed}
-              <div class="flex justify-end gap-2 pt-2 border-t border-border mt-1 flex-wrap">
-                {#if !s.active}
-                  <Button variant="outline" size="sm" class="flex-1" onclick={() => onToggleSeasonActive(s.id)} disabled={isSubmitting}>
-                    Activer
-                  </Button>
-                {/if}
-                <Button variant="outline" size="sm" class="flex-1" onclick={() => openBalances(s.id)} disabled={isSubmitting}>
-                  Soldes
-                </Button>
-                <Button variant="destructive-outline" size="sm" class="flex-1" onclick={() => handleStartClose(s.id)} disabled={isSubmitting}>
-                  Clôturer
-                </Button>
-              </div>
-            {:else}
-              <div class="flex justify-end gap-2 pt-2 border-t border-border mt-1 flex-wrap">
-                <Button variant="outline" size="sm" class="flex-1" onclick={() => openBalances(s.id)}>
-                  Voir soldes
-                </Button>
-              </div>
-            {/if}
-          </Card.Content>
-          </Card.Root>
-        {/each}
-      </div>
+      <SeasonList
+        seasons={sortedSeasons}
+        onSoldes={openBalances}
+        onActiver={onToggleSeasonActive}
+        onCloturer={(id) => void handleStartClose(id)}
+      />
     {/snippet}
 
     {#snippet header()}

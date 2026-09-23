@@ -1,6 +1,8 @@
 <script lang="ts">
+  import TreasuryAccountList from './TreasuryAccountList.svelte';
+  import PaymentMethodList from './PaymentMethodList.svelte';
   import { Plus, Edit2, Trash2, Power, Store, Landmark, CreditCard, AlertCircle } from '@lucide/svelte';
-  import { Alert, Badge, Button, Card, DataTable, DataTableToolbar, DataTableColumnHeader, DataTableRowActions, DropdownMenu, Table, toast, uiAlert } from '@nba/ui';
+  import { Alert, Badge, Button, Card, DataTable, DataTableToolbar, DataTableColumnHeader, DataTableRowActions, DropdownMenu, Table, dockDePage, toast, uiAlert } from '@nba/ui';
   import type { SettingsState } from '../../../seasons/list-seasons/ui/settings-api-classes';
   import * as api from './treasury-api';
   import TreasuryAccountForm from './TreasuryAccountForm.svelte';
@@ -89,6 +91,22 @@
     if (await run()) onSaved?.();
     else if (state.errorMsg) uiAlert(state.errorMsg);
   }
+
+  /*
+    Les deux créations descendent dans la barre du bas. Elles vivaient en haut de chaque
+    tableau, donc hors de vue dès qu'on parcourt les comptes — c'est-à-dire chaque fois
+    qu'on vient en ajouter un.
+  */
+  $effect(() => {
+    if (!canWrite) return;
+    return dockDePage.declarerActions(
+      [
+        { id: 'compte', label: 'Nouveau compte', icon: Plus, run: () => openAccount(null) },
+        { id: 'moyen', label: 'Nouveau moyen de paiement', icon: Plus, run: () => openMethod(null) }
+      ],
+      { icon: Plus, label: 'Ajouter' }
+    );
+  });
 </script>
 
 <div class="space-y-6">
@@ -105,12 +123,12 @@
 
   <section class="space-y-3" data-testid="treasury-accounts">
     <h2 class="text-base font-semibold flex items-center gap-2"><Landmark class="w-4 h-4 text-primary" /> Comptes de trésorerie</h2>
-    <DataTable data={accounts} emptyTitle="Aucun compte" emptyDescription="Créez le compte bancaire du club pour ouvrir la comptabilité.">
+    <DataTable mobileSpacing="list" data={accounts} emptyTitle="Aucun compte" emptyDescription="Créez le compte bancaire du club pour ouvrir la comptabilité.">
       {#snippet toolbar()}
         <DataTableToolbar hasSearch={false}>
           {#snippet actions()}
             {#if canWrite}
-              <Button size="sm" class="font-bold flex items-center gap-1.5" onclick={() => openAccount(null)}>
+              <Button size="sm" class="font-bold hidden md:flex items-center gap-1.5" onclick={() => openAccount(null)}>
                 <Plus class="w-4 h-4" /> Nouveau compte
               </Button>
             {/if}
@@ -119,29 +137,13 @@
       {/snippet}
 
       {#snippet mobileView()}
-        <div class="flex flex-col gap-4">
-          {#each accounts as account (account.id)}
-            <Card.Root class={account.active ? "" : "opacity-60"}>
-              <Card.Content class="p-4 flex flex-col gap-2">
-                <div class="flex justify-between items-start gap-2">
-                  <div>
-                    <div class="font-semibold">{account.label}</div>
-                    <div class="text-xs font-mono text-muted-foreground">{account.code} · classe {account.classCode}</div>
-                  </div>
-                  <Badge variant={account.active ? 'info' : 'secondary'} size="sm">{ACCOUNT_KIND_LABELS[account.kind]}</Badge>
-                </div>
-                {#if canWrite && account.kind !== 'third_party'}
-                  <div class="flex justify-end gap-2 pt-2 border-t border-border">
-                    <Button variant="outline" size="sm" onclick={() => rowAction(() => api.setAccountActive(state, account.id, !account.active))}>
-                      {account.active ? 'Désactiver' : 'Réactiver'}
-                    </Button>
-                    <Button variant="outline" size="sm" onclick={() => openAccount(account)}>Modifier</Button>
-                  </div>
-                {/if}
-              </Card.Content>
-            </Card.Root>
-          {/each}
-        </div>
+        <TreasuryAccountList
+          {accounts}
+          {canWrite}
+          libelleDeNature={(kind) => ACCOUNT_KIND_LABELS[kind]}
+          onEdit={openAccount}
+          onToggleActive={(a) => rowAction(() => api.setAccountActive(state, a.id, !a.active))}
+        />
       {/snippet}
 
       {#snippet header()}
@@ -186,12 +188,12 @@
 
   <section class="space-y-3" data-testid="payment-methods">
     <h2 class="text-base font-semibold flex items-center gap-2"><CreditCard class="w-4 h-4 text-primary" /> Moyens de paiement</h2>
-    <DataTable data={paymentMethods} emptyTitle="Aucun moyen de paiement" emptyDescription="Ajoutez ce que le club accepte.">
+    <DataTable mobileSpacing="list" data={paymentMethods} emptyTitle="Aucun moyen de paiement" emptyDescription="Ajoutez ce que le club accepte.">
       {#snippet toolbar()}
         <DataTableToolbar hasSearch={false}>
           {#snippet actions()}
             {#if canWrite}
-              <Button size="sm" class="font-bold flex items-center gap-1.5" onclick={() => openMethod(null)}>
+              <Button size="sm" class="font-bold hidden md:flex items-center gap-1.5" onclick={() => openMethod(null)}>
                 <Plus class="w-4 h-4" /> Nouveau moyen
               </Button>
             {/if}
@@ -200,33 +202,14 @@
       {/snippet}
 
       {#snippet mobileView()}
-        <div class="flex flex-col gap-4">
-          {#each paymentMethods as method (method.id)}
-            <Card.Root class={method.active ? "" : "opacity-60"}>
-              <Card.Content class="p-4 flex flex-col gap-2">
-                <div class="flex justify-between items-start gap-2">
-                  <div>
-                    <div class="font-semibold">{method.label}</div>
-                    <div class="text-xs text-muted-foreground">{PAYMENT_KIND_LABELS[method.kind]} · {accountLabel(method.defaultAccountCode)}</div>
-                  </div>
-                  <div class="flex flex-col items-end gap-1">
-                    {#if !method.active}<Badge variant="secondary" size="sm">Inactif</Badge>
-                    {:else if method.storefront}<Badge variant="success" size="sm">Boutique</Badge>
-                    {:else}<Badge variant="info" size="sm">Admin seulement</Badge>{/if}
-                  </div>
-                </div>
-                {#if canWrite && method.kind !== 'internal'}
-                  <div class="flex flex-wrap justify-end gap-2 pt-2 border-t border-border">
-                    <Button variant="outline" size="sm" onclick={() => rowAction(() => api.setPaymentMethodFlags(state, method.id, { active: !method.active }))}>
-                      {method.active ? 'Désactiver' : 'Réactiver'}
-                    </Button>
-                    <Button variant="outline" size="sm" onclick={() => openMethod(method)}>Modifier</Button>
-                  </div>
-                {/if}
-              </Card.Content>
-            </Card.Root>
-          {/each}
-        </div>
+        <PaymentMethodList
+          {paymentMethods}
+          {canWrite}
+          libelleDeNature={(kind) => PAYMENT_KIND_LABELS[kind]}
+          libelleDeCompte={accountLabel}
+          onEdit={openMethod}
+          onToggleActive={(m) => rowAction(() => api.setPaymentMethodFlags(state, m.id, { active: !m.active }))}
+        />
       {/snippet}
 
       {#snippet header()}
