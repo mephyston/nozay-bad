@@ -63,6 +63,7 @@
     redirects = [],
     canWrite = false,
     canDelete = false,
+    onClose,
     canUploadMedia = false
   } = $props<{
     page: PageRow;
@@ -85,6 +86,13 @@
     categories?: { slug: string; name: string }[];
     canWrite?: boolean;
     canDelete?: boolean;
+    /**
+     * Fermer, quand l'éditeur est ouvert en tiroir par-dessus la liste.
+     *
+     * Absent, la croix revient à la liste par navigation : l'éditeur reste alors
+     * atteignable par son adresse propre, ce qui garde les liens directs vivants.
+     */
+    onClose?: () => void;
     /** `cms:media:write` : autorise le dépôt depuis les sélecteurs des blocs. */
     canUploadMedia?: boolean;
   }>();
@@ -269,7 +277,8 @@
       });
       if (!confirme) return;
     }
-    softNavigate('/admin/website/pages');
+    if (onClose) onClose();
+    else softNavigate('/admin/website/pages');
   }
 
   async function save() {
@@ -313,8 +322,14 @@
     haut de leur feuille ; celui-ci n'en est pas une, mais la règle est la même.
   -->
   <div
-    class="sticky top-0 z-20 flex flex-wrap items-center gap-3 border-b border-border bg-background py-3"
+    class="sticky top-0 z-20 space-y-2 border-b border-border bg-background py-3"
   >
+    <!--
+      Deux rangs, et non un seul qui se replie : à 390 px, la validation passait sous
+      le titre et se retrouvait au milieu du bandeau. Les gestes tiennent le premier
+      rang de bout en bout, l'état suit en dessous.
+    -->
+    <div class="flex items-center gap-3">
     <!--
       Au doigt, la barre d'une feuille : la croix ferme à gauche, la validation valide
       à droite, toutes deux en rond. Éditer une page est un formulaire comme un autre —
@@ -324,14 +339,37 @@
     {#if canWrite}
       <Button
         variant="outline"
-        class="size-11 shrink-0 rounded-full p-0 md:hidden"
+        class={`size-11 shrink-0 rounded-full p-0 ${onClose ? '' : 'md:hidden'}`}
         aria-label="Fermer sans enregistrer"
         onclick={quitter}
       >
         <X class="size-5" />
       </Button>
-    {/if}
 
+      {#if onClose}
+        <!-- En tiroir, la barre porte le titre : l'en-tête de l'écran, qui le donnait,
+             reste dehors. -->
+        <span class="min-w-0 flex-1 truncate text-base font-semibold">{title || 'Page'}</span>
+      {:else}
+        <span class="flex-1"></span>
+      {/if}
+
+      <Button
+        class={`size-11 shrink-0 rounded-full p-0 ${onClose ? '' : 'md:hidden'}`}
+        aria-label={busy ? 'Enregistrement…' : 'Enregistrer'}
+        disabled={busy}
+        onclick={save}
+      >
+        {#if busy}
+          <Loader2 class="size-5 animate-spin" />
+        {:else}
+          <Check class="size-5" />
+        {/if}
+      </Button>
+    {/if}
+    </div>
+
+    <div class="flex flex-wrap items-center gap-3">
     <Badge variant={page.status === 'published' ? 'default' : 'secondary'}>
       {page.status === 'published' ? 'En ligne' : 'Brouillon'}
     </Badge>
@@ -358,20 +396,7 @@
     {/if}
 
     {#if canWrite}
-      <Button
-        class="ml-auto size-11 shrink-0 rounded-full p-0 md:hidden"
-        aria-label={busy ? 'Enregistrement…' : 'Enregistrer'}
-        disabled={busy}
-        onclick={save}
-      >
-        {#if busy}
-          <Loader2 class="size-5 animate-spin" />
-        {:else}
-          <Check class="size-5" />
-        {/if}
-      </Button>
-
-      <div class="ml-auto hidden items-center gap-2 md:flex">
+      <div class={`ml-auto items-center gap-2 ${onClose ? 'hidden' : 'hidden md:flex'}`}>
         <!--
           Réorganiser vit aussi ici : la barre du bas est masquée au-dessus de 768 px,
           et le mode y serait sinon inatteignable à la souris.
@@ -422,6 +447,7 @@
         </Button>
       </div>
     {/if}
+    </div>
   </div>
 
 

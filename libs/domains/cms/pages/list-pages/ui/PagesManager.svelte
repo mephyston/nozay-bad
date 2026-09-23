@@ -46,11 +46,14 @@
     pages = [],
     canWrite = false,
     canDelete = false,
+    onOpen,
     endpoint = '/admin/api/cms/pages'
   } = $props<{
     pages: PageRow[];
     canWrite?: boolean;
     canDelete?: boolean;
+    /** Ouvre l'éditeur par-dessus la liste. Absent, la liste y navigue. */
+    onOpen?: (id: number) => void;
     /**
      * Destination des écritures : le relais de la rubrique, et non la page hôte.
      *
@@ -80,7 +83,10 @@
   /* Les gestes, dans le vocabulaire du modèle : le menu du tableau et le balayage de la
      liste les rendent tous deux, à partir d'une seule déclaration. */
   const gestes = {
-    onEdit: (page: PageRow) => softNavigate(`/admin/website/pages/${page.id}`),
+    /* Ouvrir en tiroir quand l'écran hôte sait le faire ; sinon changer d'écran, ce
+       qui garde l'adresse propre d'une page atteignable et partageable. */
+    onEdit: (page: PageRow) =>
+      onOpen ? onOpen(page.id) : softNavigate(`/admin/website/pages/${page.id}`),
     /* L'adresse d'une page est relative au *site public*. L'ouvrir telle quelle la
        résolvait sur le domaine de l'administration, où le contrôle d'accès par page
        refuse tout chemin non déclaré : « Voir sur le site » répondait « Accès refusé ». */
