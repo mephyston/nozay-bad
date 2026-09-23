@@ -53,6 +53,7 @@
       "@nba/teams/schema": ["libs/domains/teams/shared/schema.ts"],
       "@nba/teams/championship": ["libs/domains/teams/shared/championship.ts"],
       "@nba/members/club-functions": ["libs/domains/members/shared/club-functions.ts"],
+      "@nba/members/attestation-config": ["libs/domains/members/shared/attestation/config.ts"],
       "@nba/members/membership-status": ["libs/domains/members/shared/membership-status.ts"],
       "@nba/teams-ui": ["libs/domains/teams/shared/ui.ts"],
       "@nba/cms/schema": ["libs/domains/cms/shared/schema.ts"],

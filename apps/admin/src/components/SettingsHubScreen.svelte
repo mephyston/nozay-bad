@@ -1,11 +1,11 @@
 <script lang="ts">
-  import { ListRow, ListView, ResponsiveSheet, softNavigate } from '@nba/ui';
+  import { ListRow, ListView, softNavigate } from '@nba/ui';
   import { can, type Permission } from '@nba/iam-ui';
   import { SECTION_SPECS } from '@nba/club-ui';
   import { chargerIdentite, derniereIdentite } from '../lib/identite';
   import ClubSettingsScreen from './ClubSettingsScreen.svelte';
   import EcranDistant from './EcranDistant.svelte';
-  import VenuesScreen from './VenuesScreen.svelte';
+  import { AttestationConfigForm } from '@nba/members-ui';
 
   /**
    * Les destinations de la configuration, en trois rubriques et filtrées sur les droits.
@@ -64,14 +64,14 @@
           permission: 'settings:club:read'
         },
         {
-          href: '/admin/settings?section=gymnases',
-          section: 'gymnases',
+          href: '/admin/settings/gymnases',
           title: 'Gymnases',
           description: 'Les salles du club : nom, adresse et position, pour le site et les convocations.',
           permission: 'schedules:slots:write'
         },
         {
-          href: '/admin/settings/attestation',
+          href: '/admin/settings?section=attestation',
+          section: 'attestation',
           title: 'Attestation CSE',
           description: "Signataire, mail, site web et signature du modèle d'attestation.",
           permission: 'members:attestations:read'
@@ -242,18 +242,31 @@
 </EcranDistant>
 
 <!--
-  Les écrans qui portent une liste montent dans une feuille nue : ils lisent leurs
-  données eux-mêmes — le squelette s'affiche alors **dans** le tiroir, et non au milieu
-  du hub — et gardent leurs propres formulaires, qui s'ouvrent par-dessus.
+  Les réglages qui mènent à une **liste** — gymnases, saisons, comptes, catégories —
+  restent des pages : on y consulte avant de modifier, et c'est là que la création et
+  l'édition ouvrent leurs propres tiroirs. Les enfermer eux-mêmes dans un tiroir
+  empilait une feuille dans une feuille à chaque ajout.
+
+  Ne s'ouvrent ici que les réglages qui sont des **formulaires**.
 -->
-{#if sectionOuverte === 'gymnases'}
-  <ResponsiveSheet
-    open
-    onOpenChange={(v) => !v && fermer()}
-    title="Gymnases"
-    description="Les salles où le club joue. Les créneaux, l’agenda et le site public y renvoient."
-    size="lg"
-  >
-    <div class="py-2"><VenuesScreen /></div>
-  </ResponsiveSheet>
+{#if sectionOuverte === 'attestation'}
+  <!--
+    Le seul réglage dont les données ne viennent ni du club ni de l'écran lui-même :
+    il les lit ici, et le formulaire les reçoit toutes faites — le tiroir s'ouvre donc
+    d'un coup, sans feuille de chargement intermédiaire.
+  -->
+  <EcranDistant domaine="members" ecran="attestation" variante="formulaire">
+    {#snippet attente()}{/snippet}
+    {#snippet pret(d)}
+      {#if d.config}
+        <AttestationConfigForm
+          open
+          onOpenChange={(v) => !v && fermer()}
+          config={d.config}
+          plafondOctets={d.maxSignatureBytes}
+          canWrite={d.canWrite ?? true}
+        />
+      {/if}
+    {/snippet}
+  </EcranDistant>
 {/if}

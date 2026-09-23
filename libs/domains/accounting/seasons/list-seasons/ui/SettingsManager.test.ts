@@ -72,7 +72,9 @@ describe("SettingsManager Component", () => {
     expect(target.innerHTML).toContain("Nouvelle catégorie");
     expect(target.innerHTML).toContain("Volants (vente ou achat)");
     expect(target.innerHTML).toContain("Salaires et Charges");
-    expect(target.innerHTML).toContain("Masquée NF"); // badge des catégories masquées en note de frais
+    // « Hors notes de frais » et non « Masquée NF » : une abréviation que seul le
+    // bureau décode, sur une liste que lisent aussi les trésoriers de passage.
+    expect(target.innerHTML).toContain("Hors notes de frais"); // badge des catégories masquées en note de frais
 
     // Le contenu de la vue "seasons" n'est pas rendu
     expect(target.innerHTML).not.toContain("Saison 2024-2025");

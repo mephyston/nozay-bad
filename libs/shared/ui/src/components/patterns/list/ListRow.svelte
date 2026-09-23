@@ -296,11 +296,17 @@
         {@render body()}
       </a>
     {:else if onclick && !disabled}
+      <!--
+        `cursor-pointer` explicite : Tailwind v4 rend aux boutons le curseur par défaut
+        de la plateforme — une flèche. À la souris, une rangée cliquable ne se
+        distinguait donc plus d'une rangée inerte, et rien n'annonçait qu'elle menait
+        quelque part. Les rangées qui sont des liens n'ont pas le défaut.
+      -->
       <button
         type="button"
         {onclick}
         aria-pressed={selected}
-        class="flex min-h-[3.25rem] min-w-0 flex-1 items-center gap-3 py-2.5 text-left text-foreground"
+        class="flex min-h-[3.25rem] min-w-0 flex-1 cursor-pointer items-center gap-3 py-2.5 text-left text-foreground"
       >
         {@render body()}
       </button>

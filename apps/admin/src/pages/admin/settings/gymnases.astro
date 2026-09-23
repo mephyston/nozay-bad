@@ -1,10 +1,32 @@
 ---
-/*
-  Les gymnases s'ouvrent désormais en tiroir depuis le hub de configuration, comme les
-  autres réglages. L'adresse reste servie pour les liens gardés et y renvoie : une
-  redirection 301, la page n'ayant pas été déplacée un instant mais changé de forme.
-*/
-export const prerender = true;
+import Layout from '../../../layouts/Layout.astro';
+import AdminLayout from '../../../components/AdminLayout.svelte';
+import VenuesScreen from '../../../components/VenuesScreen.svelte';
+import { PageHeader } from '@nba/ui';
 
-return Astro.redirect('/admin/settings?section=gymnases', 301);
+/**
+ * Les gymnases du club, sous « Configuration ».
+ *
+ * Page figée : l'îlot demande la liste au relais des créneaux (`gymnases`).
+ */
+export const prerender = true;
 ---
+
+<Layout title="Gymnases">
+  <AdminLayout client:idle breadcrumb="Configuration / Gymnases">
+    <div class="space-y-6">
+      <a
+        href="/admin/settings"
+        class="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+        Retour à la configuration
+      </a>
+      <PageHeader
+        title="Gymnases"
+        description="Les salles où le club joue. Les créneaux, l'agenda et le site public y renvoient."
+      />
+      <VenuesScreen client:load />
+    </div>
+  </AdminLayout>
+</Layout>

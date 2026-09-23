@@ -101,7 +101,7 @@ export default defineConfig({
           root: path.resolve(__dirname, 'libs/domains/members'),
           // Liste littérale : un test d'interface posé dans une tranche absente d'ici ne
           // serait jamais exécuté, sans que rien ne le signale.
-          include: ['get-member-by-licence/ui/**/*.test.ts', 'import-members-csv/ui/**/*.test.ts', 'list-members/ui/**/*.test.ts', 'upload-member-photo/ui/**/*.test.ts'],
+          include: ['attestations/ui/**/*.test.ts', 'get-member-by-licence/ui/**/*.test.ts', 'import-members-csv/ui/**/*.test.ts', 'list-members/ui/**/*.test.ts', 'upload-member-photo/ui/**/*.test.ts'],
         }
       },
       

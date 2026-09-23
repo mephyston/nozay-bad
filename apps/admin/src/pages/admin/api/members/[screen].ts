@@ -2,6 +2,7 @@ import { can } from '../../../../lib/guard';
 import { createAdminApiClient } from '../../../../lib/api';
 import { fetchSeasons, currentSeasonCode, sortSeasons } from '../../../../lib/seasons';
 import { isClubFunction } from '@nba/members/club-functions';
+import { MAX_SIGNATURE_BYTES } from '@nba/members/attestation-config';
 import { creerRelais, Refus, type Ecran } from '../../../../lib/relais';
 
 /**
@@ -34,7 +35,12 @@ export const ECRANS: Record<string, Ecran> = {
     feature: 'attestations',
     permission: 'members:attestations:read',
     charger: async (lire) => ({
-      config: (await lire('/members/attestation/config')) ?? null
+      config: (await lire('/members/attestation/config')) ?? null,
+      /*
+        Le plafond vient du serveur, il n'est jamais recopié côté écran : deux chiffres
+        à tenir en accord divergent toujours, et celui-ci ne se serait vu qu'au refus.
+      */
+      maxSignatureBytes: MAX_SIGNATURE_BYTES
     }),
     ecritures: {
       update_info: {

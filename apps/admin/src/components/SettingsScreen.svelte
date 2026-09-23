@@ -16,7 +16,8 @@
     titre,
     description,
     view,
-    allowedViews
+    allowedViews,
+    sansEntete = false
   }: {
     /*
       Le domaine, et non « configuration » : ces trois écrans sont rangés ensemble dans le
@@ -30,6 +31,13 @@
     /** Vue ouverte à défaut ; `?view=` de l'URL la remplace si elle est permise. */
     view: 'seasons' | 'compta' | 'classes' | 'shop';
     allowedViews: ('seasons' | 'compta' | 'classes' | 'shop')[];
+    /**
+     * Monté dans un tiroir : celui-ci porte déjà le titre et la description.
+     *
+     * Sans cela, l'écran les répétait sous le titre de la feuille — deux fois la même
+     * phrase, et la liste repoussée d'autant.
+     */
+    sansEntete?: boolean;
   } = $props();
 
   /*
@@ -46,13 +54,15 @@
   let errorMsg = $state<string | null>(null);
 </script>
 
-<PageHeader title={titre} {description} />
+{#if !sansEntete}
+  <PageHeader title={titre} {description} />
+{/if}
 
 {#if errorMsg}
   <div class="mt-6"><ErrorAlert message={errorMsg} /></div>
 {/if}
 
-<div class="mt-6">
+<div class={sansEntete ? '' : 'mt-6'}>
   <EcranDistant
     {domaine}
     {ecran}
