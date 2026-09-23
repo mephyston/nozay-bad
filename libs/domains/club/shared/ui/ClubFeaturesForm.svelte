@@ -107,11 +107,18 @@
 >
   <div class="space-y-6">
     {#each parGroupe as g (g.group)}
-      <section class="space-y-1">
+      <!--
+        Un cadre par catégorie, et non un par réglage.
+
+        Chaque rangée portait le sien : un groupe de six ressemblait à six réglages sans
+        rapport, et l'intitulé du groupe flottait au-dessus sans rien tenir. Le cadre
+        appartient au groupe ; les rangées n'ont plus qu'un filet entre elles.
+      -->
+      <section class="space-y-1.5">
         <h3 class="text-muted-foreground px-1 text-xs font-semibold tracking-wider uppercase">
           {g.group}
         </h3>
-        <div class="divide-border bg-card divide-y overflow-hidden rounded-xl">
+        <div class="divide-border border-border divide-y overflow-hidden rounded-xl border">
           {#each g.features as feature (feature)}
             {@const info = FEATURE_CATALOG[feature]}
             {@const bloquePar = preadableEteint(feature)}
@@ -124,6 +131,7 @@
               checked={choisi[feature]}
               disabled={!canWrite || bloquePar !== null}
               onChange={(v) => (choisi[feature] = v)}
+              sansCadre
               class="px-3 py-3"
             />
           {/each}

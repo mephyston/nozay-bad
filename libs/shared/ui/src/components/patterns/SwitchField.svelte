@@ -22,6 +22,7 @@
     hint,
     onChange,
     disabled = false,
+    sansCadre = false,
     class: className
   }: {
     label: string;
@@ -36,6 +37,15 @@
      */
     onChange?: (checked: boolean) => void;
     disabled?: boolean;
+    /**
+     * Retire la bordure et le rayon de la rangée.
+     *
+     * Pour les réglages qui vont **par groupes** — les fonctionnalités du club : chaque
+     * rangée portant son propre cadre, un groupe de six ressemblait à six réglages sans
+     * rapport, et le cadre du groupe passait inaperçu derrière eux. Le parent fournit
+     * alors l'encadrement et les séparateurs, comme `ListView` le fait pour `ListRow`.
+     */
+    sansCadre?: boolean;
     class?: string;
   } = $props();
 
@@ -54,12 +64,13 @@
 <!--
   La même enveloppe que les autres champs : bordure, rayon, hauteur. Un réglage est
   une rangée de formulaire comme une autre, et le laisser nu le faisait flotter
-  entre des champs cerclés.
+  entre des champs cerclés — sauf en groupe, où c'est le groupe qui encadre.
 -->
 <div
   data-field-row
   class={cn(
-    'border-input dark:bg-input/30 flex min-h-11 w-full items-center justify-between gap-4 rounded-lg border bg-transparent px-3 py-2',
+    'flex min-h-11 w-full items-center justify-between gap-4 px-3 py-2',
+    sansCadre ? '' : 'border-input dark:bg-input/30 rounded-lg border bg-transparent',
     className
   )}
 >

@@ -103,6 +103,18 @@ export function swipeActions(node: HTMLElement, options: SwipeActionsOptions = {
     // Un appui hors de la ligne ouverte la referme — y compris sur une autre ligne.
     if (ligneOuverte && ligneOuverte !== l) fermer(ligneOuverte);
 
+    /*
+      Un nouveau geste commence : le doigt n'a pas encore bougé.
+
+      Remis à zéro **avant** la sortie qui suit, et non après. Une rangée sans action
+      n'a pas de piste, `pisteDe` rend `null`, et l'on sortait sans toucher au drapeau :
+      celui d'un geste précédent restait allumé, et le garde-fou du clic annulait alors
+      tous les appuis sur ces rangées-là — définitivement, puisque seul un appui sur une
+      rangée *avec* actions le rabaissait. C'est ce qui rendait inertes les réglages du
+      hub de configuration, qui n'ont pas d'action de balayage.
+    */
+    bouge = false;
+
     if (!l || !pisteDe(l)) return;
 
     ligne = l;
@@ -112,7 +124,6 @@ export function swipeActions(node: HTMLElement, options: SwipeActionsOptions = {
     departOffset = l.hasAttribute('data-swipe-open') ? -mesurer(l) : 0;
     dx = 0;
     axe = null;
-    bouge = false;
     pointeur = e.pointerId;
   }
 

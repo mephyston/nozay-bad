@@ -197,9 +197,17 @@
 </div>
 
 <!--
-  `{#if}` autour, et non seulement `open` : l'écran distant charge les réglages du club
-  à l'ouverture, et garder le tiroir monté retiendrait la section précédente.
+  `{#key}` sur la section, et pas seulement `{#if}`.
+
+  Sans lui, Svelte **réutilise** le composant d'une section à l'autre : son état interne
+  survit au changement. Deux conséquences, toutes deux constatées à l'écran — le tiroir
+  refusait de se rouvrir après une première fermeture, puisque son `open` avait été
+  remis à faux localement et que la valeur passée d'ici n'avait pas changé ; et le
+  formulaire gardait les valeurs de la section précédente, sa copie locale n'étant faite
+  qu'au montage. La clé rend chaque section neuve.
 -->
 {#if sectionOuverte}
-  <ClubSettingsScreen section={sectionOuverte} open onClose={fermer} />
+  {#key sectionOuverte}
+    <ClubSettingsScreen section={sectionOuverte} open onClose={fermer} />
+  {/key}
 {/if}
