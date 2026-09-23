@@ -32,6 +32,7 @@
     X
   } from '@lucide/svelte';
   import { detailDeBloc, genreDeBloc } from './block-summary';
+  import PageMetaFields from './PageMetaFields.svelte';
   import type { BlockPayload } from '../../../shared/blocks';
   import { BLOCK_KINDS } from './block-editor-registry';
   import BlockCard from './BlockCard.svelte';
@@ -557,73 +558,17 @@
   }}
   size="lg"
 >
-    <div class="grid gap-3 sm:grid-cols-2">
-      <FormField id="page-title" label="Titre">
-        <Input id="page-title" bind:value={title} oninput={touch} />
-      </FormField>
-
-      <!--
-        Deux valeurs seulement, et non les trois du schéma : `landing` n'est lu par
-        aucun code de rendu — le site compose une page à partir de ses blocs, jamais
-        de son gabarit. L'offrir donnerait un choix sans effet.
-      -->
-      <FormField id="page-template" label="Rôle de la page">
-        <ChoiceField
-          id="page-template"
-          label="Rôle de la page"
-          value={template}
-          onChange={(v) => {
-            template = v as 'default' | 'home' | 'landing';
-            touch();
-          }}
-          options={[
-            { value: 'default', label: 'Page normale' },
-            { value: 'home', label: "Page d'accueil", hint: 'Servie à la racine « / »' }
-          ]}
-        />
-      </FormField>
-
-      <div class="sm:col-span-2">
-        <FormField id="page-slug" label="Adresse">
-          <Input
-            id="page-slug"
-            bind:value={slug}
-            oninput={touch}
-            disabled={template === 'home'}
-            placeholder="presentation"
-          />
-        </FormField>
-        <p class="text-muted-foreground mt-1 text-xs">
-          {#if template === 'home'}
-            La page d'accueil est servie à <code class="text-foreground">/</code> ; son adresse
-            reste enregistrée et lui sera rendue si une autre page reprend l'accueil.
-          {:else}
-            Adresse : <code class="text-foreground">{nextPath}</code>
-            {#if pathChanges}
-              — l'ancienne <code class="text-foreground">{page.path}</code> redirigera
-              automatiquement (301) vers la nouvelle, elle et ses sous-pages.
-            {/if}
-          {/if}
-        </p>
-      </div>
-
-      <FormField id="page-seo-title" label="Titre pour les moteurs">
-        <Input id="page-seo-title" bind:value={seoTitle} oninput={touch} placeholder="Repris du titre si vide" />
-      </FormField>
-
-      <div class="sm:col-span-2">
-        <FormField
-          id="page-seo-description"
-          label="Description pour les moteurs"
-          hint={`${seoDescription.length}/155 — à défaut, le début de la page sera utilisé.`}
-        >
-          <Input
-            id="page-seo-description"
-            bind:value={seoDescription}
-            oninput={touch}
-            placeholder="Une phrase de 150 caractères, affichée dans les résultats de recherche"
-          />
-        </FormField>
-      </div>
-    </div>
+  <PageMetaFields
+    bind:titre={title}
+    bind:adresse={slug}
+    bind:role={template}
+    bind:titreMoteurs={seoTitle}
+    bind:descriptionMoteurs={seoDescription}
+    onInput={touch}
+    aideAdresse={template === 'home'
+      ? "La page d'accueil est servie à « / » ; son adresse reste enregistrée et lui sera rendue si une autre page reprend l'accueil."
+      : pathChanges
+        ? `Adresse : ${nextPath} — l'ancienne ${page.path} redirigera automatiquement (301) vers la nouvelle, elle et ses sous-pages.`
+        : `Adresse : ${nextPath}`}
+  />
 </FormSheet>

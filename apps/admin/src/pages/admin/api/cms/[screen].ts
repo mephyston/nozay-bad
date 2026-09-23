@@ -100,7 +100,30 @@ export const ECRANS: Record<string, Ecran> = {
     ecritures: {
       create: {
         permission: 'cms:pages:write',
-        route: (data) => ({ chemin: '/cms/pages', method: 'POST', body: { title: data.title } })
+        /*
+          Le relais ne transmettait que le titre, alors que l'API accepte depuis
+          toujours l'adresse, le rôle et les champs pour les moteurs : on créait donc
+          une page sans pouvoir lui donner son adresse, puis on rouvrait ses réglages
+          pour le faire. Les facultatifs ne partent que renseignés — absente, l'adresse
+          se déduit du titre côté serveur.
+        */
+        route: (data) => {
+          const roles = ['default', 'home', 'landing'];
+          if (data.template != null && !roles.includes(String(data.template))) {
+            throw new Refus('Rôle de page inconnu.');
+          }
+          return {
+            chemin: '/cms/pages',
+            method: 'POST',
+            body: {
+              title: String(data.title ?? ''),
+              ...(data.slug ? { slug: String(data.slug) } : {}),
+              ...(data.template ? { template: String(data.template) } : {}),
+              ...(data.seoTitle ? { seoTitle: String(data.seoTitle) } : {}),
+              ...(data.seoDescription ? { seoDescription: String(data.seoDescription) } : {})
+            }
+          };
+        }
       },
       delete: {
         permission: 'cms:pages:delete',

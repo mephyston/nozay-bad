@@ -24,6 +24,7 @@
     type SwipeAction
   } from '@nba/ui';
   import PagesList from './PagesList.svelte';
+  import PageMetaFields from '../../save-page-blocks/ui/PageMetaFields.svelte';
   import {
     dateFr,
     gestesDePage,
@@ -60,6 +61,10 @@
   }>();
 
   let title = $state('');
+  let slug = $state('');
+  let template = $state<'default' | 'home' | 'landing'>('default');
+  let seoTitle = $state('');
+  let seoDescription = $state('');
   let busy = $state(false);
   let showFormSheet = $state(false);
   let errorMsg = $state('');
@@ -111,8 +116,18 @@
     }
   }
 
-  function openAddForm() {
+  /** Une création repart toujours vierge : les valeurs d'une page abandonnée ne doivent
+      pas se retrouver sur la suivante. */
+  function reinitialiser() {
     title = '';
+    slug = '';
+    template = 'default';
+    seoTitle = '';
+    seoDescription = '';
+  }
+
+  function openAddForm() {
+    reinitialiser();
     errorMsg = '';
     showFormSheet = true;
   }
@@ -124,9 +139,22 @@
 
     await submitForm({
       validate: () => (title.trim() ? null : 'Le titre de la page est obligatoire.'),
-      submit: () => post({ action: 'create', title: title.trim() }, 'La création a échoué.'),
+      submit: () =>
+        post(
+          {
+            action: 'create',
+            title: title.trim(),
+            /* Les facultatifs ne partent que renseignés : absente, l'adresse se
+               déduit du titre côté serveur. */
+            slug: slug.trim() || undefined,
+            template,
+            seoTitle: seoTitle.trim() || undefined,
+            seoDescription: seoDescription.trim() || undefined
+          },
+          'La création a échoué.'
+        ),
       close: () => {
-        title = '';
+        reinitialiser();
         showFormSheet = false;
       },
       // Le sheet couvre la page : le refus s'affiche dans le formulaire lui-même.
@@ -258,9 +286,19 @@
   submittingLabel="Création…"
   onSubmit={create}
 >
-  <FormField id="page-title" label="Titre de la page">
-    <Input id="page-title" bind:value={title} placeholder="Présentation" />
-  </FormField>
+  <!--
+    Les mêmes champs qu'aux réglages d'une page, par la même déclaration : on créait
+    une page sans pouvoir lui donner son adresse, puis on rouvrait ses réglages pour
+    le faire. Deux markups auraient de toute façon fini par diverger.
+  -->
+  <PageMetaFields
+    mode="creation"
+    bind:titre={title}
+    bind:adresse={slug}
+    bind:role={template}
+    bind:titreMoteurs={seoTitle}
+    bind:descriptionMoteurs={seoDescription}
+  />
 </FormSheet>
 
 <!-- Les critères se posent derrière la loupe, jamais ailleurs. -->
