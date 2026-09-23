@@ -6,6 +6,7 @@
     ChoiceField,
     FormField,
     EmptyState,
+    ChoicePicker,
     ListRow,
     ListView,
     ResponsiveSheet,
@@ -15,7 +16,7 @@
     uiAlert,
     type SwipeAction
   } from '@nba/ui';
-  import { Check, Ellipsis, GripVertical, History, Signpost } from '@lucide/svelte';
+  import { Check, Ellipsis, GripVertical, History, Plus, Signpost } from '@lucide/svelte';
   import { detailDeBloc, genreDeBloc } from './block-summary';
   import type { BlockPayload } from '../../../shared/blocks';
   import { BLOCK_KINDS } from './block-editor-registry';
@@ -130,6 +131,7 @@
     où elle atterrit ; repliés, la page entière tient à l'écran et le trajet se lit.
   */
   let reorganise = $state(false);
+  let choixDeBloc = $state(false);
   let historiqueOuvert = $state(false);
   let adressesOuvertes = $state(false);
 
@@ -143,6 +145,12 @@
     touch();
   }
 
+  /** Ajoute le genre de bloc choisi. Le catalogue est indexé, la liste rend un type. */
+  function ajouterLeGenre(type: string) {
+    const rang = BLOCK_KINDS.findIndex((k) => k.type === type);
+    if (rang >= 0) addBlock(rang);
+  }
+
   /*
     Les gestes de consultation et de rangement descendent dans la barre du bas. Ils
     vivaient en bas de page : l'historique et les anciennes adresses n'étaient
@@ -150,6 +158,15 @@
   */
   $effect(() => {
     const actions: SwipeAction[] = [];
+    if (canWrite && !reorganise) {
+      actions.push({
+        id: 'ajouter',
+        label: 'Ajouter un bloc',
+        icon: Plus,
+        tone: 'primary',
+        run: () => (choixDeBloc = true)
+      });
+    }
     if (canWrite && blocks.length > 1) {
       actions.push({
         id: 'ranger',
@@ -351,16 +368,15 @@
   {/if}
 
   {#if canWrite && !reorganise}
-    <div class="border-border rounded-lg border p-3">
-      <p class="mb-2 text-sm font-medium">Ajouter un bloc</p>
-      <div class="flex flex-wrap gap-2">
-        {#each BLOCK_KINDS as kind, index (kind.type)}
-          <Button variant="secondary" size="sm" title={kind.hint} onclick={() => addBlock(index)}>
-            {kind.label}
-          </Button>
-        {/each}
-      </div>
-    </div>
+    <!--
+      Une rangée de douze boutons dont la description ne vivait qu'en infobulle — donc
+      nulle part au doigt. Un seul geste ouvre l'écran de choix, où chaque genre a sa
+      ligne, son nom et la phrase qui dit à quoi il sert.
+    -->
+    <Button variant="outline" class="w-full gap-1.5" onclick={() => (choixDeBloc = true)}>
+      <Plus class="size-4" />
+      Ajouter un bloc
+    </Button>
 
     <div class="flex flex-wrap items-center gap-2">
       <!--
@@ -423,4 +439,16 @@
   {revisions}
   pageId={page.id}
   canRestore={canWrite}
+/>
+
+<!--
+  Le catalogue des blocs : douze genres, chacun avec la phrase qui dit à quoi il sert.
+  Elle n'existait qu'en `title=` sur un bouton — une infobulle, donc rien au doigt.
+-->
+<ChoicePicker
+  bind:open={choixDeBloc}
+  title="Ajouter un bloc"
+  description="Le bloc s'ajoute en fin de page ; le mode de rangement permet de le déplacer."
+  options={BLOCK_KINDS.map((kind) => ({ value: kind.type, label: kind.label, hint: kind.hint }))}
+  onChoose={ajouterLeGenre}
 />
