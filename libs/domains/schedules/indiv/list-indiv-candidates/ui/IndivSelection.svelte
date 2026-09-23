@@ -1,8 +1,26 @@
 <script lang="ts">
   import { Sparkles, Save, Megaphone, Copy } from '@lucide/svelte';
-  import { Button, Badge, Alert, toast, uiConfirm, flashAndReload, uiAlert } from '@nba/ui';
+  import {
+    Button,
+    Badge,
+    Alert,
+    dockDePage,
+    toast,
+    uiConfirm,
+    flashAndReload,
+    uiAlert,
+    type SwipeAction
+  } from '@nba/ui';
   import { formatWindow, type SlotWindow } from '../../../shared/indiv';
   import { ageAt, announcementText, proposeSelection, rankCandidates } from '../../../shared/indiv-selection';
+  import IndivCandidatesList from './IndivCandidatesList.svelte';
+  import {
+    classementsDeCandidat,
+    detailDeCandidat,
+    nomDeCandidat,
+    souhaitDeCandidat,
+    type CandidatLike
+  } from './selection-row-model';
 
   /**
    * L'écran du choix : les candidats classés par priorité, et l'affectation aux créneaux.
@@ -112,7 +130,24 @@
     catch { uiAlert('Copie impossible : sélectionnez le texte à la main.'); }
   }
 
-  const rankings = (c: Candidate) => [c.singles, c.doubles, c.mixed].map((r) => r ?? '—').join(' / ');
+  /*
+    Les quatre gestes descendent dans la barre du bas : ils vivaient en haut d'une
+    rangée qui, à 390 px, se repliait en deux lignes de boutons au-dessus de la liste
+    — donc hors de vue dès qu'on faisait défiler les candidats, c'est-à-dire tout le
+    temps. « Annoncer » est le geste terminal : il reste en tête.
+  */
+  const modifiable = $derived(canWrite && session.status !== 'cancelled');
+
+  $effect(() => {
+    const actions: SwipeAction[] = [];
+    if (modifiable) {
+      actions.push({ id: 'annoncer', label: 'Annoncer les retenus', icon: Megaphone, run: () => void announce() });
+      actions.push({ id: 'enregistrer', label: 'Enregistrer la sélection', icon: Save, run: () => void save() });
+      actions.push({ id: 'proposer', label: 'Proposer une sélection', icon: Sparkles, run: () => propose() });
+    }
+    actions.push({ id: 'copier', label: "Copier l'annonce", icon: Copy, run: () => void copy() });
+    return dockDePage.declarerActions(actions, { icon: Megaphone, label: 'Gestes de la soirée' });
+  });
 </script>
 
 <div class="space-y-4">
@@ -128,9 +163,10 @@
         Créneau {slot.index} · {formatWindow(slot)} · {count}/{session.capacityPerSlot}
       </Badge>
     {/each}
-    <div class="ml-auto flex flex-wrap gap-2">
+    <!-- Sur téléphone, ces gestes vivent dans la barre du bas. -->
+    <div class="ml-auto hidden flex-wrap gap-2 md:flex">
       <Button variant="outline" onclick={copy} class="gap-1.5"><Copy class="h-4 w-4" />Copier l'annonce</Button>
-      {#if canWrite && session.status !== 'cancelled'}
+      {#if modifiable}
         <Button variant="outline" onclick={propose} disabled={busy || candidates.length === 0} class="gap-1.5"><Sparkles class="h-4 w-4" />Proposer</Button>
         <Button variant="outline" onclick={save} disabled={busy || !dirty} class="gap-1.5"><Save class="h-4 w-4" />Enregistrer</Button>
         <Button onclick={announce} disabled={busy || selectedTotal === 0} class="gap-1.5 font-bold"><Megaphone class="h-4 w-4" />Annoncer</Button>
@@ -138,6 +174,23 @@
     </div>
   </div>
 
+  <!--
+    Deux rendus, une seule déclaration de libellés : la liste au doigt sous 768 px, les
+    rangées du bureau au-dessus. Ce qui reste dupliqué est la disposition, pas le
+    contenu — et la disposition, elle, ne dérive pas.
+  -->
+  <div class="md:hidden">
+    <IndivCandidatesList
+      candidats={ranked as CandidatLike[]}
+      creneaux={session.slots.map((slot: SlotWindow) => ({ index: slot.index, libelle: formatWindow(slot) }))}
+      assignations={assignments}
+      capacite={session.capacityPerSlot}
+      lecture={!modifiable || busy}
+      onAssigner={assign}
+    />
+  </div>
+
+  <div class="hidden md:block">
   {#if ranked.length === 0}
     <p class="rounded-xl border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">Personne n'a encore candidaté.</p>
   {:else}
@@ -146,25 +199,22 @@
         <li class="flex flex-wrap items-center gap-3 p-3 sm:p-4" data-testid="candidate">
           <span class="w-6 text-center text-sm font-bold tabular-nums text-muted-foreground">{i + 1}</span>
           <div class="min-w-0 flex-1">
-            <p class="text-sm font-semibold text-foreground">
-              {c.firstName} {c.lastName}
-              <span class="ml-1 text-xs font-normal text-muted-foreground">{c.age !== null ? `${c.age} ans` : 'âge inconnu'}{c.category ? ` · ${c.category}` : ''}</span>
-            </p>
+            <p class="text-sm font-semibold text-foreground">{nomDeCandidat(c as CandidatLike)}</p>
+            <p class="text-xs text-muted-foreground">{detailDeCandidat(c as CandidatLike)}</p>
             <p class="text-xs text-muted-foreground">
-              S/D/M {rankings(c)} · retenu {c.selectedCount} fois sur {c.requestCount} demande{c.requestCount > 1 ? 's' : ''}{c.lastSelectedDate ? ` · dernière fois le ${c.lastSelectedDate}` : ''}
+              {classementsDeCandidat(c as CandidatLike)}{c.lastSelectedDate ? ` · dernière fois le ${c.lastSelectedDate}` : ''}
             </p>
-            <p class="text-xs text-muted-foreground">
-              Souhait : {c.preferredSlot ? `créneau ${c.preferredSlot}` : 'indifférent'}{c.note ? ` · « ${c.note} »` : ''}
-            </p>
+            <p class="text-xs text-muted-foreground">{souhaitDeCandidat(c as CandidatLike)}</p>
           </div>
           <div class="flex items-center gap-1" role="group" aria-label={`Créneau de ${c.firstName} ${c.lastName}`}>
-            <Button size="sm" variant={assignments[c.requestId] === null || assignments[c.requestId] === undefined ? 'default' : 'outline'} onclick={() => assign(c.requestId, null)} disabled={!canWrite || busy} class="h-8 px-2 text-xs">—</Button>
+            <Button size="sm" variant={assignments[c.requestId] === null || assignments[c.requestId] === undefined ? 'default' : 'outline'} onclick={() => assign(c.requestId, null)} disabled={!modifiable || busy} class="h-8 px-2 text-xs">—</Button>
             {#each session.slots as slot (slot.index)}
-              <Button size="sm" variant={assignments[c.requestId] === slot.index ? 'default' : 'outline'} onclick={() => assign(c.requestId, slot.index)} disabled={!canWrite || busy} class="h-8 px-2 text-xs" aria-pressed={assignments[c.requestId] === slot.index}>{slot.index}</Button>
+              <Button size="sm" variant={assignments[c.requestId] === slot.index ? 'default' : 'outline'} onclick={() => assign(c.requestId, slot.index)} disabled={!modifiable || busy} class="h-8 px-2 text-xs" aria-pressed={assignments[c.requestId] === slot.index}>{slot.index}</Button>
             {/each}
           </div>
         </li>
       {/each}
     </ol>
   {/if}
+  </div>
 </div>
