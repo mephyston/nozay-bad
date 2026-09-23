@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Trash2, Upload, Loader2 } from '@lucide/svelte';
-  import { Button, Card, ErrorAlert, flashAndReload, readApiError, uiConfirm } from '@nba/ui';
+  import { Images } from '@lucide/svelte';
+  import { FormField, FormSheet, MediaField, flashAndReload, readApiError, uiConfirm } from '@nba/ui';
   import { CLUB_ASSETS, type ClubAsset, type ClubSettings } from '../settings';
   import { clubAssetPath } from '../assets';
 
@@ -15,12 +16,24 @@
    * l'administration : d'où `mediaOrigin`, l'adresse du site, passée par l'écran.
    */
   let {
+    open = $bindable(false),
+    onOpenChange,
     settings,
     mediaOrigin = '',
     canWrite = false,
     maxPartners = 6,
     endpoint = '/admin/api/club'
   } = $props<{
+    /** Le formulaire est un tiroir. Rien à soumettre : chaque dépôt écrit aussitôt. */
+    open?: boolean;
+    /**
+     * Prévenu de chaque fermeture, celles que la feuille décide comprises.
+     *
+     * Le hub garde la section ouverte dans l'adresse : sans cela, refermer d'un
+     * glissement ou de la touche d'échappement laisserait `?section=` derrière, et le
+     * tiroir se rouvrirait au prochain passage.
+     */
+    onOpenChange?: (ouvert: boolean) => void;
     settings: ClubSettings;
     mediaOrigin?: string;
     canWrite?: boolean;
@@ -110,83 +123,62 @@
   }
 </script>
 
-{#if errorMsg}
-  <div class="mb-4"><ErrorAlert message={errorMsg} /></div>
-{/if}
+<!--
+  Rien à soumettre : chaque dépôt écrit aussitôt et recharge. Le tiroir n'a donc pas de
+  validation — `lectureSeule` — et la croix en est la seule sortie.
+-->
+<FormSheet
+  bind:open
+  {onOpenChange}
+  title="Images des documents"
+  description="Logo, papier à lettre, tampon et logos partenaires imprimés sur les PDF. PNG ou JPEG, 2 Mo au plus."
+  icon={Images}
+  size="lg"
+  error={errorMsg}
+  isSubmitting={busy !== null}
+  lectureSeule
+  cancelLabel="Fermer"
+  onSubmit={(e) => e.preventDefault()}
+>
+  <div class="space-y-4">
+    {#each CLUB_ASSETS as asset (asset)}
+      {@const src = url(settings[asset === 'logo' ? 'logoKey' : asset === 'letterheadHeader' ? 'letterheadHeaderKey' : asset === 'letterheadFooter' ? 'letterheadFooterKey' : 'stampKey'])}
+      <!--
+        La même rangée que l'image d'un produit : appui pour choisir, puis l'image sur
+        sa propre ligne avec la pastille de retrait. Un seul fichier par emplacement,
+        d'où `max={1}` — la rangée dit « Remplacer » et non « Ajouter ».
+      -->
+      <FormField id={`asset-${asset}`} label={LABELS[asset].title} hint={LABELS[asset].help}>
+        <MediaField
+          id={`asset-${asset}`}
+          label={LABELS[asset].title}
+          accept="image/png,image/jpeg"
+          max={1}
+          preview={src ? [src] : null}
+          names={src ? [LABELS[asset].title] : undefined}
+          disabled={!canWrite || busy !== null}
+          onSelect={(file) => void deposer(`asset-${asset}`, file, LABELS[asset].title)}
+          onClear={() => retirer(asset)}
+        />
+      </FormField>
+    {/each}
 
-<div class="space-y-6">
-  {#each CLUB_ASSETS as asset (asset)}
-    {@const src = url(settings[asset === 'logo' ? 'logoKey' : asset === 'letterheadHeader' ? 'letterheadHeaderKey' : asset === 'letterheadFooter' ? 'letterheadFooterKey' : 'stampKey'])}
-    <Card.Root>
-      <Card.Header>
-        <Card.Title>{LABELS[asset].title}</Card.Title>
-        <Card.Description>{LABELS[asset].help} PNG ou JPEG, 2 Mo au plus.</Card.Description>
-      </Card.Header>
-      <Card.Content class="flex flex-wrap items-center gap-6">
-        <div class="flex h-24 min-w-24 max-w-full items-center justify-center rounded-md border border-border bg-background p-2">
-          {#if src}
-            <img {src} alt={LABELS[asset].title} class="max-h-20 max-w-[320px] object-contain" />
-          {:else}
-            <span class="text-xs text-muted-foreground">Aucune image</span>
-          {/if}
-        </div>
-        {#if canWrite}
-          <div class="flex flex-wrap items-center gap-2">
-            <label class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-input px-3 py-2 text-sm font-medium hover:bg-muted">
-              {#if busy === `asset-${asset}`}
-                <Loader2 class="h-4 w-4 animate-spin" />
-              {:else}
-                <Upload class="h-4 w-4" />
-              {/if}
-              <span>{src ? 'Remplacer' : 'Déposer'}</span>
-              <input type="file" accept="image/png,image/jpeg" class="sr-only" disabled={busy !== null} onchange={onFile(`asset-${asset}`, LABELS[asset].title)} />
-            </label>
-            {#if src}
-              <Button variant="outline" size="sm" disabled={busy !== null} onclick={() => retirer(asset)} class="gap-1.5">
-                <Trash2 class="h-4 w-4" /> Retirer
-              </Button>
-            {/if}
-          </div>
-        {/if}
-      </Card.Content>
-    </Card.Root>
-  {/each}
-
-  <Card.Root>
-    <Card.Header>
-      <Card.Title>Logos des partenaires</Card.Title>
-      <Card.Description>Imprimés en bas de chaque document, dans l’ordre. {maxPartners} au plus, PNG ou JPEG.</Card.Description>
-    </Card.Header>
-    <Card.Content class="space-y-4">
-      {#if settings.partnerLogoKeys.length === 0}
-        <p class="text-sm text-muted-foreground">Aucun logo partenaire.</p>
-      {:else}
-        <ul class="flex flex-wrap gap-4">
-          {#each settings.partnerLogoKeys as key (key)}
-            <li class="flex flex-col items-center gap-2">
-              <div class="flex h-20 w-32 items-center justify-center rounded-md border border-border bg-background p-2">
-                <img src={url(key)} alt="Logo partenaire" class="max-h-16 max-w-full object-contain" />
-              </div>
-              {#if canWrite}
-                <Button variant="ghost" size="sm" disabled={busy !== null} onclick={() => retirerPartenaire(key)} class="gap-1 text-xs">
-                  <Trash2 class="h-3.5 w-3.5" /> Retirer
-                </Button>
-              {/if}
-            </li>
-          {/each}
-        </ul>
-      {/if}
-      {#if canWrite && settings.partnerLogoKeys.length < maxPartners}
-        <label class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-input px-3 py-2 text-sm font-medium hover:bg-muted">
-          {#if busy === 'asset-partners'}
-            <Loader2 class="h-4 w-4 animate-spin" />
-          {:else}
-            <Upload class="h-4 w-4" />
-          {/if}
-          <span>Ajouter un logo</span>
-          <input type="file" accept="image/png,image/jpeg" class="sr-only" disabled={busy !== null} onchange={onFile('asset-partners', 'Logo partenaire')} />
-        </label>
-      {/if}
-    </Card.Content>
-  </Card.Root>
-</div>
+    <FormField
+      id="asset-partners"
+      label="Logos des partenaires"
+      hint={`Imprimés en bas de chaque document, dans l’ordre. ${maxPartners} au plus.`}
+    >
+      <MediaField
+        id="asset-partners"
+        label="Logos des partenaires"
+        accept="image/png,image/jpeg"
+        max={maxPartners}
+        preview={settings.partnerLogoKeys.map((key: string) => url(key))}
+        names={settings.partnerLogoKeys.map(() => 'Logo partenaire')}
+        disabled={!canWrite || busy !== null}
+        onSelect={(file) => void deposer('asset-partners', file, 'Logo partenaire')}
+        onClear={(index) => retirerPartenaire(settings.partnerLogoKeys[index])}
+      />
+    </FormField>
+  </div>
+</FormSheet>

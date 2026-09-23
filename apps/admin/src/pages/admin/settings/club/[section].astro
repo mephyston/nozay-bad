@@ -1,51 +1,27 @@
 ---
-import Layout from '../../../../layouts/Layout.astro';
-import AdminLayout from '../../../../components/AdminLayout.svelte';
-import ClubSettingsScreen from '../../../../components/ClubSettingsScreen.svelte';
-import { PageHeader } from '@nba/ui';
 import { SECTION_SPECS } from '@nba/club-ui';
 
-/**
- * Une page par section de la configuration du club.
- *
- * Page figée : les sections sont connues au build, la page ne porte aucune donnée —
- * l'îlot demande l'identité au relais `/admin/api/club/settings`.
- */
+/*
+  Les réglages du club s'ouvrent désormais **en tiroir** depuis le hub de configuration,
+  comme tous les autres formulaires : croix et validation en haut, à portée du pouce.
+
+  L'adresse reste servie pour les liens gardés — un signet, un lien dans une note — et
+  renvoie vers le hub avec la section demandée, qu'il ouvre aussitôt. Une redirection
+  301 : la page n'a pas été déplacée un instant, elle a changé de forme pour de bon.
+*/
 export const prerender = true;
 
 export function getStaticPaths() {
-  const sections = [
-    ...SECTION_SPECS.map((s) => ({ section: s.section, titre: s.title, description: s.description })),
-    {
-      section: 'fonctionnalites',
-      titre: 'Fonctionnalités',
-      description: 'Ce que le club utilise. Une rubrique éteinte disparaît des menus et de l’espace adhérent.'
-    },
-    {
-      section: 'documents',
-      titre: 'Images des documents',
-      description: 'Logo, papier à lettre, tampon et logos partenaires imprimés sur les PDF.'
-    }
-  ];
-  return sections.map((s) => ({ params: { section: s.section }, props: { titre: s.titre, description: s.description } }));
+  /*
+    Du catalogue, et non d'une liste recopiée : une section ajoutée à `SECTION_SPECS`
+    gagne sa redirection sans que personne n'y pense, et une section retirée perd la
+    sienne. Les deux qui n'en relèvent pas — les fonctionnalités et les images — sont
+    nommées ici parce qu'elles n'ont pas de spécification de champs.
+  */
+  const sections = [...SECTION_SPECS.map((s) => s.section), 'fonctionnalites', 'documents'];
+  return sections.map((section) => ({ params: { section } }));
 }
 
 const { section } = Astro.params;
-const { titre, description } = Astro.props;
+return Astro.redirect(`/admin/settings?section=${section}`, 301);
 ---
-
-<Layout title={`${titre} - Configuration`}>
-  <AdminLayout client:idle breadcrumb={`Configuration / Club / ${titre}`}>
-    <div class="space-y-6 max-w-4xl">
-      <a
-        href="/admin/settings"
-        class="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
-        Retour à la configuration
-      </a>
-      <PageHeader title={titre} description={description} />
-      <ClubSettingsScreen client:load section={section!} />
-    </div>
-  </AdminLayout>
-</Layout>

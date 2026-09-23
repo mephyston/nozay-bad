@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Calendar, AlertCircle, Plus } from "@lucide/svelte";
-  import { Card, Alert, Tabs, Button, uiAlert } from "@nba/ui";
+  import { Card, Alert, SegmentedFilter, Tabs, Button, uiAlert } from "@nba/ui";
   import SeasonConfig from "./SeasonConfig.svelte";
   import CategoriesConfig from "./CategoriesConfig.svelte";
   import AccountClassesConfig from "./AccountClassesConfig.svelte";
@@ -125,20 +125,26 @@
 
   <Tabs.Root value={activeView} onValueChange={handleViewChange} class="w-full">
     {#if allowedViews.length > 1}
-      <Tabs.List class="mb-6 w-full sm:w-fit justify-start sm:justify-center overflow-x-auto no-scrollbar">
-        {#if allowedViews.includes('seasons')}
-          <Tabs.Trigger value="seasons">Saisons</Tabs.Trigger>
-        {/if}
-        {#if allowedViews.includes('compta')}
-          <Tabs.Trigger value="compta">Catégories comptables</Tabs.Trigger>
-        {/if}
-        {#if allowedViews.includes('classes')}
-          <Tabs.Trigger value="classes">Plan comptable</Tabs.Trigger>
-        {/if}
-        {#if allowedViews.includes('shop')}
-          <Tabs.Trigger value="shop">Catégories produits</Tabs.Trigger>
-        {/if}
-      </Tabs.List>
+      <!--
+        Un contrôle segmenté, et non une barre d'onglets qui **défile horizontalement**.
+
+        « Catégories comptables » et « Plan comptable » côte à côte dépassaient la
+        largeur d'un téléphone : le dernier onglet se cachait derrière le bord, sans que
+        rien ne l'annonce, et rien ne défile horizontalement dans cette application. Les
+        segments se partagent la largeur et vont à la ligne s'il le faut.
+      -->
+      <div class="mb-6">
+        <SegmentedFilter
+          value={activeView}
+          onChange={handleViewChange}
+          options={[
+            ...(allowedViews.includes('seasons') ? [{ value: 'seasons', label: 'Saisons' }] : []),
+            ...(allowedViews.includes('compta') ? [{ value: 'compta', label: 'Catégories' }] : []),
+            ...(allowedViews.includes('classes') ? [{ value: 'classes', label: 'Plan comptable' }] : []),
+            ...(allowedViews.includes('shop') ? [{ value: 'shop', label: 'Produits' }] : [])
+          ]}
+        />
+      </div>
     {/if}
 
     <!-- VIEW: SEASONS -->

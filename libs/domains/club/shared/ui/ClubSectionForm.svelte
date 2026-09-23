@@ -1,25 +1,37 @@
 <script lang="ts">
-  import { Save, Loader2 } from '@lucide/svelte';
-  import { Button, Input, Textarea, Select, Card, FormField, ErrorAlert, submitForm, readApiError } from '@nba/ui';
+  import { Settings2 } from '@lucide/svelte';
+  import { ChoiceField, FormSheet, Input, Textarea, FormField, submitForm, readApiError } from '@nba/ui';
   import type { SectionSpec } from '../ui-sections';
 
   /**
    * Un écran de configuration du club, piloté par sa spécification (`ui-sections.ts`).
    *
-   * Formulaire posé à plat, sans `FormSheet` : ce ne sont pas des éléments d'une liste
-   * mais des valeurs uniques que l'on relit et corrige, et le tiroir imposerait un
-   * clic pour voir ce qui est en place. Même parti que le pied de page du site.
+   * Un tiroir, comme tous les formulaires : croix et validation en haut, à portée du
+   * pouce. Il était posé à plat, au motif qu'on relit ces valeurs plus souvent qu'on
+   * ne les change — mais le hub les montre désormais en liste, chaque rangée disant ce
+   * qu'elle contient, si bien que le tiroir ne cache plus rien.
    *
    * Le formulaire n'envoie que les champs de sa section : c'est aussi ce que l'API
    * accepte, section par section.
    */
   let {
+    open = $bindable(false),
+    onOpenChange,
     spec,
     values,
     canWrite = false,
     endpoint = '/admin/api/club/settings',
     onSaved
   } = $props<{
+    open?: boolean;
+    /**
+     * Prévenu de chaque fermeture, celles que la feuille décide comprises.
+     *
+     * Le hub garde la section ouverte dans l'adresse : sans cela, refermer d'un
+     * glissement ou de la touche d'échappement laisserait `?section=` derrière, et le
+     * tiroir se rouvrirait au prochain passage.
+     */
+    onOpenChange?: (ouvert: boolean) => void;
     spec: SectionSpec;
     values: Record<string, unknown>;
     canWrite?: boolean;
@@ -55,7 +67,7 @@
     return null;
   }
 
-  async function save(event: SubmitEvent) {
+  async function save(event: Event) {
     event.preventDefault();
     busy = true;
     errorMsg = '';
@@ -74,6 +86,7 @@
         if (!res.ok) throw new Error(await readApiError(res, "L'enregistrement a échoué."));
         onSaved?.();
       },
+      close: () => (open = false),
       onError: (message) => {
         errorMsg = message;
       }
@@ -83,73 +96,72 @@
   }
 </script>
 
-<form onsubmit={save}>
-  <Card.Root>
-    <Card.Header>
-      <Card.Title>{spec.title}</Card.Title>
-      <Card.Description>{spec.description} <span class="block mt-1 text-xs">Utilisé pour : {spec.usedIn}</span></Card.Description>
-    </Card.Header>
-    <Card.Content class="space-y-4">
-      {#if errorMsg}
-        <ErrorAlert message={errorMsg} />
-      {/if}
-
-      <div class="grid gap-4 sm:grid-cols-2">
-        {#each spec.fields as f (f.key)}
-          <div class={f.wide ? 'sm:col-span-2' : ''}>
-            <FormField id={`club-${f.key}`} label={f.label}>
-              {#if f.kind === 'textarea'}
-                <Textarea id={`club-${f.key}`} bind:value={form[f.key]} maxlength={f.maxlength} rows={3} disabled={!canWrite} placeholder={f.placeholder} />
-              {:else if f.kind === 'select'}
-                <Select id={`club-${f.key}`} bind:value={form[f.key]} disabled={!canWrite}>
-                  {#each f.options ?? [] as o (o.value)}
-                    <option value={o.value}>{o.label}</option>
-                  {/each}
-                </Select>
-              {:else if f.kind === 'color'}
-                <div class="flex items-center gap-3">
-                  <input
-                    id={`club-${f.key}`}
-                    type="color"
-                    bind:value={form[f.key]}
-                    disabled={!canWrite}
-                    class="h-9 w-14 cursor-pointer rounded-md border border-input bg-transparent p-1"
-                  />
-                  <Input value={String(form[f.key]).toUpperCase()} readonly class="w-32 font-mono" aria-label="Code hexadécimal" />
-                </div>
-              {:else if f.kind === 'number'}
-                <Input id={`club-${f.key}`} type="number" bind:value={form[f.key]} min={f.min} max={f.max} step={1} disabled={!canWrite} />
-              {:else}
-                <Input
-                  id={`club-${f.key}`}
-                  type={f.kind === 'email' ? 'email' : 'text'}
-                  bind:value={form[f.key]}
-                  maxlength={f.maxlength}
-                  disabled={!canWrite}
-                  placeholder={f.placeholder}
-                />
-              {/if}
-              {#if f.help}
-                <p class="text-xs text-muted-foreground">{f.help}</p>
-              {/if}
-            </FormField>
-          </div>
-        {/each}
+<FormSheet
+  bind:open
+  {onOpenChange}
+  title={spec.title}
+  description={`${spec.description} Utilisé pour : ${spec.usedIn}`}
+  icon={Settings2}
+  size="lg"
+  error={errorMsg}
+  isSubmitting={busy}
+  lectureSeule={!canWrite}
+  cancelLabel="Fermer"
+  onSubmit={save}
+>
+  <div class="grid gap-4 sm:grid-cols-2">
+    {#each spec.fields as f (f.key)}
+      <div class={f.wide ? 'sm:col-span-2' : ''}>
+        <FormField id={`club-${f.key}`} label={f.label} hint={f.help}>
+          {#if f.kind === 'textarea'}
+            <Textarea id={`club-${f.key}`} bind:value={form[f.key]} maxlength={f.maxlength} rows={3} disabled={!canWrite} placeholder={f.placeholder} />
+          {:else if f.kind === 'select'}
+            <!--
+              Une liste déroulante native ouvre la roulette du système : au doigt, on y
+              vise une valeur dans une bande de trente pixels. La rangée mène à un écran
+              de choix où chaque entrée a sa ligne de 44 points.
+            -->
+            <ChoiceField
+              id={`club-${f.key}`}
+              label={f.label}
+              value={String(form[f.key] ?? '')}
+              disabled={!canWrite}
+              onChange={(v) => (form[f.key] = v)}
+              options={(f.options ?? []).map((o) => ({ value: String(o.value), label: o.label }))}
+            />
+          {:else if f.kind === 'color'}
+            <!--
+              Le sélecteur natif est gardé : c'est le seul qui ouvre la palette du
+              système, et aucun composant ne remplace utilement une roue de couleurs.
+              Il gagne la hauteur d'une cible au doigt, et le code hexadécimal à côté
+              reste la seule façon de vérifier une valeur exacte.
+            -->
+            <div class="flex items-center gap-3">
+              <input
+                id={`club-${f.key}`}
+                type="color"
+                bind:value={form[f.key]}
+                disabled={!canWrite}
+                class="border-input h-11 w-16 shrink-0 cursor-pointer rounded-lg border bg-transparent p-1"
+              />
+              <Input value={String(form[f.key]).toUpperCase()} readonly class="font-mono" aria-label="Code hexadécimal" />
+            </div>
+          {:else if f.kind === 'number'}
+            <Input id={`club-${f.key}`} type="number" inputmode="numeric" bind:value={form[f.key]} min={f.min} max={f.max} step={1} disabled={!canWrite} />
+          {:else}
+            <Input
+              id={`club-${f.key}`}
+              type={f.kind === 'email' ? 'email' : 'text'}
+              inputmode={f.kind === 'email' ? 'email' : f.kind === 'url' ? 'url' : undefined}
+              autocapitalize={f.kind === 'email' || f.kind === 'url' ? 'off' : undefined}
+              bind:value={form[f.key]}
+              maxlength={f.maxlength}
+              disabled={!canWrite}
+              placeholder={f.placeholder}
+            />
+          {/if}
+        </FormField>
       </div>
-    </Card.Content>
-  </Card.Root>
-
-  {#if canWrite}
-    <div class="mt-6 flex justify-end">
-      <Button type="submit" disabled={busy} class="gap-1.5 font-bold">
-        {#if busy}
-          <Loader2 class="h-4 w-4 animate-spin" />
-          <span>Enregistrement…</span>
-        {:else}
-          <Save class="h-4 w-4" />
-          <span>Enregistrer</span>
-        {/if}
-      </Button>
-    </div>
-  {/if}
-</form>
+    {/each}
+  </div>
+</FormSheet>

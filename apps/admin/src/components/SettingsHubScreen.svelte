@@ -1,7 +1,9 @@
 <script lang="ts">
+  import { ListRow, ListView, softNavigate } from '@nba/ui';
   import { can, type Permission } from '@nba/iam-ui';
   import { SECTION_SPECS } from '@nba/club-ui';
   import { chargerIdentite, derniereIdentite } from '../lib/identite';
+  import ClubSettingsScreen from './ClubSettingsScreen.svelte';
 
   /**
    * Les destinations de la configuration, en trois rubriques et filtrées sur les droits.
@@ -22,6 +24,15 @@
     title: string;
     description: string;
     permission: Permission;
+    /**
+     * La section du club à ouvrir **en tiroir**, plutôt qu'une page à atteindre.
+     *
+     * Les réglages du club sont des formulaires : ils montent du même endroit que tous
+     * les autres, avec croix et validation en haut. Les destinations qui portent une
+     * liste — gymnases, saisons, comptes — restent des pages : un tiroir qui contient
+     * sa propre liste et ses propres formulaires empilerait deux niveaux de feuilles.
+     */
+    section?: string;
   }
 
   const RUBRIQUES: { label: string; description: string; items: Destination[] }[] = [
@@ -30,19 +41,22 @@
       description: "Ce qui décrit le club et ce qu'il utilise : sur les applications, les mails et les PDF.",
       items: [
         {
-          href: '/admin/settings/club/fonctionnalites',
+          href: '/admin/settings?section=fonctionnalites',
+          section: 'fonctionnalites',
           title: 'Fonctionnalités',
           description: 'Ce que le club utilise : boutique, interclubs, jeu libre, rappels… Une rubrique éteinte disparaît des menus.',
           permission: 'settings:club:read'
         },
         ...SECTION_SPECS.map((s) => ({
-          href: `/admin/settings/club/${s.section}`,
+          href: `/admin/settings?section=${s.section}`,
+          section: s.section,
           title: s.title,
           description: s.description,
           permission: 'settings:club:read' as Permission
         })),
         {
-          href: '/admin/settings/club/documents',
+          href: '/admin/settings?section=documents',
+          section: 'documents',
           title: 'Images des documents',
           description: 'Logo, papier à lettre, tampon et logos partenaires imprimés sur les PDF.',
           permission: 'settings:club:read'
@@ -113,31 +127,79 @@
   const visibles = $derived(
     RUBRIQUES.map((r) => ({ ...r, items: r.items.filter((d) => can(droits, d.permission)) })).filter((r) => r.items.length > 0)
   );
+
+  /**
+   * La section ouverte, et son adresse.
+   *
+   * `?section=` reste dans l'URL tant que le tiroir est ouvert : c'est ce qui garde les
+   * liens directs vivants — les anciennes adresses `/admin/settings/club/<section>` y
+   * redirigent — et ce qui fait que le bouton Précédent referme le tiroir au lieu de
+   * quitter la configuration.
+   */
+  let sectionOuverte = $state<string | null>(null);
+
+  $effect(() => {
+    if (typeof window === 'undefined') return;
+    const lire = () => {
+      sectionOuverte = new URLSearchParams(window.location.search).get('section');
+    };
+    lire();
+    window.addEventListener('popstate', lire);
+    return () => window.removeEventListener('popstate', lire);
+  });
+
+  function ouvrir(destination: Destination) {
+    if (!destination.section) {
+      softNavigate(destination.href);
+      return;
+    }
+    sectionOuverte = destination.section;
+    const url = new URL(window.location.href);
+    url.searchParams.set('section', destination.section);
+    history.pushState(null, '', url);
+  }
+
+  function fermer() {
+    sectionOuverte = null;
+    const url = new URL(window.location.href);
+    url.searchParams.delete('section');
+    history.replaceState(null, '', url);
+  }
 </script>
 
+<!--
+  Des rangées, et non une grille de cartes.
+
+  La grille tenait sur trois colonnes au bureau et s'empilait en cartes de cent pixels
+  de haut au doigt : douze réglages faisaient défiler l'écran deux fois. Une liste dit
+  la même chose en un tiers de la hauteur, et c'est la forme qu'ont les réglages
+  partout ailleurs.
+-->
 <div class="space-y-8">
   {#each visibles as rubrique (rubrique.label)}
-    <section class="space-y-3">
-      <div>
-        <h2 class="text-base font-semibold text-foreground">{rubrique.label}</h2>
+    <section class="space-y-2">
+      <div class="px-1">
+        <h2 class="text-foreground text-base font-semibold">{rubrique.label}</h2>
         <p class="text-muted-foreground text-xs">{rubrique.description}</p>
       </div>
-      <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {#each rubrique.items as destination (destination.href)}
-          <a
-            href={destination.href}
-            class="border-border bg-card hover:border-ring group relative flex flex-col gap-2 overflow-hidden rounded-xl border px-5 py-4 no-underline shadow-sm transition-all hover:shadow"
-          >
-            <div class="flex items-center justify-between">
-              <p class="text-foreground text-sm font-semibold">{destination.title}</p>
-              <span class="text-primary text-sm font-semibold opacity-0 transition-opacity group-hover:opacity-100">
-                Configurer &rarr;
-              </span>
-            </div>
-            <p class="text-muted-foreground pr-8 text-xs">{destination.description}</p>
-          </a>
-        {/each}
-      </div>
+      <ListView items={rubrique.items}>
+        {#snippet listRow(destination)}
+          <ListRow
+            item={destination}
+            onclick={() => ouvrir(destination)}
+            title={destination.title}
+            subtitle={destination.description}
+          />
+        {/snippet}
+      </ListView>
     </section>
   {/each}
 </div>
+
+<!--
+  `{#if}` autour, et non seulement `open` : l'écran distant charge les réglages du club
+  à l'ouverture, et garder le tiroir monté retiendrait la section précédente.
+-->
+{#if sectionOuverte}
+  <ClubSettingsScreen section={sectionOuverte} open onClose={fermer} />
+{/if}

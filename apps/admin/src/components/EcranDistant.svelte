@@ -33,7 +33,7 @@
    *
    * Le prix est assumé : un écran ne peut plus s'afficher plus vite que ce minimum.
    */
-  const { domaine = 'cms', ecran, variante = 'liste', parametres, onDonnees, pret }: {
+  const { domaine = 'cms', ecran, variante = 'liste', parametres, onDonnees, pret, attente }: {
     /**
      * Domaine dont relève l'écran, et donc relais auquel s'adresser.
      *
@@ -46,6 +46,14 @@
     ecran: string;
     /** Forme du squelette, à l'image du contenu attendu. */
     variante?: 'liste' | 'formulaire' | 'grille';
+    /**
+     * Ce qu'on montre pendant le chargement, à la place du squelette.
+     *
+     * Pour un appelant dont le contenu est **porté hors de la page** — un tiroir : le
+     * squelette s'y afficherait au milieu de l'écran d'accueil, avant même que la
+     * feuille n'existe, et l'appui sur une rangée semblerait avoir ouvert autre chose.
+     */
+    attente?: Snippet;
     /**
      * Paramètres à transmettre au relais.
      *
@@ -121,6 +129,8 @@
       <Button variant="outline" onclick={charger}>Réessayer</Button>
     </Card.Content>
   </Card.Root>
+{:else if attente}
+  {@render attente()}
 {:else}
   <div aria-busy="true" aria-live="polite" class:invisible={!squelette}>
     <span class="sr-only">Chargement…</span>

@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { Save, Loader2 } from '@lucide/svelte';
-  import { Button, Checkbox, Card, ErrorAlert, submitForm, readApiError } from '@nba/ui';
+  import { ToggleLeft } from '@lucide/svelte';
+  import { FormSheet, SwitchField, submitForm, readApiError } from '@nba/ui';
   import {
     FEATURES,
     FEATURE_CATALOG,
@@ -14,16 +14,32 @@
   /**
    * Les interrupteurs des fonctionnalités, groupés comme le menu.
    *
-   * Ce que l'écran montre est l'état **effectif** : une case cochée dont le préalable
-   * est décoché apparaît grisée et inactive, avec la raison. Le club voit ainsi tout de
+   * Ce que l'écran montre est l'état **effectif** : une bascule active dont le préalable
+   * est éteint apparaît grisée et inactive, avec la raison. Le club voit ainsi tout de
    * suite qu'éteindre les notifications éteint les rappels, sans attendre le cron.
+   *
+   * De vrais interrupteurs, et non des cases à cocher : la cible passe de 16 px à toute
+   * la rangée, et une bascule dit « allumé / éteint » là où une case dit « coché », ce
+   * qui n'est pas la même chose pour une fonctionnalité.
    */
   let {
+    open = $bindable(false),
+    onOpenChange,
     features,
     canWrite = false,
     endpoint = '/admin/api/club/settings',
     onSaved
   } = $props<{
+    /** Le formulaire est un tiroir : sa validation vit en haut, à portée du pouce. */
+    open?: boolean;
+    /**
+     * Prévenu de chaque fermeture, celles que la feuille décide comprises.
+     *
+     * Le hub garde la section ouverte dans l'adresse : sans cela, refermer d'un
+     * glissement ou de la touche d'échappement laisserait `?section=` derrière, et le
+     * tiroir se rouvrirait au prochain passage.
+     */
+    onOpenChange?: (ouvert: boolean) => void;
     features: FeatureState;
     canWrite?: boolean;
     endpoint?: string;
@@ -52,7 +68,7 @@
     return null;
   }
 
-  async function save(event: SubmitEvent) {
+  async function save(event: Event) {
     event.preventDefault();
     busy = true;
     errorMsg = '';
@@ -67,6 +83,7 @@
         if (!res.ok) throw new Error(await readApiError(res, "L'enregistrement a échoué."));
         onSaved?.();
       },
+      close: () => (open = false),
       onError: (message) => {
         errorMsg = message;
       }
@@ -75,53 +92,43 @@
   }
 </script>
 
-<form onsubmit={save}>
-  {#if errorMsg}
-    <div class="mb-4"><ErrorAlert message={errorMsg} /></div>
-  {/if}
-
+<FormSheet
+  bind:open
+  {onOpenChange}
+  title="Fonctionnalités"
+  description="Ce que le club utilise. Une rubrique éteinte disparaît des menus et de l’espace adhérent."
+  icon={ToggleLeft}
+  size="lg"
+  error={errorMsg}
+  isSubmitting={busy}
+  lectureSeule={!canWrite}
+  cancelLabel="Fermer"
+  onSubmit={save}
+>
   <div class="space-y-6">
     {#each parGroupe as g (g.group)}
-      <Card.Root>
-        <Card.Header>
-          <Card.Title>{g.group}</Card.Title>
-        </Card.Header>
-        <Card.Content class="space-y-4">
+      <section class="space-y-1">
+        <h3 class="text-muted-foreground px-1 text-xs font-semibold tracking-wider uppercase">
+          {g.group}
+        </h3>
+        <div class="divide-border bg-card divide-y overflow-hidden rounded-xl">
           {#each g.features as feature (feature)}
             {@const info = FEATURE_CATALOG[feature]}
             {@const bloquePar = preadableEteint(feature)}
-            <label class="flex items-start gap-3 cursor-pointer" class:opacity-60={bloquePar !== null}>
-              <Checkbox
-                checked={choisi[feature]}
-                onCheckedChange={(v) => (choisi[feature] = v === true)}
-                disabled={!canWrite || bloquePar !== null}
-                aria-label={info.label}
-              />
-              <span class="space-y-0.5">
-                <span class="block text-sm font-medium leading-none">{info.label}</span>
-                <span class="block text-xs text-muted-foreground">{info.description}</span>
-                {#if bloquePar}
-                  <span class="block text-xs text-warning">Inactif tant que « {FEATURE_CATALOG[bloquePar].label} » est éteint.</span>
-                {/if}
-              </span>
-            </label>
+            <SwitchField
+              id={`feature-${feature}`}
+              label={info.label}
+              hint={bloquePar
+                ? `${info.description} Inactif tant que « ${FEATURE_CATALOG[bloquePar].label} » est éteint.`
+                : info.description}
+              checked={choisi[feature]}
+              disabled={!canWrite || bloquePar !== null}
+              onChange={(v) => (choisi[feature] = v)}
+              class="px-3 py-3"
+            />
           {/each}
-        </Card.Content>
-      </Card.Root>
+        </div>
+      </section>
     {/each}
   </div>
-
-  {#if canWrite}
-    <div class="mt-6 flex justify-end">
-      <Button type="submit" disabled={busy} class="gap-1.5 font-bold">
-        {#if busy}
-          <Loader2 class="h-4 w-4 animate-spin" />
-          <span>Enregistrement…</span>
-        {:else}
-          <Save class="h-4 w-4" />
-          <span>Enregistrer</span>
-        {/if}
-      </Button>
-    </div>
-  {/if}
-</form>
+</FormSheet>
