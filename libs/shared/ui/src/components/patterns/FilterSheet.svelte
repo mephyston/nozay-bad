@@ -2,7 +2,7 @@
   import type { Snippet } from 'svelte';
   import { Button } from '../ui/button/index.js';
   import ResponsiveSheet from './ResponsiveSheet.svelte';
-  import { auPluriel } from '../../lib/pluriel.js';
+  import { accorder } from '../../lib/pluriel.js';
 
   /**
    * Les filtres avancés d'une liste.
@@ -34,10 +34,15 @@
     children: Snippet;
   } = $props();
 
+  /*
+    Zéro prend le singulier : « Afficher 0 séance », et non « 0 séances ». La règle
+    vit dans `accorder`, écrit pour ça — la comparaison à 1 faite ici l'ignorait, et
+    la faute se voyait sur toutes les feuilles de filtres dès qu'un critère ne laissait
+    rien passer, c'est-à-dire précisément au moment où on la lit.
+  */
   const libelle = $derived.by(() => {
     if (resultCount === undefined) return 'Afficher';
-    const pluriel = itemNamePlural ?? auPluriel(itemName ?? '');
-    return `Afficher ${resultCount} ${resultCount === 1 ? itemName : pluriel}`;
+    return `Afficher ${resultCount} ${accorder(resultCount, itemName ?? '', itemNamePlural)}`;
   });
 </script>
 

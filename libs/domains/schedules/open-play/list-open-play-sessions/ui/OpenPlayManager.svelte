@@ -3,23 +3,30 @@
   import {
     Button,
     Input,
-    Select,
+    Textarea,
     Badge,
-    Card,
     Table,
     DataTable,
     DataTableToolbar,
     DataTableRowActions,
     DropdownMenu,
+    ChoiceField,
+    MultiChoiceField,
+    FilterSheet,
     FormField,
     FormSheet,
-    Sheet,
+    ResponsiveSheet,
+    SwitchField,
+    dockDePage,
     submitForm,
     uiConfirm,
     flashAndReload,
-    uiAlert
+    uiAlert,
+    type SwipeAction
   } from '@nba/ui';
   import { DEFAULT_MIN_PLAYERS } from '../../../shared/open-play';
+  import OpenPlaySessionsList from './OpenPlaySessionsList.svelte';
+  import { gestesPourSeance, jourDeSeance, type SeanceLike } from './open-play-row-model';
 
   /**
    * Les séances de jeu libre, vues du bureau.
@@ -200,12 +207,6 @@
     showGenerateSheet = true;
   }
 
-  function toggleSlot(id: number) {
-    genSlotIds = genSlotIds.includes(id)
-      ? genSlotIds.filter((slotId) => slotId !== id)
-      : [...genSlotIds, id];
-  }
-
   async function generate(event: Event) {
     event.preventDefault();
     errorMsg = '';
@@ -250,20 +251,50 @@
 
   let generated = $state<{ created: number; skipped: number } | null>(null);
 
-  async function cancel(row: SessionRow) {
-    const reason = window.prompt(
-      "Pourquoi la séance est-elle annulée ? L'adhérent inscrit lira ce motif.",
-      row.cancelledReason ?? ''
-    );
-    // `null` = fenêtre fermée ; une chaîne vide serait un motif absent, que le serveur
-    // refuse — autant ne rien envoyer.
-    if (reason === null || !reason.trim()) return;
-    try {
-      await post({ action: 'update', id: row.id, status: 'cancelled', cancelledReason: reason.trim() }, "L'annulation a échoué.");
-      flashAndReload('Séance annulée.');
-    } catch (error) {
-      uiAlert(error instanceof Error ? error.message : "L'annulation a échoué.");
-    }
+  /**
+   * Annuler : un formulaire, et non plus `window.prompt`.
+   *
+   * La boîte native n'a ni le style de l'application, ni de place pour dire à qui ce
+   * motif s'adresse — et sur un téléphone elle s'ouvre au milieu de l'écran, loin du
+   * pouce. Elle bloque surtout tout le reste tant qu'elle est ouverte. Ce motif part
+   * aux adhérents inscrits : il mérite un champ qu'on voit en l'écrivant.
+   */
+  let annulationOuverte = $state(false);
+  let seanceAAnnuler = $state<SessionRow | null>(null);
+  let motif = $state('');
+
+  function openCancelForm(row: SessionRow) {
+    seanceAAnnuler = row;
+    motif = row.cancelledReason ?? '';
+    errorMsg = '';
+    annulationOuverte = true;
+  }
+
+  async function cancel(event: Event) {
+    event.preventDefault();
+    const row = seanceAAnnuler;
+    if (!row) return;
+    errorMsg = '';
+    busy = true;
+
+    await submitForm({
+      // Le serveur refuse un motif vide ; autant le dire avant l'aller-retour.
+      validate: () => (motif.trim() ? null : 'Dites pourquoi la séance est annulée.'),
+      submit: () =>
+        post(
+          { action: 'update', id: row.id, status: 'cancelled', cancelledReason: motif.trim() },
+          "L'annulation a échoué."
+        ),
+      close: () => {
+        annulationOuverte = false;
+        seanceAAnnuler = null;
+        motif = '';
+      },
+      success: 'Séance annulée.',
+      onError: (message) => { errorMsg = message; }
+    });
+
+    busy = false;
   }
 
   async function reopen(row: SessionRow) {
@@ -298,6 +329,30 @@
     }
   }
 
+  /*
+    Créer et programmer descendent dans la barre du bas : ils vivaient en haut d'une
+    barre d'outils qui défile avec la liste, donc hors de vue dès la troisième séance.
+  */
+  $effect(() => {
+    if (!canWrite) return;
+    const actions: SwipeAction[] = [];
+    if (venues.length > 0) {
+      actions.push({ id: 'nouvelle', label: 'Nouvelle séance', icon: Plus, run: () => openAddForm() });
+    }
+    if (slots.length > 0) {
+      actions.push({
+        id: 'programmer',
+        label: 'Programmer les séances récurrentes',
+        icon: CalendarPlus,
+        run: () => openGenerateForm()
+      });
+    }
+    if (actions.length === 0) return;
+    return dockDePage.declarerActions(actions, { icon: Plus, label: 'Ajouter des séances' });
+  });
+
+  let filtresOuverts = $state(false);
+
   function statusLabel(row: SessionRow): { text: string; variant: 'primary-soft' | 'outline' | 'destructive' } {
     if (row.status === 'cancelled') return { text: 'Annulée', variant: 'destructive' };
     if (row.openerFirstName) {
@@ -316,30 +371,37 @@
 
 <DataTable
   data={filtered}
-  mobileSpacing="spaced"
+  mobileSpacing="list"
   emptyTitle="Aucune séance"
   emptyDescription={searchTerm.trim() || onlyToStaff
     ? 'Aucune séance ne correspond à votre recherche.'
     : 'Ajoutez les séances de jeu libre à venir.'}
 >
   {#snippet toolbar()}
-    <DataTableToolbar bind:searchValue={searchTerm} searchPlaceholder="Rechercher une séance..." hasFilters={false}>
+    <DataTableToolbar
+      bind:searchValue={searchTerm}
+      searchPlaceholder="Rechercher une séance..."
+      dockSearch
+      hasFilters={true}
+      filtersActive={onlyToStaff}
+      onOpenFilters={() => (filtresOuverts = true)}
+      activeFilters={onlyToStaff
+        ? [{ id: 'pourvoir', label: 'À pourvoir', onRemove: () => (onlyToStaff = false) }]
+        : []}
+    >
+      {#snippet filters()}
+        {@render criteres()}
+      {/snippet}
       {#snippet actions()}
-        <Button
-          variant={onlyToStaff ? 'default' : 'outline'}
-          onclick={() => (onlyToStaff = !onlyToStaff)}
-          class="h-9 shrink-0 gap-1.5 text-sm font-semibold"
-        >
-          À pourvoir
-        </Button>
+        <!-- Sur téléphone, ces deux gestes vivent dans la barre du bas. -->
         {#if canWrite && slots.length > 0}
-          <Button variant="outline" onclick={openGenerateForm} class="h-9 shrink-0 gap-1.5 font-semibold">
+          <Button variant="outline" onclick={openGenerateForm} class="hidden h-9 shrink-0 gap-1.5 font-semibold md:flex">
             <CalendarPlus class="h-4 w-4" />
             <span>Programmer les séances récurrentes</span>
           </Button>
         {/if}
         {#if canWrite && venues.length > 0}
-          <Button onclick={openAddForm} class="h-9 shrink-0 gap-1.5 font-bold">
+          <Button onclick={openAddForm} class="hidden h-9 shrink-0 gap-1.5 font-bold md:flex">
             <Plus class="h-4 w-4" />
             <span>Nouvelle séance</span>
           </Button>
@@ -349,40 +411,18 @@
   {/snippet}
 
   {#snippet mobileView()}
-    {#each filtered as row (row.id)}
-      {@const status = statusLabel(row)}
-      <Card.Root>
-        <Card.Content class="space-y-3 p-4">
-          <div class="flex items-start justify-between gap-2">
-            <div class="min-w-0">
-              <h4 class="text-sm font-bold text-foreground">
-                {row.date}
-                <span class="tabular-nums font-normal"> {row.startTime}–{row.endTime}</span>
-              </h4>
-              <p class="mt-1 text-xs text-muted-foreground">
-                {row.venue?.name ?? '—'} · {row.playerCount} / {row.minPlayers} joueurs
-              </p>
-            </div>
-            <Badge variant={status.variant} size="xs">{status.text}</Badge>
-          </div>
-
-          <div class="flex items-center justify-end gap-2 border-t border-border/50 pt-2">
-            {#if canReadRegistrations}
-              <Button variant="outline" size="sm" onclick={() => showRegistrations(row)} class="h-8 flex-1 gap-1.5 text-xs font-semibold">
-                <Users class="h-3.5 w-3.5" />
-                <span>Inscrits</span>
-              </Button>
-            {/if}
-            {#if canWrite}
-              <Button variant="outline" size="sm" onclick={() => startEdit(row)} class="h-8 flex-1 gap-1.5 text-xs font-semibold">
-                <Edit class="h-3.5 w-3.5" />
-                <span>Modifier</span>
-              </Button>
-            {/if}
-          </div>
-        </Card.Content>
-      </Card.Root>
-    {/each}
+    <OpenPlaySessionsList
+      sessions={filtered}
+      droits={{ canWrite, canReadRegistrations }}
+      emptyTitle="Aucune séance"
+      emptyDescription={searchTerm.trim() || onlyToStaff
+        ? 'Aucune séance ne correspond à ces critères.'
+        : 'Ajoutez les séances de jeu libre à venir.'}
+      onRegistrations={(s) => showRegistrations(s as SessionRow)}
+      onEdit={(s) => startEdit(s as SessionRow)}
+      onCancel={(s) => openCancelForm(s as SessionRow)}
+      onReopen={(s) => void reopen(s as SessionRow)}
+    />
   {/snippet}
 
   {#snippet header()}
@@ -412,52 +452,58 @@
         <Badge variant={status.variant}>{status.text}</Badge>
       </Table.Cell>
       <Table.Cell class="relative text-right">
+        <!--
+          Le menu du tableau et le balayage de la liste sont nourris par la **même**
+          déclaration : c'est ce qui empêche leurs libellés de diverger, comme ceux des
+          adhérents l'ont fait entre les deux vues.
+        -->
         <DataTableRowActions>
           <DropdownMenu.Label>Actions</DropdownMenu.Label>
-          {#if canReadRegistrations}
-            <DropdownMenu.Item onclick={() => showRegistrations(session)} class="cursor-pointer">
-              <Users class="mr-2 h-3.5 w-3.5" />
-              Voir les inscrits
+          {#each gestesPourSeance(session as SeanceLike, { canWrite, canReadRegistrations }, { onRegistrations: (s) => showRegistrations(s as SessionRow), onEdit: (s) => startEdit(s as SessionRow), onCancel: (s) => openCancelForm(s as SessionRow), onReopen: (s) => void reopen(s as SessionRow) }) as action (action.id)}
+            {@const Icone = action.icon}
+            <DropdownMenu.Item
+              onclick={() => action.run(session as SeanceLike)}
+              class={`cursor-pointer ${action.tone === 'destructive' ? 'text-destructive focus:text-destructive' : ''}`}
+            >
+              {#if Icone}<Icone class="mr-2 h-3.5 w-3.5" />{/if}
+              {action.label}
             </DropdownMenu.Item>
-          {/if}
-          {#if canWrite}
-            <DropdownMenu.Item onclick={() => startEdit(session)} class="cursor-pointer">
-              <Edit class="mr-2 h-3.5 w-3.5" />
-              Modifier
-            </DropdownMenu.Item>
-            {#if session.status === 'cancelled'}
-              <DropdownMenu.Item onclick={() => reopen(session)} class="cursor-pointer">
-                <RotateCcw class="mr-2 h-3.5 w-3.5" />
-                Rouvrir
-              </DropdownMenu.Item>
-            {:else}
-              <DropdownMenu.Item onclick={() => cancel(session)} class="cursor-pointer text-destructive focus:text-destructive">
-                <Ban class="mr-2 h-3.5 w-3.5" />
-                Annuler la séance
-              </DropdownMenu.Item>
-            {/if}
-          {/if}
+          {/each}
         </DataTableRowActions>
       </Table.Cell>
     </Table.Row>
   {/snippet}
 </DataTable>
 
-<Sheet.Root bind:open={showRegistrationsSheet}>
-  <Sheet.Content size="md" class="overflow-y-auto">
-    <Sheet.Header>
-      <Sheet.Title class="flex items-center gap-2">
-        <Users class="h-5 w-5 text-primary" />
-        Inscrits
-      </Sheet.Title>
-      <Sheet.Description>
-        {openedSession
-          ? `${openedSession.date} · ${openedSession.startTime}–${openedSession.endTime}`
-          : ''}
-      </Sheet.Description>
-    </Sheet.Header>
+<!--
+  Le panneau des inscrits monte du bas, comme tout ce qui s'ouvre ici : un panneau
+  latéral est un idiome de bureau, et sa croix en coin haut droit est le point le plus
+  loin du pouce sur un téléphone.
+-->
+<ResponsiveSheet
+  bind:open={showRegistrationsSheet}
+  title="Inscrits"
+  icon={Users}
+  description={openedSession
+    ? `${jourDeSeance(openedSession.date)} · ${openedSession.startTime}–${openedSession.endTime}`
+    : ''}
+  size="md"
+>
+  <!--
+    La séance se nomme ici, et non dans la description : sous une barre de navigation,
+    `ResponsiveSheet` réserve celle-ci aux technologies d'assistance — la hauteur d'un
+    téléphone est rare. Or on arrive sur ce panneau depuis une liste de plusieurs
+    séances : sans ce rappel, on ne sait plus lesquels inscrits on lit.
+  -->
+  {#snippet header()}
+    {#if openedSession}
+      <p class="text-muted-foreground mt-1 text-sm">
+        {jourDeSeance(openedSession.date)} · {openedSession.startTime}–{openedSession.endTime}
+      </p>
+    {/if}
+  {/snippet}
 
-    <div class="px-4 py-4">
+    <div class="py-2">
       {#if registrations === null}
         <p class="text-sm text-muted-foreground">Chargement…</p>
       {:else if registrations.length === 0}
@@ -488,8 +534,7 @@
         {/if}
       {/if}
     </div>
-  </Sheet.Content>
-</Sheet.Root>
+</ResponsiveSheet>
 
 <FormSheet
   bind:open={showGenerateSheet}
@@ -515,27 +560,31 @@
     <Input id="gen-min" type="number" min="1" max="40" bind:value={genMinPlayers} />
   </FormField>
 
-  <div class="space-y-2">
-    <p class="text-sm font-medium text-foreground">Créneaux hebdomadaires à répéter</p>
-    <p class="text-xs text-muted-foreground">
-      Chaque créneau coché devient une séance à chacune de ses dates dans la période.
-    </p>
-    {#each slots as slot (slot.id)}
-      <label class="flex items-center gap-2 text-sm">
-        <input
-          type="checkbox"
-          checked={genSlotIds.includes(slot.id)}
-          onchange={() => toggleSlot(slot.id)}
-          aria-label={`${WEEKDAYS[slot.weekday]} ${slot.startTime}`}
-          class="h-4 w-4 rounded border-border"
-        />
-        <span class="text-foreground">
-          {WEEKDAYS[slot.weekday]} {slot.startTime}–{slot.endTime}
-        </span>
-        <span class="text-xs text-muted-foreground">{slot.venue?.name ?? '—'}</span>
-      </label>
-    {/each}
-  </div>
+  <!--
+    Les cases à cocher faisaient des cibles de 16 px empilées, et leur intitulé n'était
+    pas un libellé de champ. Une rangée dit ce qui est retenu et mène à l'écran de
+    choix, où chaque créneau a sa ligne.
+  -->
+  <FormField
+    id="gen-slots"
+    label="Créneaux hebdomadaires à répéter"
+    hint="Chaque créneau retenu devient une séance à chacune de ses dates dans la période."
+  >
+    <MultiChoiceField
+      id="gen-slots"
+      label="Créneaux hebdomadaires à répéter"
+      title="Créneaux à répéter"
+      description="Seuls les créneaux de jeu libre peuvent être déroulés en séances."
+      placeholder="Aucun"
+      values={genSlotIds.map(String)}
+      onChange={(v) => (genSlotIds = v.map(Number))}
+      options={slots.map((slot: SlotRow) => ({
+        value: String(slot.id),
+        label: `${WEEKDAYS[slot.weekday]} ${slot.startTime}–${slot.endTime}`,
+        hint: slot.venue?.name ?? 'Gymnase inconnu'
+      }))}
+    />
+  </FormField>
 </FormSheet>
 
 <FormSheet
@@ -564,12 +613,19 @@
     </FormField>
   </div>
 
+  <!--
+    Un `<select>` natif ouvre la roulette du système : au doigt, on y vise un gymnase
+    dans une bande de trente pixels. La rangée mène à un écran de choix où chaque
+    gymnase a sa ligne de 44 points.
+  -->
   <FormField id="op-venue" label="Gymnase">
-    <Select id="op-venue" bind:value={venueId}>
-      {#each venues as venue}
-        <option value={String(venue.id)}>{venue.name}</option>
-      {/each}
-    </Select>
+    <ChoiceField
+      id="op-venue"
+      label="Gymnase"
+      value={venueId}
+      onChange={(v) => (venueId = v)}
+      options={venues.map((venue: VenueRow) => ({ value: String(venue.id), label: venue.name }))}
+    />
   </FormField>
 
   <FormField id="op-min" label="Joueurs nécessaires pour ouvrir">
@@ -584,3 +640,57 @@
     <Input id="op-notes" bind:value={notes} placeholder="Clé à récupérer chez Robert" maxlength={500} />
   </FormField>
 </FormSheet>
+
+<!--
+  « Revenir » et non « Annuler » pour le renoncement : le pied porterait sinon
+  « Annuler » — renoncer — à côté d'« Annuler la séance » — confirmer. Le même mot
+  pour deux sens opposés, sur les deux boutons d'un même formulaire.
+-->
+<FormSheet
+  bind:open={annulationOuverte}
+  title="Annuler la séance"
+  description={seanceAAnnuler
+    ? `${jourDeSeance(seanceAAnnuler.date)} · ${seanceAAnnuler.startTime}–${seanceAAnnuler.endTime}`
+    : ''}
+  icon={Ban}
+  error={errorMsg}
+  isSubmitting={busy}
+  submitLabel="Annuler la séance"
+  submittingLabel="Annulation…"
+  cancelLabel="Revenir"
+  onSubmit={cancel}
+>
+  <FormField
+    id="op-cancel-reason"
+    label="Motif"
+    hint="Les adhérents déjà inscrits liront ce motif. Dites ce qui les concerne : gymnase fermé, créneau déplacé."
+  >
+    <Textarea
+      id="op-cancel-reason"
+      bind:value={motif}
+      rows={3}
+      placeholder="Gymnase réquisitionné pour le tournoi départemental"
+      maxlength={500}
+    />
+  </FormField>
+</FormSheet>
+
+{#snippet criteres()}
+  <SwitchField
+    id="filter-a-pourvoir"
+    label="Seulement les séances à pourvoir"
+    hint="Celles qui ont franchi leur seuil de joueurs sans qu'un ouvreur se soit proposé."
+    checked={onlyToStaff}
+    onChange={(v) => (onlyToStaff = v)}
+  />
+{/snippet}
+
+<FilterSheet
+  bind:open={filtresOuverts}
+  description="Une séance « à pourvoir » a de quoi ouvrir, mais personne pour ouvrir."
+  resultCount={filtered.length}
+  itemName="séance"
+  onReset={() => (onlyToStaff = false)}
+>
+  {@render criteres()}
+</FilterSheet>

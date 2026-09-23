@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { mount, flushSync } from 'svelte';
+import { dockDePage } from '@nba/ui';
 import OpenPlayManager from './OpenPlayManager.svelte';
 
 /**
@@ -133,6 +134,12 @@ describe('OpenPlayManager', () => {
   });
 
   it('filtre sur les séances à pourvoir', () => {
+    /*
+      Le filtre a quitté la barre d'outils pour la feuille de filtres — au doigt, il
+      vit derrière l'entonnoir de la pilule de recherche. Le comportement ne change
+      pas ; son chemin, si. Le test emprunte donc le nouveau : ouvrir les filtres,
+      puis basculer l'interrupteur.
+    */
     render({
       sessions: [
         session({ id: 1, playerCount: 4, needsOpener: true }),
@@ -141,10 +148,20 @@ describe('OpenPlayManager', () => {
     });
     expect(host.querySelectorAll('tbody tr')).toHaveLength(2);
 
-    const filter = [...host.querySelectorAll('button')].find((b) =>
-      b.textContent?.includes('À pourvoir')
-    )!;
-    filter.click();
+    /*
+      On emprunte le chemin du doigt : la barre d'outils déclare ses filtres au dock,
+      et c'est l'entonnoir de la pilule de recherche qui les ouvre. Le menu de la
+      souris, lui, ne se déplie pas sous jsdom — bits-ui l'ouvre sur de vrais
+      événements de pointeur.
+    */
+    const entonnoir = dockDePage.lire().recherche?.filtres;
+    expect(entonnoir, 'la barre d’outils ne déclare aucun filtre au dock').toBeDefined();
+    entonnoir!.ouvrir();
+    flushSync();
+
+    const bascule = document.querySelector<HTMLElement>('[role="switch"]');
+    expect(bascule, 'interrupteur « à pourvoir » absent de la feuille de filtres').toBeTruthy();
+    bascule!.click();
     flushSync();
 
     expect(host.querySelectorAll('tbody tr')).toHaveLength(1);
