@@ -13,7 +13,14 @@
    * reste le chemin des liens partagés et du retour après un enregistrement. Le tiroir
    * ne la remplace pas, il évite d'y aller.
    */
-  let pageOuverte = $state<number | null>(null);
+  /**
+   * La page ouverte, et son titre.
+   *
+   * Le titre sert à nommer le tiroir : l'éditeur porte sa propre barre, donc la
+   * feuille ne dessine plus d'en-tête, mais une modale sans nom n'est annoncée par
+   * aucun lecteur d'écran. La liste le connaît, elle le passe.
+   */
+  let pageOuverte = $state<{ id: number; titre: string } | null>(null);
 </script>
 
 <EcranDistant ecran="pages" variante="liste">
@@ -22,15 +29,16 @@
       pages={d.pages}
       canWrite={d.canWrite}
       canDelete={d.canDelete}
-      onOpen={(id) => (pageOuverte = id)}
+      onOpen={(id, titre) => (pageOuverte = { id, titre })}
     />
   {/snippet}
 </EcranDistant>
 
-{#if pageOuverte !== null}
+{#if pageOuverte}
   <!--
     Sans en-tête ni croix propres : l'éditeur porte déjà sa barre — croix, titre,
-    validation — et deux barres empilées diraient deux fois la même chose.
+    validation — et deux barres empilées diraient deux fois la même chose. Le titre
+    est passé quand même, invisible : il nomme la modale sans la dessiner.
 
     `{#if}` autour, et non seulement `open` : l'éditeur charge la page qu'on ouvre, et
     le garder monté retiendrait la précédente.
@@ -41,10 +49,11 @@
       if (!ouvert) pageOuverte = null;
     }}
     showCloseButton={false}
-    title=""
+    title={pageOuverte.titre}
+    titreVisible={false}
     size="lg"
   >
-    <EcranDistant ecran="page" variante="formulaire" parametres={{ id: pageOuverte }}>
+    <EcranDistant ecran="page" variante="formulaire" parametres={{ id: pageOuverte.id }}>
       {#snippet pret(d)}
         {#if d.page}
           <PageEditor

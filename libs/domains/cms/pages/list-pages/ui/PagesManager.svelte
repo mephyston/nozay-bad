@@ -52,8 +52,13 @@
     pages: PageRow[];
     canWrite?: boolean;
     canDelete?: boolean;
-    /** Ouvre l'éditeur par-dessus la liste. Absent, la liste y navigue. */
-    onOpen?: (id: number) => void;
+    /**
+     * Ouvre l'éditeur par-dessus la liste. Absent, la liste y navigue.
+     *
+     * Le titre voyage avec l'identifiant : le tiroir doit se nommer avant que
+     * l'éditeur n'ait chargé la page, et la liste le connaît déjà.
+     */
+    onOpen?: (id: number, titre: string) => void;
     /**
      * Destination des écritures : le relais de la rubrique, et non la page hôte.
      *
@@ -86,7 +91,7 @@
     /* Ouvrir en tiroir quand l'écran hôte sait le faire ; sinon changer d'écran, ce
        qui garde l'adresse propre d'une page atteignable et partageable. */
     onEdit: (page: PageRow) =>
-      onOpen ? onOpen(page.id) : softNavigate(`/admin/website/pages/${page.id}`),
+      onOpen ? onOpen(page.id, page.title) : softNavigate(`/admin/website/pages/${page.id}`),
     /* L'adresse d'une page est relative au *site public*. L'ouvrir telle quelle la
        résolvait sur le domaine de l'administration, où le contrôle d'accès par page
        refuse tout chemin non déclaré : « Voir sur le site » répondait « Accès refusé ». */

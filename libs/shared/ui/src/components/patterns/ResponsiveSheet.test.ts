@@ -100,4 +100,37 @@ describe('ResponsiveSheet', () => {
 
     unmount(component);
   });
+
+  it('ne dessine aucun en-tête quand le contenu porte déjà sa barre', () => {
+    /*
+      L'éditeur de page porte sa propre barre — croix, titre, validation. Il fallait
+      donc lui passer un titre vide, et la feuille dessinait par-dessus un bloc
+      d'en-tête sans rien dedans : une bande morte d'une trentaine de pixels entre la
+      poignée et la croix, et une modale sans nom pour les technologies d'assistance.
+    */
+    poserLargeur(true);
+    const { target, component } = monter({
+      showCloseButton: false,
+      titreVisible: false,
+      title: 'Bienvenue'
+    });
+
+    const zone = target.querySelector('[data-sheet-scroll]');
+    const avant = zone?.previousElementSibling;
+    expect(avant?.className, "rien ne doit être dessiné au-dessus du contenu").toContain('sr-only');
+    expect(avant?.textContent, 'le titre reste le nom de la modale').toBe('Bienvenue');
+
+    unmount(component);
+  });
+
+  it('dessine son en-tête dès que le titre est visible', () => {
+    poserLargeur(true);
+    const { target, component } = monter({ title: 'Une décision' });
+
+    const avant = target.querySelector('[data-sheet-scroll]')?.previousElementSibling;
+    expect(avant?.className).not.toContain('sr-only');
+    expect(avant?.textContent).toContain('Une décision');
+
+    unmount(component);
+  });
 });

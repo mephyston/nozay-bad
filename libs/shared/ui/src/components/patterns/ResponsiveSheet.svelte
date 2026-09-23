@@ -30,6 +30,7 @@
     size = 'md',
     dismissible = true,
     showCloseButton = true,
+    titreVisible = true,
     headerLeading,
     headerTrailing,
     footerHidden = false,
@@ -52,6 +53,16 @@
     size?: SheetSize;
     dismissible?: boolean;
     showCloseButton?: boolean;
+    /**
+     * Le titre reste le nom de la modale, mais n'est plus dessiné.
+     *
+     * Pour un contenu qui porte déjà sa propre barre — l'éditeur de page, dont la
+     * croix et la validation vivent dans le composant et non ici. Sans cela il
+     * fallait passer un titre vide, et la feuille dessinait par-dessus la barre un
+     * bloc d'en-tête sans rien dedans : une bande morte, et plus aucun nom annoncé
+     * par les technologies d'assistance.
+     */
+    titreVisible?: boolean;
     /**
      * Destination du portail. Sert aux stories, dont la capture ne photographie que
      * `#storybook-root` : porté sur `document.body`, le contenu en sortirait.
@@ -169,6 +180,11 @@
       -->
       {@const fermetureDoffice = estMobile && showCloseButton && !headerLeading}
       {@const barreHaute = estMobile && (headerLeading || headerTrailing || fermetureDoffice)}
+      {@const enTete = barreHaute || (titreVisible && !!title) || !!description || !!header}
+      {#if !enTete}
+        <!-- Rien à dessiner : le titre reste, pour les technologies d'assistance. -->
+        <Dialog.Title class="sr-only">{title}</Dialog.Title>
+      {:else}
       <div class={cn('shrink-0 px-6', estMobile ? 'pb-2' : 'pt-6 pb-2')}>
         {#if barreHaute}
           <!-- Barre de navigation : retrait à gauche, titre au centre, validation à droite. -->
@@ -200,8 +216,13 @@
             </div>
           </div>
         {:else}
-          <Dialog.Title class="flex items-center gap-2 text-base font-semibold">
-            {#if Icon}<Icon class="h-5 w-5 text-primary" />{/if}
+          <Dialog.Title
+            class={cn(
+              'flex items-center gap-2 text-base font-semibold',
+              !titreVisible && 'sr-only'
+            )}
+          >
+            {#if Icon && titreVisible}<Icon class="h-5 w-5 text-primary" />{/if}
             {title}
           </Dialog.Title>
         {/if}
@@ -220,6 +241,7 @@
         {/if}
         {#if header}{@render header()}{/if}
       </div>
+      {/if}
 
       <div data-sheet-scroll class="flex-1 overflow-y-auto overscroll-contain px-6 pb-4">
         {@render children()}

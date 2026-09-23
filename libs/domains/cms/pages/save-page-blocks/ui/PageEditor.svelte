@@ -97,6 +97,15 @@
     canUploadMedia?: boolean;
   }>();
 
+  /**
+   * L'éditeur est-il monté dans un tiroir, ou seul sur son écran ?
+   *
+   * Fermer sans quitter la page n'a de sens que dans le premier cas : c'est `onClose`
+   * qui distingue les deux compositions, et la barre en tire ses gestes, son titre et
+   * — surtout — sa teinte, qui doit être celle de la surface qui la porte.
+   */
+  const enTiroir = $derived(!!onClose);
+
   // Copie locale : l'éditeur travaille sur son propre état et n'envoie qu'à
   // l'enregistrement. L'écriture est un remplacement intégral côté serveur.
   let blocks = $state<BlockPayload[]>(structuredClone($state.snapshot(initialBlocks)));
@@ -321,8 +330,17 @@
     pour l'atteindre. Les formulaires des autres écrans portent leur validation en
     haut de leur feuille ; celui-ci n'en est pas une, mais la règle est la même.
   -->
+  <!--
+    La teinte est celle de la surface qui porte la barre, et non une couleur à elle :
+    en tiroir la feuille est en `bg-card`, l'écran en `bg-background`. Peinte en dur,
+    elle se détachait en plus clair du reste de la feuille — et en plus sombre sous le
+    thème sombre. Le débord négatif lui fait tenir toute la largeur du tiroir, que le
+    rembourrage de la zone défilante lui retirait de chaque côté.
+  -->
   <div
-    class="sticky top-0 z-20 space-y-2 border-b border-border bg-background py-3"
+    class={`sticky top-0 z-20 space-y-2 border-b border-border py-3 ${
+      enTiroir ? 'bg-card -mx-6 px-6' : 'bg-background'
+    }`}
   >
     <!--
       Deux rangs, et non un seul qui se replie : à 390 px, la validation passait sous
@@ -339,14 +357,14 @@
     {#if canWrite}
       <Button
         variant="outline"
-        class={`size-11 shrink-0 rounded-full p-0 ${onClose ? '' : 'md:hidden'}`}
+        class={`size-11 shrink-0 rounded-full p-0 ${enTiroir ? '' : 'md:hidden'}`}
         aria-label="Fermer sans enregistrer"
         onclick={quitter}
       >
         <X class="size-5" />
       </Button>
 
-      {#if onClose}
+      {#if enTiroir}
         <!-- En tiroir, la barre porte le titre : l'en-tête de l'écran, qui le donnait,
              reste dehors. -->
         <span class="min-w-0 flex-1 truncate text-base font-semibold">{title || 'Page'}</span>
@@ -355,7 +373,7 @@
       {/if}
 
       <Button
-        class={`size-11 shrink-0 rounded-full p-0 ${onClose ? '' : 'md:hidden'}`}
+        class={`size-11 shrink-0 rounded-full p-0 ${enTiroir ? '' : 'md:hidden'}`}
         aria-label={busy ? 'Enregistrement…' : 'Enregistrer'}
         disabled={busy}
         onclick={save}
@@ -396,7 +414,7 @@
     {/if}
 
     {#if canWrite}
-      <div class={`ml-auto items-center gap-2 ${onClose ? 'hidden' : 'hidden md:flex'}`}>
+      <div class={`ml-auto items-center gap-2 ${enTiroir ? 'hidden' : 'hidden md:flex'}`}>
         <!--
           Réorganiser vit aussi ici : la barre du bas est masquée au-dessus de 768 px,
           et le mode y serait sinon inatteignable à la souris.
