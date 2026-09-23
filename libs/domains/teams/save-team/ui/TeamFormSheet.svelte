@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { FormSheet, FormField, Input, Select, Checkbox, submitForm } from '@nba/ui';
+  import { FormSheet, FormField, Input, ChoiceField, SwitchField, submitForm } from '@nba/ui';
   import { Trophy } from '@lucide/svelte';
   import {
     CHAMPIONSHIPS,
@@ -129,26 +129,44 @@
   isSubmitting={submitting}
   onSubmit={save}
 >
+  <!--
+    Une liste déroulante native ouvre la roulette du système : au doigt, on y vise un
+    championnat dans une bande de trente pixels. La rangée mène à un écran de choix où
+    chaque entrée a sa ligne de 44 points.
+  -->
   <FormField label="Championnat" id="championship">
-    <Select id="championship" bind:value={championship}>
-      {#each CHAMPIONSHIPS as code (code)}
-        <option value={code}>{CHAMPIONSHIP_RULES[code].label}</option>
-      {/each}
-    </Select>
+    <ChoiceField
+      id="championship"
+      label="Championnat"
+      value={championship}
+      onChange={(v) => (championship = v as typeof championship)}
+      options={CHAMPIONSHIPS.map((code) => ({ value: code, label: CHAMPIONSHIP_RULES[code].label }))}
+    />
   </FormField>
 
-  <FormField label="Division" id="division">
-    <Select id="division" bind:value={division}>
-      {#each divisions as d (d.code)}
-        <option value={d.code}>{d.label}</option>
-      {/each}
-    </Select>
-    {#if selectedDivision}
-      <p class="text-xs text-muted-foreground mt-1">
-        Rencontre en {selectedDivision.format.length} matchs.
-        {describeEligibility(selectedDivision.eligibility)}
-      </p>
-    {/if}
+  <!--
+    Le format et l'éligibilité accompagnent chaque division dans l'écran de choix, et
+    non plus seulement sous le champ une fois le choix fait : c'est au moment de
+    choisir qu'ils décident.
+  -->
+  <FormField
+    label="Division"
+    id="division"
+    hint={selectedDivision
+      ? `Rencontre en ${selectedDivision.format.length} matchs. ${describeEligibility(selectedDivision.eligibility)}`
+      : undefined}
+  >
+    <ChoiceField
+      id="division"
+      label="Division"
+      value={division}
+      onChange={(v) => (division = v)}
+      options={divisions.map((d) => ({
+        value: d.code,
+        label: d.label,
+        hint: `${d.format.length} matchs`
+      }))}
+    />
   </FormField>
 
   <FormField label="Numéro d'équipe" id="number">
@@ -164,10 +182,15 @@
     <Input id="pool" bind:value={poolLabel} placeholder="A, B… (facultatif)" />
   </FormField>
 
-  <FormField label="" id="active">
-    <label class="flex items-center gap-2 text-sm">
-      <Checkbox id="active" bind:checked={active} />
-      Équipe engagée cette saison
-    </label>
-  </FormField>
+  <!--
+    Un interrupteur, et non une case suivie d'un texte qui n'était le libellé d'aucun
+    champ : la cible passe de 16 px à toute la rangée.
+  -->
+  <SwitchField
+    id="active"
+    label="Équipe engagée cette saison"
+    hint="Une équipe retirée reste visible dans l'historique, mais ne se compose plus."
+    checked={active}
+    onChange={(v) => (active = v)}
+  />
 </FormSheet>

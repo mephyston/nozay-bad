@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Sheet, Button, Input, Badge, Select, Checkbox, Alert, uiAlert } from '@nba/ui';
+  import { FormSheet, FormField, Button, Input, Badge, ChoiceField, SwitchField, Alert, uiAlert } from '@nba/ui';
   import { CalendarDays, Plus, X, TriangleAlert } from '@lucide/svelte';
   import { CHAMPIONSHIPS, CHAMPIONSHIP_RULES, type Championship } from '../../shared/championship';
   import { mondayOf, sundayOf } from '../../shared/week';
@@ -147,30 +147,32 @@
   }
 </script>
 
-<Sheet.Root bind:open>
-  <Sheet.Content class="w-full sm:max-w-2xl overflow-y-auto">
-    <Sheet.Header>
-      <Sheet.Title>Journées de championnat</Sheet.Title>
-      <Sheet.Description>
-        Chaque championnat numérote ses journées pour lui seul. Une journée est une
-        <strong>semaine</strong>, du lundi au dimanche : c'est elle qui relie les
-        championnats entre eux.
-      </Sheet.Description>
-    </Sheet.Header>
-
-    <div class="p-4 space-y-4">
-      <div class="w-full sm:w-[320px]">
-        <Select
+<!--
+  Un tiroir, et non un panneau latéral : la validation vit en haut, à portée du pouce,
+  au lieu d'un pied qu'il fallait atteindre après toutes les journées.
+-->
+<FormSheet
+  bind:open
+  title="Journées de championnat"
+  description="Chaque championnat numérote ses journées pour lui seul. Une journée est une semaine, du lundi au dimanche : c'est elle qui relie les championnats entre eux."
+  size="lg"
+  isSubmitting={saving}
+  lectureSeule={!canWrite}
+  cancelLabel="Fermer"
+  submitLabel="Enregistrer le calendrier"
+  onSubmit={(e) => { e.preventDefault(); void save(); }}
+>
+    <div class="space-y-4">
+      <FormField id="jours-championnat" label="Championnat">
+        <ChoiceField
+          id="jours-championnat"
+          label="Championnat"
           value={championship}
           disabled={loading}
-          onchange={(e) => loadDays((e.currentTarget as HTMLSelectElement).value as Championship)}
-          aria-label="Championnat"
-        >
-          {#each CHAMPIONSHIPS as code (code)}
-            <option value={code}>{CHAMPIONSHIP_RULES[code].label}</option>
-          {/each}
-        </Select>
-      </div>
+          onChange={(v) => loadDays(v as Championship)}
+          options={CHAMPIONSHIPS.map((code) => ({ value: code, label: CHAMPIONSHIP_RULES[code].label }))}
+        />
+      </FormField>
 
       {#if rules.fixturesPerDay > 1}
         <Alert.Root variant="info">
@@ -193,35 +195,35 @@
 
       <div class="space-y-2">
         {#each draft as day, index (index)}
-          <div class="rounded-lg border p-2.5 space-y-2">
-            <div class="flex flex-wrap items-center gap-2">
-              <span class="font-medium text-sm w-12 shrink-0">J{day.number}</span>
-              <Input
-                type="date"
-                bind:value={day.weekStart}
-                disabled={!canWrite}
-                class="max-w-[170px]"
-                aria-label={`Semaine de la journée ${day.number}`}
-              />
-              {#if day.weekStart}
-                <span class="text-xs text-muted-foreground">
-                  du {mondayOf(day.weekStart)} au {sundayOf(day.weekStart)}
-                </span>
-              {/if}
-              {#each day.concurrent as other (other)}
-                <!--
-                  Le signal qui manque partout ailleurs : les numéros ne se ressemblent pas
-                  d'un championnat à l'autre, seule la semaine les rapproche.
-                -->
-                <Badge variant="warning">
-                  aussi {CHAMPIONSHIP_RULES[other].label}
-                </Badge>
-              {/each}
+          <!--
+            Empilé, et non en rangées qui se replient.
+
+            La carte alignait « J1 », un champ de date, la semaine en toutes lettres,
+            des pastilles et un bouton de retrait sur une même ligne `flex-wrap`, puis
+            un second rang en retrait de 56 px. À 390 px, tout cela se repliait en cinq
+            lignes désordonnées, le retrait mangeait la largeur du second champ, et la
+            case à cocher restait une cible de 16 px.
+          -->
+          <div class="rounded-lg border p-3 space-y-3">
+            <div class="flex items-center gap-2">
+              <span class="w-10 shrink-0 text-sm font-medium">J{day.number}</span>
+              <div class="flex min-w-0 flex-1 flex-wrap gap-1.5">
+                {#each day.concurrent as other (other)}
+                  <!--
+                    Le signal qui manque partout ailleurs : les numéros ne se ressemblent
+                    pas d'un championnat à l'autre, seule la semaine les rapproche.
+                  -->
+                  <Badge variant="warning" size="xs">aussi {CHAMPIONSHIP_RULES[other].label}</Badge>
+                {/each}
+                {#if day.kind === 'playoff'}
+                  <Badge variant="info" size="xs">Toutes les équipes ne la disputent pas</Badge>
+                {/if}
+              </div>
               {#if canWrite}
                 <Button
                   variant="ghost"
                   size="icon"
-                  class="ml-auto"
+                  class="shrink-0"
                   aria-label={`Supprimer la journée ${day.number}`}
                   onclick={() => (draft = draft.filter((_, i) => i !== index))}
                 >
@@ -230,32 +232,45 @@
               {/if}
             </div>
 
+            <FormField
+              id={`jour-${index}-semaine`}
+              label={`Semaine de la journée ${day.number}`}
+              hint={day.weekStart ? `Du ${mondayOf(day.weekStart)} au ${sundayOf(day.weekStart)}.` : undefined}
+            >
+              <Input
+                id={`jour-${index}-semaine`}
+                type="date"
+                bind:value={day.weekStart}
+                disabled={!canWrite}
+              />
+            </FormField>
+
             <!--
               Un numéro ne dit pas tout : « J15 » se lit comme une quinzième journée de
               championnat alors qu'il s'agit des barrages. Le libellé, quand il existe,
               remplace le numéro partout où la journée s'affiche.
             -->
-            <div class="flex flex-wrap items-center gap-2 pl-14">
+            <FormField
+              id={`jour-${index}-libelle`}
+              label={`Libellé de la journée ${day.number}`}
+              hint={`À défaut, la journée s'affiche « J${day.number} ».`}
+            >
               <Input
+                id={`jour-${index}-libelle`}
                 bind:value={day.label}
                 disabled={!canWrite}
-                class="max-w-[240px]"
-                placeholder={`Libellé (défaut : J${day.number})`}
-                aria-label={`Libellé de la journée ${day.number}`}
+                placeholder={`J${day.number}`}
               />
-              <label class="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <Checkbox
-                  checked={day.kind === 'playoff'}
-                  disabled={!canWrite}
-                  onCheckedChange={(v) => (day.kind = v ? 'playoff' : 'regular')}
-                  aria-label={`Barrages ou finale — journée ${day.number}`}
-                />
-                Barrages ou phase finale
-              </label>
-              {#if day.kind === 'playoff'}
-                <Badge variant="info">Toutes les équipes ne la disputent pas</Badge>
-              {/if}
-            </div>
+            </FormField>
+
+            <SwitchField
+              id={`jour-${index}-barrages`}
+              label="Barrages ou phase finale"
+              hint="Toutes les équipes ne la disputent pas."
+              checked={day.kind === 'playoff'}
+              disabled={!canWrite}
+              onChange={(v) => (day.kind = v ? 'playoff' : 'regular')}
+            />
           </div>
         {:else}
           <p class="text-sm text-muted-foreground">Aucune journée définie pour ce championnat.</p>
@@ -269,13 +284,4 @@
       {/if}
     </div>
 
-    <Sheet.Footer>
-      <Button variant="outline" onclick={() => (open = false)}>Fermer</Button>
-      {#if canWrite}
-        <Button onclick={save} disabled={saving || duplicateWeeks().size > 0}>
-          {saving ? 'Enregistrement…' : 'Enregistrer le calendrier'}
-        </Button>
-      {/if}
-    </Sheet.Footer>
-  </Sheet.Content>
-</Sheet.Root>
+</FormSheet>

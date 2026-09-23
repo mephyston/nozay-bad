@@ -6,10 +6,11 @@
     softNavigate,
     readCollapseState,
     writeCollapseState,
+    ResponsiveSheet,
     uiAlert,
     type SwipeAction
   } from '@nba/ui';
-  import { Upload, FileText } from '@lucide/svelte';
+  import { Upload, FileText, CalendarCheck } from '@lucide/svelte';
   import RankingsTable from './RankingsTable.svelte';
   import ReferenceDatesPanel from '../../list-championship-settings/ui/ReferenceDatesPanel.svelte';
   import type { ListRankingsOutput } from '../dto';
@@ -121,8 +122,24 @@
     vivaient en haut de page, donc hors de vue dès qu'on faisait défiler deux cents
     classements, c'est-à-dire chaque fois qu'on en cherche un.
   */
+  /*
+    Les dates de référence s'atteignent depuis le menu, et s'ouvrent dans un tiroir.
+
+    Le bloc repliable vivait **au-dessus** des classements : sur un téléphone, il
+    fallait le refermer pour atteindre la liste, et il se rouvrait tout seul dès qu'une
+    date manquait — ce qui est justement le cas où l'on vient chercher un joueur. Le
+    réglage et la consultation ne se disputent plus la même colonne.
+  */
+  let datesOuvertes = $state(false);
+
   $effect(() => {
     const actions: SwipeAction[] = [
+      {
+        id: 'dates',
+        label: settingsIncomplete ? 'Dates de référence — à compléter' : 'Dates de référence',
+        icon: CalendarCheck,
+        run: () => (datesOuvertes = true)
+      },
       {
         id: 'reglements',
         label: `Règlements (${publishedRules}/${settings.length})`,
@@ -171,6 +188,8 @@
     {/if}
   </div>
 
+  <!-- Sur téléphone, ce réglage vit dans le menu de la barre du bas. -->
+  <div class="hidden md:block">
   <CollapsibleSection
     title="Dates de référence"
     description="Le classement qui fait foi pour chaque championnat, et qui décide si une composition est conforme."
@@ -185,7 +204,7 @@
       onSaved={() => reload()}
     />
   </CollapsibleSection>
-
+  </div>
 
   <CollapsibleSection
     title="Classements"
@@ -208,3 +227,24 @@
     />
   </CollapsibleSection>
 </div>
+
+<!--
+  Le même panneau, atteint autrement : au doigt il monte du bas, à la souris il reste
+  dans son bloc repliable en haut de page. Une seule déclaration, deux emplacements.
+-->
+<ResponsiveSheet
+  bind:open={datesOuvertes}
+  title="Dates de référence"
+  description="Le classement qui fait foi pour chaque championnat, et qui décide si une composition est conforme."
+  size="lg"
+>
+  <div class="py-2">
+    <ReferenceDatesPanel
+      items={settings}
+      availableDates={rankings.availableDates}
+      {seasonCode}
+      {canWrite}
+      onSaved={() => reload()}
+    />
+  </div>
+</ResponsiveSheet>

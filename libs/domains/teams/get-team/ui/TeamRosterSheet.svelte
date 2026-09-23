@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Sheet, Button, Badge, SearchableCombobox, Alert, MemberAvatar, toast, Separator, uiAlert } from '@nba/ui';
+  import { FormSheet, Button, Badge, SearchableCombobox, Alert, MemberAvatar, toast, Separator, uiAlert } from '@nba/ui';
   import { UserRoundX, TriangleAlert, Plus, X } from '@lucide/svelte';
   import type { GetTeamOutput } from '../dto';
 
@@ -143,18 +143,26 @@
   }
 </script>
 
-<Sheet.Root bind:open>
-  <Sheet.Content class="w-full sm:max-w-2xl overflow-y-auto">
+<!--
+  Un tiroir, et non un panneau latéral : la validation vit en haut, à portée du pouce,
+  au lieu d'un pied qu'il fallait atteindre après tout l'effectif. Sans droit
+  d'écriture, il n'y a rien à valider — la croix devient la seule sortie.
+-->
+<FormSheet
+  bind:open
+  title={detail ? `${detail.name} — staff et effectif` : 'Équipe'}
+  description={detail
+    ? `${detail.championshipLabel} · ${detail.divisionLabel} · rencontre en ${detail.matchCount} matchs. ${detail.eligibilityRule}`
+    : ''}
+  size="lg"
+  isSubmitting={saving}
+  lectureSeule={!canWrite}
+  cancelLabel="Fermer"
+  submitLabel="Enregistrer"
+  onSubmit={(e) => { e.preventDefault(); void save(); }}
+>
     {#if detail}
-      <Sheet.Header>
-        <Sheet.Title>{detail.name} — staff et effectif</Sheet.Title>
-        <Sheet.Description>
-          {detail.championshipLabel} · {detail.divisionLabel} · rencontre en {detail.matchCount} matchs.
-          {detail.eligibilityRule}
-        </Sheet.Description>
-      </Sheet.Header>
-
-      <div class="p-4 space-y-6">
+      <div class="space-y-6">
         {#if detail.referenceOrigin === 'none'}
           <Alert.Root variant="warning">
             <TriangleAlert class="w-4 h-4" />
@@ -292,14 +300,5 @@
         </div>
       </div>
 
-      <Sheet.Footer>
-        <Button variant="outline" onclick={() => (open = false)}>Fermer</Button>
-        {#if canWrite}
-          <Button onclick={save} disabled={saving}>
-            {saving ? 'Enregistrement…' : 'Enregistrer'}
-          </Button>
-        {/if}
-      </Sheet.Footer>
     {/if}
-  </Sheet.Content>
-</Sheet.Root>
+</FormSheet>

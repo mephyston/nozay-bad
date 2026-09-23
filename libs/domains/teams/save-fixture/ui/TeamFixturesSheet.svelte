@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Sheet, Button, Input, Badge, uiAlert } from '@nba/ui';
+  import { FormSheet, Input, Badge, uiAlert } from '@nba/ui';
   import { CalendarX } from '@lucide/svelte';
   import type { GetTeamOutput } from '../../get-team/dto';
 
@@ -124,17 +124,24 @@
   }
 </script>
 
-<Sheet.Root bind:open>
-  <Sheet.Content class="w-full sm:max-w-2xl flex flex-col">
+<!--
+  Un tiroir, et non un panneau latéral : la validation vit en haut, à portée du pouce,
+  au lieu d'un pied qu'il fallait atteindre après tout le calendrier. Sans droit
+  d'écriture — ou sans journée à dater —, il n'y a rien à valider.
+-->
+<FormSheet
+  bind:open
+  title={detail ? `Rencontres — ${detail.name}` : 'Rencontres'}
+  description={detail ? `${detail.championshipLabel} · ${detail.divisionLabel}` : ''}
+  size="lg"
+  isSubmitting={saving}
+  lectureSeule={!canWrite || drafts.length === 0}
+  cancelLabel="Fermer"
+  submitLabel="Enregistrer"
+  onSubmit={(e) => { e.preventDefault(); void save(); }}
+>
     {#if detail}
-      <Sheet.Header>
-        <Sheet.Title>Rencontres — {detail.name}</Sheet.Title>
-        <Sheet.Description>
-          {detail.championshipLabel} · {detail.divisionLabel}
-        </Sheet.Description>
-      </Sheet.Header>
-
-      <div class="flex-1 overflow-y-auto space-y-3 py-2">
+      <div class="space-y-3">
         <p class="text-xs text-muted-foreground">
           La semaine de chaque journée est fixée par le comité et ne change pas — c'est elle
           qui porte les règles de composition. La date ci-dessous ne concerne que cette
@@ -189,14 +196,5 @@
         </ul>
       </div>
 
-      <Sheet.Footer>
-        <Button variant="outline" onclick={() => (open = false)}>Fermer</Button>
-        {#if canWrite && drafts.length > 0}
-          <Button onclick={save} disabled={saving}>
-            {saving ? 'Enregistrement…' : 'Enregistrer'}
-          </Button>
-        {/if}
-      </Sheet.Footer>
     {/if}
-  </Sheet.Content>
-</Sheet.Root>
+</FormSheet>

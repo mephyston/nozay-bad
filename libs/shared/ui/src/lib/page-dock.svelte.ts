@@ -90,13 +90,38 @@ export type EtatDuDock = {
   groupe: GroupeDActions | null;
 };
 
+/**
+ * Une déclaration d'actions, et qui l'a faite.
+ *
+ * Plusieurs composants d'un même écran en déclarent : la liste pose ses créations, le
+ * sélecteur de saison pose la sienne. Tant que `declarerActions` écrasait, le dernier
+ * monté effaçait l'autre — et selon l'ordre de montage, c'était tantôt l'un, tantôt
+ * l'autre qui disparaissait.
+ */
+type Declaration = { liste: ActionDeListe[]; groupe: GroupeDActions | null };
+
 const CLE = Symbol.for('nba:dock-de-page');
 const EVENEMENT = 'nba:dock-de-page';
 
-function etat(): EtatDuDock {
-  const hote = globalThis as unknown as Record<symbol, EtatDuDock | undefined>;
-  hote[CLE] ??= { recherche: null, portee: null, actions: [], groupe: null };
+type Interne = EtatDuDock & { declarations: Declaration[] };
+
+function etat(): Interne {
+  const hote = globalThis as unknown as Record<symbol, Interne | undefined>;
+  hote[CLE] ??= { recherche: null, portee: null, actions: [], groupe: null, declarations: [] };
   return hote[CLE]!;
+}
+
+/**
+ * Recompose la liste visible à partir des déclarations en cours.
+ *
+ * L'ordre est celui des déclarations, et le groupe est celui de la **première** qui en
+ * fournit un : c'est l'écran qui se monte d'abord, donc celui dont le geste est
+ * principal. Un sélecteur de saison qui arrive ensuite ne renomme pas le bouton.
+ */
+function recomposer(): void {
+  const e = etat();
+  e.actions = e.declarations.flatMap((d) => d.liste);
+  e.groupe = e.declarations.find((d) => d.groupe)?.groupe ?? null;
 }
 
 function annoncer(): void {
@@ -140,15 +165,19 @@ export const dockDePage = {
   },
 
   declarerActions(liste: ActionDeListe[], groupe?: GroupeDActions): () => void {
-    etat().actions = liste;
-    etat().groupe = groupe ?? null;
+    const declaration: Declaration = { liste, groupe: groupe ?? null };
+    etat().declarations.push(declaration);
+    recomposer();
     annoncer();
     return () => {
-      if (etat().actions === liste) {
-        etat().actions = [];
-        etat().groupe = null;
-        annoncer();
-      }
+      const e = etat();
+      const rang = e.declarations.indexOf(declaration);
+      // Retrait ciblé : à la navigation douce, l'écran qui arrive se monte avant que le
+      // précédent ne se démonte, et un retrait aveugle effacerait ce qui vient d'être posé.
+      if (rang === -1) return;
+      e.declarations.splice(rang, 1);
+      recomposer();
+      annoncer();
     };
   },
 

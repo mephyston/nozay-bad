@@ -38,6 +38,23 @@ describe('ChampionshipDaysSheet', () => {
     vi.unstubAllGlobals();
   });
 
+  /**
+   * Le champ d'un libellé, trouvé par son intitulé.
+   *
+   * Et non par un `aria-label` : les champs sont passés sous `FormField`, qui les
+   * associe à un vrai `<label for>` — une association que les technologies
+   * d'assistance suivent mieux qu'un attribut recopié.
+   */
+  function champDuLibelle(journee: number): HTMLInputElement | null {
+    // Dans le document, et non dans l'îlot : une feuille est portée hors de lui.
+    const intitule = [...document.querySelectorAll('label')].find(
+      (l) => l.textContent?.trim() === `Libellé de la journée ${journee}`
+    );
+    const id = intitule?.getAttribute('for');
+    // `getElementById` et non un sélecteur : jsdom ne fournit pas `CSS.escape`.
+    return id ? (document.getElementById(id) as HTMLInputElement | null) : null;
+  }
+
   function render(props: Record<string, unknown> = {}) {
     mount(ChampionshipDaysSheet, {
       target: host,
@@ -57,14 +74,13 @@ describe('ChampionshipDaysSheet', () => {
   it('affiche le libellé saisi pour chaque journée', () => {
     render();
 
-    const input = view().querySelector('[aria-label="Libellé de la journée 15"]') as HTMLInputElement;
-    expect(input?.value).toBe('Barrages aller');
+    expect(champDuLibelle(15)?.value).toBe('Barrages aller');
   });
 
   it('propose le numéro en repli quand aucun libellé n’est saisi', () => {
     render();
 
-    const input = view().querySelector('[aria-label="Libellé de la journée 1"]') as HTMLInputElement;
+    const input = champDuLibelle(1);
     expect(input?.value).toBe('');
     expect(input?.placeholder).toContain('J1');
   });

@@ -43,6 +43,7 @@
     onSubmit,
     submitIcon,
     namedActions = false,
+    lectureSeule = false,
     onOpenChange,
     children,
     footer: footerSnippet
@@ -69,6 +70,15 @@
      * réserve le rouge aux actions sans retour dans `uiConfirm`.
      */
     namedActions?: boolean;
+    /**
+     * Rien à soumettre : la feuille se consulte, elle ne s'enregistre pas.
+     *
+     * Pour les panneaux qu'un compte sans droit d'écriture ouvre quand même — l'effectif
+     * d'une équipe, son calendrier. Un bouton de validation désactivé y serait une
+     * promesse qu'on ne tient pas ; il n'y en a simplement pas, et la croix devient la
+     * seule sortie.
+     */
+    lectureSeule?: boolean;
     /**
      * Prévenu de chaque ouverture et fermeture, celles que la feuille décide comprises.
      * Nécessaire dès que l'ouverture reflète un état extérieur — la note qu'on modifie,
@@ -121,7 +131,7 @@
   {/snippet}
 
   {#snippet headerTrailing()}
-    {#if cercles}
+    {#if cercles && !lectureSeule}
       <Button
         type="submit"
         form={formId}
@@ -169,6 +179,7 @@
         >
           {cancelLabel}
         </Button>
+        {#if !lectureSeule}
         <Button type="submit" form={formId} disabled={isSubmitting} class="w-full gap-1.5 sm:w-auto">
           {#if submitIcon}
             {@render submitIcon()}
@@ -177,6 +188,7 @@
           {/if}
           {isSubmitting ? submittingLabel : submitLabel}
         </Button>
+        {/if}
       </div>
     {/if}
   {/snippet}

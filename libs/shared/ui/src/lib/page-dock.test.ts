@@ -70,3 +70,55 @@ describe('dockDePage', () => {
     expect(dockDePage.lire().recherche).toBeNull();
   });
 });
+
+describe('plusieurs déclarations d’actions', () => {
+  it('les cumule au lieu de les écraser', async () => {
+    const { dockDePage } = await import('./page-dock.svelte');
+    /*
+      Un même écran en déclare depuis plusieurs composants : la liste pose ses
+      créations, le sélecteur de saison pose la sienne. Tant que la déclaration
+      écrasait, le dernier monté effaçait l'autre — et selon l'ordre de montage,
+      c'était tantôt l'un, tantôt l'autre qui disparaissait.
+    */
+    const retirerA = dockDePage.declarerActions([{ id: 'a', label: 'A', run: () => {} }]);
+    const retirerB = dockDePage.declarerActions([{ id: 'b', label: 'B', run: () => {} }]);
+
+    expect(dockDePage.lire().actions.map((a) => a.id)).toEqual(['a', 'b']);
+
+    retirerB();
+    expect(dockDePage.lire().actions.map((a) => a.id)).toEqual(['a']);
+    retirerA();
+    expect(dockDePage.lire().actions).toEqual([]);
+  });
+
+  it('garde le groupe de la première déclaration qui en fournit un', async () => {
+    const { dockDePage } = await import('./page-dock.svelte');
+    // C'est l'écran qui se monte d'abord, donc celui dont le geste est principal : un
+    // sélecteur de saison qui arrive ensuite ne renomme pas le bouton.
+    const retirerA = dockDePage.declarerActions([{ id: 'a', label: 'A', run: () => {} }], {
+      label: 'Nouvelle page'
+    });
+    const retirerB = dockDePage.declarerActions([{ id: 'b', label: 'B', run: () => {} }], {
+      label: 'Saison'
+    });
+
+    expect(dockDePage.lire().groupe?.label).toBe('Nouvelle page');
+
+    retirerA();
+    expect(dockDePage.lire().groupe?.label).toBe('Saison');
+    retirerB();
+    expect(dockDePage.lire().groupe).toBeNull();
+  });
+
+  it('ne retire rien deux fois', async () => {
+    const { dockDePage } = await import('./page-dock.svelte');
+    // Un composant démonté deux fois — cela arrive à la navigation douce — ne doit pas
+    // emporter la déclaration d'un voisin.
+    const retirer = dockDePage.declarerActions([{ id: 'a', label: 'A', run: () => {} }]);
+    const autre = dockDePage.declarerActions([{ id: 'b', label: 'B', run: () => {} }]);
+    retirer();
+    retirer();
+    expect(dockDePage.lire().actions.map((a) => a.id)).toEqual(['b']);
+    autre();
+  });
+});
