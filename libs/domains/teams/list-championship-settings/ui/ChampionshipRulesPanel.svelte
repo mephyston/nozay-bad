@@ -1,9 +1,32 @@
 <script lang="ts">
-  import { Input, Button, uiAlert } from '@nba/ui';
-  import { ExternalLink } from '@lucide/svelte';
+  import {
+    Badge,
+    FormField,
+    FormSheet,
+    Input,
+    ListRow,
+    ListView
+  } from '@nba/ui';
+  import { FileText } from '@lucide/svelte';
   import { saveChampionshipSetting } from './championship-settings-api';
+  import {
+    detailDeReglement,
+    gestesDeReglement,
+    pastilleDeReglement,
+    type ReglementLike
+  } from './championship-rules-row-model';
   import type { ChampionshipSettingsItem } from '../dto';
 
+  /**
+   * Les règlements de championnat.
+   *
+   * Une carte par championnat portait deux champs de saisie et un bouton côte à côte :
+   * à 390 px, « Enregistrer » se retrouvait collé contre un champ de deux centimètres.
+   * Et la question qu'on vient poser — lesquels manquent ? — ne se lisait qu'en
+   * parcourant les cartes une à une.
+   *
+   * Une ligne par championnat, le manque en pastille, et la saisie dans un tiroir.
+   */
   let {
     items,
     seasonCode,
@@ -25,83 +48,114 @@
     endpoint?: string;
   } = $props();
 
-  let saving = $state<string | null>(null);
+  let busy = $state(false);
+  let errorMsg = $state('');
+  let editionOuverte = $state(false);
+  let vise = $state<ReglementLike | null>(null);
+  let url = $state('');
+  let libelle = $state('');
 
-  /** Saisie locale : on n'enregistre qu'au clic, pas à chaque frappe. */
-  let links = $state<Record<string, { url: string; label: string }>>(
-    Object.fromEntries(
-      items.map((i) => [i.championship, { url: i.rulesUrl ?? '', label: i.rulesLabel ?? '' }])
-    )
-  );
+  function ouvrirEdition(r: ReglementLike) {
+    vise = r;
+    url = r.rulesUrl ?? '';
+    libelle = r.rulesLabel ?? '';
+    errorMsg = '';
+    editionOuverte = true;
+  }
 
-  async function save(championship: string) {
-    saving = championship;
+  function ouvrirLien(r: ReglementLike) {
+    // Le lien enregistré est vérifiable d'un geste : une adresse fausse ne se voit pas.
+    if (r.rulesUrl) window.open(r.rulesUrl, '_blank', 'noopener');
+  }
+
+  /**
+   * Enregistre, puis rend la main à l'écran hôte.
+   *
+   * Et non `submitForm`, qui recharge la page en fin de course : ici c'est `onSaved`
+   * qui décide du rechargement — lui seul sait ce qu'il faut relire, et les deux
+   * mécanismes se marcheraient dessus.
+   */
+  async function enregistrer(event: Event) {
+    event.preventDefault();
+    const cible = vise;
+    if (!cible) return;
+    errorMsg = '';
+    busy = true;
     try {
-      await saveChampionshipSetting(endpoint, seasonCode, championship, {
-        rulesUrl: links[championship].url.trim() || null,
-        rulesLabel: links[championship].label.trim() || null
+      await saveChampionshipSetting(endpoint, seasonCode, cible.championship, {
+        rulesUrl: url.trim() || null,
+        rulesLabel: libelle.trim() || null
       });
+      editionOuverte = false;
+      vise = null;
       onSaved?.();
     } catch (error) {
-      uiAlert(error instanceof Error ? error.message : "L'enregistrement a échoué.");
+      // La feuille couvre la page : le refus s'affiche dans le formulaire lui-même.
+      errorMsg = error instanceof Error ? error.message : "L'enregistrement a échoué.";
     } finally {
-      saving = null;
+      busy = false;
     }
   }
 </script>
 
-<div class="space-y-3">
-  <p class="text-xs text-muted-foreground">
-    Déposez le PDF dans la médiathèque, puis collez son lien ici. Il apparaîtra en
-    téléchargement sur la fiche de chaque équipe du championnat, dans l'espace adhérent.
-    C'est le texte qui fait foi le soir de la rencontre.
-  </p>
+<p class="text-muted-foreground mb-3 text-xs">
+  Déposez le PDF dans la médiathèque, puis collez son lien ici. Il apparaîtra en
+  téléchargement sur la fiche de chaque équipe du championnat, dans l'espace adhérent.
+  C'est le texte qui fait foi le soir de la rencontre.
+</p>
 
-  {#each items as item (item.championship)}
-    <div class="rounded-lg border p-3 space-y-2">
-      <div class="flex items-center justify-between gap-2">
-        <p class="text-sm font-medium">{item.label}</p>
-        {#if item.rulesUrl}
-          <!-- Le lien enregistré est vérifiable d'un clic : une URL fausse ne se voit pas. -->
-          <a
-            href={item.rulesUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            class="text-xs text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
-          >
-            Ouvrir <ExternalLink class="w-3 h-3" />
-          </a>
+<ListView
+  items={items as ReglementLike[]}
+  emptyIcon={FileText}
+  emptyTitle="Aucun championnat"
+  emptyDescription="Aucun championnat n’est configuré pour cette saison."
+>
+  {#snippet listRow(reglement)}
+    {@const pastille = pastilleDeReglement(reglement)}
+    <ListRow
+      item={reglement}
+      onclick={canWrite ? () => ouvrirEdition(reglement) : undefined}
+      title={reglement.label}
+      subtitle={detailDeReglement(reglement)}
+      actions={gestesDeReglement(reglement, { canWrite }, { onEdit: ouvrirEdition, onOpen: ouvrirLien })}
+    >
+      {#snippet badge()}
+        {#if pastille}
+          <Badge variant={pastille.variant} size="xs">{pastille.label}</Badge>
         {/if}
-      </div>
+      {/snippet}
+    </ListRow>
+  {/snippet}
+</ListView>
 
-      <div class="grid gap-2 sm:grid-cols-2">
-        <div class="min-w-0">
-          <Input
-            bind:value={links[item.championship].url}
-            disabled={!canWrite || saving === item.championship}
-            placeholder="https://… (lien du PDF)"
-            aria-label={`Lien du règlement — ${item.label}`}
-          />
-        </div>
-        <div class="min-w-0 flex gap-2">
-          <Input
-            bind:value={links[item.championship].label}
-            disabled={!canWrite || saving === item.championship}
-            placeholder="Libellé affiché (facultatif)"
-            aria-label={`Libellé du règlement — ${item.label}`}
-          />
-          {#if canWrite}
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={saving === item.championship}
-              onclick={() => save(item.championship)}
-            >
-              {saving === item.championship ? '…' : 'Enregistrer'}
-            </Button>
-          {/if}
-        </div>
-      </div>
-    </div>
-  {/each}
-</div>
+<FormSheet
+  bind:open={editionOuverte}
+  title={vise ? vise.label : 'Règlement'}
+  description="Le lien du PDF déposé dans la médiathèque. Laissez vide pour retirer le règlement."
+  icon={FileText}
+  error={errorMsg}
+  isSubmitting={busy}
+  submitLabel="Enregistrer"
+  submittingLabel="Enregistrement…"
+  onSubmit={enregistrer}
+>
+  <FormField id="reglement-url" label="Lien du règlement">
+    <Input
+      id="reglement-url"
+      bind:value={url}
+      type="url"
+      inputmode="url"
+      autocapitalize="off"
+      spellcheck="false"
+      placeholder="https://…/reglement-2026.pdf"
+    />
+  </FormField>
+
+  <FormField
+    id="reglement-libelle"
+    label="Libellé affiché"
+    hint="Facultatif : à défaut, l’espace adhérent écrit « Règlement »."
+  >
+    <Input id="reglement-libelle" bind:value={libelle} placeholder="Règlement 2026-2027" />
+  </FormField>
+</FormSheet>

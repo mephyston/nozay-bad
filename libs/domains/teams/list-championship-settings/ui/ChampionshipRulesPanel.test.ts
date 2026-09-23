@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { mount, flushSync } from 'svelte';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { mount, unmount, flushSync } from 'svelte';
 import ChampionshipRulesPanel from './ChampionshipRulesPanel.svelte';
 import type { ChampionshipSettingsItem } from '../dto';
 
@@ -12,24 +12,43 @@ function items(over: Partial<ChampionshipSettingsItem> = {}): ChampionshipSettin
   ];
 }
 
+/**
+ * Le panneau est devenu une liste : une ligne par championnat, la saisie dans un
+ * tiroir. Les tests empruntent donc le chemin du doigt — appuyer sur la ligne ouvre
+ * le formulaire — et cherchent ses champs dans le document, puisqu'une feuille est
+ * portée hors de l'îlot.
+ */
 describe('ChampionshipRulesPanel', () => {
   let host: HTMLElement;
+  let monte: Record<string, unknown> | null = null;
 
   beforeEach(() => {
     host = document.createElement('div');
     document.body.appendChild(host);
   });
-  afterEach(() => host.remove());
+
+  afterEach(async () => {
+    if (monte) unmount(monte);
+    monte = null;
+    host.remove();
+    document.body.innerHTML = '';
+    // bits-ui relâche son verrou de défilement en différé ; sans cette attente, le
+    // minuteur se déclenche une fois jsdom démonté.
+    await new Promise((r) => setTimeout(r, 50));
+  });
 
   function render(props: Record<string, unknown> = {}) {
-    mount(ChampionshipRulesPanel, {
+    monte = mount(ChampionshipRulesPanel, {
       target: host,
       props: { items: items(), seasonCode: '26-27', canWrite: true, onSaved: () => {}, ...props }
     });
     flushSync();
   }
 
-  it('propose un champ pour chacun des quatre championnats', () => {
+  const ligneDe = (label: string) =>
+    [...host.querySelectorAll('li')].find((li) => li.textContent?.includes(label));
+
+  it('porte une ligne pour chacun des quatre championnats', () => {
     render();
 
     // Le règlement ne dépend d'aucune politique de date : le régional en a un aussi.
@@ -39,39 +58,80 @@ describe('ChampionshipRulesPanel', () => {
       'Interclubs Départemental Masculin',
       'Interclubs Départemental Vétérans'
     ]) {
-      expect(host.querySelector(`[aria-label="Lien du règlement — ${label}"]`)).not.toBeNull();
+      expect(ligneDe(label), `ligne « ${label} » absente`).toBeDefined();
     }
   });
 
-  it('affiche le lien déjà enregistré', () => {
-    render({ items: items({ rulesUrl: 'https://nozaybad.fr/icrs.pdf', rulesLabel: 'Règlement ICR' }) });
+  it('signale les championnats sans règlement', () => {
+    // C'est la question qu'on vient poser à cet écran : lesquels manquent ?
+    render();
+    expect(host.textContent).toContain('Sans règlement');
+  });
 
-    const input = host.querySelector<HTMLInputElement>(
-      '[aria-label="Lien du règlement — Interclubs Régional Séniors"]'
+  it('montre d’où vient le règlement déposé, sans le badger', () => {
+    render({ items: items({ rulesUrl: 'https://nozaybad.fr/icrs.pdf' }) });
+
+    const ligne = ligneDe('Interclubs Régional Séniors');
+    expect(ligne?.textContent).toContain('nozaybad.fr');
+    expect(ligne?.textContent).not.toContain('Sans règlement');
+  });
+
+  it('préfère le libellé déposé au domaine', () => {
+    render({ items: items({ rulesUrl: 'https://nozaybad.fr/icrs.pdf', rulesLabel: 'Règlement ICR' }) });
+    expect(ligneDe('Interclubs Régional Séniors')?.textContent).toContain('Règlement ICR');
+  });
+
+  it('reprend le lien enregistré dans le formulaire', () => {
+    render({ items: items({ rulesUrl: 'https://nozaybad.fr/icrs.pdf' }) });
+
+    /*
+      La rangée elle-même, et non le premier bouton venu : les gestes de balayage sont
+      rendus avant elle dans le DOM, et c'est « Ouvrir le règlement » qu'on aurait
+      cliqué.
+    */
+    const rangee = [...(ligneDe('Interclubs Régional Séniors')?.querySelectorAll('button') ?? [])].find(
+      (b) => b.textContent?.includes('Interclubs Régional Séniors')
     );
-    expect(input?.value).toBe('https://nozaybad.fr/icrs.pdf');
+    expect(rangee, 'la rangée n’est pas actionnable').toBeTruthy();
+    rangee!.click();
+    flushSync();
+
+    const champ = document.querySelector<HTMLInputElement>('#reglement-url');
+    expect(champ?.value).toBe('https://nozaybad.fr/icrs.pdf');
   });
 
   it('offre d’ouvrir le lien enregistré : une URL fausse ne se voit pas autrement', () => {
     render({ items: items({ rulesUrl: 'https://nozaybad.fr/icrs.pdf' }) });
 
-    const link = [...host.querySelectorAll('a')].find((a) => a.textContent?.includes('Ouvrir'));
-    expect(link?.getAttribute('href')).toBe('https://nozaybad.fr/icrs.pdf');
+    const bouton = [...host.querySelectorAll('button')].find((b) =>
+      b.textContent?.includes('Ouvrir le règlement')
+    );
+    expect(bouton, 'aucun geste « Ouvrir le règlement »').toBeDefined();
+
+    const open = vi.fn();
+    vi.stubGlobal('open', open);
+    bouton!.click();
+    flushSync();
+    expect(open).toHaveBeenCalledWith('https://nozaybad.fr/icrs.pdf', '_blank', 'noopener');
+    vi.unstubAllGlobals();
   });
 
-  it('n’offre aucun lien à ouvrir tant que rien n’est enregistré', () => {
+  it('n’offre rien à ouvrir tant que rien n’est enregistré', () => {
     render();
-
-    expect([...host.querySelectorAll('a')].some((a) => a.textContent?.includes('Ouvrir'))).toBe(false);
+    expect(
+      [...host.querySelectorAll('button')].some((b) =>
+        b.textContent?.includes('Ouvrir le règlement')
+      )
+    ).toBe(false);
   });
 
-  it('verrouille les champs en lecture seule', () => {
+  it('n’offre aucune écriture en lecture seule', () => {
     render({ canWrite: false });
 
-    const input = host.querySelector<HTMLInputElement>(
-      '[aria-label="Lien du règlement — Interclubs Départemental Mixte"]'
-    );
-    expect(input?.disabled).toBe(true);
-    expect([...host.querySelectorAll('button')].some((b) => b.textContent?.includes('Enregistrer'))).toBe(false);
+    expect(
+      [...host.querySelectorAll('button')].some((b) => b.textContent?.includes('Modifier le lien'))
+    ).toBe(false);
+    // Et la ligne n'ouvre rien : sans droit, il n'y a pas de formulaire à atteindre.
+    expect(document.querySelector('#reglement-url')).toBeNull();
   });
 });
