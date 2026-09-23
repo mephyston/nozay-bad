@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Plus, Edit, Menu } from '@lucide/svelte';
+  import { Plus, Edit, Menu, GripVertical, Check } from '@lucide/svelte';
   import {
     Button,
     Input,
@@ -101,8 +101,16 @@
   let externalUrl = $state('');
   let parentId = $state('');
 
-  const trees: Record<NavLocation, NavItem[]> = $derived({ header, footer, legal });
-  const tree = $derived(trees[location]);
+  /*
+    L'arbre est tenu en état local, semé des propriétés reçues.
+    
+    Il l'était en `$derived` des propriétés, ce qui obligeait à recharger la page
+    entière après chaque déplacement pour en voir l'effet. Une liste dont on range
+    l'ordre ne peut pas sauter à chaque cran : le nouvel ordre s'applique ici, et le
+    serveur n'est prévenu qu'ensuite. S'il refuse, on remet l'ordre d'avant.
+  */
+  let arbres = $state<Record<NavLocation, NavItem[]>>({ header, footer, legal });
+  const tree = $derived(arbres[location]);
 
   /**
    * Un mot par emplacement, réutilisé par l'onglet vide et par le formulaire : trois
@@ -132,7 +140,7 @@
     onEdit: (e: EntreeLike) => startEdit(e as unknown as NavItem),
     onAddChild: (e: EntreeLike) => openAddForm(e.id),
     onMove: (fratrie: EntreeLike[], rang: number, delta: number) =>
-      move(fratrie as unknown as NavItem[], rang, delta),
+      deplacer(fratrie as unknown as NavItem[], rang, rang + delta),
     onRemove: (e: EntreeLike) => remove(e as unknown as NavItem)
   });
 
@@ -157,13 +165,36 @@
     })
   );
 
-  /* Créer descend dans la barre du bas. */
+  /*
+    Le mode réorganisation, à la façon d'iOS : les poignées n'apparaissent qu'une fois
+    demandées, et les rangées cessent alors de mener quelque part. C'est la réponse à
+    la règle d'une seule affordance — une poignée posée en permanence sur chaque
+    rangée serait exactement le « … » qu'on vient de retirer.
+  */
+  let reorganise = $state(false);
+
+  /* Créer et ranger descendent dans la barre du bas. */
   $effect(() => {
     if (!canWrite) return;
-    const actions: SwipeAction[] = [
-      { id: 'nouvelle', label: 'Nouvelle entrée', icon: Menu, run: () => openAddForm() }
-    ];
-    return dockDePage.declarerActions(actions, { icon: Plus, label: 'Nouvelle entrée' });
+    const actions: SwipeAction[] = reorganise
+      ? [{ id: 'terminer', label: 'Terminer', icon: Check, run: () => (reorganise = false) }]
+      : [
+          { id: 'nouvelle', label: 'Nouvelle entrée', icon: Menu, run: () => openAddForm() },
+          ...(tree.length > 1
+            ? [
+                {
+                  id: 'ranger',
+                  label: 'Réorganiser',
+                  icon: GripVertical,
+                  run: () => (reorganise = true)
+                }
+              ]
+            : [])
+        ];
+    return dockDePage.declarerActions(
+      actions,
+      reorganise ? { icon: Check, label: 'Terminer' } : { icon: Plus, label: 'Nouvelle entrée' }
+    );
   });
 
   async function call(path: string, method: string, body?: unknown, fallback = "L'opération a échoué.") {
@@ -252,23 +283,63 @@
   }
 
   /**
-   * Déplace une entrée dans sa fratrie.
+   * Déplace une entrée dans sa fratrie, du rang `de` au rang `vers`.
    *
    * On renvoie la liste complète des identifiants dans le nouvel ordre plutôt qu'un
    * échange deux à deux : le serveur renumérote de 0 à n, ce qui répare au passage les
-   * trous laissés par une suppression.
+   * trous laissés par une suppression. C'est aussi ce qui permet au glissement de
+   * franchir plusieurs rangs d'un coup, là où les flèches n'en passaient qu'un.
+   *
+   * L'ordre s'applique à l'écran **avant** l'aller-retour : c'est ce qu'on vient de
+   * faire du doigt, l'attendre le ferait clignoter. Un refus du serveur le rend.
    */
-  async function move(siblings: NavItem[], index: number, delta: number) {
-    const next = index + delta;
-    if (next < 0 || next >= siblings.length) return;
-    const ids = siblings.map((item) => item.id);
-    [ids[index], ids[next]] = [ids[next], ids[index]];
+  async function deplacer(fratrie: NavItem[], de: number, vers: number) {
+    if (de === vers || vers < 0 || vers >= fratrie.length) return;
+
+    const avant = fratrie.map((item) => item.id);
+    const apres = [...fratrie];
+    const [deplacee] = apres.splice(de, 1);
+    apres.splice(vers, 0, deplacee);
+
+    appliquerLOrdre(apres.map((item) => item.id));
+
     try {
-      await call('/cms/nav/reorder', 'PUT', { ids }, "Le déplacement a échoué.");
-      flashAndReload('Ordre du menu mis à jour.');
+      await call('/cms/nav/reorder', 'PUT', { ids: apres.map((i) => i.id) }, "Le déplacement a échoué.");
     } catch (error) {
+      appliquerLOrdre(avant);
       uiAlert(error instanceof Error ? error.message : "Le déplacement a échoué.");
     }
+  }
+
+  /**
+   * Réordonne la fratrie que désignent ces identifiants, où qu'elle soit dans l'arbre.
+   *
+   * Une fratrie est soit le premier niveau d'un emplacement, soit les enfants d'une
+   * entrée : on ne sait pas laquelle avant d'avoir cherché, et c'est cette recherche
+   * qui évite de demander à l'appelant de dire où il se trouve.
+   */
+  /** Le glissement donne la fratrie et les deux rangs ; le reste est commun aux flèches. */
+  function appliquerDepuisLaListe(fratrie: EntreeLike[], de: number, vers: number) {
+    void deplacer(fratrie as unknown as NavItem[], de, vers);
+  }
+
+  function appliquerLOrdre(ids: number[]) {
+    const ranger = (liste: NavItem[]) =>
+      [...liste].sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id));
+    const concerne = (liste: NavItem[]) =>
+      liste.length === ids.length && liste.every((item) => ids.includes(item.id));
+
+    const racine = arbres[location];
+    if (concerne(racine)) {
+      arbres = { ...arbres, [location]: ranger(racine) };
+      return;
+    }
+    arbres = {
+      ...arbres,
+      [location]: racine.map((parent) =>
+        concerne(parent.children) ? { ...parent, children: ranger(parent.children) } : parent
+      )
+    };
   }
 
   async function remove(item: NavItem) {
@@ -312,7 +383,26 @@
 
   {#each NAV_LOCATIONS as value (value)}
     <Tabs.Content {value} class="mt-4">
-      <MenusList arbre={tree} {...gestes} emptyDescription={LOCATION_HINTS[value]} />
+      <!--
+        Les trois panneaux restent montés : sans cette garde, la liste était rendue
+        trois fois — soixante rangées pour vingt, et autant de poignées. Le même
+        défaut qu'un onglet endormi qui déclare la recherche de la barre du bas.
+      -->
+      {#if value === location}
+      {#if reorganise}
+        <p class="mb-3 px-4 text-xs text-muted-foreground">
+          Tirez une entrée par sa poignée pour la déplacer. Une sous-entrée reste sous
+          son parent : pour la changer de parent, ouvrez-la et modifiez son niveau.
+        </p>
+      {/if}
+      <MenusList
+        arbre={tree}
+        {reorganise}
+        onReorder={appliquerDepuisLaListe}
+        {...gestes}
+        emptyDescription={LOCATION_HINTS[value]}
+      />
+      {/if}
     </Tabs.Content>
   {/each}
 </Tabs.Root>

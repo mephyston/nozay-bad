@@ -18,24 +18,45 @@
    */
   let {
     arbre = [],
+    reorganise = false,
+    onReorder,
     emptyTitle = 'Menu vide',
     emptyDescription,
     ...gestes
   }: {
     arbre?: EntreeLike[];
+    /** Fait apparaître les poignées et suspend l'appui sur la rangée. */
+    reorganise?: boolean;
+    onReorder?: (fratrie: EntreeLike[], de: number, vers: number) => void;
     emptyTitle?: string;
     emptyDescription?: string;
   } & GestesDeMenu = $props();
 
+  /*
+    La clé de fratrie : le premier niveau, ou les enfants d'un parent. C'est elle qui
+    borne le glissement — une sous-entrée ne sort pas de son parent d'un geste, ce
+    serait changer son parent et non son rang.
+  */
+  const fratrieDe = (r: { entree: EntreeLike; enfant: boolean }) =>
+    r.enfant ? `parent-${r.entree.parentId}` : 'racine';
+
+  function reordonner(groupe: string, de: number, vers: number) {
+    const rangee = rangees.find((r) => fratrieDe(r) === groupe);
+    if (rangee) onReorder?.(rangee.fratrie, de, vers);
+  }
+
   const rangees = $derived(rangeesDeMenu(arbre));
 </script>
 
-<ListView items={rangees} {emptyTitle} {emptyDescription}>
+<ListView items={rangees} onReorder={reordonner} {emptyTitle} {emptyDescription}>
   {#snippet listRow(rangee)}
     {@const l = ligneDEntree(rangee.entree)}
     <ListRow
       item={rangee.entree}
       nested={rangee.enfant}
+      reorder={reorganise && rangee.fratrie.length > 1
+        ? { groupe: fratrieDe(rangee), rang: rangee.rang }
+        : undefined}
       onclick={gestes.canWrite ? () => gestes.onEdit(rangee.entree) : undefined}
       chevron={gestes.canWrite ? true : 'none'}
       title={l.titre}

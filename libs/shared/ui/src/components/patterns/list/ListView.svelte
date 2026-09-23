@@ -6,6 +6,7 @@
   import { cn } from '../../../lib/utils.js';
   import { swipeActions } from '../../../lib/actions/swipe-actions.js';
   import { longPress } from '../../../lib/actions/long-press.js';
+  import { reorderable } from '../../../lib/actions/reorder.js';
 
   let {
     items,
@@ -15,6 +16,7 @@
     sectionValue,
     inset = 'grouped',
     stickyHeaders,
+    onReorder,
     isLoading = false,
     skeletonRows = 6,
     skeletonLeading = false,
@@ -41,6 +43,12 @@
      */
     inset?: 'grouped' | 'plain';
     stickyHeaders?: boolean;
+    /**
+     * Rend la liste réordonnable à la poignée. Reçoit la fratrie touchée et les deux
+     * rangs. Chaque `ListRow` doit porter sa prop `reorder` pour que le geste ait une
+     * prise ; sans elle, la liste reste ordinaire.
+     */
+    onReorder?: (groupe: string, de: number, vers: number) => void;
     isLoading?: boolean;
     skeletonRows?: number;
     skeletonLeading?: boolean;
@@ -114,7 +122,17 @@
           au lieu de deux cents, et la ligne ouverte devient une variable locale.
           L'action se retire d'elle-même sur une ligne sans actions révélables.
         -->
-        <ul class={classesListe} use:swipeActions use:longPress>
+        <!--
+          `use:` s'installe au montage : l'action est donc toujours posée, et c'est
+          `onReorder` qui décide si elle a quelque chose à faire. La poignée, elle,
+          n'existe que si la rangée la déclare.
+        -->
+        <ul
+          class={classesListe}
+          use:swipeActions
+          use:longPress
+          use:reorderable={{ onReorder: (g, de, vers) => onReorder?.(g, de, vers) }}
+        >
           {#each groupe.elements as element (element.index)}
             {@render listRow(element.item, element.index)}
           {/each}

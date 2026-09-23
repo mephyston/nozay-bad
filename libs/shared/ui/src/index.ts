@@ -40,6 +40,8 @@ export { searchNav, normalize as normalizeSearchText, type NavSearchHit, type Se
 export { openDocument, isStandaloneApp } from './lib/document-link';
 // Le pluriel régulier du français : les écrans comptent des éléments partout.
 export { auPluriel, accorder } from './lib/pluriel';
+// L'arithmétique du glissement, exposée pour les écrans qui l'appliquent à la main.
+export { rangCible } from './lib/actions/reorder';
 export { formatAppVersion } from './lib/app-version';
 export { submitForm, type SubmitFormOptions } from './lib/form-submit';
 export { readApiError } from './lib/api-error';

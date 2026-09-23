@@ -1,6 +1,6 @@
 <script lang="ts" generics="T">
   import type { Snippet } from 'svelte';
-  import { ChevronRight, Ellipsis } from '@lucide/svelte';
+  import { ChevronRight, Ellipsis, GripVertical } from '@lucide/svelte';
   import { cn } from '../../../lib/utils.js';
   import ListRowMenu from './ListRowMenu.svelte';
   import ListRowSwipeTrack from './ListRowSwipeTrack.svelte';
@@ -23,6 +23,7 @@
     disclosure,
     onDisclosure,
     nested = false,
+    reorder,
     chevron = !!href || !!onclick,
     selected = undefined,
     disabled = false,
@@ -81,6 +82,15 @@
     onDisclosure?: () => void;
     /** Ligne fille d'un groupe : décalée pour s'aligner sous le titre du parent. */
     nested?: boolean;
+    /**
+     * Rend la rangée déplaçable à la poignée, dans la fratrie nommée.
+     *
+     * Présent, il remplace le chevron par la poignée et **coupe l'appui comme le
+     * balayage** : en mode réorganisation, la rangée ne mène plus nulle part, elle
+     * se déplace. C'est la réponse d'iOS à la règle d'une seule affordance — la
+     * poignée n'apparaît que quand on a demandé à ranger.
+     */
+    reorder?: { groupe: string; rang: number };
     /**
      * Le chevron de queue dit que la ligne mène quelque part — fiche de détail ou
      * formulaire. Par défaut dès qu'elle est actionnable ; à mettre à `false` quand
@@ -182,7 +192,24 @@
     </div>
   {/if}
 
-  {#if chevron === 'none'}
+  {#if reorder}
+    <!--
+      La poignée porte le geste, et `touch-action: none` : le doigt qui la tient
+      déplace, il ne fait pas défiler. Ailleurs sur la rangée, la liste défile
+      normalement — c'est ce qui permet de ranger sans confisquer le défilement.
+
+      `aria-hidden` : elle ne s'attrape ni au clavier ni au lecteur d'écran, et ce
+      n'est pas un manque — « Monter » et « Descendre » restent dans le menu de la
+      rangée, qui est le chemin accessible.
+    -->
+    <span
+      data-reorder-handle
+      aria-hidden="true"
+      class="-mr-2 flex size-11 shrink-0 cursor-grab touch-none items-center justify-center text-muted-foreground active:cursor-grabbing"
+    >
+      <GripVertical class="size-5" />
+    </span>
+  {:else if chevron === 'none'}
     <span class="size-4 shrink-0" aria-hidden="true"></span>
   {:else if chevron}
     <ChevronRight class="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
@@ -192,10 +219,18 @@
 <li
   {id}
   data-list-row
-  data-context-menu={actions.length > 0 ? '' : undefined}
-  class={cn('relative bg-card', actions.length > 0 && 'overflow-hidden', className)}
+  data-reorder-group={reorder?.groupe}
+  data-reorder-index={reorder?.rang}
+  data-context-menu={actions.length > 0 && !reorder ? '' : undefined}
+  class={cn(
+    'relative bg-card',
+    actions.length > 0 && !reorder && 'overflow-hidden',
+    /* Soulevée, la rangée ne doit pas glisser sous ses voisines. */
+    'data-[reorder-active]:shadow-lg',
+    className
+  )}
 >
-  {#if actions.length > 0}
+  {#if actions.length > 0 && !reorder}
     <ListRowSwipeTrack actions={revelees} item={item as T} open={swipeOpen} bind:ref={piste} />
   {/if}
 
@@ -207,7 +242,7 @@
       selected && 'bg-accent',
       nested && 'pl-12',
       // Le navigateur garde le défilement vertical ; il ne nous livre que l'horizontal.
-      actions.length > 0 && 'touch-pan-y'
+      actions.length > 0 && !reorder && 'touch-pan-y'
     )}
   >
     {#if disclosure === 'none'}
@@ -239,7 +274,12 @@
       `min-h-[3.25rem]` : 52 px, la hauteur au-dessous de laquelle une ligne cesse
       d'être visable au pouce. Elle ne se négocie pas par écran.
     -->
-    {#if href && !disabled}
+    {#if reorder}
+      <!-- En réorganisation, la rangée se déplace : elle ne mène plus nulle part. -->
+      <div class="flex min-h-[3.25rem] min-w-0 flex-1 items-center gap-3 py-2.5">
+        {@render body()}
+      </div>
+    {:else if href && !disabled}
       <!--
         `draggable="false"` : un lien est glissable par défaut, et le navigateur
         ouvrait une session de glisser dès qu'on le tirait de côté — ce qui annule
@@ -275,7 +315,7 @@
       </div>
     {/if}
 
-    {#if actions.length > 0}
+    {#if actions.length > 0 && !reorder}
       <ListRowMenu bind:open={menuOuvert} {actions} item={item as T} {title} />
     {/if}
   </div>
