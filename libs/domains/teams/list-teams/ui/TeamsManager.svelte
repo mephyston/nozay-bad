@@ -7,11 +7,20 @@
     Table,
     Badge,
     Button,
+    dockDePage,
     uiConfirm,
     softNavigate,
-    uiAlert
+    uiAlert,
+    type SwipeAction
   } from '@nba/ui';
-  import { Trophy, Plus, CalendarDays, ChevronRight } from '@lucide/svelte';
+  import { Trophy, Plus, CalendarDays } from '@lucide/svelte';
+  import TeamsList from './TeamsList.svelte';
+  import {
+    detailDEquipe,
+    gestesDEquipeAuTableau,
+    nomDeStaff,
+    type EquipeLike
+  } from './teams-row-model';
   import TeamFormSheet from '../../save-team/ui/TeamFormSheet.svelte';
   import TeamRosterSheet from '../../get-team/ui/TeamRosterSheet.svelte';
   import TeamFixturesSheet from '../../save-fixture/ui/TeamFixturesSheet.svelte';
@@ -144,27 +153,45 @@
     }
   }
 
-  function staffLabel(person: TeamListItem['captain']): string {
-    if (!person) return '—';
-    return `${person.lastName} ${person.firstName}`.trim();
-  }
+  /*
+    Créer une équipe et ouvrir les journées descendent dans la barre du bas : ils
+    vivaient en haut d'une barre d'outils qui défile avec la liste.
+  */
+  $effect(() => {
+    const actions: SwipeAction[] = [];
+    if (canWrite) {
+      actions.push({ id: 'creer', label: 'Créer une équipe', icon: Plus, run: () => openCreate() });
+    }
+    actions.push({ id: 'journees', label: 'Journées du championnat', icon: CalendarDays, run: () => (daysOpen = true) });
+    return dockDePage.declarerActions(actions, { icon: Plus, label: 'Gestes du championnat' });
+  });
+
+  /** Les gestes d'une équipe, déclarés une fois et servis au tableau comme à la liste. */
+  const gestesDUneEquipe = {
+    onRoster: (e: EquipeLike) => void openRoster(e as TeamListItem),
+    onFixtures: (e: EquipeLike) => void openFixtures(e as TeamListItem),
+    onEdit: (e: EquipeLike) => openEdit(e as TeamListItem),
+    onDelete: (e: EquipeLike) => void remove(e as TeamListItem)
+  };
 </script>
 
 <DataTable
   data={filtered}
+  mobileSpacing="list"
   itemName="équipe"
   emptyIcon={Trophy}
   emptyTitle="Aucune équipe engagée"
   emptyDescription="Créez les équipes du club pour cette saison."
 >
   {#snippet toolbar()}
-    <DataTableToolbar bind:searchValue={search} searchPlaceholder="Équipe, championnat…" hasSearch>
+    <DataTableToolbar bind:searchValue={search} searchPlaceholder="Équipe, championnat…" hasSearch dockSearch>
       {#snippet actions()}
-        <Button variant="outline" onclick={() => (daysOpen = true)}>
+        <!-- Sur téléphone, ces deux gestes vivent dans la barre du bas. -->
+        <Button variant="outline" onclick={() => (daysOpen = true)} class="hidden md:inline-flex">
           <CalendarDays class="w-4 h-4" /> Journées
         </Button>
         {#if canWrite}
-          <Button onclick={openCreate}>
+          <Button onclick={openCreate} class="hidden md:inline-flex">
             <Plus class="w-4 h-4" /> Créer une équipe
           </Button>
         {/if}
@@ -204,61 +231,46 @@
       <Table.Cell class="text-sm text-muted-foreground">{team.poolLabel ?? '—'}</Table.Cell>
       <Table.Cell class="text-sm">
         {#if team.captain}
-          {staffLabel(team.captain)}
+          {nomDeStaff(team.captain)}
         {:else}
+          <!--
+            « Non désigné » ici et « Sans capitaine » sur la pastille de la liste : la
+            colonne fournit le sujet, la pastille doit le porter. Voir la note du
+            modèle de ligne.
+          -->
           <Badge variant="warning">Non désigné</Badge>
         {/if}
       </Table.Cell>
-      <Table.Cell class="text-sm text-muted-foreground">{staffLabel(team.viceCaptain)}</Table.Cell>
+      <Table.Cell class="text-sm text-muted-foreground">{nomDeStaff(team.viceCaptain)}</Table.Cell>
       <Table.Cell class="text-center">{team.rosterCount}</Table.Cell>
       <Table.Cell>
+        <!--
+          Le menu du tableau et le balayage de la liste sont nourris par la **même**
+          déclaration : c'est ce qui empêche leurs libellés de diverger.
+        -->
         <DataTableRowActions>
-          <DropdownMenu.Item onclick={() => openRoster(team)}>Staff et effectif</DropdownMenu.Item>
-          <DropdownMenu.Item onclick={() => openFixtures(team)}>Rencontres</DropdownMenu.Item>
-          {#if canWrite}
-            <DropdownMenu.Item onclick={() => openEdit(team)}>Modifier</DropdownMenu.Item>
-          {/if}
-          {#if canDelete}
-            <DropdownMenu.Item variant="destructive" onclick={() => remove(team)}>
-              Supprimer
+          {#each gestesDEquipeAuTableau({ canWrite, canDelete }, gestesDUneEquipe) as action (action.id)}
+            <DropdownMenu.Item
+              variant={action.tone === 'destructive' ? 'destructive' : undefined}
+              onclick={() => action.run(team as EquipeLike)}
+            >
+              {action.label}
             </DropdownMenu.Item>
-          {/if}
+          {/each}
         </DataTableRowActions>
       </Table.Cell>
     </Table.Row>
   {/snippet}
 
   {#snippet mobileView()}
-    <!--
-      `Card.Root` n'espace que le haut et le bas : le retrait horizontal vient de
-      `Card.Content`, que cette liste ne traverse pas. Sans `px-4` ici, les lignes
-      touchent le bord du cadre.
-    -->
-    <div class="divide-y divide-border">
-      {#each filtered as team (team.id)}
-        <button
-          class="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/40"
-          onclick={() => openRoster(team)}
-        >
-          <div class="min-w-0 flex-1 space-y-1">
-            <div class="flex items-center gap-2">
-              <p class="font-medium truncate">{team.name}</p>
-              {#if !team.active}
-                <Badge variant="outline">Inactive</Badge>
-              {/if}
-            </div>
-            <p class="text-xs text-muted-foreground">
-              {team.championshipLabel} · {team.divisionLabel} · {team.rosterCount} joueur(s)
-            </p>
-            <p class="text-xs text-muted-foreground truncate">
-              Capitaine : {staffLabel(team.captain)}
-            </p>
-          </div>
-          <!-- La ligne entière ouvre le staff et l'effectif : le chevron le dit. -->
-          <ChevronRight class="size-4 shrink-0 text-muted-foreground" />
-        </button>
-      {/each}
-    </div>
+    <TeamsList
+      equipes={filtered as EquipeLike[]}
+      droits={{ canWrite, canDelete }}
+      emptyIcon={Trophy}
+      emptyTitle="Aucune équipe engagée"
+      emptyDescription="Créez les équipes du club pour cette saison."
+      {...gestesDUneEquipe}
+    />
   {/snippet}
 </DataTable>
 
