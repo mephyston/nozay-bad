@@ -1,24 +1,24 @@
 <script lang="ts">
-  import { Plus, Edit, Trash2, ChevronUp, ChevronDown, ExternalLink, CornerDownRight } from '@lucide/svelte';
+  import { Plus, Edit, Menu } from '@lucide/svelte';
   import {
     Button,
     Input,
-    Badge,
-    Card,
-    Select,
+    ChoiceField,
+    ChoicePicker,
     Tabs,
-    EmptyState,
-    DataTableRowActions,
-    DropdownMenu,
     FormField,
     FormSheet,
     Combobox,
     type ComboboxItem,
+    dockDePage,
     submitForm,
     uiConfirm,
     flashAndReload,
-    uiAlert
+    uiAlert,
+    type SwipeAction
   } from '@nba/ui';
+  import MenusList from './MenusList.svelte';
+  import { type EntreeLike } from './menus-row-model';
 
   import { NAV_LOCATIONS, NAV_LOCATION_LABELS, type NavLocation } from '../../../shared/nav';
 
@@ -126,6 +126,45 @@
   const parentOptions = $derived(
     tree.filter((item: NavItem) => item.id !== editingId)
   );
+
+  const gestes = $derived({
+    canWrite,
+    onEdit: (e: EntreeLike) => startEdit(e as unknown as NavItem),
+    onAddChild: (e: EntreeLike) => openAddForm(e.id),
+    onMove: (fratrie: EntreeLike[], rang: number, delta: number) =>
+      move(fratrie as unknown as NavItem[], rang, delta),
+    onRemove: (e: EntreeLike) => remove(e as unknown as NavItem)
+  });
+
+  /*
+    L'emplacement est une **portée**, pas un filtre : il ne réduit pas une liste, il
+    dit laquelle on regarde. La barre du bas a une pilule pour ça, et les onglets —
+    qui imposaient un défilement horizontal sous 390 px — restent à la souris.
+  */
+  let choixPortee = $state(false);
+
+  const PORTEES_COURTES: Record<NavLocation, string> = {
+    header: 'En-tête',
+    footer: 'Pied',
+    legal: 'Légal'
+  };
+
+  $effect(() =>
+    dockDePage.declarerPortee({
+      label: 'Emplacement',
+      valeur: PORTEES_COURTES[location],
+      ouvrir: () => (choixPortee = true)
+    })
+  );
+
+  /* Créer descend dans la barre du bas. */
+  $effect(() => {
+    if (!canWrite) return;
+    const actions: SwipeAction[] = [
+      { id: 'nouvelle', label: 'Nouvelle entrée', icon: Menu, run: () => openAddForm() }
+    ];
+    return dockDePage.declarerActions(actions, { icon: Plus, label: 'Nouvelle entrée' });
+  });
 
   async function call(path: string, method: string, body?: unknown, fallback = "L'opération a échoué.") {
     const response = await fetch(endpoint, {
@@ -253,11 +292,11 @@
 </script>
 
 <Tabs.Root bind:value={location}>
-  <div class="flex flex-wrap items-center justify-between gap-3">
-    <!-- `w-full sm:w-fit` : `Tabs.List` s'étire sur toute la largeur par défaut (le
-         composant impose `w-full` pour le défilement horizontal sur mobile). Sur
-         écran large, la barre se réduit à ses onglets, comme partout ailleurs. -->
-    <Tabs.List class="w-full justify-start sm:w-fit sm:justify-center">
+  <!-- Les onglets restent à la souris : sous 390 px, `Tabs.List` imposait un
+       défilement horizontal, et l'emplacement se choisit désormais dans la pilule de
+       portée de la barre du bas. -->
+  <div class="hidden flex-wrap items-center justify-between gap-3 md:flex">
+    <Tabs.List class="w-fit justify-center">
       {#each NAV_LOCATIONS as value (value)}
         <Tabs.Trigger {value}>{NAV_LOCATION_LABELS[value]}</Tabs.Trigger>
       {/each}
@@ -273,141 +312,24 @@
 
   {#each NAV_LOCATIONS as value (value)}
     <Tabs.Content {value} class="mt-4">
-      {#if tree.length === 0}
-        <Card.Root>
-          <Card.Content class="p-6">
-            <EmptyState
-              title="Menu vide"
-              description={LOCATION_HINTS[value]}
-            />
-          </Card.Content>
-        </Card.Root>
-      {:else}
-        <Card.Root>
-          <Card.Content class="p-2">
-            <ul class="divide-border divide-y">
-              {#each tree as item, index (item.id)}
-                <li>
-                  <div class="flex items-center gap-2 px-2 py-2.5">
-                    <span class="min-w-0 flex-1">
-                      <span class="block font-medium">{item.label}</span>
-                      <span class="text-muted-foreground flex items-center gap-1 text-xs">
-                        {#if item.externalUrl}
-                          <ExternalLink class="h-3 w-3 shrink-0" aria-hidden="true" />
-                        {/if}
-                        {#if item.href === null}
-                          <span class="italic">Regroupe seulement ses sous-entrées</span>
-                        {:else}
-                          <code class="truncate">{item.href}</code>
-                        {/if}
-                      </span>
-                    </span>
-
-                    {#if item.children.length > 0}
-                      <Badge variant="outline" size="xs">
-                        {item.children.length} sous-entrée{item.children.length > 1 ? 's' : ''}
-                      </Badge>
-                    {/if}
-
-                    {#if canWrite}
-                      <span class="flex items-center gap-0.5">
-                        <Button
-                          variant="ghost"
-                          size="icon-sm"
-                          disabled={index === 0}
-                          onclick={() => move(tree, index, -1)}
-                        >
-                          <ChevronUp class="h-4 w-4" />
-                          <span class="sr-only">Monter</span>
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon-sm"
-                          disabled={index === tree.length - 1}
-                          onclick={() => move(tree, index, 1)}
-                        >
-                          <ChevronDown class="h-4 w-4" />
-                          <span class="sr-only">Descendre</span>
-                        </Button>
-                        <DataTableRowActions>
-                          <DropdownMenu.Label>Actions</DropdownMenu.Label>
-                          <DropdownMenu.Item onclick={() => startEdit(item)} class="cursor-pointer">
-                            <Edit class="mr-2 h-3.5 w-3.5" />
-                            Modifier
-                          </DropdownMenu.Item>
-                          <DropdownMenu.Item onclick={() => openAddForm(item.id)} class="cursor-pointer">
-                            <CornerDownRight class="mr-2 h-3.5 w-3.5" />
-                            Ajouter une sous-entrée
-                          </DropdownMenu.Item>
-                          <DropdownMenu.Item
-                            onclick={() => remove(item)}
-                            class="cursor-pointer text-destructive focus:text-destructive"
-                          >
-                            <Trash2 class="mr-2 h-3.5 w-3.5" />
-                            Retirer du menu
-                          </DropdownMenu.Item>
-                        </DataTableRowActions>
-                      </span>
-                    {/if}
-                  </div>
-
-                  {#if item.children.length > 0}
-                    <ul class="border-border ml-6 border-l pl-2">
-                      {#each item.children as child, childIndex (child.id)}
-                        <li class="flex items-center gap-2 px-2 py-2">
-                          <span class="min-w-0 flex-1">
-                            <span class="block text-sm">{child.label}</span>
-                            <code class="text-muted-foreground block truncate text-xs">{child.href}</code>
-                          </span>
-                          {#if canWrite}
-                            <span class="flex items-center gap-0.5">
-                              <Button
-                                variant="ghost"
-                                size="icon-sm"
-                                disabled={childIndex === 0}
-                                onclick={() => move(item.children, childIndex, -1)}
-                              >
-                                <ChevronUp class="h-4 w-4" />
-                                <span class="sr-only">Monter</span>
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon-sm"
-                                disabled={childIndex === item.children.length - 1}
-                                onclick={() => move(item.children, childIndex, 1)}
-                              >
-                                <ChevronDown class="h-4 w-4" />
-                                <span class="sr-only">Descendre</span>
-                              </Button>
-                              <DataTableRowActions>
-                                <DropdownMenu.Label>Actions</DropdownMenu.Label>
-                                <DropdownMenu.Item onclick={() => startEdit(child)} class="cursor-pointer">
-                                  <Edit class="mr-2 h-3.5 w-3.5" />
-                                  Modifier
-                                </DropdownMenu.Item>
-                                <DropdownMenu.Item
-                                  onclick={() => remove(child)}
-                                  class="cursor-pointer text-destructive focus:text-destructive"
-                                >
-                                  <Trash2 class="mr-2 h-3.5 w-3.5" />
-                                  Retirer du menu
-                                </DropdownMenu.Item>
-                              </DataTableRowActions>
-                            </span>
-                          {/if}
-                        </li>
-                      {/each}
-                    </ul>
-                  {/if}
-                </li>
-              {/each}
-            </ul>
-          </Card.Content>
-        </Card.Root>
-      {/if}
+      <MenusList arbre={tree} {...gestes} emptyDescription={LOCATION_HINTS[value]} />
     </Tabs.Content>
   {/each}
 </Tabs.Root>
+
+<!-- Le choix d'emplacement, atteint depuis la pilule de portée. -->
+<ChoicePicker
+  bind:open={choixPortee}
+  title="Emplacement"
+  description="Trois menus, sur trois endroits du site."
+  value={location}
+  options={NAV_LOCATIONS.map((v) => ({
+    value: v,
+    label: NAV_LOCATION_LABELS[v],
+    hint: LOCATION_HINTS[v]
+  }))}
+  onChoose={(v) => (location = v as NavLocation)}
+/>
 
 <FormSheet
   bind:open={showFormSheet}
@@ -426,26 +348,41 @@
     <Input id="nav-label" bind:value={label} placeholder="Le club" maxlength={80} />
   </FormField>
 
-  <FormField id="nav-parent" label="Emplacement">
-    <Select id="nav-parent" bind:value={parentId}>
-      <option value="">Entrée principale</option>
-      {#each parentOptions as parent (parent.id)}
-        <option value={String(parent.id)}>Sous-entrée de « {parent.label} »</option>
-      {/each}
-    </Select>
+  <FormField id="nav-parent" label="Niveau">
+    <ChoiceField
+      id="nav-parent"
+      label="Niveau"
+      bind:value={parentId}
+      options={[
+        { value: '', label: 'Entrée principale' },
+        ...parentOptions.map((parent: NavItem) => ({
+          value: String(parent.id),
+          label: `Sous-entrée de « ${parent.label} »`
+        }))
+      ]}
+    />
   </FormField>
 
-  <FormField id="nav-target-kind" label="Cible">
-    <Select
+  <FormField
+    id="nav-target-kind"
+    label="Cible"
+    hint={parentId && targetKind === 'none'
+      ? 'Une sous-entrée doit mener quelque part.'
+      : undefined}
+  >
+    <ChoiceField
       id="nav-target-kind"
+      label="Cible"
       value={targetKind}
-      onchange={(e) =>
-        (targetKind = (e.currentTarget as HTMLSelectElement).value as 'page' | 'external' | 'none')}
-    >
-      <option value="page">Une page du site</option>
-      <option value="external">Une adresse extérieure</option>
-      <option value="none" disabled={Boolean(parentId)}>Aucune — regroupe seulement ses sous-entrées</option>
-    </Select>
+      onChange={(v) => (targetKind = v as 'page' | 'external' | 'none')}
+      options={[
+        { value: 'page', label: 'Une page du site' },
+        { value: 'external', label: 'Une adresse extérieure' },
+        /* Proposée même sous un parent : le formulaire refuse la combinaison en
+           toutes lettres, ce qu'une option absente n'expliquerait pas. */
+        { value: 'none', label: 'Aucune', hint: 'Regroupe seulement ses sous-entrées' }
+      ]}
+    />
   </FormField>
 
   {#if targetKind === 'none'}
