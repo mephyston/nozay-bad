@@ -1,6 +1,27 @@
 <script lang="ts">
-  import { Table, Badge, Select, Alert, Button, softNavigate, toast, uiAlert } from '@nba/ui';
-  import { TriangleAlert, CircleCheck, UsersRound, CircleHelp } from '@lucide/svelte';
+  import {
+    Table,
+    Badge,
+    ChoiceField,
+    Alert,
+    Button,
+    FormField,
+    ResponsiveSheet,
+    dockDePage,
+    softNavigate,
+    toast,
+    uiAlert
+  } from '@nba/ui';
+  import { CircleCheck, UsersRound, CircleHelp } from '@lucide/svelte';
+  import DayValuesList from './DayValuesList.svelte';
+  import {
+    erreursDe,
+    etatDeComposition,
+    libelleDeSignalement,
+    valeurFr,
+    ecartFr,
+    type EquipeDeJourneeLike
+  } from './day-values-row-model';
   import { CHAMPIONSHIPS, CHAMPIONSHIP_RULES, type Championship } from '../../shared/championship';
   import type { ListDayValuesOutput, DayTeamValue } from '../dto';
 
@@ -36,16 +57,31 @@
     softNavigate(`/admin/teams/journees?${query}`);
   }
 
-  const fmt = (v: number | null) => (v === null ? '—' : v.toFixed(2).replace('.', ','));
-  const signed = (v: number | null) =>
-    v === null ? '—' : `${v > 0 ? '+' : ''}${v.toFixed(2).replace('.', ',')}`;
-
-  /** Les erreurs d'abord : ce sont elles qui font perdre la rencontre. */
-  const errorsOf = (team: DayTeamValue) => team.issues.filter((i) => i.severity === 'error');
-  const warningsOf = (team: DayTeamValue) => team.issues.filter((i) => i.severity === 'warning');
+  const errorsOf = (team: DayTeamValue) => erreursDe(team as EquipeDeJourneeLike);
 
   const anomalies = $derived(
     (board?.teams ?? []).filter((t) => errorsOf(t).length > 0 || t.conform === false)
+  );
+
+  /*
+    Le championnat et la journée sont la **portée** de l'écran : ce qu'on regarde, et
+    non ce qu'on y cherche ni ce qu'on y crée. Ils ont donc leur pilule dans la barre
+    du bas, qui affiche la journée courante — une portée qu'on ne voit pas ne se
+    vérifie jamais. Sur ordinateur, les deux rangées restent en haut de page.
+  */
+  let porteeOuverte = $state(false);
+
+  const libelleDeJournee = (numero: number) => {
+    const jour = days.find((d) => d.number === numero);
+    return jour?.label ?? `Journée ${numero}`;
+  };
+
+  $effect(() =>
+    dockDePage.declarerPortee({
+      label: 'Journée',
+      valeur: `J${dayNumber}`,
+      ouvrir: () => (porteeOuverte = true)
+    })
   );
 
   let notifying = $state<number | null>(null);
@@ -100,31 +136,10 @@
 </script>
 
 <div class="space-y-6">
-  <div class="flex flex-wrap gap-3">
-    <div class="w-full sm:w-[320px]">
-      <Select
-        value={championship}
-        onchange={(e) => go({ championship: (e.currentTarget as HTMLSelectElement).value, day: '1' })}
-        aria-label="Championnat"
-      >
-        {#each CHAMPIONSHIPS as code (code)}
-          <option value={code}>{CHAMPIONSHIP_RULES[code].label}</option>
-        {/each}
-      </Select>
-    </div>
-    <div class="w-full sm:w-[260px]">
-      <Select
-        value={String(dayNumber)}
-        onchange={(e) => go({ day: (e.currentTarget as HTMLSelectElement).value })}
-        aria-label="Journée"
-      >
-        {#each days as day (day.number)}
-          <option value={String(day.number)}>
-            {day.label ?? `Journée ${day.number}`} — semaine du {frenchDate(day.weekStart)}
-          </option>
-        {/each}
-      </Select>
-    </div>
+  <!-- Sur téléphone, la portée vit dans la pilule de la barre du bas. -->
+  <div class="hidden flex-wrap gap-3 md:flex">
+    <div class="w-full sm:w-[320px]">{@render choixDuChampionnat()}</div>
+    <div class="w-full sm:w-[260px]">{@render choixDeLaJournee()}</div>
   </div>
 
   {#if !board}
@@ -168,7 +183,16 @@
       </Alert.Root>
     {/if}
 
-    <div class="rounded-lg border overflow-x-auto">
+    <!--
+      Le tableau défilait horizontalement : sa moitié droite — le statut — ne se voyait
+      jamais au doigt, alors que c'est ce qu'on vient chercher. Il reste à la souris ;
+      le téléphone reçoit une liste.
+    -->
+    <div class="md:hidden">
+      <DayValuesList equipes={board.teams as EquipeDeJourneeLike[]} avecValeur={board.hasTeamValue} />
+    </div>
+
+    <div class="hidden rounded-lg border md:block">
       <Table.Root>
         <Table.Header>
           <Table.Row>
@@ -189,30 +213,24 @@
               <Table.Cell class="font-medium">{team.name}</Table.Cell>
               <Table.Cell class="text-sm text-muted-foreground">{team.divisionLabel}</Table.Cell>
               {#if board.hasTeamValue}
-                <Table.Cell class="text-right tabular-nums font-medium">{fmt(team.value)}</Table.Cell>
+                <Table.Cell class="text-right tabular-nums font-medium">{valeurFr(team.value)}</Table.Cell>
                 <Table.Cell
                   class="text-right tabular-nums {team.conform === false ? 'text-destructive font-semibold' : 'text-muted-foreground'}"
                 >
-                  {signed(team.delta)}
+                  {ecartFr(team.delta)}
                 </Table.Cell>
               {/if}
               <Table.Cell class="text-center text-sm">
                 {team.filledLines}/{team.expectedLines}
               </Table.Cell>
               <Table.Cell>
-                {#if errorsOf(team).length > 0}
-                  <Badge variant="destructive">{errorsOf(team).length} erreur(s)</Badge>
-                {:else if team.conform === false}
-                  <Badge variant="destructive">Dépasse {team.upperTeamName}</Badge>
-                {:else if team.filledLines === 0}
-                  <Badge variant="outline">Pas composée</Badge>
-                {:else if team.conform === null}
-                  <Badge variant="warning">À vérifier</Badge>
-                {:else if warningsOf(team).length > 0}
-                  <Badge variant="warning">{warningsOf(team).length} avertissement(s)</Badge>
-                {:else}
-                  <Badge variant="success">Conforme</Badge>
-                {/if}
+                <!--
+                  La colonne dit toujours l'état — une case vide serait illisible —, là
+                  où la pastille du téléphone ne le dit que s'il réclame un geste. Une
+                  seule déclaration nourrit les deux.
+                -->
+                {@const etat = etatDeComposition(team as EquipeDeJourneeLike)}
+                <Badge variant={etat.variante}>{etat.texte}</Badge>
               </Table.Cell>
               <Table.Cell class="text-sm text-muted-foreground">
                 {team.captainName ?? 'non désigné'}
@@ -249,11 +267,7 @@
                     dure au seul capitaine fautif. Nommer le seul capitaine de l'équipe
                     laisserait croire que l'autre n'a rien reçu.
                   -->
-                  {notifying === team.teamId
-                    ? 'Envoi…'
-                    : team.conform === false
-                      ? 'Signaler aux deux capitaines'
-                      : 'Signaler au capitaine'}
+                  {libelleDeSignalement(team as EquipeDeJourneeLike, notifying === team.teamId)}
                 </Button>
               {:else}
                 <span class="text-xs text-muted-foreground">Aucun capitaine désigné</span>
@@ -262,8 +276,8 @@
             <ul class="text-sm space-y-1">
               {#if team.conform === false}
                 <li class="text-destructive">
-                  Valeur {fmt(team.value)} supérieure à {team.upperTeamName}
-                  ({fmt(team.upperTeamValue)}) — les deux équipes perdraient la rencontre.
+                  Valeur {valeurFr(team.value)} supérieure à {team.upperTeamName}
+                  ({valeurFr(team.upperTeamValue)}) — les deux équipes perdraient la rencontre.
                 </li>
               {/if}
               {#each errorsOf(team) as issue (issue.code + (issue.slot ?? '') + (issue.licence ?? ''))}
@@ -285,3 +299,43 @@
     {/if}
   {/if}
 </div>
+
+{#snippet choixDuChampionnat()}
+  <FormField id="portee-championnat" label="Championnat">
+    <ChoiceField
+      id="portee-championnat"
+      label="Championnat"
+      value={championship}
+      onChange={(v) => go({ championship: v, day: '1' })}
+      options={CHAMPIONSHIPS.map((code) => ({ value: code, label: CHAMPIONSHIP_RULES[code].label }))}
+    />
+  </FormField>
+{/snippet}
+
+{#snippet choixDeLaJournee()}
+  <FormField id="portee-journee" label="Journée">
+    <ChoiceField
+      id="portee-journee"
+      label="Journée"
+      value={String(dayNumber)}
+      onChange={(v) => go({ day: v })}
+      options={days.map((day) => ({
+        value: String(day.number),
+        label: libelleDeJournee(day.number),
+        hint: `semaine du ${frenchDate(day.weekStart)}`
+      }))}
+    />
+  </FormField>
+{/snippet}
+
+<ResponsiveSheet
+  bind:open={porteeOuverte}
+  title="Ce que vous regardez"
+  description="Le championnat et la journée dont on contrôle les compositions."
+  size="md"
+>
+  <div class="space-y-4 py-2">
+    {@render choixDuChampionnat()}
+    {@render choixDeLaJournee()}
+  </div>
+</ResponsiveSheet>
