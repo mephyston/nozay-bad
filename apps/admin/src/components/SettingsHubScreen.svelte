@@ -4,6 +4,7 @@
   import { SECTION_SPECS } from '@nba/club-ui';
   import { chargerIdentite, derniereIdentite } from '../lib/identite';
   import ClubSettingsScreen from './ClubSettingsScreen.svelte';
+  import EcranDistant from './EcranDistant.svelte';
 
   /**
    * Les destinations de la configuration, en trois rubriques et filtrées sur les droits.
@@ -197,17 +198,29 @@
 </div>
 
 <!--
-  `{#key}` sur la section, et pas seulement `{#if}`.
+  Les réglages sont lus **à l'arrivée sur le hub**, et non à l'ouverture d'un tiroir.
 
-  Sans lui, Svelte **réutilise** le composant d'une section à l'autre : son état interne
-  survit au changement. Deux conséquences, toutes deux constatées à l'écran — le tiroir
-  refusait de se rouvrir après une première fermeture, puisque son `open` avait été
-  remis à faux localement et que la valeur passée d'ici n'avait pas changé ; et le
-  formulaire gardait les valeurs de la section précédente, sa copie locale n'étant faite
-  qu'au montage. La clé rend chaque section neuve.
+  Ils l'étaient à l'ouverture, et le tiroir s'ouvrait alors deux fois : une feuille
+  « Chargement… » d'abord, la vraie ensuite — deux animations pour un seul appui. Une
+  lecture de plus au chargement du hub, et neuf réglages sur douze s'ouvrent d'un coup.
+
+  `{#key}` sur la section, et pas seulement `{#if}`. Sans lui, Svelte réutilise le
+  composant d'une section à l'autre : son état interne survit au changement. Deux
+  conséquences, toutes deux constatées à l'écran — le tiroir refusait de se rouvrir
+  après une première fermeture, puisque son `open` avait été remis à faux localement et
+  que la valeur passée d'ici n'avait pas changé ; et le formulaire gardait les valeurs
+  de la section précédente, sa copie locale n'étant faite qu'au montage.
 -->
-{#if sectionOuverte}
-  {#key sectionOuverte}
-    <ClubSettingsScreen section={sectionOuverte} open onClose={fermer} />
-  {/key}
-{/if}
+<EcranDistant domaine="club" ecran="settings" variante="formulaire">
+  {#snippet attente()}
+    <!-- Rien : le hub est déjà à l'écran, et un squelette de plus n'y apprendrait rien. -->
+  {/snippet}
+
+  {#snippet pret(d)}
+    {#if sectionOuverte}
+      {#key sectionOuverte}
+        <ClubSettingsScreen section={sectionOuverte} donnees={d} open onClose={fermer} />
+      {/key}
+    {/if}
+  {/snippet}
+</EcranDistant>

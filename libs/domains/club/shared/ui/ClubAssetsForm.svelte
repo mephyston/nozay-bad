@@ -131,7 +131,7 @@
   bind:open
   {onOpenChange}
   title="Images des documents"
-  description="Logo, papier à lettre, tampon et logos partenaires imprimés sur les PDF. PNG ou JPEG, 2 Mo au plus."
+  description="Logo, papier à lettre, tampon et logos partenaires imprimés sur les PDF. PNG ou JPEG, 2 Mo au plus. Chaque image est enregistrée dès son dépôt : il n’y a rien à valider."
   icon={Images}
   size="lg"
   error={errorMsg}
