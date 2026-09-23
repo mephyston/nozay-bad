@@ -1,9 +1,10 @@
 <script lang="ts">
-  import { Input, Label, Button, Select, Combobox, Textarea, type ComboboxItem } from '@nba/ui';
+  import { Input, Label, Button, FormField, Textarea } from '@nba/ui';
   import { mediaUrl } from '../../../../media/media-url';
   import { ImagePlus, Trash2 } from '@lucide/svelte';
   import MediaPicker, { type PickableMedia } from '../../../../media/list-media/ui/MediaPicker.svelte';
   import type { CarouselBlock, CarouselSlideValue } from '../../../../shared/blocks';
+  import LinkTargetField from './LinkTargetField.svelte';
 
   let {
     block = $bindable(),
@@ -38,29 +39,18 @@
   }
 
 
+  /* Identifiants uniques : deux carrousels sur la même page auraient sinon les mêmes,
+     et un `<label for=…>` désignerait le champ de l'autre. */
+  const uid = $props.id();
+
   const imageOf = (slide: CarouselSlideValue) =>
     slide.mediaId ? (media.find((item: PickableMedia) => item.id === slide.mediaId) ?? null) : null;
 
-  const targetItems: ComboboxItem[] = $derived(
-    targets.map((target) => ({
-      value: target.path,
-      label: target.title,
-      description: `${target.kind === 'post' ? 'Actualité' : 'Page'} — ${target.path}`
-    }))
-  );
-
-  /**
-   * Nature du lien, en état local — même raisonnement que la grille de liens : le
-   * schéma ne stocke qu'une adresse, donc on ne peut que la deviner à l'ouverture. La
-   * redeviner à chaque rendu empêcherait de choisir « adresse extérieure » avant
-   * d'avoir saisi quoi que ce soit, le champ vide étant aussitôt relu comme interne.
-   */
-  const looksExternal = (href: string) => /^https?:\/\//i.test(href);
-  let modes = $state<('internal' | 'external')[]>(
-    block.slides.map((slide: CarouselSlideValue) =>
-      looksExternal(slide.ctaHref ?? '') ? 'external' : 'internal'
-    )
-  );
+  /*
+    La nature du lien vit désormais dans le champ de cible, partagé avec la grille de
+    liens et le bloc d'accroche : le même état et les mêmes deux fonctions étaient
+    écrits ici mot pour mot.
+  */
 
   /**
    * `ctaHref` doit être une chaîne, jamais `undefined`.
@@ -76,27 +66,14 @@
    */
   for (const slide of block.slides as CarouselSlideValue[]) slide.ctaHref ??= '';
 
-  function modeOf(index: number): 'internal' | 'external' {
-    return modes[index] ?? (looksExternal(block.slides[index]?.ctaHref ?? '') ? 'external' : 'internal');
-  }
-
-  function setMode(index: number, mode: 'internal' | 'external') {
-    modes[index] = mode;
-    // Changer de nature vide l'adresse : laisser l'ancienne produirait un lien
-    // silencieusement faux, un chemin interne étant lu comme une URL et l'inverse.
-    block.slides[index].ctaHref = '';
-  }
-
   function add() {
     if (block.slides.length >= MAX) return;
     // `ctaHref: ''` et non absent : voir la note sur `Combobox` plus haut.
     block.slides = [...block.slides, { mediaId: 0, title: '', ctaHref: '' }];
-    modes = [...modes, 'internal'];
   }
 
   function remove(index: number) {
     block.slides = block.slides.filter((_: CarouselSlideValue, i: number) => i !== index);
-    modes = modes.filter((_, i) => i !== index);
   }
 
   function move(from: number, to: number) {
@@ -105,21 +82,20 @@
     const [movedSlide] = slides.splice(from, 1);
     slides.splice(to, 0, movedSlide);
     block.slides = slides;
-
-    // Les natures suivent leur diapositive, sinon la ligne déplacée hériterait de
-    // celle qui a pris sa place et son champ d'adresse changerait de forme.
-    const nextModes = [...modes];
-    const [movedMode] = nextModes.splice(from, 1);
-    nextModes.splice(to, 0, movedMode);
-    modes = nextModes;
+    /* La nature du lien voyage avec sa diapositive : elle appartient au champ de
+       cible, qui la relit de l'adresse déplacée. Il n'y a plus de tableau parallèle
+       à tenir en phase — c'était la seule raison de ce second `splice`. */
   }
 </script>
 
 <div class="space-y-4">
-  <div class="space-y-1.5">
-    <Label for="carousel-heading">Titre de section</Label>
-    <Input id="carousel-heading" bind:value={block.heading} placeholder="Nos partenaires en action" />
-  </div>
+  <FormField id={`${uid}-carousel-heading`} label="Titre de section">
+    <Input
+      id={`${uid}-carousel-heading`}
+      bind:value={block.heading}
+      placeholder="Nos partenaires en action"
+    />
+  </FormField>
 
   <div class="space-y-3">
     <Label>Diapositives</Label>
@@ -192,33 +168,24 @@
           </div>
         </div>
 
-        <Input bind:value={slide.title} placeholder="Titre de la carte" />
-        <Textarea bind:value={slide.description} rows={2} placeholder="Description courte (facultative)" />
+        <FormField id={`${uid}-slide-${index}-title`} label="Titre de la carte">
+          <Input id={`${uid}-slide-${index}-title`} bind:value={slide.title} placeholder="Stage de Toussaint" />
+        </FormField>
 
-        <div class="space-y-1.5">
-          <Input bind:value={slide.ctaLabel} placeholder="Libellé du bouton (facultatif)" />
-          <Select
-            value={modeOf(index)}
-            onchange={(e) =>
-              setMode(index, (e.currentTarget as HTMLSelectElement).value as 'internal' | 'external')}
-          >
-            <option value="internal">Une page ou actualité du site</option>
-            <option value="external">Une adresse extérieure</option>
-          </Select>
+        <FormField id={`${uid}-slide-${index}-description`} label="Description" hint="Facultative.">
+          <Textarea
+            id={`${uid}-slide-${index}-description`}
+            bind:value={slide.description}
+            rows={2}
+            placeholder="Une phrase sous le titre"
+          />
+        </FormField>
 
-          {#if modeOf(index) === 'external'}
-            <Input bind:value={slide.ctaHref} placeholder="https://exemple.fr/…" />
-          {:else if targetItems.length > 0}
-            <Combobox
-              items={targetItems}
-              bind:value={slide.ctaHref}
-              placeholder="Rechercher une page ou une actualité…"
-              clearLabel="Aucune cible"
-            />
-          {:else}
-            <Input bind:value={slide.ctaHref} placeholder="/notre-club/" />
-          {/if}
-        </div>
+        <FormField id={`${uid}-slide-${index}-cta`} label="Libellé du bouton" hint="Facultatif.">
+          <Input id={`${uid}-slide-${index}-cta`} bind:value={slide.ctaLabel} placeholder="En savoir plus" />
+        </FormField>
+
+        <LinkTargetField id={`${uid}-slide-${index}-target`} bind:href={slide.ctaHref} {targets} />
       </div>
     {/each}
 

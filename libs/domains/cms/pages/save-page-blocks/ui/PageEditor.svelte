@@ -2,9 +2,9 @@
   import {
     Button,
     Input,
-    Label,
-    Select,
     Badge,
+    ChoiceField,
+    FormField,
     CollapsibleSection,
     EmptyState,
     uiConfirm,
@@ -23,7 +23,6 @@
     slug: string;
     path: string;
     template: 'default' | 'home' | 'landing';
-    path: string;
     status: 'draft' | 'published';
     seoTitle: string | null;
     seoDescription: string | null;
@@ -181,38 +180,41 @@
 
   {#if canWrite}
     <div class="grid gap-3 sm:grid-cols-2">
-      <div>
-        <Label for="page-title">Titre</Label>
+      <FormField id="page-title" label="Titre">
         <Input id="page-title" bind:value={title} oninput={touch} />
-      </div>
-      <div>
-        <!--
-          Deux valeurs seulement, et non les trois du schéma : `landing` n'est lu par
-          aucun code de rendu — le site compose une page à partir de ses blocs, jamais
-          de son gabarit. L'offrir donnerait un choix sans effet.
-        -->
-        <Label for="page-template">Rôle de la page</Label>
-        <Select
+      </FormField>
+
+      <!--
+        Deux valeurs seulement, et non les trois du schéma : `landing` n'est lu par
+        aucun code de rendu — le site compose une page à partir de ses blocs, jamais
+        de son gabarit. L'offrir donnerait un choix sans effet.
+      -->
+      <FormField id="page-template" label="Rôle de la page">
+        <ChoiceField
           id="page-template"
+          label="Rôle de la page"
           value={template}
-          onchange={(e) => {
-            template = (e.currentTarget as HTMLSelectElement).value as 'default' | 'home' | 'landing';
+          onChange={(v) => {
+            template = v as 'default' | 'home' | 'landing';
             touch();
           }}
-        >
-          <option value="default">Page normale</option>
-          <option value="home">Page d'accueil — servie à la racine « / »</option>
-        </Select>
-      </div>
-      <div class="sm:col-span-2">
-        <Label for="page-slug">Adresse</Label>
-        <Input
-          id="page-slug"
-          bind:value={slug}
-          oninput={touch}
-          disabled={template === 'home'}
-          placeholder="presentation"
+          options={[
+            { value: 'default', label: 'Page normale' },
+            { value: 'home', label: "Page d'accueil", hint: 'Servie à la racine « / »' }
+          ]}
         />
+      </FormField>
+
+      <div class="sm:col-span-2">
+        <FormField id="page-slug" label="Adresse">
+          <Input
+            id="page-slug"
+            bind:value={slug}
+            oninput={touch}
+            disabled={template === 'home'}
+            placeholder="presentation"
+          />
+        </FormField>
         <p class="text-muted-foreground mt-1 text-xs">
           {#if template === 'home'}
             La page d'accueil est servie à <code class="text-foreground">/</code> ; son adresse
@@ -226,21 +228,24 @@
           {/if}
         </p>
       </div>
-      <div>
-        <Label for="page-seo-title">Titre pour les moteurs</Label>
+
+      <FormField id="page-seo-title" label="Titre pour les moteurs">
         <Input id="page-seo-title" bind:value={seoTitle} oninput={touch} placeholder="Repris du titre si vide" />
-      </div>
+      </FormField>
+
       <div class="sm:col-span-2">
-        <Label for="page-seo-description">Description pour les moteurs</Label>
-        <Input
+        <FormField
           id="page-seo-description"
-          bind:value={seoDescription}
-          oninput={touch}
-          placeholder="Une phrase de 150 caractères, affichée dans les résultats de recherche"
-        />
-        <p class="text-muted-foreground mt-1 text-xs">
-          {seoDescription.length}/155 — à défaut, le début de la page sera utilisé.
-        </p>
+          label="Description pour les moteurs"
+          hint={`${seoDescription.length}/155 — à défaut, le début de la page sera utilisé.`}
+        >
+          <Input
+            id="page-seo-description"
+            bind:value={seoDescription}
+            oninput={touch}
+            placeholder="Une phrase de 150 caractères, affichée dans les résultats de recherche"
+          />
+        </FormField>
       </div>
     </div>
   {/if}

@@ -1,9 +1,10 @@
 <script lang="ts">
-  import { Input, Label, Button, Select, Combobox, type ComboboxItem } from '@nba/ui';
+  import { Input, Label, Button, ChoiceField, FormField } from '@nba/ui';
   import { mediaUrl } from '../../../../media/media-url';
   import { ImagePlus, X, Trash2 } from '@lucide/svelte';
   import MediaPicker, { type PickableMedia } from '../../../../media/list-media/ui/MediaPicker.svelte';
   import type { CtaGridBlock } from '../../../../shared/blocks';
+  import LinkTargetField from './LinkTargetField.svelte';
 
   let {
     block = $bindable(),
@@ -37,68 +38,39 @@
       : null
   );
 
-  const targetItems: ComboboxItem[] = $derived(
-    targets.map((target) => ({
-      value: target.path,
-      label: target.title,
-      description: `${target.kind === 'post' ? 'Actualité' : 'Page'} — ${target.path}`
-    }))
-  );
-
-  /**
-   * Nature de chaque lien, en état local.
-   *
-   * Le schéma ne stocke qu'un `href` : on ne peut donc que *deviner* la nature à
-   * l'ouverture, à partir de l'adresse. La deviner à chaque rendu empêcherait en
-   * revanche de basculer sur « adresse extérieure » avant d'avoir saisi quoi que ce
-   * soit — le champ vide serait aussitôt relu comme « interne ». D'où une intention
-   * mémorisée, initialisée une fois sur l'adresse existante.
-   */
-  const looksExternal = (href: string) => /^https?:\/\//i.test(href);
-  let modes = $state<('internal' | 'external')[]>(
-    block.items.map((item: { href: string }) => (looksExternal(item.href) ? 'external' : 'internal'))
-  );
-
-  function modeOf(index: number): 'internal' | 'external' {
-    return modes[index] ?? (looksExternal(block.items[index]?.href ?? '') ? 'external' : 'internal');
-  }
-
-  function setMode(index: number, mode: 'internal' | 'external') {
-    modes[index] = mode;
-    // Changer de nature vide l'adresse : une URL externe n'est pas un chemin interne,
-    // et laisser l'ancienne valeur produirait un lien silencieusement faux.
-    block.items[index].href = '';
-  }
-
+  /*
+    La nature du lien — page du site ou adresse extérieure — appartient désormais au
+    champ de cible, qui la devine de l'adresse et la retient dès qu'on en choisit une.
+    Elle était ici en triple : le même état, les mêmes deux fonctions et la même liste
+    native vivaient aussi dans le carrousel, et manquaient au bloc d'accroche.
+  */
   function add() {
     block.items = [...block.items, { label: '', href: '' }];
-    modes = [...modes, 'internal'];
   }
 
   function remove(index: number) {
-    block.items = block.items.filter((_, i) => i !== index);
-    modes = modes.filter((_, i) => i !== index);
+    block.items = block.items.filter((_: unknown, i: number) => i !== index);
   }
 </script>
 
 <div class="space-y-4">
   <div class="grid gap-3 sm:grid-cols-2">
-    <div class="space-y-1.5">
-      <Label for={`${uid}-grid-heading`}>Titre de section</Label>
+    <FormField id={`${uid}-grid-heading`} label="Titre de section">
       <Input id={`${uid}-grid-heading`} bind:value={block.heading} />
-    </div>
-    <div class="space-y-1.5">
-      <Label for={`${uid}-grid-columns`}>Colonnes</Label>
-      <Select
+    </FormField>
+    <FormField id={`${uid}-grid-columns`} label="Colonnes">
+      <ChoiceField
         id={`${uid}-grid-columns`}
+        label="Colonnes"
         value={String(block.columns)}
-        onchange={(e) => (block.columns = Number((e.currentTarget as HTMLSelectElement).value) as 2 | 3 | 4)}
-      >
-        <option value="2">2 colonnes</option>
-        <option value="3">3 colonnes</option>
-        <option value="4">4 colonnes</option>
-      </Select>
-    </div>
+        onChange={(v) => (block.columns = Number(v) as 2 | 3 | 4)}
+        options={[
+          { value: '2', label: '2 colonnes' },
+          { value: '3', label: '3 colonnes' },
+          { value: '4', label: '4 colonnes' }
+        ]}
+      />
+    </FormField>
   </div>
 
   <div class="space-y-1.5">
@@ -140,37 +112,34 @@
     {#each block.items as item, index (index)}
       <div class="border-border space-y-2 rounded-md border p-3">
         <div class="flex items-center gap-2">
-          <Input bind:value={item.label} placeholder="Libellé du bouton" class="flex-1" />
+          <div class="flex-1">
+            <FormField id={`cta-${uid}-${index}-label`} label="Libellé du bouton">
+              <Input
+                id={`cta-${uid}-${index}-label`}
+                bind:value={item.label}
+                placeholder="Nos créneaux"
+              />
+            </FormField>
+          </div>
           <Button type="button" variant="ghost" size="icon-sm" onclick={() => remove(index)}>
             <Trash2 class="h-4 w-4" />
             <span class="sr-only">Retirer ce bouton</span>
           </Button>
         </div>
 
-        <div class="space-y-1.5">
-          <Select
-            value={modeOf(index)}
-            onchange={(e) => setMode(index, (e.currentTarget as HTMLSelectElement).value as 'internal' | 'external')}
-          >
-            <option value="internal">Une page ou actualité du site</option>
-            <option value="external">Une adresse extérieure</option>
-          </Select>
+        <LinkTargetField id={`cta-${uid}-${index}-target`} bind:href={item.href} {targets} />
 
-          {#if modeOf(index) === 'external'}
-            <Input bind:value={item.href} placeholder="https://exemple.fr/…" />
-          {:else if targetItems.length > 0}
-            <Combobox
-              items={targetItems}
-              bind:value={item.href}
-              placeholder="Rechercher une page ou une actualité…"
-              clearLabel="Aucune cible"
-            />
-          {:else}
-            <Input bind:value={item.href} placeholder="/notre-club/" />
-          {/if}
-        </div>
-
-        <Input bind:value={item.description} placeholder="Description (facultative)" />
+        <FormField
+          id={`cta-${uid}-${index}-description`}
+          label="Description"
+          hint="Facultative : une ligne sous le libellé du bouton."
+        >
+          <Input
+            id={`cta-${uid}-${index}-description`}
+            bind:value={item.description}
+            placeholder="Horaires, tarifs, inscriptions"
+          />
+        </FormField>
       </div>
     {/each}
     <Button type="button" variant="secondary" onclick={add}>Ajouter un bouton</Button>

@@ -59,7 +59,7 @@
     {#if block.type === 'richtext'}
       <RichtextBlockEditor bind:block {media} {canUploadMedia} {targets} />
     {:else if block.type === 'hero'}
-      <HeroBlockEditor bind:block />
+      <HeroBlockEditor bind:block {targets} />
     {:else if block.type === 'cta_grid'}
       <CtaGridBlockEditor bind:block {media} {canUploadMedia} {targets} />
     {:else if block.type === 'carousel'}
