@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Save, Loader2 } from '@lucide/svelte';
-  import { Button, Input, Textarea, Card, FormField, ErrorAlert, submitForm, readApiError } from '@nba/ui';
+  import { Button, Input, Textarea, Card, FormField, ErrorAlert, dockDePage, submitForm, readApiError } from '@nba/ui';
 
   /**
    * Réglages du pied de page du site public.
@@ -47,6 +47,44 @@
       : `L'adresse ${network} doit commencer par http:// ou https://.`;
   }
 
+  /*
+    Ce qui a changé depuis ce que l'écran a reçu. Rien ne signalait l'état non
+    enregistré : on quittait la page en croyant l'avoir fait, ou l'on réécrivait le
+    pied du site public avec des valeurs intactes.
+
+    La comparaison porte sur les propriétés elles-mêmes, et non sur une copie prise au
+    montage : Svelte avertit qu'une telle copie ne suivrait pas une propriété qui
+    change, et ici la suivre est ce qu'on veut.
+  */
+  const modifie = $derived(
+    description !== footerDescription ||
+      address !== footerAddress ||
+      instagram !== (instagramUrl ?? '') ||
+      facebook !== (facebookUrl ?? '')
+  );
+
+  /*
+    Enregistrer descend dans la barre du bas. Le bouton vivait à la fin du flux, sous
+    le pli : sur un téléphone, on ne le voyait qu'après avoir fait défiler les deux
+    cartes, et rien ne disait qu'il restait quelque chose à faire.
+  */
+  let formulaire = $state<HTMLFormElement | null>(null);
+
+  $effect(() => {
+    if (!canWrite || !modifie) return;
+    return dockDePage.declarerActions(
+      [
+        {
+          id: 'enregistrer',
+          label: 'Enregistrer le pied de page',
+          icon: Save,
+          run: () => formulaire?.requestSubmit()
+        }
+      ],
+      { icon: Save, label: 'Enregistrer' }
+    );
+  });
+
   async function save(event: SubmitEvent) {
     event.preventDefault();
     busy = true;
@@ -78,7 +116,7 @@
   }
 </script>
 
-<form onsubmit={save}>
+<form bind:this={formulaire} onsubmit={save}>
   <Card.Root>
     <Card.Header>
       <Card.Title>Identité du club</Card.Title>
@@ -148,8 +186,14 @@
   </Card.Root>
 
   {#if canWrite}
-    <div class="mt-6 flex justify-end">
-      <Button type="submit" disabled={busy} class="gap-1.5 font-bold">
+    <!-- Le bouton reste à la souris ; sur téléphone il vit dans la barre du bas.
+         Désactivé tant que rien n'a bougé : enregistrer une valeur intacte réécrit le
+         pied du site public pour rien. -->
+    <div class="mt-6 flex items-center justify-end gap-3">
+      {#if modifie}
+        <span class="text-xs text-muted-foreground">Modifications non enregistrées</span>
+      {/if}
+      <Button type="submit" disabled={busy || !modifie} class="hidden gap-1.5 font-bold md:inline-flex">
         {#if busy}
           <Loader2 class="h-4 w-4 animate-spin" />
           <span>Enregistrement…</span>
