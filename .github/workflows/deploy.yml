@@ -557,12 +557,71 @@ jobs:
       # Chaque paquet installé porte la signature du registre npm : un paquet substitué
       # entre le registre et le runner (miroir, cache, proxy) ne la porte pas.
       #
-      # Une seconde chance après trente secondes : le registre a déjà servi, l'espace
-      # d'un instant, des attestations sans la clé qui les vérifie (EMISSINGSIGNATUREKEY
-      # sur un paquet inchangé, deux fois le 19/09/2026), et un aléa du registre ne
-      # doit pas bloquer un déploiement. Un paquet réellement altéré échoue les deux fois.
+      # Trois essais, puis un tri par nature de refus.
+      #
+      # `EMISSINGSIGNATUREKEY` ne dit pas qu'un paquet est altéré : il dit que le
+      # registre a servi l'attestation sans servir la clé qui la vérifie. C'est une
+      # panne de disponibilité chez npm, et elle bat de l'aile plutôt qu'elle ne tombe
+      # — le 23/09/2026 elle a frappé à 17:24, 18:13 et 18:58, et épargné 18:20 et
+      # 19:05, sur un `package-lock.json` inchangé. La seconde chance à trente secondes
+      # jouait donc à pile ou face : trois pushes sur quatre ont demandé une relance à
+      # la main que rien ne signalait, et le déploiement restait en arrière sans que
+      # personne ne le sache.
+      #
+      # Un tel refus devient un avertissement. Ce qu'on perd est la **provenance** —
+      # « ce paquet a bien été construit par tel atelier » —, pas l'intégrité : les
+      # empreintes du `package-lock.json`, appliquées par `npm ci`, refusent déjà tout
+      # tarball substitué, et qui saurait faire disparaître une clé du point de service
+      # des clés saurait tout aussi bien en servir une à lui.
+      #
+      # Tout autre refus bloque, `EMISSINGSIGNATURE` compris — sans `KEY`, celui-là
+      # signale un paquet sans aucune signature. La liste des lignes tolérées est
+      # blanche par construction : une ligne d'erreur inconnue fait échouer l'étape.
       - name: Intégrité des paquets (npm audit signatures)
-        run: npm audit signatures || (sleep 30 && npm audit signatures)
+        shell: bash
+        run: |
+          journal="$RUNNER_TEMP/audit-signatures.log"
+          for attente in 0 30 120; do
+            if [ "$attente" -gt 0 ]; then
+              echo "Nouvel essai dans ${attente}s…"
+              sleep "$attente"
+            fi
+            if npm audit signatures >"$journal" 2>&1; then
+              cat "$journal"
+              exit 0
+            fi
+            cat "$journal"
+          done
+
+          # Le motif toléré doit être là. Sans lui, l'échec est d'une autre nature —
+          # une coupure réseau, un crash — et rien ne dit qu'il est bénin.
+          if ! grep -q 'code EMISSINGSIGNATUREKEY' "$journal"; then
+            echo "::error title=Contrôle des signatures en échec::npm a refusé pour une raison autre qu'une clé d'attestation indisponible."
+            exit 1
+          fi
+
+          suspect=$(grep 'npm error' "$journal" \
+            | grep -v 'code EMISSINGSIGNATUREKEY' \
+            | grep -v 'has attestations but no corresponding public key' \
+            | grep -v 'A complete log of this run can be found in' || true)
+
+          if [ -n "$suspect" ]; then
+            echo "::error title=Signature de paquet refusée::Un paquet au moins ne porte pas la signature attendue du registre."
+            exit 1
+          fi
+
+          echo "::warning title=Clés d'attestation indisponibles::Le registre npm n'a pas servi les clés vérifiant les attestations, après trois essais. La provenance n'a pas pu être contrôlée ; l'intégrité l'est par les empreintes du package-lock.json."
+          {
+            echo "### Intégrité des paquets"
+            echo
+            echo "Le registre npm n'a pas servi les clés d'attestation, après trois essais :"
+            echo
+            echo '```'
+            grep 'npm error' "$journal" | head -5 || true
+            echo '```'
+            echo
+            echo "La provenance n'a pas pu être contrôlée. L'intégrité reste vérifiée par les empreintes du package-lock.json, appliquées par npm ci."
+          } >> "$GITHUB_STEP_SUMMARY"
 
       # Les workflows sont une surface d'attaque à part entière : zizmor audite leurs
       # motifs dangereux (injection par gabarit, actions non épinglées, droits trop
