@@ -374,10 +374,32 @@
     </Tabs.List>
 
     {#if canWrite}
-      <Button onclick={() => openAddForm()} class="h-9 shrink-0 gap-1.5 font-bold">
-        <Plus class="h-4 w-4" />
-        <span>Nouvelle entrée</span>
-      </Button>
+      <div class="flex shrink-0 items-center gap-2">
+        <!--
+          Réorganiser vit aussi ici, et pas seulement dans la barre du bas : celle-ci
+          est masquée au-dessus de 768 px, si bien que le glissement était inatteignable
+          à la souris — là où il est pourtant le plus facile.
+        -->
+        {#if tree.length > 1}
+          <Button
+            variant={reorganise ? 'default' : 'outline'}
+            onclick={() => (reorganise = !reorganise)}
+            class="h-9 shrink-0 gap-1.5 font-semibold"
+          >
+            {#if reorganise}
+              <Check class="h-4 w-4" />
+              <span>Terminer</span>
+            {:else}
+              <GripVertical class="h-4 w-4" />
+              <span>Réorganiser</span>
+            {/if}
+          </Button>
+        {/if}
+        <Button onclick={() => openAddForm()} disabled={reorganise} class="h-9 shrink-0 gap-1.5 font-bold">
+          <Plus class="h-4 w-4" />
+          <span>Nouvelle entrée</span>
+        </Button>
+      </div>
     {/if}
   </div>
 
