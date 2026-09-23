@@ -12,6 +12,7 @@
     ListView,
     ResponsiveSheet,
     dockDePage,
+    softNavigate,
     uiConfirm,
     flashAndReload,
     uiAlert,
@@ -24,10 +25,11 @@
     EyeOff,
     GripVertical,
     History,
+    Loader2,
     Plus,
-    Save,
     Settings2,
-    Signpost
+    Signpost,
+    X
   } from '@lucide/svelte';
   import { detailDeBloc, genreDeBloc } from './block-summary';
   import type { BlockPayload } from '../../../shared/blocks';
@@ -112,6 +114,30 @@
     dirty = true;
   }
 
+  /*
+    Le contenu des blocs marque aussi la page comme modifiée.
+
+    `touch()` n'était appelé que par les champs de réglages et par l'ajout, le
+    déplacement ou le retrait d'un bloc : **taper dans un bloc ne marquait rien**.
+    « Modifications non enregistrées » restait donc muet sur le travail le plus
+    courant, et le garde-fou de la publication — qui refuse de publier une page
+    modifiée — ne voyait pas ces modifications-là. Depuis que la croix propose de
+    fermer, l'enjeu est plus grand : elle partirait sans prévenir.
+
+    `$state.snapshot` lit l'arbre entier, donc l'effet se rejoue à la moindre frappe
+    dans n'importe quel bloc. Le premier passage est l'installation, pas une
+    modification.
+  */
+  let premierPassage = true;
+  $effect(() => {
+    $state.snapshot(blocks);
+    if (premierPassage) {
+      premierPassage = false;
+      return;
+    }
+    dirty = true;
+  });
+
   function addBlock(index: number) {
     blocks = [...blocks, BLOCK_KINDS[index].create()];
     touch();
@@ -172,13 +198,8 @@
   $effect(() => {
     const actions: SwipeAction[] = [];
     if (canWrite) {
-      actions.push({
-        id: 'enregistrer',
-        label: busy ? 'Enregistrement…' : 'Enregistrer la page',
-        icon: Save,
-        tone: 'primary',
-        run: () => void save()
-      });
+      /* Enregistrer n'est pas dans le menu : c'est la validation du formulaire, et
+         elle vit en haut, en rond, à côté de la croix qui ferme. */
       actions.push({
         id: 'reglages',
         label: 'Réglages de la page',
@@ -231,6 +252,25 @@
     return dockDePage.declarerActions(actions, { icon: Ellipsis, label: 'Actions de la page' });
   });
 
+  /**
+   * Quitte l'édition et revient à la liste.
+   *
+   * La croix d'une feuille annule : elle doit donc prévenir quand il reste du travail
+   * non enregistré, sinon elle le jette sans le dire.
+   */
+  async function quitter() {
+    if (dirty) {
+      const confirme = await uiConfirm({
+        title: 'Quitter sans enregistrer ?',
+        description: 'Les modifications apportées à cette page seront perdues.',
+        confirmLabel: 'Quitter',
+        destructive: true
+      });
+      if (!confirme) return;
+    }
+    softNavigate('/admin/website/pages');
+  }
+
   async function save() {
     if (busy) return;
     busy = true;
@@ -274,6 +314,23 @@
   <div
     class="sticky top-0 z-20 flex flex-wrap items-center gap-3 border-b border-border bg-background py-3"
   >
+    <!--
+      Au doigt, la barre d'une feuille : la croix ferme à gauche, la validation valide
+      à droite, toutes deux en rond. Éditer une page est un formulaire comme un autre —
+      la création en ouvre déjà un —, et son enregistrement n'a rien à faire dans un
+      menu ni au bout du flux.
+    -->
+    {#if canWrite}
+      <Button
+        variant="outline"
+        class="size-11 shrink-0 rounded-full p-0 md:hidden"
+        aria-label="Fermer sans enregistrer"
+        onclick={quitter}
+      >
+        <X class="size-5" />
+      </Button>
+    {/if}
+
     <Badge variant={page.status === 'published' ? 'default' : 'secondary'}>
       {page.status === 'published' ? 'En ligne' : 'Brouillon'}
     </Badge>
@@ -300,7 +357,20 @@
     {/if}
 
     {#if canWrite}
-      <div class="ml-auto flex items-center gap-2">
+      <Button
+        class="ml-auto size-11 shrink-0 rounded-full p-0 md:hidden"
+        aria-label={busy ? 'Enregistrement…' : 'Enregistrer'}
+        disabled={busy}
+        onclick={save}
+      >
+        {#if busy}
+          <Loader2 class="size-5 animate-spin" />
+        {:else}
+          <Check class="size-5" />
+        {/if}
+      </Button>
+
+      <div class="ml-auto hidden items-center gap-2 md:flex">
         <!--
           Réorganiser vit aussi ici : la barre du bas est masquée au-dessus de 768 px,
           et le mode y serait sinon inatteignable à la souris.
