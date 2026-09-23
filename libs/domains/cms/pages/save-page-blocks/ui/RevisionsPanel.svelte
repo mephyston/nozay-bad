@@ -1,5 +1,15 @@
 <script lang="ts">
-  import { Button, CollapsibleSection, uiConfirm, flashAndReload, uiAlert } from '@nba/ui';
+  import { History, RotateCcw } from '@lucide/svelte';
+  import {
+    EmptyState,
+    ListRow,
+    ListView,
+    ResponsiveSheet,
+    uiConfirm,
+    flashAndReload,
+    uiAlert,
+    type SwipeAction
+  } from '@nba/ui';
   import { restoreRevision } from './page-editor-actions';
 
   interface RevisionRow {
@@ -11,7 +21,21 @@
     blockCount: number;
   }
 
-  let { revisions = [], pageId, canRestore = false } = $props<{
+  /**
+   * L'historique d'une page, en tiroir.
+   *
+   * Il vivait en section repliable tout en bas de l'écran, après les blocs et les
+   * anciennes adresses : sur une page de dix blocs, on ne l'atteignait qu'après un
+   * long défilement, et on ne l'y cherchait donc jamais. C'est une consultation, pas
+   * une étape de rédaction — elle s'ouvre depuis le menu et se referme.
+   */
+  let {
+    open = $bindable(false),
+    revisions = [],
+    pageId,
+    canRestore = false
+  } = $props<{
+    open?: boolean;
     revisions: RevisionRow[];
     /** Page dont on restaure une version : l'écriture la nomme, le relais la valide. */
     pageId: number;
@@ -38,27 +62,43 @@
       uiAlert(error instanceof Error ? error.message : 'La restauration a échoué.');
     }
   }
+
+  /*
+    Aucune question portée ici : l'écran en pose déjà une, et la sienne dit ce que la
+    générique tairait — que le contenu remplacé est lui-même conservé, donc que le
+    retour en arrière se défait.
+  */
+  const gestes = (row: RevisionRow): SwipeAction<RevisionRow>[] =>
+    canRestore
+      ? [{ id: 'restaurer', label: 'Restaurer', icon: RotateCcw, tone: 'primary', run: (r) => restore(r) }]
+      : [];
 </script>
 
-<CollapsibleSection title={`Historique (${revisions.length})`}>
+<ResponsiveSheet
+  bind:open
+  title="Historique"
+  description="Chaque enregistrement conserve une version de la page."
+  size="lg"
+>
   {#if revisions.length === 0}
-    <p class="text-muted-foreground text-sm">
-      Aucune version antérieure. Chaque enregistrement en conservera une.
-    </p>
+    <EmptyState
+      icon={History}
+      title="Aucune version antérieure"
+      description="Chaque enregistrement en conservera une."
+    />
   {:else}
-    <ul class="divide-border divide-y text-sm">
-      {#each revisions as row (row.id)}
-        <li class="flex flex-wrap items-center justify-between gap-2 py-2">
-          <span>
-            <span class="font-medium">Version {row.revision}</span>
-            <span class="text-muted-foreground"> · {when(row.createdAt)} · {row.blockCount} bloc(s)</span>
-            {#if row.reason}<span class="text-muted-foreground"> · {row.reason}</span>{/if}
-          </span>
-          {#if canRestore}
-            <Button variant="ghost" size="sm" onclick={() => restore(row)}>Restaurer</Button>
-          {/if}
-        </li>
-      {/each}
-    </ul>
+    <ListView items={revisions}>
+      {#snippet listRow(row)}
+        <ListRow
+          item={row}
+          title={`Version ${row.revision}`}
+          subtitle={row.reason ? `${when(row.createdAt)} · ${row.reason}` : when(row.createdAt)}
+          value={String(row.blockCount)}
+          valueCaption="bloc(s)"
+          chevron="none"
+          actions={gestes(row)}
+        />
+      {/snippet}
+    </ListView>
   {/if}
-</CollapsibleSection>
+</ResponsiveSheet>

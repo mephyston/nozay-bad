@@ -5,12 +5,18 @@
     Badge,
     ChoiceField,
     FormField,
-    CollapsibleSection,
     EmptyState,
+    ListRow,
+    ListView,
+    ResponsiveSheet,
+    dockDePage,
     uiConfirm,
     flashAndReload,
-    uiAlert
+    uiAlert,
+    type SwipeAction
   } from '@nba/ui';
+  import { Check, Ellipsis, GripVertical, History, Signpost } from '@lucide/svelte';
+  import { detailDeBloc, genreDeBloc } from './block-summary';
   import type { BlockPayload } from '../../../shared/blocks';
   import { BLOCK_KINDS } from './block-editor-registry';
   import BlockCard from './BlockCard.svelte';
@@ -117,6 +123,58 @@
     blocks = blocks.filter((_, i) => i !== index);
     touch();
   }
+
+  /*
+    Le mode réorganisation, comme pour les menus : les blocs s'y **replient** en une
+    rangée chacun. Ouverts, on déplace une carte de six cents pixels sans jamais voir
+    où elle atterrit ; repliés, la page entière tient à l'écran et le trajet se lit.
+  */
+  let reorganise = $state(false);
+  let historiqueOuvert = $state(false);
+  let adressesOuvertes = $state(false);
+
+  /** Déplace un bloc du rang `de` au rang `vers` — le glissement en franchit plusieurs. */
+  function deplacerBloc(_groupe: string, de: number, vers: number) {
+    if (de === vers || vers < 0 || vers >= blocks.length) return;
+    const suite = [...blocks];
+    const [deplace] = suite.splice(de, 1);
+    suite.splice(vers, 0, deplace);
+    blocks = suite;
+    touch();
+  }
+
+  /*
+    Les gestes de consultation et de rangement descendent dans la barre du bas. Ils
+    vivaient en bas de page : l'historique et les anciennes adresses n'étaient
+    atteints qu'après avoir défilé tous les blocs, et on ne les y cherchait donc pas.
+  */
+  $effect(() => {
+    const actions: SwipeAction[] = [];
+    if (canWrite && blocks.length > 1) {
+      actions.push({
+        id: 'ranger',
+        label: reorganise ? 'Terminer le rangement' : 'Réorganiser les blocs',
+        icon: reorganise ? Check : GripVertical,
+        tone: 'primary',
+        run: () => (reorganise = !reorganise)
+      });
+    }
+    actions.push({
+      id: 'historique',
+      label: 'Historique',
+      icon: History,
+      run: () => (historiqueOuvert = true)
+    });
+    if (redirects.length > 0) {
+      actions.push({
+        id: 'adresses',
+        label: 'Anciennes adresses',
+        icon: Signpost,
+        run: () => (adressesOuvertes = true)
+      });
+    }
+    return dockDePage.declarerActions(actions, { icon: Ellipsis, label: 'Actions de la page' });
+  });
 
   async function save() {
     if (busy) return;
@@ -252,6 +310,28 @@
 
   {#if blocks.length === 0}
     <EmptyState title="Page vide" description="Ajoutez un bloc pour commencer." />
+  {:else if reorganise}
+    <!--
+      Repliés, les blocs tiennent tous à l'écran : c'est ce qui permet de voir le
+      trajet d'un déplacement au lieu de le deviner. Chaque rangée dit le genre du
+      bloc et ce qui le distingue de son voisin du même genre.
+    -->
+    <div class="space-y-3">
+      <p class="px-4 text-xs text-muted-foreground">
+        Tirez un bloc par sa poignée pour le déplacer. L'ordre s'applique à
+        l'enregistrement, comme le reste de la page.
+      </p>
+      <ListView items={blocks} onReorder={deplacerBloc}>
+        {#snippet listRow(bloc, index)}
+          <ListRow
+            item={bloc}
+            reorder={{ groupe: 'blocs', rang: index }}
+            title={`${index + 1}. ${genreDeBloc(bloc)}`}
+            subtitle={detailDeBloc(bloc)}
+          />
+        {/snippet}
+      </ListView>
+    </div>
   {:else}
     <div class="space-y-3">
       {#each blocks as block, index (index)}
@@ -270,7 +350,7 @@
     </div>
   {/if}
 
-  {#if canWrite}
+  {#if canWrite && !reorganise}
     <div class="border-border rounded-lg border p-3">
       <p class="mb-2 text-sm font-medium">Ajouter un bloc</p>
       <div class="flex flex-wrap gap-2">
@@ -283,6 +363,25 @@
     </div>
 
     <div class="flex flex-wrap items-center gap-2">
+      <!--
+        Réorganiser vit aussi ici : la barre du bas est masquée au-dessus de 768 px, et
+        le mode y serait sinon inatteignable à la souris.
+      -->
+      {#if blocks.length > 1}
+        <Button
+          variant={reorganise ? 'default' : 'outline'}
+          class="hidden gap-1.5 md:inline-flex"
+          onclick={() => (reorganise = !reorganise)}
+        >
+          {#if reorganise}
+            <Check class="size-4" />
+            Terminer le rangement
+          {:else}
+            <GripVertical class="size-4" />
+            Réorganiser
+          {/if}
+        </Button>
+      {/if}
       <Button onclick={save} disabled={busy}>{busy ? 'Enregistrement…' : 'Enregistrer'}</Button>
       <Button variant="secondary" onclick={togglePublished} disabled={busy}>
         {page.status === 'published' ? 'Retirer du site' : 'Publier'}
@@ -290,34 +389,38 @@
     </div>
   {/if}
 
-  {#if redirects.length > 0}
-    <!--
-      Rangée en bas de l'écran, avec l'Historique : deux encarts de contrôle, pas de
-      rédaction. Repliée par défaut — elle n'est consultée que le jour où l'on se
-      demande si une ancienne adresse sert encore, et le compteur du bandeau suffit à
-      savoir s'il y a quelque chose à regarder.
-    -->
-    <CollapsibleSection
-      title="Anciennes adresses"
-      description="Elles redirigent vers cette page. Le compteur dit combien de visiteurs les ont empruntées : une redirection encore utilisée ne doit pas être retirée."
-      badge={redirects.length}
-    >
-      <ul class="space-y-1.5">
-        {#each redirects as redirect (redirect.id)}
-          <li class="flex flex-wrap items-center gap-2 text-xs">
-            <code class="text-foreground">{redirect.fromPath}</code>
-            <span class="text-muted-foreground" aria-hidden="true">→</span>
-            <Badge variant="outline" size="xs">{redirect.statusCode}</Badge>
-            <span class="text-muted-foreground">
-              {redirect.hitCount === 0
-                ? 'jamais empruntée'
-                : `${redirect.hitCount} visite${redirect.hitCount > 1 ? 's' : ''}`}
-            </span>
-          </li>
-        {/each}
-      </ul>
-    </CollapsibleSection>
-  {/if}
-
-  <RevisionsPanel {revisions} pageId={page.id} canRestore={canWrite} />
+  <!--
+    Les anciennes adresses et l'historique quittent le bas de l'écran pour des
+    tiroirs, atteints depuis le menu de la barre du bas ou les boutons du haut. Ils
+    étaient posés après les blocs : sur une page de dix blocs, on ne les atteignait
+    qu'après un long défilement, et on ne les y cherchait donc jamais.
+  -->
 </div>
+
+<ResponsiveSheet
+  bind:open={adressesOuvertes}
+  title="Anciennes adresses"
+  description="Elles redirigent vers cette page. Une redirection encore empruntée ne doit pas être retirée."
+  size="lg"
+>
+  <ListView items={redirects}>
+    {#snippet listRow(redirect)}
+      <ListRow
+        item={redirect}
+        title={redirect.fromPath}
+        subtitle={redirect.statusCode === 410 ? 'Ne répond plus' : `→ ${page.path}`}
+        value={String(redirect.hitCount)}
+        valueTone={redirect.hitCount > 0 ? 'foreground' : 'muted'}
+        valueCaption={redirect.hitCount === 0 ? 'jamais' : 'visites'}
+        chevron="none"
+      />
+    {/snippet}
+  </ListView>
+</ResponsiveSheet>
+
+<RevisionsPanel
+  bind:open={historiqueOuvert}
+  {revisions}
+  pageId={page.id}
+  canRestore={canWrite}
+/>
