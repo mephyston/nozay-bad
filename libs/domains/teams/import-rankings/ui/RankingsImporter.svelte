@@ -1,6 +1,17 @@
 <script lang="ts">
   import { Upload, FileText, RefreshCw, CalendarClock, TriangleAlert } from '@lucide/svelte';
-  import { Button, Card, Input, Alert, Badge, ImportResultDialog } from '@nba/ui';
+  import {
+    Button,
+    Card,
+    Input,
+    Alert,
+    Badge,
+    FormField,
+    ImportResultDialog,
+    dockDePage,
+    type SwipeAction
+  } from '@nba/ui';
+  import { pastillesDeFichier, resumeDImport } from './import-summary';
   import { parseRankingCsv, type RankingCsvResult } from '../../shared/ranking-csv';
   import RankingsImportReport from './RankingsImportReport.svelte';
   import type { ImportRankingsOutput } from '../dto';
@@ -42,16 +53,36 @@
   */
   let verdict = $state<{ success: boolean; message: string } | null>(null);
 
-  function resumeReport(r: ImportRankingsOutput): string {
-    const parts = [`${r.imported} classement(s) importé(s) au ${r.eloDate}`];
-    if (r.nonCompetitors > 0) parts.push(`${r.nonCompetitors} non compétiteur(s) ignoré(s)`);
-    if (r.unmatched.length > 0) parts.push(`${r.unmatched.length} compétiteur(s) sans adhérent`);
-    if (r.errors.length > 0) parts.push(`${r.errors.length} ligne(s) illisible(s)`);
-    return parts.join(', ') + '.';
-  }
-
   const competitors = $derived(parsed ? parsed.rows.filter((r) => !r.nonCompetitor).length : 0);
   const nonCompetitors = $derived(parsed ? parsed.rows.length - competitors : 0);
+
+  const pastilles = $derived(
+    parsed
+      ? pastillesDeFichier({
+          competiteurs: competitors,
+          nonCompetiteurs: nonCompetitors,
+          saisons: parsed.seasonCodes,
+          erreurs: parsed.errors.length
+        })
+      : []
+  );
+
+  /*
+    Importer descend dans la barre du bas. Le bouton vivait en pied de carte, donc sous
+    le pli dès qu'un rapport s'affichait — c'est-à-dire au moment précis où l'on veut
+    rejouer un import corrigé.
+  */
+  $effect(() => {
+    const actions: SwipeAction[] = [];
+    if (content && eloDate && !submitting) {
+      actions.push({ id: 'importer', label: 'Importer les classements', icon: Upload, run: () => void submit() });
+    }
+    if (file && !submitting) {
+      actions.push({ id: 'annuler', label: 'Choisir un autre fichier', icon: RefreshCw, run: () => reset() });
+    }
+    if (actions.length === 0) return;
+    return dockDePage.declarerActions(actions, { icon: Upload, label: "Gestes de l'import" });
+  });
 
   function reset() {
     file = null;
@@ -116,7 +147,7 @@
       report = payload.data ?? null;
       if (report) {
         onImported?.(report);
-        verdict = { success: true, message: resumeReport(report) };
+        verdict = { success: true, message: resumeDImport(report) };
       }
       reset();
     } catch (error) {
@@ -142,11 +173,14 @@
 {/if}
 
 <Card.Root>
+  <!--
+    Pas de titre ici : le bandeau de la page le porte déjà, mot pour mot. Reste la
+    précision qu'il ne dit pas — ce que l'import ne fait **pas**.
+  -->
   <Card.Header>
-    <Card.Title>Importer les classements</Card.Title>
     <Card.Description>
-      Export « compétiteurs » de Poona. Il complète le référentiel des adhérents et n'y
-      ajoute personne : les compétiteurs qui n'y figurent pas vous seront signalés.
+      Cet import complète le référentiel des adhérents et n'y ajoute personne : les
+      compétiteurs qui n'y figurent pas vous seront signalés.
     </Card.Description>
   </Card.Header>
 
@@ -205,36 +239,33 @@
       <div class="rounded-lg border p-4 space-y-3">
         <div class="flex items-start gap-3">
           <CalendarClock class="w-5 h-5 text-muted-foreground mt-1.5 shrink-0" />
-          <div class="flex-1 space-y-1">
-            <label for="elo-date" class="text-sm font-medium">Date des classements</label>
-            <Input id="elo-date" type="date" bind:value={eloDate} class="max-w-[200px]" />
-            {#if !parsed.eloDate}
-              <p class="text-xs text-warning">
-                Aucune date trouvée dans le fichier : saisissez celle communiquée par la CCA.
-              </p>
-            {:else}
-              <p class="text-xs text-muted-foreground">Lue dans le fichier. Corrigez-la si besoin.</p>
-            {/if}
+          <div class="flex-1">
+            <FormField
+              id="elo-date"
+              label="Date des classements"
+              keepLabel
+              hint={parsed.eloDate
+                ? 'Lue dans le fichier. Corrigez-la si besoin.'
+                : 'Aucune date trouvée dans le fichier : saisissez celle communiquée par la CCA.'}
+            >
+              <Input id="elo-date" type="date" bind:value={eloDate} />
+            </FormField>
           </div>
         </div>
 
+        <!-- Les décomptes viennent d'une déclaration unique, accordée : « 1 compétiteur »
+             et non « 1 compétiteur(s) », et rien de ce qui vaut zéro. -->
         <div class="flex flex-wrap gap-2 text-xs">
-          <Badge variant="secondary">{competitors} compétiteur(s)</Badge>
-          {#if nonCompetitors > 0}
-            <Badge variant="outline">{nonCompetitors} non compétiteur(s)</Badge>
-          {/if}
-          {#each parsed.seasonCodes as season (season)}
-            <Badge variant="outline">Saison {season}</Badge>
+          {#each pastilles as pastille (pastille.label)}
+            <Badge variant={pastille.variant}>{pastille.label}</Badge>
           {/each}
-          {#if parsed.errors.length > 0}
-            <Badge variant="destructive">{parsed.errors.length} ligne(s) illisible(s)</Badge>
-          {/if}
         </div>
       </div>
     {/if}
   </Card.Content>
 
-  <Card.Footer class="justify-end gap-3">
+  <!-- Sur téléphone, ces deux gestes vivent dans la barre du bas. -->
+  <Card.Footer class="hidden justify-end gap-3 md:flex">
     {#if file}
       <Button variant="outline" onclick={reset} disabled={submitting}>Annuler</Button>
     {/if}
