@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Badge, Button, ListView, ListRow } from '@nba/ui';
+  import { Badge, ListView, ListRow } from '@nba/ui';
   import {
     gestesDeRedirection,
     ligneDeRedirection,
@@ -28,23 +28,14 @@
   } & GestesDeRedirection = $props();
 
   /*
-    Par tranches, et non par pages numérotées : une pagination à numéros demande de
-    viser un chiffre de huit pixels, là où le pouce ne sait que pousser vers le bas.
+    La tranche visible est décidée par l'écran, pas ici : `DataTable` porte déjà le
+    bouton « Afficher les suivants » dans son pied, sous `md` seulement, et garde la
+    pagination numérotée au bureau. En la refaisant ici, on obtenait les deux à la
+    fois sur téléphone.
   */
-  const PAR_TRANCHE = 20;
-  let visibles = $state(PAR_TRANCHE);
-
-  /* Un changement de critère repart du début : la tranche d'une autre liste n'a pas de sens. */
-  $effect(() => {
-    void redirections;
-    visibles = PAR_TRANCHE;
-  });
-
-  const rangees = $derived(redirections.slice(0, visibles));
-  const reste = $derived(Math.max(redirections.length - rangees.length, 0));
 </script>
 
-<ListView items={rangees} {emptyTitle} {emptyDescription}>
+<ListView items={redirections} {emptyTitle} {emptyDescription}>
   {#snippet listRow(r)}
     {@const l = ligneDeRedirection(r)}
     <ListRow
@@ -66,12 +57,3 @@
     </ListRow>
   {/snippet}
 </ListView>
-
-{#if reste > 0}
-  <div class="space-y-2 px-4 py-3">
-    <p class="text-center text-xs text-muted-foreground">{rangees.length} sur {redirections.length}</p>
-    <Button variant="outline" class="w-full" onclick={() => (visibles += PAR_TRANCHE)}>
-      Afficher les {Math.min(reste, PAR_TRANCHE)} suivantes
-    </Button>
-  </div>
-{/if}

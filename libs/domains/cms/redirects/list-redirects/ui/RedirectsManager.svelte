@@ -79,12 +79,24 @@
     redirectionsFiltrees(redirects as RedirectRow[], { recherche: searchTerm, nature })
   );
 
-  // Une recherche redéfinit la liste : rester sur une page lointaine afficherait du vide.
+  /*
+    Au doigt, la liste se rend par tranches ; à la souris, par pages numérotées. Les
+    deux mécanismes vivent dans `DataTable`, qui n'affiche le bouton que sous `md` —
+    le refaire dans la liste donnait les deux à la fois sur téléphone.
+  */
+  const PAR_TRANCHE = PAGE_SIZE;
+  let visibles = $state(PAR_TRANCHE);
+
+  // Une recherche redéfinit la liste : rester sur une page lointaine afficherait du
+  // vide, et une tranche ouverte sur d'autres critères n'a pas de sens.
   $effect(() => {
     searchTerm;
     nature;
     page = 1;
+    visibles = PAR_TRANCHE;
   });
+
+  const visiblesAuDoigt = $derived(filteredRedirects.slice(0, visibles));
 
   const gestes = $derived({
     canWrite,
@@ -211,6 +223,8 @@
   data={pagedRedirects}
   {pagination}
   onPageChange={(p: number) => (page = p)}
+  onLoadMore={() => (visibles += PAR_TRANCHE)}
+  loadedCount={Math.min(visibles, filteredRedirects.length)}
   mobileSpacing="list"
   itemName="redirection(s)"
   emptyTitle="Aucune redirection"
@@ -252,11 +266,11 @@
   {/snippet}
 
   {#snippet mobileView()}
-    <!-- La liste reçoit l'ensemble filtré, pas la page courante : elle se rend par
-         tranches, un bouton poussant les suivantes — viser un numéro de page de huit
-         pixels n'est pas un geste de pouce. -->
+    <!-- La liste reçoit la tranche visible, pas la page courante : le bouton qui pousse
+         les suivantes vit dans le pied du tableau, où il ne paraît que sous `md`. Viser
+         un numéro de page de huit pixels n'est pas un geste de pouce. -->
     <RedirectsList
-      redirections={filteredRedirects}
+      redirections={visiblesAuDoigt}
       {...gestes}
       emptyTitle="Aucune redirection"
       emptyDescription={searchTerm.trim() || nature !== 'toutes'
