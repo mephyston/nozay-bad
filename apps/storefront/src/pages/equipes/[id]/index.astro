@@ -1,6 +1,7 @@
 ---
 import Layout from '../../../layouts/Layout.astro';
 import Header from '../../../components/Header.astro';
+import BackLink from '../../../components/BackLink.astro';
 import MobileNav from '../../../components/MobileNav.svelte';
 import { env as cfEnv } from 'cloudflare:workers';
 import { createApiClient } from '@nba/api-client';
@@ -59,7 +60,7 @@ const frenchDate = (iso: string) =>
   <Header currentPath="/equipes" />
 
   <main class="flex-1 p-3 sm:p-6 w-full pb-nav md:pb-6 max-w-4xl mx-auto space-y-6">
-    <a href="/equipes" class="text-sm text-muted-foreground hover:text-foreground">← Toutes les équipes</a>
+    <BackLink href="/equipes" label="Toutes les équipes" />
 
     {errorMsg && (
       <div class="rounded-lg border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive">
@@ -150,13 +151,25 @@ const frenchDate = (iso: string) =>
 
         <section class="rounded-lg border p-4 space-y-3">
           <h2 class="font-semibold text-sm">Calendrier</h2>
+          {/*
+            Toute la ligne mène à la journée, et le chevron le dit.
+
+            Le lien vivait au bout, en « Voir » de douze pixels gris — une cible de
+            trente points à l'extrémité de la ligne, quand la ligne entière pouvait
+            l'être. « Composer » reste nommé : il annonce qu'on va écrire, ce qu'un
+            chevron ne promet pas.
+          */}
           {days.length === 0 ? (
             <p class="text-sm text-muted-foreground">Le calendrier n'est pas encore publié.</p>
           ) : (
             <ul class="divide-y text-sm">
               {days.map((day: any) => (
-                <li class="py-2 flex items-center justify-between gap-3">
-                  <div>
+                <li>
+                  <a
+                    href={`/equipes/${team.id}/journee/${day.number}${day.slot > 1 ? `?r=${day.slot}` : ''}`}
+                    class="-mx-2 flex min-h-[3.25rem] items-center justify-between gap-3 rounded-lg px-2 py-2 no-underline transition-colors hover:bg-muted/40"
+                  >
+                  <div class="min-w-0">
                     <p class="font-medium">
                       {day.label ?? `Journée ${day.number}`}
                       {/*
@@ -192,21 +205,13 @@ const frenchDate = (iso: string) =>
                       <p class="text-xs text-muted-foreground">{day.filledLines} ligne(s) composée(s)</p>
                     )}
                   </div>
-                  {canCompose ? (
-                    <a
-                      href={`/equipes/${team.id}/journee/${day.number}${day.slot > 1 ? `?r=${day.slot}` : ''}`}
-                      class="text-xs rounded-md border px-3 py-1.5 hover:bg-muted transition-colors whitespace-nowrap"
-                    >
-                      Composer
-                    </a>
-                  ) : (
-                    <a
-                      href={`/equipes/${team.id}/journee/${day.number}${day.slot > 1 ? `?r=${day.slot}` : ''}`}
-                      class="text-xs text-muted-foreground hover:text-foreground whitespace-nowrap"
-                    >
-                      Voir
-                    </a>
-                  )}
+                  <span class="flex shrink-0 items-center gap-2">
+                    {canCompose && (
+                      <span class="whitespace-nowrap rounded-md border px-3 py-1.5 text-xs">Composer</span>
+                    )}
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-4 shrink-0 text-muted-foreground" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+                  </span>
+                  </a>
                 </li>
               ))}
             </ul>

@@ -1,6 +1,7 @@
 ---
 import Layout from '../../../../layouts/Layout.astro';
 import Header from '../../../../components/Header.astro';
+import BackLink from '../../../../components/BackLink.astro';
 import MobileNav from '../../../../components/MobileNav.svelte';
 import { LineupComposer, FixtureDateCard } from '@nba/teams-ui';
 import { env as cfEnv } from 'cloudflare:workers';
@@ -118,9 +119,7 @@ const frenchDate = (iso: string) =>
   <Header currentPath="/equipes" />
 
   <main class="flex-1 p-3 sm:p-6 w-full pb-nav md:pb-6 max-w-3xl mx-auto space-y-6">
-    <a href={`/equipes/${teamId}`} class="text-sm text-muted-foreground hover:text-foreground">
-      ← Retour à l'équipe
-    </a>
+    <BackLink href={`/equipes/${teamId}`} label="Retour à l'équipe" />
 
     {errorMsg && (
       <div class="rounded-lg border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive">

@@ -1,0 +1,45 @@
+---
+interface Item {
+  href: string;
+  label: string;
+  actif: boolean;
+}
+
+interface Props {
+  items: Item[];
+  /** Ce que la rangée fait choisir, pour le lecteur d'écran. */
+  label: string;
+  class?: string;
+}
+
+/**
+ * Le contrôle segmenté en verre, **en liens**.
+ *
+ * Même forme que les onglets de l'administration et de la boutique — segments de
+ * largeur égale, actif surélevé sur une surface en verre — reprise à la lettre de
+ * `tabs-trigger`. Des liens et non des onglets `bits-ui` : ce sont eux qui gardent
+ * l'adresse partageable, le retour arrière fonctionnel et la page utilisable sans
+ * JavaScript, et ces pages sont rendues côté serveur.
+ *
+ * Remplace les pastilles cerclées qui défilaient en largeur, où l'onglet actif ne se
+ * distinguait que par sa couleur.
+ */
+const { items, label, class: className = '' } = Astro.props;
+---
+
+<nav class:list={['glass-surface flex h-12 gap-1 rounded-full p-1', className]} aria-label={label}>
+  {items.map((item) => (
+    <a
+      href={item.href}
+      aria-current={item.actif ? 'page' : undefined}
+      class:list={[
+        'inline-flex flex-1 items-center justify-center whitespace-nowrap rounded-full px-3 text-sm font-medium no-underline transition-all',
+        item.actif
+          ? 'bg-card text-foreground font-bold shadow-sm ring-1 ring-border/60'
+          : 'text-muted-foreground hover:text-foreground'
+      ]}
+    >
+      {item.label}
+    </a>
+  ))}
+</nav>

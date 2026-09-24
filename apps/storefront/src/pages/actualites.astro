@@ -1,6 +1,7 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import Header from '../components/Header.astro';
+import SegmentedNav from '../components/SegmentedNav.astro';
 import MobileNav from '../components/MobileNav.svelte';
 import PostCard from '../components/PostCard.astro';
 import { env } from 'cloudflare:workers';
@@ -72,13 +73,6 @@ const visible = filterByCategory(posts, activeSlug);
 const hrefFor = (slug: string | null) =>
   slug === null ? '/actualites' : `/actualites?${CATEGORY_PARAM}=${encodeURIComponent(slug)}`;
 
-const pillClass = (active: boolean) =>
-  [
-    'inline-flex min-h-[36px] items-center rounded-full border px-3.5 py-1.5 text-sm font-medium decoration-transparent transition-colors',
-    active
-      ? 'border-primary bg-primary text-primary-foreground'
-      : 'border-border bg-card text-muted-foreground hover:bg-accent hover:text-foreground'
-  ].join(' ');
 ---
 
 <Layout title="Actualités">
@@ -89,23 +83,18 @@ const pillClass = (active: boolean) =>
       <h1 class="mb-4 text-xl sm:text-2xl font-bold text-foreground">Actualités</h1>
 
       {availableCategories.length > 0 && (
-        <nav
-          class="mb-5 -mx-3 flex gap-2 overflow-x-auto px-3 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0"
-          aria-label="Filtrer par rubrique"
-        >
-          <a href={hrefFor(null)} aria-current={activeSlug === null ? 'page' : undefined} class={`shrink-0 ${pillClass(activeSlug === null)}`}>
-            Tout
-          </a>
-          {availableCategories.map((category) => (
-            <a
-              href={hrefFor(category.slug)}
-              aria-current={category.slug === activeSlug ? 'page' : undefined}
-              class={`shrink-0 ${pillClass(category.slug === activeSlug)}`}
-            >
-              {category.name}
-            </a>
-          ))}
-        </nav>
+        <SegmentedNav
+          class="mb-5"
+          label="Filtrer par rubrique"
+          items={[
+            { href: hrefFor(null), label: 'Tout', actif: activeSlug === null },
+            ...availableCategories.map((category) => ({
+              href: hrefFor(category.slug),
+              label: category.name,
+              actif: category.slug === activeSlug
+            }))
+          ]}
+        />
       )}
 
       {failed && (

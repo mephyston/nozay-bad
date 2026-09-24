@@ -1,6 +1,7 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import Header from '../../components/Header.astro';
+import SegmentedNav from '../../components/SegmentedNav.astro';
 import MobileNav from '../../components/MobileNav.svelte';
 import ShuttlecockIcon from '../../components/ShuttlecockIcon.svelte';
 import { env as cfEnv } from 'cloudflare:workers';
@@ -131,31 +132,14 @@ const directory = players.map((p: any) => ({
       </p>
     </div>
 
-    {/*
-      Le contrôle segmenté en verre, celui de l'administration et de la boutique — mais
-      en **liens**, pas en onglets d'une île.
-
-      Ce sont eux qui gardent l'adresse partageable, le retour arrière fonctionnel et la
-      page utilisable sans JavaScript ; les onglets de `bits-ui` demanderaient une île
-      pour le seul plaisir d'un `aria-selected`. La forme est reprise à la lettre de
-      `tabs-trigger` — segments de largeur égale, actif surélevé sur la surface en verre.
-    */}
-    <nav class="glass-surface flex h-12 gap-1 rounded-full p-1" aria-label="Choisir ce qu’affiche la page">
-      {VIEWS.map((v) => (
-        <a
-          href={v.id === 'equipes' ? '/equipes' : `/equipes?vue=${v.id}`}
-          aria-current={view === v.id ? 'page' : undefined}
-          class:list={[
-            'inline-flex flex-1 items-center justify-center whitespace-nowrap rounded-full px-3 text-sm font-medium no-underline transition-all',
-            view === v.id
-              ? 'bg-card text-foreground font-bold shadow-sm ring-1 ring-border/60'
-              : 'text-muted-foreground hover:text-foreground'
-          ]}
-        >
-          {v.label}
-        </a>
-      ))}
-    </nav>
+    <SegmentedNav
+      label="Choisir ce qu’affiche la page"
+      items={VIEWS.map((v) => ({
+        href: v.id === 'equipes' ? '/equipes' : `/equipes?vue=${v.id}`,
+        label: v.label,
+        actif: view === v.id
+      }))}
+    />
 
     {errorMsg && (
       <div class="rounded-lg border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive">
@@ -179,77 +163,71 @@ const directory = players.map((p: any) => ({
       </div>
     )}
 
+    {/*
+      Des rangées, et non une grille de cartes.
+
+      Chaque carte empilait le nom, la division, le capitaine, son vice et l'effectif —
+      cinq lignes par équipe, deux écrans de défilement pour six équipes, et rien qui
+      dise qu'on peut entrer. La rangée garde ce qu'on vient y chercher — le nom, la
+      division, son rôle dans l'équipe — et porte un chevron, qui est la seule promesse
+      d'iOS : « ceci mène ailleurs ». Le capitaine et l'effectif se lisent sur la fiche.
+    */}
     {view === 'equipes' && groups.map((group) => (
-      <section class="space-y-3">
-        <h2 class="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+      <section class="space-y-2">
+        <h2 class="px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           {group.label}
         </h2>
-        <div class="grid gap-3 sm:grid-cols-2">
+        <div class="divide-y divide-border overflow-hidden rounded-xl border border-border bg-card">
           {group.teams.map((team) => (
             <a
               href={`/equipes/${team.id}`}
               class:list={[
-                'block rounded-lg border p-4 transition-colors space-y-2',
+                'flex min-h-[3.25rem] items-center gap-3 px-4 py-2.5 no-underline transition-colors',
                 roleOf(team)?.card ?? 'hover:bg-muted/40'
               ]}
             >
-              <div class="flex items-start justify-between gap-2">
-                <div>
-                  <p class="font-semibold">{team.name}</p>
-                  <p class="text-xs text-muted-foreground">
-                    {team.divisionLabel}
-                    {team.poolLabel ? ` · poule ${team.poolLabel}` : ''}
-                    {` · ${team.matchCount} matchs`}
-                  </p>
-                </div>
-                {roleOf(team) && (
-                  <span
-                    class:list={[
-                      'flex items-center gap-1 text-xs rounded-full border px-2 py-0.5 whitespace-nowrap',
-                      roleOf(team)!.badge
-                    ]}
-                  >
-                    {team.viewerRole === 'player' ? (
-                      <ShuttlecockIcon class="size-3.5 shrink-0" />
-                    ) : (
-                      // L'étoile du capitaine, au gabarit des icônes Lucide comme le
-                      // volant. Pleine pour le capitaine, creuse pour son vice : la
-                      // hiérarchie se lit sans avoir à relire le texte du badge.
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 24 24"
-                        fill={team.viewerRole === 'captain' ? 'currentColor' : 'none'}
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        class="size-3.5 shrink-0"
-                        aria-hidden="true"
-                      >
-                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                      </svg>
-                    )}
-                    {roleOf(team)!.label}
-                  </span>
-                )}
+              <div class="min-w-0 flex-1">
+                <p class="truncate font-semibold text-foreground">{team.name}</p>
+                <p class="truncate text-xs text-muted-foreground">
+                  {team.divisionLabel}
+                  {team.poolLabel ? ` · poule ${team.poolLabel}` : ''}
+                  {` · ${team.matchCount} matchs`}
+                </p>
               </div>
 
-              <dl class="text-xs text-muted-foreground space-y-0.5">
-                <div class="flex gap-1">
-                  <dt class="font-medium">Capitaine :</dt>
-                  <dd>{name(team.captain) ?? 'non désigné'}</dd>
-                </div>
-                {team.viceCaptain && (
-                  <div class="flex gap-1">
-                    <dt class="font-medium">Vice-capitaine :</dt>
-                    <dd>{name(team.viceCaptain)}</dd>
-                  </div>
-                )}
-                <div class="flex gap-1">
-                  <dt class="font-medium">Effectif :</dt>
-                  <dd>{team.rosterCount} joueur(s)</dd>
-                </div>
-              </dl>
+              {roleOf(team) && (
+                <span
+                  class:list={[
+                    'flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full border px-2 py-0.5 text-xs',
+                    roleOf(team)!.badge
+                  ]}
+                >
+                  {team.viewerRole === 'player' ? (
+                    <ShuttlecockIcon class="size-3.5 shrink-0" />
+                  ) : (
+                    // L'étoile du capitaine, au gabarit des icônes Lucide comme le
+                    // volant. Pleine pour le capitaine, creuse pour son vice : la
+                    // hiérarchie se lit sans avoir à relire le texte du badge.
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill={team.viewerRole === 'captain' ? 'currentColor' : 'none'}
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      class="size-3.5 shrink-0"
+                      aria-hidden="true"
+                    >
+                      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                    </svg>
+                  )}
+                  {roleOf(team)!.label}
+                </span>
+              )}
+
+              {/* La seule affordance visible de la rangée. */}
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-4 shrink-0 text-muted-foreground" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
             </a>
           ))}
         </div>

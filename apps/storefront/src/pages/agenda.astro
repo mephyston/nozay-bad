@@ -1,6 +1,7 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import Header from '../components/Header.astro';
+import SegmentedNav from '../components/SegmentedNav.astro';
 import MobileNav from '../components/MobileNav.svelte';
 import EventRow from '../components/EventRow.astro';
 import OpenPlayRow from '../components/OpenPlayRow.astro';
@@ -328,22 +329,15 @@ const today = new Date().toISOString().slice(0, 10);
         ce qui les rend utilisables sans JavaScript.
       */}
       {openPlayEnabled && (
-        <nav class="mb-4 flex flex-wrap gap-2" aria-label="Filtrer le calendrier">
-          {VIEWS.map((v) => (
-            <a
-              href={v.id === 'tout' ? '/agenda' : `/agenda?vue=${v.id}`}
-              aria-current={view === v.id ? 'page' : undefined}
-              class:list={[
-                'inline-flex min-h-[36px] items-center rounded-full border px-3 text-sm font-medium transition-colors',
-                view === v.id
-                  ? 'border-primary bg-primary/10 text-primary'
-                  : 'border-border text-muted-foreground hover:text-foreground'
-              ]}
-            >
-              {v.label}
-            </a>
-          ))}
-        </nav>
+        <SegmentedNav
+          class="mb-4"
+          label="Filtrer le calendrier"
+          items={VIEWS.map((v) => ({
+            href: v.id === 'tout' ? '/agenda' : `/agenda?vue=${v.id}`,
+            label: v.label,
+            actif: view === v.id
+          }))}
+        />
       )}
 
       {indiv.eligible && indiv.session && view === 'tout' && (

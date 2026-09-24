@@ -1,0 +1,35 @@
+---
+interface Props {
+  href: string;
+  /** Où l'on retourne, en toutes lettres : « Toutes les équipes », « Mon compte ». */
+  label: string;
+}
+
+/**
+ * Le retour en arrière, dans les deux formes de l'application.
+ *
+ * Au doigt, un rond à chevron : une cible de 44 points posée là où le pouce la cherche,
+ * en tête de page. À la souris, la phrase entière — elle dit où l'on retourne, ce qu'un
+ * chevron seul ne dit pas, et le curseur n'a pas besoin d'une grande cible.
+ *
+ * Les pages de l'espace adhérent écrivaient chacune la leur : « ← Toutes les équipes »
+ * en douze pixels gris, qu'un pouce rate une fois sur deux.
+ */
+const { href, label } = Astro.props;
+---
+
+<a
+  {href}
+  aria-label={label}
+  class="border-border bg-card text-foreground hover:bg-muted inline-flex size-11 items-center justify-center rounded-full border no-underline transition-colors md:hidden"
+>
+  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+</a>
+
+<a
+  {href}
+  class="text-muted-foreground hover:text-foreground hidden items-center gap-2 text-sm no-underline transition-colors md:inline-flex"
+>
+  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+  {label}
+</a>

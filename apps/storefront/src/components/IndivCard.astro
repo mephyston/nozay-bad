@@ -37,9 +37,12 @@ const announced = session.status === 'announced';
       <DatePill date={new Date(`${session.date}T12:00:00Z`)} family="jeu" />
 
       <div class="min-w-0 flex-1">
-        <h3 class="text-base font-semibold leading-snug text-foreground">
-          {session.label ?? 'Séance individuelle'}
-        </h3>
+        {/*
+          Toujours « Séance individuelle », jamais l'intitulé saisi par l'entraîneur :
+          celui-ci nomme la soirée pour lui — « Indiv jeunes » — et l'adhérent qui la lit
+          n'a pas à deviner s'il en fait partie. Le mot « indiv » est du jargon de club.
+        */}
+        <h3 class="text-base font-semibold leading-snug text-foreground">Séance individuelle</h3>
 
         <p class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
           <span class="sr-only">{formatSessionDate(session.date)}</span>
@@ -89,6 +92,8 @@ const announced = session.status === 'announced';
             status={session.status}
             open={open}
             endpoint={endpoint}
+            titre="Séance individuelle"
+            sousTitre={`${formatSessionDate(session.date)} · ${session.startTime} – ${session.endTime}${session.venue ? ` · ${session.venue.name}` : ''}`}
           />
         </div>
       </div>
