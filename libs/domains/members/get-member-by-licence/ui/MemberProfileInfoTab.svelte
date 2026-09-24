@@ -170,7 +170,18 @@
             </div>
           </div>
           {#if canWrite}
-            <Button variant={authorized ? 'outline' : 'default'} size="sm" disabled={toggling} onclick={() => onToggleExpense?.()}>
+            <!--
+              Le bouton ne se montre qu'au-dessus de 768 px : au doigt, la bascule vit
+              dans le menu de la barre du bas, qui la propose quel que soit l'onglet
+              ouvert. La rangée garde l'état — c'est ce qu'on vient y lire.
+            -->
+            <Button
+              variant={authorized ? 'outline' : 'default'}
+              size="sm"
+              disabled={toggling}
+              onclick={() => onToggleExpense?.()}
+              class="hidden md:inline-flex"
+            >
               {authorized ? 'Retirer' : 'Autoriser'}
             </Button>
           {/if}
