@@ -537,7 +537,18 @@
         />
       {/if}
 
-      {@render searchField(editing ? 'Rechercher un droit à accorder…' : 'Rechercher un droit…')}
+      <!--
+        La recherche reste **en haut de la feuille**, et non dans la barre du bas : le
+        menu contextuel appartient à l'écran hôte, que le voile du tiroir recouvre — on
+        ne l'atteindrait pas, et il filtrerait une liste qu'on ne le verrait pas réduire.
+
+        Elle colle en revanche au haut de la zone défilante : soixante-quatre droits
+        font plusieurs écrans, et un champ qui défile avec eux oblige à remonter pour
+        changer de terme. Le fond opaque évite que les rangées transparaissent dessous.
+      -->
+      <div class="sticky top-0 z-10 -mx-6 bg-card px-6 pb-2 pt-1">
+        {@render searchField(editing ? 'Rechercher un droit à accorder…' : 'Rechercher un droit…')}
+      </div>
 
       {@render roleList(roleOuvert.role, !!editing)}
     {/if}
