@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { Button } from '@nba/ui';
+  import { Button, ResponsiveSheet, ListView, ListRow } from '@nba/ui';
+  import { Users } from '@lucide/svelte';
 
   /**
    * « Qui vient ? », déplié à la demande.
@@ -26,6 +27,14 @@
   let errorMsg = $state('');
   let attendees = $state<Attendee[] | null>(null);
 
+  /**
+   * La liste s'ouvre **en feuille**, et non plus en repli sous un bouton fantôme.
+   *
+   * « Voir qui vient » était un bouton gris de huit pixels de haut, sans bordure, posé
+   * sous l'encart : personne ne le voyait. Il est maintenant nommé, compté et cerclé,
+   * et la liste monte du bas comme tout le reste — un dépli de vingt noms au milieu
+   * d'un calendrier repoussait les séances suivantes hors de l'écran.
+   */
   async function toggle() {
     if (open) {
       open = false;
@@ -57,38 +66,44 @@
 {#if playerCount > 0}
   <div class="mt-2">
     <Button
-      variant="ghost"
+      variant="outline"
       onclick={toggle}
       disabled={busy}
-      aria-expanded={open}
-      class="h-8 px-2 text-xs font-semibold text-muted-foreground hover:text-foreground"
+      class="min-h-[44px] w-full gap-2 sm:w-auto"
     >
-      {open ? 'Masquer les inscrits' : 'Voir qui vient'}
+      <Users class="size-4" />
+      Voir qui vient ({playerCount})
     </Button>
-
-    {#if open}
-      {#if busy}
-        <p class="mt-1 px-2 text-xs text-muted-foreground">Un instant…</p>
-      {:else if errorMsg}
-        <p class="mt-1 px-2 text-xs font-medium text-destructive" role="alert">{errorMsg}</p>
-      {:else if attendees && attendees.length > 0}
-        <ul class="mt-1 space-y-1 px-2">
-          {#each attendees as attendee, index (index)}
-            <li class="text-xs text-foreground">
-              {attendee.firstName} {attendee.lastName}
-              {#if attendee.guests.length > 0}
-                <span class="text-muted-foreground">
-                  · avec {attendee.guests
-                    .map((guest) => `${guest.firstName} ${guest.lastName}`)
-                    .join(', ')}
-                </span>
-              {/if}
-            </li>
-          {/each}
-        </ul>
-      {:else}
-        <p class="mt-1 px-2 text-xs text-muted-foreground">Personne pour l'instant.</p>
-      {/if}
-    {/if}
   </div>
+
+  <ResponsiveSheet
+    bind:open
+    size="sm"
+    title="Qui vient ?"
+    description={`${playerCount} joueur${playerCount > 1 ? 's' : ''} attendu${playerCount > 1 ? 's' : ''} sur cette séance.`}
+  >
+    {#if busy}
+      <p class="py-6 text-center text-sm text-muted-foreground">Un instant…</p>
+    {:else if errorMsg}
+      <p class="py-6 text-center text-sm font-medium text-destructive" role="alert">{errorMsg}</p>
+    {:else if attendees && attendees.length > 0}
+      <ListView
+        items={attendees}
+        emptyTitle="Personne pour l'instant"
+        emptyDescription="Soyez le premier à vous inscrire."
+      >
+        {#snippet listRow(attendee)}
+          <ListRow
+            title={`${attendee.firstName} ${attendee.lastName}`}
+            subtitle={attendee.guests.length > 0
+              ? `avec ${attendee.guests.map((guest: GuestName) => `${guest.firstName} ${guest.lastName}`).join(', ')}`
+              : undefined}
+            value={attendee.guests.length > 0 ? `+${attendee.guests.length}` : undefined}
+          />
+        {/snippet}
+      </ListView>
+    {:else}
+      <p class="py-6 text-center text-sm text-muted-foreground">Personne pour l'instant.</p>
+    {/if}
+  </ResponsiveSheet>
 {/if}

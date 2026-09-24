@@ -38,6 +38,8 @@ describe('OpenPlayAttendees', () => {
   }
 
   const button = () => host.querySelector('button');
+  /* La liste vit dans une feuille, portée hors du conteneur de montage. */
+  const feuille = () => document.body;
 
   it('ne propose rien quand personne n’est inscrit', () => {
     // Rien à voir, et surtout rien à demander : pas d'appel inutile par séance vide.
@@ -54,12 +56,13 @@ describe('OpenPlayAttendees', () => {
   it('affiche les inscrits et leurs invités', async () => {
     render();
     button()!.click();
-    await vi.waitFor(() => expect(host.textContent).toContain('Camille Durand'));
+    await vi.waitFor(() => expect(feuille().textContent).toContain('Camille Durand'));
     flushSync();
 
-    expect(host.textContent).toContain('Marie Dupuis');
-    expect(host.textContent).toContain('avec Léa Martin');
-    expect(host.textContent).toContain('Masquer les inscrits');
+    expect(feuille().textContent).toContain('Marie Dupuis');
+    expect(feuille().textContent).toContain('avec Léa Martin');
+    // Le bouton n'a plus à changer de libellé : la feuille se ferme par sa croix.
+    expect(host.textContent).toContain('Voir qui vient');
   });
 
   it('ne demande que l’identifiant de séance', async () => {
@@ -79,7 +82,7 @@ describe('OpenPlayAttendees', () => {
     button()!.click();
     // Attendre que la liste soit rendue, et pas seulement demandée : le bouton reste
     // désactivé tant que le chargement court.
-    await vi.waitFor(() => expect(host.textContent).toContain('Camille Durand'));
+    await vi.waitFor(() => expect(feuille().textContent).toContain('Camille Durand'));
     flushSync();
 
     button()!.click(); // referme
@@ -93,6 +96,6 @@ describe('OpenPlayAttendees', () => {
     fetchMock.mockResolvedValueOnce(new Response('{}', { status: 500 }));
     render();
     button()!.click();
-    await vi.waitFor(() => expect(host.textContent).toContain('Liste indisponible'));
+    await vi.waitFor(() => expect(feuille().textContent).toContain('Liste indisponible'));
   });
 });
