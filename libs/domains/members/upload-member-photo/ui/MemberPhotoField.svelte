@@ -25,7 +25,8 @@
      * Confiée au composant plutôt que posée à côté de lui : c'est lui qui sait ce qui doit
      * rester sur la ligne de la pastille et ce qui passe en dessous.
      */
-    identity
+    identity,
+    photoADroite = false
   }: {
     baseSrc: string;
     endpoint?: string;
@@ -34,6 +35,14 @@
     canEdit?: boolean;
     size?: number;
     identity?: Snippet;
+    /**
+     * La pastille à droite de l'identité.
+     *
+     * Pour un en-tête de fiche sans cadre, où le rond de retour occupe la gauche : trois
+     * ronds à la file — retour, portrait, puis le nom — ne se lisaient plus comme une
+     * identité.
+     */
+    photoADroite?: boolean;
   } = $props();
 
   let currentVersion = $state<number | null>(version);
@@ -127,7 +136,7 @@
   photo épinglée en permanence dès qu'on a le droit de modifier.
 -->
 <div class="space-y-2">
-  <div class="flex items-center gap-4">
+  <div class="flex items-center gap-4 {photoADroite ? 'flex-row-reverse' : ''}">
     {#snippet avatar()}
       <Avatar.Root class="h-full w-full rounded-full">
         {#if src}

@@ -192,13 +192,21 @@ const frenchDate = (iso: string) =>
 
       {member && (
         <>
-          <section class="rounded-xl border border-border bg-card px-5 py-5 shadow-sm">
-            <div class="flex items-start gap-3">
+          {/*
+            L'identité sans cadre, et le portrait à droite.
+
+            Le rond de retour posé dans un cadre bordé faisait une pastille dans une
+            boîte, juste avant une seconde pastille — le portrait. Sans cadre, la ligne
+            se lit comme l'en-tête d'une page : d'où l'on vient, qui l'on regarde, et sa
+            photo au bout.
+          */}
+          <section>
+            <div class="flex items-center gap-3 [&>div]:min-w-0 [&>div]:flex-1">
             {retour && (
               <a
                 href={retour.href}
                 aria-label={retour.label}
-                class="mt-2 flex size-11 shrink-0 items-center justify-center rounded-full border border-border bg-card text-foreground no-underline transition-colors hover:bg-muted md:hidden"
+                class="flex size-11 shrink-0 items-center justify-center rounded-full border border-border bg-card text-foreground no-underline transition-colors hover:bg-muted md:hidden"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
               </a>
@@ -209,7 +217,8 @@ const frenchDate = (iso: string) =>
               version={member.photoUpdatedAt ?? null}
               {initials}
               canEdit={isMe}
-              size={96}
+              size={72}
+              photoADroite
             >
               <Fragment slot="identity">
                 <h1 class="text-xl sm:text-2xl font-bold text-foreground break-words">{fullName}</h1>
