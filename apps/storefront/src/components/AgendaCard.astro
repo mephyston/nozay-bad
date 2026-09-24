@@ -5,6 +5,7 @@ import type { OpenPlaySession } from '../lib/open-play';
 import EventRow from './EventRow.astro';
 import OpenPlayRow from './OpenPlayRow.astro';
 import { EventSignup } from '@nba/events-ui';
+import { dateDuRendezVous } from '../lib/agenda';
 import { OpenPlaySignup, OpenPlayOpenerButton, OpenPlayAttendees } from '@nba/schedules-ui';
 
 interface Props {
@@ -101,6 +102,8 @@ const today = new Date().toISOString().slice(0, 10);
               myGuests={rendezVous.myGuests}
               open={rendezVous.registration === 'open'}
               attendeeCount={rendezVous.attendeeCount}
+              titre={rendezVous.title}
+              sousTitre={dateDuRendezVous(rendezVous.startsAt)}
               endpoint="/agenda"
             />
           </div>

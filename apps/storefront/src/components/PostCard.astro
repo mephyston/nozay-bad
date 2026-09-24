@@ -2,6 +2,7 @@
 import { obfuscateEmails } from '@nba/html';
 import { enhanceBodyImages } from '@nba/cms/public';
 import { EventSignup } from '@nba/events-ui';
+import { dateDuRendezVous } from '../lib/agenda';
 import type { MemberPost } from '../lib/posts';
 import type { AgendaEvent } from '../lib/agenda';
 import { mediaUrl, withWebsiteMedia } from '../lib/media';
@@ -114,6 +115,8 @@ const coverSrc = post.cover ? mediaUrl(post.cover.key) : null;
           myGuests={linkedEvent.myGuests}
           open={linkedEvent.registration === 'open'}
           attendeeCount={linkedEvent.attendeeCount}
+          titre={linkedEvent.title}
+          sousTitre={dateDuRendezVous(linkedEvent.startsAt)}
           endpoint="/agenda"
         />
       </div>

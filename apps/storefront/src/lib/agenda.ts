@@ -53,3 +53,23 @@ export async function fetchUpcomingEvents(
     return [];
   }
 }
+
+/**
+ * La date d'un rendez-vous, telle que le tiroir d'inscription la rappelle.
+ *
+ * Les dates sont stockées en heure locale **sans fuseau** : on les relit telles
+ * quelles, comme `EventRow`. Les interpréter en UTC ferait reculer d'un jour tout
+ * rendez-vous du soir.
+ */
+export function dateDuRendezVous(startsAt: string): string {
+  const [date, heure = ''] = String(startsAt).split(/[T ]/);
+  const [a, m, j] = date.split('-').map(Number);
+  if (!a || !m || !j) return '';
+  const libelle = new Intl.DateTimeFormat('fr-FR', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long'
+  }).format(new Date(a, m - 1, j));
+  const hhmm = heure.slice(0, 5);
+  return hhmm && hhmm !== '00:00' ? `${libelle} à ${hhmm.replace(':', 'h')}` : libelle;
+}

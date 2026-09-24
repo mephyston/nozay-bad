@@ -7,6 +7,7 @@ import EventRow from '../components/EventRow.astro';
 import OpenPlayRow from '../components/OpenPlayRow.astro';
 import IndivCard from '../components/IndivCard.astro';
 import { EventSignup } from '@nba/events-ui';
+import { dateDuRendezVous } from '../lib/agenda';
 import { OpenPlaySignup, OpenPlayOpenerButton, OpenPlayAttendees } from '@nba/schedules-ui';
 import { featureOn } from '@nba/club/context';
 import { resolveEnv } from '../lib/request-context';
@@ -403,6 +404,8 @@ const today = new Date().toISOString().slice(0, 10);
                       myGuests={event.myGuests}
                       open={event.registration === 'open'}
                       attendeeCount={event.attendeeCount}
+              titre={event.title}
+              sousTitre={dateDuRendezVous(event.startsAt)}
                     />
                   </div>
                 )}
