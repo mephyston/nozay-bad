@@ -42,17 +42,14 @@
   /*
     La recherche filtrait… rien. Le champ de la barre d'outils était bien lié à
     `searchTerm`, mais personne ne s'en servait : taper un nom ne réduisait pas la
-    liste. Elle est désormais appliquée, et descend dans la loupe de la barre du bas.
+    liste.
+
+    Elle filtre maintenant, et c'est `dockSearch` de la barre d'outils qui la descend
+    dans la loupe — une seule déclaration, qui masque du même geste le champ du haut
+    sous 768 px. Déclarée à la main ici, elle s'ajoutait à celui-ci au lieu de le
+    remplacer : deux champs pour une même question sur le même écran.
   */
   const visibles = $derived(accesFiltres(users, searchTerm));
-
-  $effect(() =>
-    dockDePage.declarerRecherche({
-      placeholder: 'Rechercher un accès',
-      valeur: searchTerm,
-      onSubmit: (v) => (searchTerm = v)
-    })
-  );
 
   /* La création descend dans la barre du bas, comme sur tous les autres écrans. */
   $effect(() =>
@@ -128,8 +125,9 @@
     {#snippet toolbar()}
       <DataTableToolbar
         bind:searchValue={searchTerm}
-        searchPlaceholder="Rechercher un utilisateur..."
+        searchPlaceholder="Rechercher un accès"
         hasFilters={false}
+        dockSearch
       >
         {#snippet actions()}
           <!-- Sur téléphone, la création vit dans la barre du bas. -->
