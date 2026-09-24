@@ -4,12 +4,9 @@
   import {
     Tabs,
     Button,
-    ChoicePicker,
     DropdownMenu,
     dockDePage,
-    softNavigate,
     submitForm,
-    toSeasonOptions,
     uiConfirm,
     readApiError,
     openDocument,
@@ -221,11 +218,13 @@
    * L'exercice y est une action et non un filtre : il ne réduit pas ce qu'on lit, il
    * choisit quel document on lit.
    */
-  let exerciceOuvert = $state(false);
-
-  const seasonOptions = $derived(
-    toSeasonOptions(seasons).map((o) => ({ value: String(o.value), label: o.label }))
-  );
+  /*
+    Aucune pilule d'exercice déclarée ici : `SeasonSelector`, au bandeau de la page, en
+    porte déjà une — et les deux se retrouvaient côte à côte dans la barre du bas, avec
+    la même valeur et deux intitulés différents, « Saison » et « Exercice ». Le
+    sélecteur du design system reste seul maître : il tient la liste déroulante du bureau et
+    la pilule du téléphone d'une même déclaration.
+  */
 
   $effect(() => {
     const actions: SwipeAction[] = [];
@@ -250,26 +249,6 @@
     // Ces gestes impriment : un « + » y annoncerait une création qui n'existe pas.
     return dockDePage.declarerActions(actions, { icon: Printer, label: 'Imprimer' });
   });
-
-  /*
-    L'exercice n'est ni une recherche ni une création : il dit ce qu'on regarde. Il a
-    donc sa propre pilule dans la barre, qui affiche la valeur courante — le `+` ne la
-    matérialisait pas, et un exercice qu'on ne voit pas ne se vérifie jamais.
-  */
-  $effect(() => {
-    if (seasonOptions.length <= 1) return;
-    return dockDePage.declarerPortee({
-      label: 'Exercice',
-      valeur: selectedSeason,
-      ouvrir: () => (exerciceOuvert = true)
-    });
-  });
-
-  function choisirExercice(code: string) {
-    const url = new URL(window.location.href);
-    url.searchParams.set('season', code);
-    softNavigate(url.toString());
-  }
 
   const compResultatProps = $derived({
     report, prevReport, selectedSeason, seasons, categories, chargeClasses, produitClasses,
@@ -328,14 +307,6 @@
       {/if}
     </div>
   </div>
-
-  <ChoicePicker
-    bind:open={exerciceOuvert}
-    title="Exercice"
-    value={selectedSeason}
-    options={seasonOptions}
-    onChoose={choisirExercice}
-  />
 
   <!--
     IMPRESSION : sections dédiées, toujours montées mais cachées à l'écran.

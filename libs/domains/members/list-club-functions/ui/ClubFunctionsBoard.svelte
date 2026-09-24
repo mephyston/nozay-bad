@@ -8,7 +8,7 @@
     SearchableCombobox,
     uiConfirm,
     flashAndReload,
-    toSeasonOptions,
+    SeasonSelector,
     ChoiceField,
     dockDePage
   } from '@nba/ui';
@@ -38,17 +38,15 @@
     canWrite?: boolean;
   } = $props();
 
-  // La saison vient de l'URL et la page est rendue côté serveur : changer de saison
-  // est une navigation, pas un état local.
-  let selectedSeason = $state(season);
-  /* Même liste, même ordre chronologique que partout ailleurs : ce sélecteur rendait ses
-     options dans l'ordre de la réponse serveur, donc de la plus récente à la plus ancienne. */
-  const seasonOptions = $derived(toSeasonOptions(seasons));
-  function changeSeason() {
-    if (selectedSeason !== season) {
-      window.location.href = `/admin/members/dirigeants?season=${encodeURIComponent(selectedSeason)}`;
-    }
-  }
+  /*
+    La saison est confiée à `SeasonSelector` : au doigt elle descend en pilule dans la
+    barre du bas, avec sa valeur courante lisible sans rien ouvrir, et au-dessus de
+    768 px elle reste une liste déroulante du bandeau. Elle occupait ici une rangée en haut
+    d'un tableau qu'on fait défiler — donc hors de vue dès qu'on lit.
+
+    Au passage, le changement de saison passe de `window.location.href` à la navigation
+    douce du sélecteur : la coquille de l'admin n'est plus rechargée pour un filtre.
+  */
 
   const byFunction = $derived(
     CLUB_FUNCTIONS.map((fn: ClubFunction) => ({
@@ -189,25 +187,7 @@
       Une fonction au plus par adhérent ; président, trésorier et trésorier adjoint n'ont qu'un titulaire.
     </div>
     <div class="flex w-full items-center gap-2 md:w-auto">
-      {#if seasonOptions.length > 0}
-        <div class="w-full md:w-36">
-          <!--
-            Au doigt, la saison devient une rangée : intitulé à gauche, valeur et
-            double chevron à droite, comme tout ce qui ouvre un menu. Le bloc autour
-            porte l'intitulé que la rangée absorbe — sans lui, la rangée n'affiche
-            que sa valeur, et rien ne dit de quoi elle parle.
-          -->
-          <FormField id="saison-dirigeants" label="Saison">
-            <ChoiceField
-              id="saison-dirigeants"
-              label="Saison"
-              options={seasonOptions.map((o) => ({ value: String(o.value), label: o.label.replace('Saison ', '') }))}
-              bind:value={selectedSeason}
-              onChange={changeSeason}
-            />
-          </FormField>
-        </div>
-      {/if}
+      <SeasonSelector {seasons} current={season} size="sm" />
       {#if canWrite}
         <!-- Sur téléphone, cette action vit dans la barre du bas. -->
         <Button size="sm" onclick={() => openCreate()} class="hidden md:inline-flex">

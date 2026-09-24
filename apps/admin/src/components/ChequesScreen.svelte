@@ -23,22 +23,19 @@
   let errorMsg = $state<string | null>(null);
 </script>
 
-<div class="no-print">
-  <a
-    href="/admin/accounting/cheques"
-    class="text-muted-foreground hover:text-foreground inline-flex items-center gap-2 text-sm transition-colors"
-  >
-    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
-    Retour aux remises de chèques
-  </a>
-</div>
-
 {#if errorMsg}
   <div class="mt-6"><ErrorAlert message={errorMsg} /></div>
 {/if}
 
 <div class="mt-6">
+  <!--
+    Le retour au hub des chèques passe du lien de texte au rond à chevron, à gauche du
+    titre et sur téléphone seulement : posé au-dessus du titre, il était hors du pouce
+    et disparaissait au premier défilement. Le fil d'Ariane le remplace au-dessus de
+    768 px.
+  -->
   <PageHeader
+    retour={{ href: '/admin/accounting/cheques', libelle: 'Retour aux remises de chèques' }}
     title={titre}
     description={`Gestion et suivi des chèques physiques, génération de bordereaux de remise et rapprochement bancaire${seasonName ? ` pour la saison ${seasonName}` : ''}.`}
     class="print:hidden"

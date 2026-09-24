@@ -40,29 +40,27 @@
   let errorMsg = $state<string | null>(null);
 </script>
 
-<div class="no-print">
-  <a
-    href="/admin/accounting/reports"
-    class="text-muted-foreground hover:text-foreground inline-flex items-center gap-2 text-sm transition-colors"
-  >
-    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
-    Retour aux rapports financiers
-  </a>
-</div>
-
 {#if errorMsg}
   <div class="mt-6"><ErrorAlert message={errorMsg} /></div>
 {/if}
 
 <div class="mt-6">
-  <PageHeader title={titre} description="">
+  <!--
+    Le retour aux rapports est un rond à chevron, à gauche du titre et sur téléphone
+    seulement. C'était un lien de texte posé **au-dessus** du titre : hors du pouce, et
+    hors de vue dès qu'on défile un document de plusieurs écrans de haut. Au-dessus de
+    768 px, le fil d'Ariane de la barre dit déjà d'où l'on vient.
+  -->
+  <PageHeader
+    title={titre}
+    description=""
+    retour={{ href: '/admin/accounting/reports', libelle: 'Retour aux rapports financiers' }}
+  >
     {#snippet actions()}
       <!-- Au doigt, l'exercice se change depuis la barre du bas : un document qu'on
            fait défiler sur plusieurs écrans n'a pas à garder ses contrôles en tête. -->
       {#if seasons.length}
-        <div class="hidden md:block">
-          <SeasonSelector {seasons} current={seasonId} />
-        </div>
+        <SeasonSelector {seasons} current={seasonId} />
       {/if}
     {/snippet}
   </PageHeader>

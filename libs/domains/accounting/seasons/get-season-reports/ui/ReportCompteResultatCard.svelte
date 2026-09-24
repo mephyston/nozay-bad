@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { Button, Card, Alert, toast } from '@nba/ui';
-  import { History } from '@lucide/svelte';
+  import { Button, Card, Alert, toast, dockDePage } from '@nba/ui';
+  import { History, Save } from '@lucide/svelte';
   import type { ReportData, Season, DbCategory, AccountClass } from './report-types';
   import { getCatTotal as totalCategorie } from './report-calculations';
   import ReportChargesColumn from './ReportChargesColumn.svelte';
@@ -104,6 +104,30 @@
       `${remplies} ligne${remplies > 1 ? 's' : ''} remplie${remplies > 1 ? 's' : ''} d'après le réalisé de la saison précédente. Les montants déjà saisis sont conservés ; pensez à enregistrer.`
     );
   }
+
+  /*
+    Les deux gestes du prévisionnel dans la barre du bas.
+
+    Déclarés seulement en mode prévisionnel et exercice ouvert — soit exactement quand
+    les boutons existent. La carte est aussi montée, cachée, dans la zone d'impression :
+    en mode « réalisé », donc sans déclarer quoi que ce soit, sinon la barre porterait
+    deux fois les mêmes actions.
+  */
+  $effect(() => {
+    if (mode !== 'previsionnel' || isClosed) return;
+    return dockDePage.declarerActions(
+      [
+        {
+          id: 'proposer-budget',
+          label: 'Proposer d’après la saison précédente',
+          icon: History,
+          run: proposerDepuisSaisonPrecedente
+        },
+        { id: 'enregistrer-budget', label: 'Enregistrer le prévisionnel', icon: Save, run: onSaveBudget }
+      ],
+      { icon: Save, label: 'Prévisionnel' }
+    );
+  });
 
   const totalDepReal = $derived(getTotalDepensesRealise(mode));
   const totalRecReal = $derived(getTotalRecettesRealise(mode));
@@ -238,13 +262,19 @@
           </Alert.Root>
         {/if}
         
-        <div class="flex justify-end gap-3">
+        <!--
+          Les deux boutons ne se montrent qu'au-dessus de 768 px : côte à côte,
+          « Proposer d'après la saison précédente » dépassait à lui seul la largeur d'un
+          téléphone. Au doigt, les deux gestes descendent dans la barre du bas, où ils
+          sont nommés en entier et à hauteur de pouce.
+        -->
+        <div class="hidden justify-end gap-3 md:flex">
           <Button
             variant="outline"
             onclick={proposerDepuisSaisonPrecedente}
             disabled={!saisonPrecedenteConnue}
             title={saisonPrecedenteConnue ? 'Remplit les lignes vides avec le réalisé de la saison précédente' : 'Aucune saison précédente connue'}
-            class="flex items-center gap-1.5 border-primary/20 text-primary hover:bg-primary/5"
+            class="items-center gap-1.5 border-primary/20 text-primary hover:bg-primary/5"
           >
             <History class="w-4 h-4" />
             Proposer d'après la saison précédente

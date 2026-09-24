@@ -53,11 +53,22 @@ export interface ReportData {
     totalProjectedRecettes: number;
     totalProjectedDepenses: number;
     projectedNetResult: number;
+    /*
+      Les trois séries du moteur — total, compte courant, Livret A — chacune en réel
+      et en projeté. Ce type annonçait `real` et `projected`, deux champs que
+      `forecast-engine.ts` n'écrit plus depuis qu'il distingue les comptes : l'écart ne
+      se voyait pas, les `.svelte` des bibliothèques de domaine n'étant pas vérifiés.
+      Il se voit depuis que `treasury-forecast-row-model.ts` le lit en TypeScript.
+    */
     treasuryForecast?: {
       month: string;
       label: string;
-      real: number | null;
-      projected: number | null;
+      realTotal: number | null;
+      realCurrent: number | null;
+      realSavings: number | null;
+      projectedTotal: number | null;
+      projectedCurrent: number | null;
+      projectedSavings: number | null;
       projectedRecettes: number;
       projectedDepenses: number;
     }[];

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Table, Card } from '@nba/ui';
+  import TreasuryForecastList from './TreasuryForecastList.svelte';
   import { formatAmount } from './report-utils';
   import type { ReportData } from './report-types';
 
@@ -159,8 +160,17 @@
       </div>
     </div>
 
+    <!--
+      Sur téléphone, une liste : six colonnes de montants ne tiennent pas dans 390 px, et
+      le `overflow-x-auto` qui les portait faisait défiler la page en largeur. Le tableau
+      reprend la main au-dessus de 768 px, où il a la place de dire le détail par compte.
+    -->
+    <div class="mt-16 border-t border-border pt-8 md:hidden">
+      <TreasuryForecastList {forecast} />
+    </div>
+
     <!-- Table -->
-    <div class="overflow-x-auto mt-16 border-t border-border pt-8">
+    <div class="mt-16 hidden overflow-x-auto border-t border-border pt-8 md:block">
       <Table.Root class="w-full border-collapse text-left text-sm">
         <Table.Header class="bg-muted text-muted-foreground font-medium border-b border-border">
           <Table.Row>
