@@ -1,7 +1,9 @@
 <script lang="ts">
-  import { Input, Button, Badge, Table, Card, EmptyState, uiConfirm, flashAndReload, submitForm, Sheet, FormField, DataTable, DataTableToolbar, Checkbox, uiAlert } from '@nba/ui';
-  import { Plus, Trash2, Shield, Pencil } from '@lucide/svelte';
+  import { Input, Button, Badge, Table, uiConfirm, flashAndReload, submitForm, FormSheet, FormField, DataTable, DataTableToolbar, MultiChoiceField, dockDePage, uiAlert } from '@nba/ui';
+  import { Plus, Trash2, Pencil } from '@lucide/svelte';
   import { ROLES, ROLE_LABELS, ROLE_DESCRIPTIONS, ROLE_PERMISSIONS, type Role } from '../shared/roles';
+  import { accesFiltres, libelleDeRole, tonDeRole } from '../shared/users-row-model';
+  import UserList from './UserList.svelte';
 
   /**
    * Destination des écritures : le relais du domaine, et non la page hôte.
@@ -30,19 +32,40 @@
     [...new Set(selectedRoles.flatMap((r) => [...ROLE_PERMISSIONS[r]]))].sort()
   );
 
-  function toggleRole(role: Role) {
-    selectedRoles = selectedRoles.includes(role)
-      ? selectedRoles.filter((r) => r !== role)
-      : [...selectedRoles, role];
-  }
+  /*
+    Les libellés et les tons viennent du modèle de rangée, que la liste mobile lit
+    aussi : deux vocabulaires pour une même donnée finissent toujours par diverger.
+  */
+  const roleVariant = tonDeRole;
+  const roleLabel = libelleDeRole;
 
-  function roleVariant(role: string) {
-    return role === 'super_admin' ? 'destructive' : role === 'membre' ? 'outline' : 'secondary';
-  }
+  /*
+    La recherche filtrait… rien. Le champ de la barre d'outils était bien lié à
+    `searchTerm`, mais personne ne s'en servait : taper un nom ne réduisait pas la
+    liste. Elle est désormais appliquée, et descend dans la loupe de la barre du bas.
+  */
+  const visibles = $derived(accesFiltres(users, searchTerm));
 
-  function roleLabel(role: string) {
-    return ROLE_LABELS[role as Role] ?? role;
-  }
+  $effect(() =>
+    dockDePage.declarerRecherche({
+      placeholder: 'Rechercher un accès',
+      valeur: searchTerm,
+      onSubmit: (v) => (searchTerm = v)
+    })
+  );
+
+  /* La création descend dans la barre du bas, comme sur tous les autres écrans. */
+  $effect(() =>
+    dockDePage.declarerActions([
+      { id: 'acces', label: 'Ajouter un accès', icon: Plus, run: openAddSheet }
+    ])
+  );
+
+  const optionsDeRole = ROLES.map((r) => ({
+    value: r,
+    label: ROLE_LABELS[r],
+    hint: ROLE_DESCRIPTIONS[r]
+  }));
 
   function openAddSheet() {
     editUserId = null;
@@ -97,7 +120,8 @@
 
 <div class="space-y-6">
   <DataTable
-    data={users}
+    mobileSpacing="list"
+    data={visibles}
     emptyTitle="Aucun utilisateur"
     emptyDescription="Ajoutez des accès pour permettre à d'autres membres d'administrer l'association."
   >
@@ -108,126 +132,20 @@
         hasFilters={false}
       >
         {#snippet actions()}
-          <Sheet.Root bind:open={isSheetOpen}>
-            <Sheet.Trigger asChild>
-              {#snippet child({ props })}
-                <Button {...props} class="font-bold flex items-center justify-center gap-1.5 shrink-0 h-9" onclick={openAddSheet}>
-                  <Plus class="w-4 h-4" />
-                  <span>Ajouter</span>
-                </Button>
-              {/snippet}
-            </Sheet.Trigger>
-            <Sheet.Content side="right" size="md" class="w-full">
-              <Sheet.Header>
-                <Sheet.Title>{editUserId ? 'Modifier l\'accès' : 'Ajouter un accès'}</Sheet.Title>
-                <Sheet.Description>{editUserId ? 'Modifiez les droits du collaborateur.' : 'Donnez l\'accès à un nouveau collaborateur.'}</Sheet.Description>
-              </Sheet.Header>
-              <!--
-                Le corps défile, l'en-tête et le pied restent en place : la liste des
-                rôles et l'aperçu des droits dépassent la hauteur de l'écran, et sans
-                cela le bouton d'enregistrement sortait du cadre.
-              -->
-              <div class="flex-1 min-h-0 overflow-y-auto space-y-4 py-6 pr-1">
-                <FormField id="name" label="Nom">
-                  <Input id="name" bind:value={newName} placeholder="Jean Dupont" />
-                </FormField>
-                <FormField id="email" label="Email">
-                  <Input id="email" type="email" bind:value={newEmail} placeholder="jean@example.com" disabled={!!editUserId} />
-                </FormField>
-                <FormField id="roles" label="Rôles">
-                  <div class="space-y-1">
-                    {#each ROLES as role}
-                      <label class="flex items-start gap-3 p-2 rounded-md hover:bg-muted cursor-pointer transition-colors">
-                        <div class="mt-0.5">
-                          <Checkbox
-                            checked={selectedRoles.includes(role)}
-                            onCheckedChange={() => toggleRole(role)}
-                            aria-label={ROLE_LABELS[role]}
-                          />
-                        </div>
-                        <div class="flex flex-col flex-1 leading-tight">
-                          <span class="text-sm font-bold text-foreground">{ROLE_LABELS[role]}</span>
-                          <span class="text-xs text-muted-foreground">{ROLE_DESCRIPTIONS[role]}</span>
-                        </div>
-                      </label>
-                    {/each}
-                  </div>
-                </FormField>
-
-                <FormField id="granted" label="Droits accordés">
-                  {#if grantedPermissions.length === 0}
-                    <p class="text-xs text-muted-foreground">
-                      Aucun rôle sélectionné : le compte n'aura accès à rien. À défaut, le
-                      rôle « Membre » lui sera attribué.
-                    </p>
-                  {:else}
-                    <!-- Pas de défilement propre : il piégerait la molette à
-                         l'intérieur du panneau alors que le corps défile déjà. -->
-                    <div class="flex flex-wrap gap-1 rounded-md border border-border p-2">
-                      {#each grantedPermissions as permission}
-                        <Badge variant="outline" size="xs">{permission}</Badge>
-                      {/each}
-                    </div>
-                  {/if}
-                </FormField>
-              </div>
-              <Sheet.Footer>
-                <Button onclick={saveUser} class="w-full">Enregistrer</Button>
-              </Sheet.Footer>
-            </Sheet.Content>
-          </Sheet.Root>
+          <!-- Sur téléphone, la création vit dans la barre du bas. -->
+          <Button
+            onclick={openAddSheet}
+            class="hidden h-9 shrink-0 items-center justify-center gap-1.5 font-bold md:flex"
+          >
+            <Plus class="w-4 h-4" />
+            <span>Ajouter</span>
+          </Button>
         {/snippet}
       </DataTableToolbar>
     {/snippet}
 
     {#snippet mobileView()}
-      {#if users.length === 0}
-        <div class="p-6 text-center text-muted-foreground text-sm">
-          <EmptyState
-            icon={Shield}
-            title="Aucun utilisateur"
-            description="Ajoutez des accès pour permettre à d'autres membres d'administrer l'association."
-          />
-        </div>
-      {:else}
-        {#each users as user (user.id)}
-          <Card.Root>
-            <Card.Content class="p-4 space-y-3">
-              <div class="flex items-start justify-between gap-2">
-                <div>
-                  <h4 class="font-bold text-sm text-foreground">{user.name}</h4>
-                  <div class="text-muted-foreground text-xs">{user.email}</div>
-                  <div class="mt-2 flex flex-wrap gap-1">
-                    {#each user.roles ?? [] as role}
-                      <Badge variant={roleVariant(role)} size="xs">{roleLabel(role)}</Badge>
-                    {/each}
-                  </div>
-                </div>
-              </div>
-              <div class="flex items-center justify-end gap-2 pt-2 border-t border-border/50">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onclick={() => openEditSheet(user)}
-                  class="h-8 text-xs font-semibold gap-1.5"
-                >
-                  <Pencil class="w-3.5 h-3.5" />
-                  <span>Éditer</span>
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onclick={() => deleteUser(user.id)}
-                  class="h-8 text-xs font-semibold gap-1.5 text-destructive hover:bg-destructive/10 border-destructive/30"
-                >
-                  <Trash2 class="w-3.5 h-3.5" />
-                  <span>Supprimer</span>
-                </Button>
-              </div>
-            </Card.Content>
-          </Card.Root>
-        {/each}
-      {/if}
+      <UserList users={visibles} onEdit={openEditSheet} onDelete={deleteUser} />
     {/snippet}
 
     {#snippet header()}
@@ -260,3 +178,62 @@
     {/snippet}
   </DataTable>
 </div>
+
+<!--
+  Le formulaire monte du bas sur téléphone et porte sa validation dans la barre de la
+  feuille. Il vivait dans une `Sheet` brute, avec un pied que le clavier logiciel
+  recouvrait dès qu'on saisissait une adresse — et une liste de rôles assez haute pour
+  que ce pied soit déjà loin.
+-->
+<FormSheet
+  bind:open={isSheetOpen}
+  title={editUserId ? "Modifier l'accès" : 'Ajouter un accès'}
+  description={editUserId
+    ? 'Modifiez les droits du collaborateur.'
+    : "Donnez l'accès à un nouveau collaborateur."}
+  onSubmit={(e) => {
+    e.preventDefault();
+    void saveUser();
+  }}
+>
+  <FormField id="name" label="Nom">
+    <Input id="name" bind:value={newName} placeholder="Jean Dupont" />
+  </FormField>
+
+  <FormField id="email" label="Email">
+    <Input id="email" type="email" bind:value={newEmail} placeholder="jean@example.com" disabled={!!editUserId} />
+  </FormField>
+
+  <!--
+    Sept rôles, dont on n'en coche presque jamais plus d'un : au doigt, une rangée qui
+    dit ce qui est retenu et mène à l'écran de choix, plutôt que sept cases de 16 px
+    empilées sur sept lignes. La grille reste à la souris, qui vise au pixel.
+  -->
+  <FormField id="roles" label="Rôles">
+    <MultiChoiceField
+      id="roles"
+      label="Rôles"
+      options={optionsDeRole}
+      bind:values={selectedRoles}
+      placeholder="Aucun rôle"
+      description="Les droits accordés sont la réunion de ceux de chaque rôle."
+    />
+  </FormField>
+
+  <FormField id="granted" label="Droits accordés">
+    {#if grantedPermissions.length === 0}
+      <p class="text-xs text-muted-foreground">
+        Aucun rôle sélectionné : le compte n'aura accès à rien. À défaut, le
+        rôle « Membre » lui sera attribué.
+      </p>
+    {:else}
+      <!-- Pas de défilement propre : il piégerait la molette à
+           l'intérieur du panneau alors que le corps défile déjà. -->
+      <div class="flex flex-wrap gap-1 rounded-md border border-border p-2">
+        {#each grantedPermissions as permission}
+          <Badge variant="outline" size="xs">{permission}</Badge>
+        {/each}
+      </div>
+    {/if}
+  </FormField>
+</FormSheet>

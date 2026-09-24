@@ -1,6 +1,6 @@
 <script lang="ts">
   import { tick } from 'svelte';
-  import { CollapsibleSection, Table, Badge, Button, Checkbox, Input, Select, submitForm } from '@nba/ui';
+  import { CollapsibleSection, Table, Badge, Button, Checkbox, Input, FormField, ChoiceField, SwitchField, submitForm } from '@nba/ui';
   import { Check, Minus, AlertTriangle, RotateCcw, Search, ChevronDown } from '@lucide/svelte';
   import { ROLE_PERMISSIONS, type Role } from '../shared/roles';
   import { PERMISSION_LABELS, groupedPermissions } from '../shared/catalog';
@@ -470,16 +470,26 @@
           l'écran — au-delà de `md`, où la matrice reprend la main.
         -->
         <div class="md:hidden space-y-3">
-          <Select bind:value={viewedRole} aria-label="Rôle affiché">
-            {#each roles as role (role.role)}
-              <option value={role.role}>{role.label}</option>
-            {/each}
-          </Select>
+          <!--
+            Les deux contrôles de la vue aux normes des champs : une rangée qui mène à
+            l'écran de choix pour le rôle affiché, un interrupteur pour le filtre. Une
+            liste déroulante native fait 32 px de haut, et une case à cocher posait
+            l'état avant un libellé, à une abscisse qui dépendait du libellé voisin.
+          -->
+          <FormField id="role-affiche" label="Rôle affiché">
+            <ChoiceField
+              id="role-affiche"
+              label="Rôle affiché"
+              options={roles.map((r) => ({ value: r.role, label: r.label }))}
+              bind:value={viewedRole}
+            />
+          </FormField>
 
-          <label class="flex items-center gap-2 text-sm cursor-pointer">
-            <Checkbox bind:checked={onlyGranted} />
-            <span class="text-muted-foreground">N'afficher que les droits accordés</span>
-          </label>
+          <SwitchField
+            id="droits-accordes"
+            label="Droits accordés seulement"
+            bind:checked={onlyGranted}
+          />
 
           {#if listedRole}
             {@render roleList(listedRole.role, false)}
