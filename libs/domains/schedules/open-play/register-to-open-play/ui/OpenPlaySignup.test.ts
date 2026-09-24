@@ -156,9 +156,14 @@ describe('OpenPlaySignup', () => {
     expect(host.textContent).toContain('Les inscriptions sont closes');
   });
 
-  it('dit combien de joueurs manquent au seuil', () => {
+  it('ne répète pas le remplissage de la séance : la ligne au-dessus le dit', () => {
+    /*
+      « Il manque deux joueurs pour ouvrir » figurait ici **et** sur la ligne de la
+      séance, mot pour mot. La phrase est dite une seule fois, là où l'on lit la séance ;
+      l'encart ne garde que ce qui lui appartient — la fermeture, et le refus du serveur.
+    */
     render({ myGuests: [], playerCount: 2, minPlayers: 4 });
-    expect(host.textContent).toContain('2 joueurs attendus');
-    expect(host.textContent).toContain('il en faut 4 pour ouvrir');
+    expect(host.textContent).not.toContain('Il manque');
+    expect(host.textContent).not.toContain('inscrits');
   });
 });

@@ -46,7 +46,18 @@
   let submitting = $state(false);
   let errorMessage = $state<string | null>(null);
 
-  const open = $derived(family !== null);
+  /**
+   * L'ouverture de la feuille, tenue **ici** et synchronisée sur la famille choisie.
+   *
+   * Passée en simple propriété dérivée, la feuille restait close à la seconde
+   * ouverture : la coquille écrit son propre booléen en se fermant, et la valeur reçue
+   * ne reprenait plus la main. C'est le même piège que les tiroirs de l'administration,
+   * qui refusaient de se rouvrir.
+   */
+  let ouvert = $state(false);
+  $effect(() => {
+    ouvert = family !== null;
+  });
 
   // À chaque ouverture : un seul choix se présélectionne, plusieurs laissent choisir.
   $effect(() => {
@@ -132,7 +143,7 @@
   écrit donc ce qui bloque, à la place de ne rien faire.
 -->
 <FormSheet
-  {open}
+  bind:open={ouvert}
   {onOpenChange}
   title={family?.product.name ?? 'Commander'}
   description={family?.product.description || undefined}
@@ -230,43 +241,68 @@
       {/if}
 
       <!--
+        Quantité, paiement et total n'apparaissent **qu'une fois la taille choisie**.
+
+        Ils s'affichaient d'emblée, inertes : les boutons de quantité grisés, le total à
+        zéro, et rien qui dise pourquoi. On croyait le formulaire cassé. Un article sans
+        déclinaison n'a rien à choisir : sa taille est sélectionnée d'office, et la suite
+        s'affiche aussitôt.
+
         Quantité et paiement l'un sous l'autre : côte à côte, la liste des moyens de
         paiement se réduisait à une demi-largeur de téléphone et tronquait « Virement
         bancaire » au premier mot.
       -->
-      <FormField id="order-quantity" label="Quantité">
-        <div class="flex w-fit items-center overflow-hidden rounded-xl border border-border bg-background">
-          <Button type="button" variant="ghost" onclick={() => (quantity -= 1)} disabled={!selected || quantity <= 1} class="h-11 rounded-none border-0 px-4" aria-label="Moins">
-            <Minus class="h-4 w-4" />
-          </Button>
-          <input
-            id="order-quantity"
-            type="number"
-            min="1"
-            max={maxQuantity}
-            bind:value={quantity}
-            disabled={!selected}
-            class="h-11 w-12 border-0 bg-transparent p-0 text-center text-sm font-semibold focus-visible:outline-none"
-          />
-          <Button type="button" variant="ghost" onclick={() => (quantity += 1)} disabled={!selected || quantity >= maxQuantity} class="h-11 rounded-none border-0 px-4" aria-label="Plus">
-            <Plus class="h-4 w-4" />
-          </Button>
+      {#if !selected}
+        <!--
+          La bulle du menu du compte, réemployée : la même forme dit déjà « voici ce
+          qu'il faut faire » ailleurs dans l'application. Sa pointe vise les
+          déclinaisons, juste au-dessus.
+        -->
+        <div
+          role="status"
+          data-testid="variant-hint"
+          class="relative rounded-md border border-border bg-popover p-3 text-xs text-popover-foreground shadow-lg"
+        >
+          <span class="absolute -top-1.5 left-6 h-3 w-3 rotate-45 border-l border-t border-border bg-popover" aria-hidden="true"></span>
+          <p class="font-semibold text-foreground">Choisissez d'abord une taille</p>
+          <p class="mt-1 text-muted-foreground">
+            Le prix, la quantité et le mode de paiement s'affichent ensuite.
+          </p>
         </div>
-      </FormField>
+      {:else}
+        <FormField id="order-quantity" label="Quantité">
+          <div class="flex w-fit items-center overflow-hidden rounded-xl border border-border bg-background">
+            <Button type="button" variant="ghost" onclick={() => (quantity -= 1)} disabled={quantity <= 1} class="h-11 rounded-none border-0 px-4" aria-label="Moins">
+              <Minus class="h-4 w-4" />
+            </Button>
+            <input
+              id="order-quantity"
+              type="number"
+              min="1"
+              max={maxQuantity}
+              bind:value={quantity}
+              class="h-11 w-12 border-0 bg-transparent p-0 text-center text-sm font-semibold focus-visible:outline-none"
+            />
+            <Button type="button" variant="ghost" onclick={() => (quantity += 1)} disabled={quantity >= maxQuantity} class="h-11 rounded-none border-0 px-4" aria-label="Plus">
+              <Plus class="h-4 w-4" />
+            </Button>
+          </div>
+        </FormField>
 
-      <FormField id="order-payment" label="Mode de paiement">
-        <SearchableCombobox
-          id="order-payment"
-          items={paymentMethods.map((pm) => ({ label: pm.label, value: pm.value }))}
-          placeholder="Sélectionner..."
-          bind:value={paymentMethod}
-        />
-      </FormField>
+        <FormField id="order-payment" label="Mode de paiement">
+          <SearchableCombobox
+            id="order-payment"
+            items={paymentMethods.map((pm) => ({ label: pm.label, value: pm.value }))}
+            placeholder="Sélectionner..."
+            bind:value={paymentMethod}
+          />
+        </FormField>
 
-      <div class="flex items-center justify-between rounded-xl border border-border bg-muted/30 px-4 py-3">
-        <span class="text-sm text-muted-foreground">Total</span>
-        <span class="font-outfit text-lg font-bold tabular-nums text-foreground" data-testid="order-total">{formatEuros(totalCents)}</span>
-      </div>
+        <div class="flex items-center justify-between rounded-xl border border-border bg-muted/30 px-4 py-3">
+          <span class="text-sm text-muted-foreground">Total</span>
+          <span class="font-outfit text-lg font-bold tabular-nums text-foreground" data-testid="order-total">{formatEuros(totalCents)}</span>
+        </div>
+      {/if}
 
       {#if blockingReason && !submitting}
         <!-- Ce qui bloque est dit sous le formulaire, jamais deviné. -->
@@ -279,11 +315,26 @@
   {/if}
 
   {#snippet footer(formId)}
+    <!--
+      Le pied nommé, au-dessus de 768 px seulement : sous cette largeur, ce sont les deux
+      ronds de la barre. « Annuler » y figure comme dans tous les autres formulaires —
+      la croix de la feuille est discrète, et refermer doit être aussi nommé que valider.
+    -->
+    <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+    <Button
+      type="button"
+      variant="outline"
+      disabled={submitting}
+      onclick={() => (ouvert = false)}
+      class="h-11 w-full sm:w-auto"
+    >
+      Annuler
+    </Button>
     <Button
       type="submit"
       form={formId}
       disabled={blockingReason !== null || submitting}
-      class="h-11 w-full gap-2 rounded-xl text-sm font-bold shadow-md"
+      class="h-11 w-full gap-2 rounded-xl text-sm font-bold shadow-md sm:w-auto"
       data-testid="order-submit"
     >
       {#if submitting}
@@ -293,5 +344,6 @@
         Valider la commande
       {/if}
     </Button>
+    </div>
   {/snippet}
 </FormSheet>

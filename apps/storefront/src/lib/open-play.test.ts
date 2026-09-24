@@ -40,10 +40,19 @@ describe('date lisible', () => {
 });
 
 describe('phrase d’état', () => {
-  it('dit ce qui manque au seuil', () => {
+  it('dit ce qui manque pour ouvrir, et non « 2 sur 4 »', () => {
+    // Le seuil est un minimum pour ouvrir, pas une capacité : « 2 sur 4 » se lisait
+    // « il reste deux places », alors qu'un gymnase en accueille seize.
     expect(sessionStatusLabel(session({ playerCount: 2 }))).toEqual({
-      text: '2 joueurs sur 4',
+      text: 'Il manque 2 joueurs pour ouvrir',
       tone: 'pending'
+    });
+  });
+
+  it('une fois le seuil atteint, ne dit plus que le nombre d’inscrits', () => {
+    expect(sessionStatusLabel(session({ playerCount: 6 }))).toEqual({
+      text: '6 joueurs inscrits',
+      tone: 'ok'
     });
   });
 

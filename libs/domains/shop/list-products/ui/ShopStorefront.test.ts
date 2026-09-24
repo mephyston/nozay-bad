@@ -125,7 +125,10 @@ describe('ShopStorefront', () => {
     expect(box.textContent).toContain('D. Jean');
     const submit = submitBtn();
     expect(submit.disabled).toBe(true);
-    expect(box.textContent).toContain('Choisissez une déclinaison.');
+    // Tant qu'aucune taille n'est choisie : la bulle, et ni prix ni quantité.
+    expect(box.querySelector('[data-testid="variant-hint"]')).not.toBeNull();
+    expect(box.querySelector('[data-testid="order-total"]')).toBeNull();
+    expect(box.querySelector('button[aria-label="Plus"]')).toBeNull();
 
     const choices = Array.from(box.querySelectorAll('[data-testid="variant-choice"]')) as HTMLButtonElement[];
     expect(choices.map((c) => c.textContent?.trim().split(/\s/)[0])).toEqual(['S', 'L', 'XL']);
@@ -229,6 +232,35 @@ describe('ShopStorefront', () => {
     soumettre();
     await vi.waitFor(() => expect(fetch).toHaveBeenCalled());
     expect(JSON.parse((fetch as any).mock.calls[0][1].body).memberId).toBe(2);
+  });
+
+  it('rouvre la commande après une fermeture', async () => {
+    /*
+      La feuille tient son ouverture en propre et la synchronise sur la famille choisie.
+      Passée en simple propriété, elle restait fermée à la seconde ouverture : la
+      coquille avait écrit son booléen local en se fermant, et la valeur reçue ne
+      reprenait plus la main.
+    */
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+    mountStorefront(target);
+    flushSync();
+
+    cards(target)[1].click();
+    flushSync();
+    await vi.waitFor(() => expect(dialog()).not.toBeNull());
+
+    const fermer = [...(feuille()?.querySelectorAll('button') ?? [])].find((b) =>
+      b.textContent?.includes('Annuler')
+    );
+    expect(fermer, 'le pied doit proposer d’annuler').not.toBeUndefined();
+    fermer!.click();
+    flushSync();
+    await vi.waitFor(() => expect(dialog()).toBeNull());
+
+    cards(target)[1].click();
+    flushSync();
+    await vi.waitFor(() => expect(dialog()).not.toBeNull());
   });
 
   it('dit quand rien n’est proposé', () => {

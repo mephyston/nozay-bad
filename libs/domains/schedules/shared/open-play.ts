@@ -101,3 +101,32 @@ export const MAX_GENERATION_DAYS = 366;
 export function isNamedGuest(guest: { firstName: string; lastName: string }): boolean {
   return guest.firstName.trim().length > 0 && guest.lastName.trim().length > 0;
 }
+
+/**
+ * Où en est le remplissage d'une séance, en une phrase.
+ *
+ * « 3 joueurs sur 4 » se lisait comme « il reste une place » : le seuil est un
+ * **minimum pour ouvrir**, pas une capacité — un gymnase à quatre terrains en accueille
+ * seize. Tant qu'il n'est pas atteint, on dit donc ce qui manque ; une fois atteint, on
+ * dit simplement combien viennent, parce que c'est alors la seule chose qui compte.
+ */
+export function remplissageDeSeance(playerCount: number, minPlayers: number): {
+  texte: string;
+  /** Vrai dès que la séance a de quoi se tenir. */
+  ouvrable: boolean;
+} {
+  const manque = minPlayers - playerCount;
+  if (manque > 0) {
+    return {
+      texte:
+        playerCount === 0
+          ? `Personne d'inscrit — il en faut ${minPlayers} pour ouvrir`
+          : `Il manque ${manque} joueur${manque > 1 ? 's' : ''} pour ouvrir`,
+      ouvrable: false
+    };
+  }
+  return {
+    texte: `${playerCount} joueur${playerCount > 1 ? 's' : ''} inscrit${playerCount > 1 ? 's' : ''}`,
+    ouvrable: true
+  };
+}

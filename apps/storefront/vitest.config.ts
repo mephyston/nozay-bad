@@ -11,6 +11,9 @@ export default defineConfig({
       '@nba/ui': path.resolve(__dirname, '../../libs/shared/ui/src/index.ts'),
       '@nba/api-client': path.resolve(__dirname, '../../libs/shared/api-client/src/index.ts'),
       '@nba/club/context': path.resolve(__dirname, '../../libs/domains/club/shared/context.ts'),
+      // Les règles du jeu libre, en TypeScript pur : le barrel `@nba/schedules-ui` est
+      // fait de composants Svelte, que ce module de lecture n'a pas à charger.
+      '@nba/schedules/open-play': path.resolve(__dirname, '../../libs/domains/schedules/shared/open-play.ts'),
       '@nba/club-ui': path.resolve(__dirname, '../../libs/domains/club/shared/ui.ts'),
       '@nba/security-headers': path.resolve(__dirname, '../../libs/shared/security-headers/src/index.ts'),
       '@nba/runtime-env': path.resolve(__dirname, '../../libs/shared/runtime-env/src/index.ts'),

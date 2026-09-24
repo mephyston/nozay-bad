@@ -120,10 +120,11 @@
   }
 </script>
 
-{#if !open || playerCount > 0 || (errorMsg && !ouvert)}
+{#if !open || (errorMsg && !ouvert)}
   <!--
-    L'encart gris dit un **état** : les inscriptions sont closes, il manque des joueurs.
-    Un bouton posé dedans se lit comme une étiquette de plus ; la commande vit dehors.
+    L'encart gris ne dit plus qu'une chose : les inscriptions sont closes, ou le refus
+    du serveur. Le remplissage — « il manque deux joueurs pour ouvrir » — est dit une
+    seule fois, sur la ligne de la séance ; il l'était ici aussi, mot pour mot.
   -->
   <div class="rounded-lg border border-border bg-muted/30 p-3">
     {#if !open}
@@ -132,14 +133,6 @@
       </p>
     {/if}
 
-    {#if playerCount > 0}
-      <p class="text-xs text-muted-foreground" class:mt-2={!open}>
-        {playerCount} joueur{playerCount > 1 ? 's' : ''} attendu{playerCount > 1 ? 's' : ''}
-        {#if playerCount < minPlayers}
-          · il en faut {minPlayers} pour ouvrir
-        {/if}
-      </p>
-    {/if}
 
     {#if errorMsg && !ouvert}
       <p class="mt-2 text-xs font-medium text-destructive" role="alert">{errorMsg}</p>

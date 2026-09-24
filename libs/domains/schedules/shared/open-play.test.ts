@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
+  remplissageDeSeance,
   DEFAULT_MIN_PLAYERS,
   MAX_OPEN_PLAY_GUESTS,
   datesInRange,
@@ -90,5 +91,28 @@ describe('garde-fous de saisie', () => {
     // autour de leur hôte. Au-delà, c'est une sortie de groupe.
     expect(MAX_OPEN_PLAY_GUESTS).toBe(3);
     expect(DEFAULT_MIN_PLAYERS).toBe(4);
+  });
+});
+
+describe('remplissageDeSeance', () => {
+  it('dit ce qui manque tant que le seuil n’est pas atteint', () => {
+    expect(remplissageDeSeance(2, 4).texte).toBe('Il manque 2 joueurs pour ouvrir');
+    expect(remplissageDeSeance(3, 4).texte).toBe('Il manque 1 joueur pour ouvrir');
+    expect(remplissageDeSeance(2, 4).ouvrable).toBe(false);
+  });
+
+  it('dit l’absence plutôt que « il manque 4 joueurs » sur une séance vide', () => {
+    expect(remplissageDeSeance(0, 4).texte).toBe("Personne d'inscrit — il en faut 4 pour ouvrir");
+  });
+
+  it('ne parle plus du seuil une fois atteint : seul le nombre d’inscrits compte', () => {
+    // « 4 joueurs sur 4 » se lisait « complet » ; un gymnase à quatre terrains en
+    // accueille seize.
+    expect(remplissageDeSeance(4, 4)).toEqual({ texte: '4 joueurs inscrits', ouvrable: true });
+    expect(remplissageDeSeance(12, 4).texte).toBe('12 joueurs inscrits');
+  });
+
+  it('accorde au singulier', () => {
+    expect(remplissageDeSeance(1, 1).texte).toBe('1 joueur inscrit');
   });
 });

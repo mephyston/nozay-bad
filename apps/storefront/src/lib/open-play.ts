@@ -1,3 +1,4 @@
+import { remplissageDeSeance } from '@nba/schedules/open-play';
 import { createApiClient } from '@nba/api-client';
 
 /**
@@ -112,8 +113,12 @@ export function sessionStatusLabel(session: OpenPlaySession): {
     return { text: `Confirmée — ouverte par ${opener}`, tone: 'ok' };
   }
   if (session.needsOpener) return { text: 'Il manque un ouvreur', tone: 'pending' };
-  return {
-    text: `${session.playerCount} joueur${session.playerCount > 1 ? 's' : ''} sur ${session.minPlayers}`,
-    tone: 'pending'
-  };
+  /*
+    Le seuil est un minimum pour ouvrir, pas une capacité : « 3 joueurs sur 4 » se
+    lisait « il reste une place ». La phrase vient du domaine, qui la sert aussi à
+    l'îlot d'inscription — deux formulations pour un même compte finiraient par se
+    contredire.
+  */
+  const remplissage = remplissageDeSeance(session.playerCount, session.minPlayers);
+  return { text: remplissage.texte, tone: remplissage.ouvrable ? 'ok' : 'pending' };
 }

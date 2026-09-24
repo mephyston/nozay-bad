@@ -61,6 +61,7 @@
       "@nba/club/schema": ["libs/domains/club/shared/schema.ts"],
       "@nba/club/settings": ["libs/domains/club/shared/settings-api.ts"],
       "@nba/club/context": ["libs/domains/club/shared/context.ts"],
+      "@nba/schedules/open-play": ["libs/domains/schedules/shared/open-play.ts"],
       "@nba/club-ui": ["libs/domains/club/shared/ui.ts"]
     }
 
