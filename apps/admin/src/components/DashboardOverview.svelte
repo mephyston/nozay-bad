@@ -1,7 +1,15 @@
 <script lang="ts">
   import { Users, Banknote, CreditCard, Activity, ArrowUpRight, ArrowDownRight, Package, Receipt, FolderKanban, Building, ChevronRight, Scale, Landmark, ExternalLink, Repeat, UserPlus, UserMinus, Info } from '@lucide/svelte';
-  import { DashboardSummaryCard, DashboardPoleCard, CollapsibleSection, Table, Dialog } from '@nba/ui';
+  import { DashboardSummaryCard, DashboardPoleCard, CollapsibleSection, Table, ResponsiveSheet, ListView, ListRow } from '@nba/ui';
   import { can } from '@nba/iam-ui';
+  import AgePyramidList from './AgePyramidList.svelte';
+  import {
+    sommeDe,
+    partDeFeminines,
+    pourcentage,
+    ligneDeRenouvellement,
+    ligneDePerte
+  } from '../lib/dashboard-rows';
 
   let { data, permissions = [] }: { data: any; permissions?: string[] } = $props();
 
@@ -50,11 +58,10 @@
    */
   type AgeRow = { code: string; label: string; birthYears: string; youth: boolean; f: number; m: number; total: number };
   const ages = $derived<AgeRow[]>(data.members.ageCategories ?? []);
-  const sumOf = (rows: AgeRow[]) => rows.reduce((acc, r) => ({ f: acc.f + r.f, m: acc.m + r.m, total: acc.total + r.total }), { f: 0, m: 0, total: 0 });
-  const youth = $derived(sumOf(ages.filter((r) => r.youth)));
-  const adults = $derived(sumOf(ages.filter((r) => !r.youth)));
-  const everyone = $derived(sumOf(ages));
-  const womenShare = $derived(everyone.total > 0 ? Math.round((everyone.f / everyone.total) * 100) : null);
+  const youth = $derived(sommeDe(ages.filter((r) => r.youth)));
+  const adults = $derived(sommeDe(ages.filter((r) => !r.youth)));
+  const everyone = $derived(sommeDe(ages));
+  const womenShare = $derived(partDeFeminines(everyone));
 
   /*
    * Le renouvellement par groupe, derrière une icône d'information : deux tableaux. Les
@@ -66,8 +73,20 @@
   type LapsedRow = { group: string; previousTotal: number; lapsed: number };
   const renewalByGroup = $derived<RenewalRow[]>(data.members.renewalByGroup ?? []);
   const lapsedByGroup = $derived<LapsedRow[]>(data.members.lapsedByGroup ?? []);
+  /*
+    Ce qui distingue un pôle d'un autre : sa clé dans les données et la nature de ses
+    mouvements. Le reste — la carte, les trois rangées, le détail par catégorie — est
+    rendu par un seul snippet.
+  */
+  const POLES = [
+    { cle: 'events', titre: 'Pôle Compétition', icone: Activity, classeIcone: 'text-destructive bg-destructive/10', recettes: 'Recettes (inscriptions, buvette)', depenses: 'Dépenses (lots, frais)' },
+    { cle: 'youth', titre: 'Pôle Jeunes', icone: Users, classeIcone: 'text-warning bg-warning/10', recettes: 'Recettes générées', depenses: "Coûts d'encadrement/actions" },
+    { cle: 'material', titre: 'Pôle Matériel', icone: Package, classeIcone: 'text-primary bg-primary/10', recettes: 'Ventes (Boutique, etc.)', depenses: 'Achats fournisseurs' },
+    { cle: 'operations', titre: 'Pôle Fonctionnement', icone: Building, classeIcone: 'text-info bg-info/10', recettes: 'Recettes (adhésions, subventions)', depenses: 'Dépenses (salaires, licences)' }
+  ] as const;
+
   let cohortsOpen = $state(false);
-  const pct = (part: number, whole: number) => (whole > 0 ? `${Math.round((part / whole) * 100)} %` : '—');
+  const pct = pourcentage;
 </script>
 
 {#snippet ligne(row: AgeRow)}
@@ -87,6 +106,60 @@
     <Table.Cell class="py-2 text-right tabular-nums">{t.m}</Table.Cell>
     <Table.Cell class="py-2 text-right tabular-nums pr-4">{t.total}</Table.Cell>
   </Table.Row>
+{/snippet}
+
+<!--
+  Les quatre pôles, une seule fois.
+
+  Les quatre cartes étaient recopiées mot pour mot : mêmes rangées, mêmes classes, seuls
+  changeaient la clé des données et les deux libellés qui disent ce que le pôle encaisse
+  et ce qu'il dépense. Quarante lignes en quatre exemplaires, donc quatre endroits où
+  corriger la même chose — et trois occasions de l'oublier.
+-->
+{#snippet pole(bilan: any, libelleRecettes: string, libelleDepenses: string)}
+  <div class="space-y-4">
+    <div class="flex justify-between gap-3 text-sm">
+      <span class="text-muted-foreground">{libelleRecettes}</span>
+      <span class="font-medium text-success whitespace-nowrap">+{formatAmount(bilan.recettes)}</span>
+    </div>
+    <div class="flex justify-between gap-3 text-sm border-b border-border/50 pb-3">
+      <span class="text-muted-foreground">{libelleDepenses}</span>
+      <span class="font-medium text-destructive whitespace-nowrap">-{formatAmount(bilan.depenses)}</span>
+    </div>
+    <div class="flex justify-between items-center gap-3 pt-1 mb-2">
+      <span class="font-semibold text-sm">Solde du Pôle</span>
+      <span class="font-bold text-lg whitespace-nowrap {bilan.solde >= 0 ? 'text-success' : 'text-destructive'}">
+        {bilan.solde >= 0 ? '+' : ''}{formatAmount(bilan.solde)}
+      </span>
+    </div>
+
+    {#if bilan.details && bilan.details.length > 0}
+      <div class="mt-4 pt-4 border-t border-border/30">
+        <h4 class="text-xs font-semibold uppercase text-muted-foreground mb-3">Détail par catégorie</h4>
+        <div class="space-y-3">
+          {#each bilan.details as detail (detail.label)}
+            <div class="text-xs">
+              <div class="flex justify-between gap-2 font-medium mb-1">
+                <span class="truncate">{detail.label}</span>
+                <span class="{detail.solde >= 0 ? 'text-success' : 'text-destructive'} whitespace-nowrap">
+                  {detail.solde >= 0 ? '+' : ''}{formatAmount(detail.solde)}
+                </span>
+              </div>
+              <!--
+                « R: » et « D: » écrits en toutes lettres : deux initiales suivies de
+                deux points, sur une carte qui parle déjà de recettes et de dépenses,
+                se déchiffrent au lieu de se lire.
+              -->
+              <div class="flex flex-wrap gap-x-3 text-muted-foreground/70">
+                <span>Recettes +{formatAmount(detail.recettes)}</span>
+                <span>Dépenses -{formatAmount(detail.depenses)}</span>
+              </div>
+            </div>
+          {/each}
+        </div>
+      </div>
+    {/if}
+  </div>
 {/snippet}
 
 {#snippet compteur(label: string, count: number, href: string | undefined, tone: 'warning' | 'destructive' = 'warning', Icon: any = undefined)}
@@ -256,7 +329,15 @@
         badge={everyone.total}
         description={`Catégories FFBaD d'après l'année de naissance, saison ${data.season}, tous statuts${womenShare !== null ? ` · ${womenShare} % de féminines` : ''}`}
       >
-        <div class="overflow-x-auto -mx-4 -mb-4">
+        <!--
+          Au doigt, une liste ; au-dessus de 768 px, le tableau, qui garde les catégories
+          vides : il sert de référence et doit montrer le cadre fédéral entier.
+        -->
+        <div class="-mx-4 -mb-4 md:hidden">
+          <AgePyramidList {ages} />
+        </div>
+
+        <div class="hidden overflow-x-auto -mx-4 -mb-4 md:block">
           <Table.Root>
             <Table.Header>
               <Table.Row>
@@ -287,270 +368,128 @@
   <div class="mt-10">
     <h2 class="text-xl font-bold tracking-tight mb-4 flex items-center gap-2"><Activity class="text-primary"/> Bilan des Pôles d'Activité</h2>
     <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-      <!-- Pôle Compétition -->
-      <DashboardPoleCard 
-        title="Pôle Compétition" 
-        icon={Activity} 
-        href={canReadAccounting ? '/admin/accounting/ledger' : undefined}
-        iconClass="text-destructive bg-destructive/10"
-      >
-        <div class="space-y-4">
-          <div class="flex justify-between text-sm">
-            <span class="text-muted-foreground">Recettes (inscriptions, buvette)</span>
-            <span class="font-medium text-success">+{formatAmount(data.poles.events.recettes)}</span>
-          </div>
-          <div class="flex justify-between text-sm border-b border-border/50 pb-3">
-            <span class="text-muted-foreground">Dépenses (lots, frais)</span>
-            <span class="font-medium text-destructive">-{formatAmount(data.poles.events.depenses)}</span>
-          </div>
-          <div class="flex justify-between items-center pt-1 mb-2">
-            <span class="font-semibold text-sm">Solde du Pôle</span>
-            <span class="font-bold text-lg {data.poles.events.solde >= 0 ? 'text-success' : 'text-destructive'}">
-              {data.poles.events.solde >= 0 ? '+' : ''}{formatAmount(data.poles.events.solde)}
-            </span>
-          </div>
-          
-          {#if data.poles.events.details && data.poles.events.details.length > 0}
-            <div class="mt-4 pt-4 border-t border-border/30">
-              <h4 class="text-xs font-semibold uppercase text-muted-foreground mb-3">Détail par catégorie</h4>
-              <div class="space-y-3">
-                {#each data.poles.events.details as detail}
-                  <div class="text-xs">
-                    <div class="flex justify-between font-medium mb-1">
-                      <span class="truncate pr-2">{detail.label}</span>
-                      <span class="{detail.solde >= 0 ? 'text-success' : 'text-destructive'} whitespace-nowrap">
-                        {detail.solde >= 0 ? '+' : ''}{formatAmount(detail.solde)}
-                      </span>
-                    </div>
-                    <div class="flex gap-3 text-muted-foreground/70">
-                      <span>R: +{formatAmount(detail.recettes)}</span>
-                      <span>D: -{formatAmount(detail.depenses)}</span>
-                    </div>
-                  </div>
-                {/each}
-              </div>
-            </div>
-          {/if}
-        </div>
-      </DashboardPoleCard>
-
-      <!-- Pôle Jeunes -->
-      <DashboardPoleCard 
-        title="Pôle Jeunes" 
-        icon={Users} 
-        href={canReadAccounting ? '/admin/accounting/ledger' : undefined}
-        iconClass="text-warning bg-warning/10"
-      >
-        <div class="space-y-4">
-          <div class="flex justify-between text-sm">
-            <span class="text-muted-foreground">Recettes générées</span>
-            <span class="font-medium text-success">+{formatAmount(data.poles.youth.recettes)}</span>
-          </div>
-          <div class="flex justify-between text-sm border-b border-border/50 pb-3">
-            <span class="text-muted-foreground">Coûts d'encadrement/actions</span>
-            <span class="font-medium text-destructive">-{formatAmount(data.poles.youth.depenses)}</span>
-          </div>
-          <div class="flex justify-between items-center pt-1 mb-2">
-            <span class="font-semibold text-sm">Solde du Pôle</span>
-            <span class="font-bold text-lg {data.poles.youth.solde >= 0 ? 'text-success' : 'text-destructive'}">
-              {data.poles.youth.solde >= 0 ? '+' : ''}{formatAmount(data.poles.youth.solde)}
-            </span>
-          </div>
-          
-          {#if data.poles.youth.details && data.poles.youth.details.length > 0}
-            <div class="mt-4 pt-4 border-t border-border/30">
-              <h4 class="text-xs font-semibold uppercase text-muted-foreground mb-3">Détail par catégorie</h4>
-              <div class="space-y-3">
-                {#each data.poles.youth.details as detail}
-                  <div class="text-xs">
-                    <div class="flex justify-between font-medium mb-1">
-                      <span class="truncate pr-2">{detail.label}</span>
-                      <span class="{detail.solde >= 0 ? 'text-success' : 'text-destructive'} whitespace-nowrap">
-                        {detail.solde >= 0 ? '+' : ''}{formatAmount(detail.solde)}
-                      </span>
-                    </div>
-                    <div class="flex gap-3 text-muted-foreground/70">
-                      <span>R: +{formatAmount(detail.recettes)}</span>
-                      <span>D: -{formatAmount(detail.depenses)}</span>
-                    </div>
-                  </div>
-                {/each}
-              </div>
-            </div>
-          {/if}
-        </div>
-      </DashboardPoleCard>
-
-      <!-- Pôle Matériel -->
-      <DashboardPoleCard 
-        title="Pôle Matériel" 
-        icon={Package} 
-        href={canReadAccounting ? '/admin/accounting/ledger' : undefined}
-        iconClass="text-primary bg-primary/10"
-      >
-        <div class="space-y-4">
-          <div class="flex justify-between text-sm">
-            <span class="text-muted-foreground">Ventes (Boutique, etc.)</span>
-            <span class="font-medium text-success">+{formatAmount(data.poles.material.recettes)}</span>
-          </div>
-          <div class="flex justify-between text-sm border-b border-border/50 pb-3">
-            <span class="text-muted-foreground">Achats fournisseurs</span>
-            <span class="font-medium text-destructive">-{formatAmount(data.poles.material.depenses)}</span>
-          </div>
-          <div class="flex justify-between items-center pt-1 mb-2">
-            <span class="font-semibold text-sm">Solde du Pôle</span>
-            <span class="font-bold text-lg {data.poles.material.solde >= 0 ? 'text-success' : 'text-destructive'}">
-              {data.poles.material.solde >= 0 ? '+' : ''}{formatAmount(data.poles.material.solde)}
-            </span>
-          </div>
-          
-          {#if data.poles.material.details && data.poles.material.details.length > 0}
-            <div class="mt-4 pt-4 border-t border-border/30">
-              <h4 class="text-xs font-semibold uppercase text-muted-foreground mb-3">Détail par catégorie</h4>
-              <div class="space-y-3">
-                {#each data.poles.material.details as detail}
-                  <div class="text-xs">
-                    <div class="flex justify-between font-medium mb-1">
-                      <span class="truncate pr-2">{detail.label}</span>
-                      <span class="{detail.solde >= 0 ? 'text-success' : 'text-destructive'} whitespace-nowrap">
-                        {detail.solde >= 0 ? '+' : ''}{formatAmount(detail.solde)}
-                      </span>
-                    </div>
-                    <div class="flex gap-3 text-muted-foreground/70">
-                      <span>R: +{formatAmount(detail.recettes)}</span>
-                      <span>D: -{formatAmount(detail.depenses)}</span>
-                    </div>
-                  </div>
-                {/each}
-              </div>
-            </div>
-          {/if}
-        </div>
-      </DashboardPoleCard>
-      
-      <!-- Pôle Fonctionnement -->
-      <DashboardPoleCard 
-        title="Pôle Fonctionnement" 
-        icon={Building} 
-        href={canReadAccounting ? '/admin/accounting/ledger' : undefined}
-        iconClass="text-info bg-info/10"
-      >
-        <div class="space-y-4">
-          <div class="flex justify-between text-sm">
-            <span class="text-muted-foreground">Recettes (adhésions, subventions)</span>
-            <span class="font-medium text-success">+{formatAmount(data.poles.operations.recettes)}</span>
-          </div>
-          <div class="flex justify-between text-sm border-b border-border/50 pb-3">
-            <span class="text-muted-foreground">Dépenses (salaires, licences)</span>
-            <span class="font-medium text-destructive">-{formatAmount(data.poles.operations.depenses)}</span>
-          </div>
-          <div class="flex justify-between items-center pt-1 mb-2">
-            <span class="font-semibold text-sm">Solde du Pôle</span>
-            <span class="font-bold text-lg {data.poles.operations.solde >= 0 ? 'text-success' : 'text-destructive'}">
-              {data.poles.operations.solde >= 0 ? '+' : ''}{formatAmount(data.poles.operations.solde)}
-            </span>
-          </div>
-          
-          {#if data.poles.operations.details && data.poles.operations.details.length > 0}
-            <div class="mt-4 pt-4 border-t border-border/30">
-              <h4 class="text-xs font-semibold uppercase text-muted-foreground mb-3">Détail par catégorie</h4>
-              <div class="space-y-3">
-                {#each data.poles.operations.details as detail}
-                  <div class="text-xs">
-                    <div class="flex justify-between font-medium mb-1">
-                      <span class="truncate pr-2">{detail.label}</span>
-                      <span class="{detail.solde >= 0 ? 'text-success' : 'text-destructive'} whitespace-nowrap">
-                        {detail.solde >= 0 ? '+' : ''}{formatAmount(detail.solde)}
-                      </span>
-                    </div>
-                    <div class="flex gap-3 text-muted-foreground/70">
-                      <span>R: +{formatAmount(detail.recettes)}</span>
-                      <span>D: -{formatAmount(detail.depenses)}</span>
-                    </div>
-                  </div>
-                {/each}
-              </div>
-            </div>
-          {/if}
-        </div>
-      </DashboardPoleCard>
+      {#each POLES as p (p.cle)}
+        <DashboardPoleCard
+          title={p.titre}
+          icon={p.icone}
+          href={canReadAccounting ? '/admin/accounting/ledger' : undefined}
+          iconClass={p.classeIcone}
+        >
+          {@render pole(data.poles[p.cle], p.recettes, p.depenses)}
+        </DashboardPoleCard>
+      {/each}
     </div>
   </div>
 </div>
 
-<Dialog.Root bind:open={cohortsOpen}>
-  <Dialog.Content class="sm:max-w-2xl p-6 bg-card border-border shadow-xl max-h-[90vh] overflow-y-auto">
-    <Dialog.Header>
-      <Dialog.Title class="text-xl font-bold">Renouvellement par groupe</Dialog.Title>
-      <Dialog.Description class="text-sm text-muted-foreground mt-1">
-        Par personne : un adhérent qui change de groupe d'une saison à l'autre compte comme renouvelé, pas comme perdu.
-      </Dialog.Description>
-    </Dialog.Header>
+<!--
+  Le renouvellement par groupe : une feuille, et non une modale.
 
-    <div class="space-y-6 mt-2" data-testid="cohorts-by-group">
-      <section>
-        <h3 class="text-sm font-semibold mb-2">Saison {data.season} — d'où viennent les effectifs</h3>
-        <div class="overflow-x-auto rounded-lg border border-border">
-          <Table.Root>
-            <Table.Header>
-              <Table.Row>
-                <Table.Head>Groupe</Table.Head>
-                <Table.Head class="text-right">Effectif</Table.Head>
-                <Table.Head class="text-right">Renouvelés</Table.Head>
-                <Table.Head class="text-right">Nouveaux</Table.Head>
-              </Table.Row>
-            </Table.Header>
-            <Table.Body>
-              {#each renewalByGroup as r (r.group)}
-                <Table.Row>
-                  <Table.Cell class="py-1.5 whitespace-normal">{r.group}</Table.Cell>
-                  <Table.Cell class="py-1.5 text-right tabular-nums font-semibold">{r.total}</Table.Cell>
-                  <Table.Cell class="py-1.5 text-right tabular-nums">{r.renewed}</Table.Cell>
-                  <Table.Cell class="py-1.5 text-right tabular-nums text-success">{r.newcomers}</Table.Cell>
-                </Table.Row>
-              {/each}
-              <Table.Row class="bg-muted/30 hover:bg-muted/30 font-semibold">
-                <Table.Cell class="py-2">Total</Table.Cell>
-                <Table.Cell class="py-2 text-right tabular-nums">{data.members.currentTotal}</Table.Cell>
-                <Table.Cell class="py-2 text-right tabular-nums">{data.members.renewed}</Table.Cell>
-                <Table.Cell class="py-2 text-right tabular-nums text-success">{data.members.newcomers}</Table.Cell>
-              </Table.Row>
-            </Table.Body>
-          </Table.Root>
-        </div>
-      </section>
+  Deux tableaux de quatre colonnes y défilaient en largeur sur un téléphone, dans une
+  boîte ancrée au centre de l'écran. La feuille monte du bas comme tout le reste, et au
+  doigt chaque tableau devient une liste — le groupe à gauche, son effectif ou sa perte
+  à droite, et sous le nom ce qui l'explique.
+-->
+<ResponsiveSheet
+  bind:open={cohortsOpen}
+  size="lg"
+  title="Renouvellement par groupe"
+  description="Par personne : un adhérent qui change de groupe d'une saison à l'autre compte comme renouvelé, pas comme perdu."
+>
+  <div class="space-y-6" data-testid="cohorts-by-group">
+    <section class="space-y-2">
+      <h3 class="text-sm font-semibold">Saison {data.season} — d'où viennent les effectifs</h3>
 
-      <section>
-        <h3 class="text-sm font-semibold mb-2">Saison n-1 — où l'on a perdu</h3>
-        <div class="overflow-x-auto rounded-lg border border-border">
-          <Table.Root>
-            <Table.Header>
+      <div class="-mx-2 md:hidden">
+        <ListView items={renewalByGroup.map(ligneDeRenouvellement)}>
+          {#snippet listRow(l)}
+            <ListRow title={l.titre} subtitle={l.sousTitre} value={l.valeur} valueTone="foreground" />
+          {/snippet}
+        </ListView>
+        <p class="px-4 pt-2 text-xs text-muted-foreground">
+          Total : {data.members.currentTotal} adhérents, dont {data.members.renewed} renouvelés
+          et {data.members.newcomers} nouveaux.
+        </p>
+      </div>
+
+      <div class="hidden overflow-x-auto rounded-lg border border-border md:block">
+        <Table.Root>
+          <Table.Header>
+            <Table.Row>
+              <Table.Head>Groupe</Table.Head>
+              <Table.Head class="text-right">Effectif</Table.Head>
+              <Table.Head class="text-right">Renouvelés</Table.Head>
+              <Table.Head class="text-right">Nouveaux</Table.Head>
+            </Table.Row>
+          </Table.Header>
+          <Table.Body>
+            {#each renewalByGroup as r (r.group)}
               <Table.Row>
-                <Table.Head>Groupe en n-1</Table.Head>
-                <Table.Head class="text-right">Effectif n-1</Table.Head>
-                <Table.Head class="text-right">Non renouvelés</Table.Head>
-                <Table.Head class="text-right">Taux de perte</Table.Head>
+                <Table.Cell class="py-1.5 whitespace-normal">{r.group}</Table.Cell>
+                <Table.Cell class="py-1.5 text-right tabular-nums font-semibold">{r.total}</Table.Cell>
+                <Table.Cell class="py-1.5 text-right tabular-nums">{r.renewed}</Table.Cell>
+                <Table.Cell class="py-1.5 text-right tabular-nums text-success">{r.newcomers}</Table.Cell>
               </Table.Row>
-            </Table.Header>
-            <Table.Body>
-              {#each lapsedByGroup as r (r.group)}
-                <Table.Row>
-                  <Table.Cell class="py-1.5 whitespace-normal">{r.group}</Table.Cell>
-                  <Table.Cell class="py-1.5 text-right tabular-nums">{r.previousTotal}</Table.Cell>
-                  <Table.Cell class="py-1.5 text-right tabular-nums font-semibold {r.lapsed > 0 ? 'text-warning' : ''}">{r.lapsed}</Table.Cell>
-                  <Table.Cell class="py-1.5 text-right tabular-nums text-muted-foreground">{pct(r.lapsed, r.previousTotal)}</Table.Cell>
-                </Table.Row>
-              {/each}
-              <Table.Row class="bg-muted/30 hover:bg-muted/30 font-semibold">
-                <Table.Cell class="py-2">Total</Table.Cell>
-                <Table.Cell class="py-2 text-right tabular-nums">{data.members.previousTotal}</Table.Cell>
-                <Table.Cell class="py-2 text-right tabular-nums">{data.members.lapsed ?? 0}</Table.Cell>
-                <Table.Cell class="py-2 text-right tabular-nums text-muted-foreground">{pct(data.members.lapsed ?? 0, data.members.previousTotal)}</Table.Cell>
+            {/each}
+            <Table.Row class="bg-muted/30 hover:bg-muted/30 font-semibold">
+              <Table.Cell class="py-2">Total</Table.Cell>
+              <Table.Cell class="py-2 text-right tabular-nums">{data.members.currentTotal}</Table.Cell>
+              <Table.Cell class="py-2 text-right tabular-nums">{data.members.renewed}</Table.Cell>
+              <Table.Cell class="py-2 text-right tabular-nums text-success">{data.members.newcomers}</Table.Cell>
+            </Table.Row>
+          </Table.Body>
+        </Table.Root>
+      </div>
+    </section>
+
+    <section class="space-y-2">
+      <h3 class="text-sm font-semibold">Saison n-1 — où l'on a perdu</h3>
+
+      <div class="-mx-2 md:hidden">
+        <ListView items={lapsedByGroup.map(ligneDePerte)}>
+          {#snippet listRow(l)}
+            <ListRow
+              title={l.titre}
+              subtitle={l.sousTitre}
+              value={l.valeur}
+              valueTone={l.alerte ? 'warning' : 'muted'}
+            />
+          {/snippet}
+        </ListView>
+        <p class="px-4 pt-2 text-xs text-muted-foreground">
+          Total : {data.members.lapsed ?? 0} non renouvelés sur {data.members.previousTotal},
+          soit {pct(data.members.lapsed ?? 0, data.members.previousTotal)} de perte.
+        </p>
+      </div>
+
+      <div class="hidden overflow-x-auto rounded-lg border border-border md:block">
+        <Table.Root>
+          <Table.Header>
+            <Table.Row>
+              <Table.Head>Groupe en n-1</Table.Head>
+              <Table.Head class="text-right">Effectif n-1</Table.Head>
+              <Table.Head class="text-right">Non renouvelés</Table.Head>
+              <Table.Head class="text-right">Taux de perte</Table.Head>
+            </Table.Row>
+          </Table.Header>
+          <Table.Body>
+            {#each lapsedByGroup as r (r.group)}
+              <Table.Row>
+                <Table.Cell class="py-1.5 whitespace-normal">{r.group}</Table.Cell>
+                <Table.Cell class="py-1.5 text-right tabular-nums">{r.previousTotal}</Table.Cell>
+                <Table.Cell class="py-1.5 text-right tabular-nums font-semibold {r.lapsed > 0 ? 'text-warning' : ''}">{r.lapsed}</Table.Cell>
+                <Table.Cell class="py-1.5 text-right tabular-nums text-muted-foreground">{pct(r.lapsed, r.previousTotal)}</Table.Cell>
               </Table.Row>
-            </Table.Body>
-          </Table.Root>
-        </div>
-      </section>
-    </div>
-  </Dialog.Content>
-</Dialog.Root>
+            {/each}
+            <Table.Row class="bg-muted/30 hover:bg-muted/30 font-semibold">
+              <Table.Cell class="py-2">Total</Table.Cell>
+              <Table.Cell class="py-2 text-right tabular-nums">{data.members.previousTotal}</Table.Cell>
+              <Table.Cell class="py-2 text-right tabular-nums">{data.members.lapsed ?? 0}</Table.Cell>
+              <Table.Cell class="py-2 text-right tabular-nums text-muted-foreground">{pct(data.members.lapsed ?? 0, data.members.previousTotal)}</Table.Cell>
+            </Table.Row>
+          </Table.Body>
+        </Table.Root>
+      </div>
+    </section>
+  </div>
+</ResponsiveSheet>
