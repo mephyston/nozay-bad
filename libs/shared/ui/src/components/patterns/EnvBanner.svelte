@@ -23,6 +23,12 @@
   // rapproche du bord droit à mesure qu'on serre. À 84 px de décalage pour 224 de large,
   // il reste 28 px entre ce centre et le bord — juste de quoi écrire « TEST » sans le
   // couper. La fenêtre de rognage de 160 px, elle, contient toujours la diagonale.
+  //
+  // Le retrait à gauche recentre le mot sur la **portion visible**, et non sur le ruban.
+  // Les deux ne coïncident pas : le ruban est long de 224 px dont on ne voit que la
+  // corde qui traverse le coin, et le milieu de cette corde est le pied de la
+  // perpendiculaire abaissée depuis l'angle — soit 12 px plus bas que le centre du
+  // ruban. Sans ce décalage, « DEV » paraissait poussé vers le haut de sa bande.
 </script>
 
 {#if label}
@@ -32,7 +38,7 @@
     aria-hidden="true"
   >
     <div
-      class="absolute top-0 -right-[84px] w-56 py-0.5 text-center text-[10px] font-bold tracking-widest text-white rotate-45 shadow-md border-y border-white/20"
+      class="absolute top-0 -right-[84px] w-56 py-0.5 pl-[25px] text-center text-[10px] font-bold tracking-widest text-white rotate-45 shadow-md border-y border-white/20"
       style={`background:${color}`}
     >
       {label}
