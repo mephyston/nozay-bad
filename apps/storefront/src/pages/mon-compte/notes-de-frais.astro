@@ -1,0 +1,93 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Header from '../../components/Header.astro';
+import BackLink from '../../components/BackLink.astro';
+import MobileNav from '../../components/MobileNav.svelte';
+import { env } from 'cloudflare:workers';
+import { createApiClient } from '@nba/api-client';
+import { listSeasons, displaySeason } from '../../lib/season';
+import { chargerCompte, eur, dateFr, libelleDeStatut, classeDeStatut } from '../../lib/compte';
+
+/**
+ * Mes notes de frais déposées, sur leur propre page.
+ *
+ * Sans l'autorisation, la page répond introuvable plutôt que vide : la rubrique
+ * n'existe pas pour cet adhérent, et une page vide laisserait croire qu'il n'a rien
+ * déposé.
+ */
+const session = Astro.locals.session;
+const active = session?.members.find((m) => m.id === session.activeMemberId);
+
+let expenses: any[] = [];
+let canExpense = false;
+if (active) {
+  const season = displaySeason(await listSeasons(env), session?.seasonCode);
+  const api = createApiClient(env);
+  const donnees = await chargerCompte(
+    api.fetch.bind(api),
+    {
+      licence: active.licence,
+      memberId: active.id,
+      email: session?.email,
+      seasonCode: season?.code,
+      seasonName: season?.name || '',
+      canExpense: active.expenseAuthorized ?? false
+    },
+    { notes: true }
+  );
+  expenses = donnees.expenses;
+  canExpense = donnees.canExpense;
+}
+
+if (active && !canExpense) return new Response(null, { status: 404 });
+---
+
+<Layout title="Mes notes de frais">
+  <Header currentPath="/mon-compte" />
+
+  <main class="w-full flex-1 p-3 pb-nav sm:p-6 md:pb-6">
+    <div class="mx-auto max-w-3xl space-y-4">
+      <BackLink href="/mon-compte" label="Mon compte" />
+
+      <div class="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 class="text-xl font-bold text-foreground sm:text-2xl">Mes notes de frais</h1>
+          <p class="mt-1 text-sm text-muted-foreground">
+            Vos demandes de remboursement déposées et leur suivi.
+          </p>
+        </div>
+        <a
+          href="/note-de-frais"
+          class="inline-flex min-h-[44px] items-center rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground no-underline hover:bg-primary/90"
+        >
+          Déposer une note
+        </a>
+      </div>
+
+      {expenses.length === 0 ? (
+        <p class="rounded-xl border border-border bg-card px-4 py-8 text-center text-sm text-muted-foreground">
+          Aucune note de frais soumise.
+        </p>
+      ) : (
+        <div class="divide-y divide-border overflow-hidden rounded-xl border border-border bg-card">
+          {expenses.map((e: any) => (
+            <div class="flex items-center justify-between gap-3 px-4 py-3">
+              <div class="min-w-0">
+                <div class="truncate text-sm font-medium text-foreground">{e.description}</div>
+                <div class="text-xs text-muted-foreground">{dateFr(e.createdAt)}</div>
+              </div>
+              <div class="flex shrink-0 items-center gap-3">
+                <span class="text-sm font-semibold text-foreground">{eur(e.amountCents ?? 0)}</span>
+                <span class={`inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium ${classeDeStatut(e.status)}`}>
+                  {libelleDeStatut(e.status)}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  </main>
+
+  <MobileNav client:idle features={Astro.locals.club?.features ?? {}} currentPath="/mon-compte" />
+</Layout>

@@ -72,13 +72,23 @@ describe('UserMenu', () => {
     expect(labels(target)).not.toContain('Notes de frais');
   });
 
-  it("signale l'écran courant, ancre comprise", () => {
+  it("signale l'écran courant, et lui seul", () => {
     const { target } = render({ currentPath: '/mon-compte' });
     (target.querySelector('[data-testid="account-button"]') as HTMLButtonElement).click();
     flushSync();
     expect(target.querySelector('a[href="/mon-compte"]')?.getAttribute('aria-current')).toBe('page');
-    expect(target.querySelector('a[href="/mon-compte#cotisation"]')?.getAttribute('aria-current')).toBe('page');
+    // La cotisation a sa page : depuis le compte, elle n'est pas l'écran courant.
+    expect(target.querySelector('a[href="/mon-compte/cotisation"]')?.getAttribute('aria-current')).toBeNull();
     expect(target.querySelector('a[href="/attestation"]')?.getAttribute('aria-current')).toBeNull();
+  });
+
+  it("ne marque que la rubrique la plus précise, jamais aussi son parent", () => {
+    // Sans cela, « Mon compte » et « Ma cotisation » portaient tous deux `aria-current`.
+    const { target } = render({ currentPath: '/mon-compte/cotisation' });
+    (target.querySelector('[data-testid="account-button"]') as HTMLButtonElement).click();
+    flushSync();
+    expect(target.querySelector('a[href="/mon-compte/cotisation"]')?.getAttribute('aria-current')).toBe('page');
+    expect(target.querySelector('a[href="/mon-compte"]')?.getAttribute('aria-current')).toBeNull();
   });
 
   /*

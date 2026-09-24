@@ -1,0 +1,49 @@
+---
+interface Props {
+  title: string;
+  retour?: { href: string; label: string };
+  class?: string;
+}
+
+/**
+ * Le titre d'une page, et d'où l'on vient.
+ *
+ * Au doigt, le rond à chevron est **sur la ligne du titre**, à sa gauche : posé
+ * au-dessus, il occupait une ligne pour lui seul et repoussait d'autant ce qu'on
+ * venait lire. C'est la disposition d'iOS, et celle de l'administration.
+ *
+ * À la souris, le lien redevient une phrase, au-dessus : l'espace ne manque pas, et
+ * « Toutes les équipes » dit où l'on retourne, ce qu'un chevron ne dit pas. L'espace
+ * adhérent n'a pas de fil d'Ariane pour le dire à sa place.
+ *
+ * Le reste de l'en-tête — sous-titre, rappels — passe en `slot`.
+ */
+const { title, retour, class: className = '' } = Astro.props;
+---
+
+<div class:list={['space-y-2', className]}>
+  {retour && (
+    <a
+      href={retour.href}
+      class="text-muted-foreground hover:text-foreground hidden items-center gap-2 text-sm no-underline transition-colors md:inline-flex"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+      {retour.label}
+    </a>
+  )}
+
+  <div class="flex items-center gap-3">
+    {retour && (
+      <a
+        href={retour.href}
+        aria-label={retour.label}
+        class="border-border bg-card text-foreground hover:bg-muted flex size-11 shrink-0 items-center justify-center rounded-full border no-underline transition-colors md:hidden"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+      </a>
+    )}
+    <h1 class="min-w-0 text-2xl font-bold tracking-tight">{title}</h1>
+  </div>
+
+  <slot />
+</div>

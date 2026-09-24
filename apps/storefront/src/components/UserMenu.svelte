@@ -67,7 +67,7 @@
     [
       { href: '/mon-compte', label: 'Mon compte', icon: User },
       { href: `/adherents/${licence8}`, label: 'Ma fiche', icon: IdCard },
-      { href: '/mon-compte#cotisation', label: 'Ma cotisation', icon: Wallet },
+      { href: '/mon-compte/cotisation', label: 'Ma cotisation', icon: Wallet },
       ...(features.attestations !== false ? [{ href: '/attestation', label: 'Mon attestation CSE', icon: FileText }] : []),
       ...(features.push !== false ? [{ href: '/notifications', label: 'Notifications', icon: Bell }] : []),
       ...(active?.expenseAuthorized && features.expenses !== false
@@ -108,9 +108,24 @@
     if (open && hint) dismissHint();
   }
 
+  /**
+   * L'entrée qui correspond le mieux à l'adresse courante, et elle seule.
+   *
+   * Le préfixe seul ne suffit plus depuis que les rubriques du compte ont leur page :
+   * sur `/mon-compte/cotisation`, « Mon compte » **et** « Ma cotisation » se
+   * déclaraient courants, soit deux `aria-current="page"` dans un même menu. On garde
+   * la correspondance par préfixe — c'est elle qui marque « Mon club » sur la fiche
+   * d'une équipe — mais seule la plus longue l'emporte.
+   */
+  const cheminActif = $derived.by(() => {
+    const candidats = entries
+      .map((e) => e.href.split('#')[0])
+      .filter((path) => currentPath === path || (path !== '/' && currentPath.startsWith(`${path}/`)));
+    return candidats.sort((a, b) => b.length - a.length)[0] ?? null;
+  });
+
   function isCurrent(href: string): boolean {
-    const path = href.split('#')[0];
-    return currentPath === path || (path !== '/' && currentPath.startsWith(`${path}/`));
+    return href.split('#')[0] === cheminActif;
   }
 
   async function switchProfile(memberId: number) {

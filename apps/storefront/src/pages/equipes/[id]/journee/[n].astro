@@ -1,7 +1,7 @@
 ---
 import Layout from '../../../../layouts/Layout.astro';
 import Header from '../../../../components/Header.astro';
-import BackLink from '../../../../components/BackLink.astro';
+import PageTitle from '../../../../components/PageTitle.astro';
 import MobileNav from '../../../../components/MobileNav.svelte';
 import { LineupComposer, FixtureDateCard } from '@nba/teams-ui';
 import { env as cfEnv } from 'cloudflare:workers';
@@ -119,8 +119,6 @@ const frenchDate = (iso: string) =>
   <Header currentPath="/equipes" />
 
   <main class="flex-1 p-3 sm:p-6 w-full pb-nav md:pb-6 max-w-3xl mx-auto space-y-6">
-    <BackLink href={`/equipes/${teamId}`} label="Retour à l'équipe" />
-
     {errorMsg && (
       <div class="rounded-lg border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive">
         {errorMsg}
@@ -129,11 +127,11 @@ const frenchDate = (iso: string) =>
 
     {lineup && (
       <>
-        <div>
-          <h1 class="text-2xl font-bold tracking-tight">
-            {lineup.teamName} — {lineup.dayLabel ?? `Journée ${lineup.dayNumber}`}
-          </h1>
-          <p class="text-muted-foreground text-sm mt-1">
+        <PageTitle
+          title={`${lineup.teamName} — ${lineup.dayLabel ?? `Journée ${lineup.dayNumber}`}`}
+          retour={{ href: `/equipes/${teamId}`, label: "Retour à l'équipe" }}
+        >
+          <p class="text-muted-foreground text-sm">
             {lineup.championshipLabel} · {lineup.divisionLabel}
             {/*
               Une journée régionale compte deux rencontres, donc deux compositions : sans
@@ -153,11 +151,17 @@ const frenchDate = (iso: string) =>
               Classements arrêtés au {frenchDate(lineup.referenceEloDate)}.
             </p>
           )}
-        </div>
+        </PageTitle>
 
         <FixtureDateCard client:load {lineup} />
 
-        <LineupComposer client:load initial={lineup} />
+        <!--
+          La composition respire sous le cadre de la date : la rangée « SH1 » commençait
+          juste sous lui, et les deux blocs se lisaient comme un seul.
+        -->
+        <div class="pt-4">
+          <LineupComposer client:load initial={lineup} />
+        </div>
       </>
     )}
   </main>

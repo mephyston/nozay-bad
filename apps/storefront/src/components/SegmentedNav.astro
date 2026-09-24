@@ -27,13 +27,23 @@ interface Props {
 const { items, label, class: className = '' } = Astro.props;
 ---
 
-<nav class:list={['glass-surface flex h-12 gap-1 rounded-full p-1', className]} aria-label={label}>
+<!--
+  La rangée défile plutôt que de comprimer les libellés jusqu'à l'illisible : les
+  rubriques d'actualité peuvent être nombreuses, et « Vie du club » compressé sur un
+  sixième d'écran ne se lit plus. Jusqu'à quatre ou cinq segments, ils se partagent la
+  largeur et rien ne défile ; au-delà, on glisse au doigt.
+
+  La barre de défilement est masquée ici plutôt que par une classe utilitaire : le
+  `no-scrollbar` qu'emploie le design system est défini dans le `<style>` d'un seul
+  composant, donc sans effet ailleurs.
+-->
+<nav class:list={['glass-surface segments flex h-12 gap-1 overflow-x-auto rounded-full p-1', className]} aria-label={label}>
   {items.map((item) => (
     <a
       href={item.href}
       aria-current={item.actif ? 'page' : undefined}
       class:list={[
-        'inline-flex flex-1 items-center justify-center whitespace-nowrap rounded-full px-3 text-sm font-medium no-underline transition-all',
+        'inline-flex flex-1 shrink-0 items-center justify-center whitespace-nowrap rounded-full px-4 text-sm font-medium no-underline transition-all',
         item.actif
           ? 'bg-card text-foreground font-bold shadow-sm ring-1 ring-border/60'
           : 'text-muted-foreground hover:text-foreground'
@@ -43,3 +53,13 @@ const { items, label, class: className = '' } = Astro.props;
     </a>
   ))}
 </nav>
+
+<style>
+  .segments {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .segments::-webkit-scrollbar {
+    display: none;
+  }
+</style>

@@ -1,0 +1,83 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Header from '../../components/Header.astro';
+import BackLink from '../../components/BackLink.astro';
+import MobileNav from '../../components/MobileNav.svelte';
+import { env } from 'cloudflare:workers';
+import { createApiClient } from '@nba/api-client';
+import { listSeasons, displaySeason } from '../../lib/season';
+import { chargerCompte, eur, dateFr, libelleDeStatut, classeDeStatut } from '../../lib/compte';
+
+/**
+ * Mes commandes, sur leur propre page.
+ *
+ * C'était une section repliée de « Mon compte », au milieu de cinq autres : on y
+ * arrivait par une ancre qui devait déplier le bon `<details>`, et la boutique y
+ * renvoyait par `#commandes`. Une rubrique qui a son adresse se partage, se met en
+ * favori et se retrouve dans l'historique du navigateur.
+ */
+const session = Astro.locals.session;
+const active = session?.members.find((m) => m.id === session.activeMemberId);
+
+let orders: any[] = [];
+if (active) {
+  const season = displaySeason(await listSeasons(env), session?.seasonCode);
+  const donnees = await chargerCompte(
+    createApiClient(env).fetch.bind(createApiClient(env)),
+    {
+      licence: active.licence,
+      memberId: active.id,
+      email: session?.email,
+      seasonCode: season?.code,
+      seasonName: season?.name || '',
+      canExpense: active.expenseAuthorized ?? false
+    },
+    { commandes: true }
+  );
+  orders = donnees.orders;
+}
+---
+
+<Layout title="Mes commandes">
+  <Header currentPath="/mon-compte" />
+
+  <main class="w-full flex-1 p-3 pb-nav sm:p-6 md:pb-6">
+    <div class="mx-auto max-w-3xl space-y-4">
+      <BackLink href="/mon-compte" label="Mon compte" />
+
+      <div>
+        <h1 class="text-xl font-bold text-foreground sm:text-2xl">Mes commandes</h1>
+        <p class="mt-1 text-sm text-muted-foreground">
+          Vos achats à la boutique du club et leur règlement.
+        </p>
+      </div>
+
+      {orders.length === 0 ? (
+        <p class="rounded-xl border border-border bg-card px-4 py-8 text-center text-sm text-muted-foreground">
+          Aucune commande pour le moment.
+        </p>
+      ) : (
+        <div class="divide-y divide-border overflow-hidden rounded-xl border border-border bg-card">
+          {orders.map((o: any) => (
+            <div class="flex items-center justify-between gap-3 px-4 py-3">
+              <div class="min-w-0">
+                <div class="truncate text-sm font-medium text-foreground">
+                  {o.product?.name ?? 'Article'} <span class="text-muted-foreground">×{o.order?.quantity ?? 1}</span>
+                </div>
+                <div class="text-xs text-muted-foreground">{dateFr(o.order?.createdAt)}</div>
+              </div>
+              <div class="flex shrink-0 items-center gap-3">
+                <span class="text-sm font-semibold text-foreground">{eur(o.order?.totalAmountCents ?? o.order?.totalAmount ?? 0)}</span>
+                <span class={`inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium ${classeDeStatut(o.order?.status)}`}>
+                  {libelleDeStatut(o.order?.status)}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  </main>
+
+  <MobileNav client:idle features={Astro.locals.club?.features ?? {}} currentPath="/mon-compte" />
+</Layout>

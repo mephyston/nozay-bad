@@ -50,8 +50,8 @@ export function storefrontNavGroups({ features, session }: StorefrontNavContext)
     items: [
       { name: 'Mon compte', icon: 'User', href: '/mon-compte', keywords: ['profil', 'compte', 'cotisation', 'commandes', 'historique'] },
       ...(licence ? [{ name: 'Ma fiche', icon: 'IdCard', href: `/adherents/${licence}`, keywords: ['profil', 'photo', 'portrait', 'licence', 'classement'] }] : []),
-      { name: 'Ma cotisation', icon: 'Wallet', href: '/mon-compte#cotisation', keywords: ['paiement', 'licence', 'adhesion', 'reglement', 'facture'] },
-      { name: 'Historique de commandes', icon: 'History', href: '/mon-compte#commandes', keywords: ['commandes', 'boutique', 'achats', 'suivi'] },
+      { name: 'Ma cotisation', icon: 'Wallet', href: '/mon-compte/cotisation', keywords: ['paiement', 'licence', 'adhesion', 'reglement', 'facture'] },
+      { name: 'Historique de commandes', icon: 'History', href: '/mon-compte/commandes', keywords: ['commandes', 'boutique', 'achats', 'suivi'] },
       ...(on(features, 'attestations')
         ? [{ name: 'Mon attestation CSE', icon: 'FileText', href: '/attestation', keywords: ['cse', 'attestation', 'employeur', 'remboursement', 'pdf', 'justificatif'] }]
         : []),
