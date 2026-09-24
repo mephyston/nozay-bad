@@ -2,6 +2,7 @@
 import AdminLayout from "../../../components/AdminLayout.svelte";
 import Layout from "../../../layouts/Layout.astro";
 import { PageHeader } from '@nba/ui';
+import HelpCenterScreen from '../../../components/HelpCenterScreen.svelte';
 import { getCollection } from 'astro:content';
 
 const { user } = Astro.locals as any;
@@ -37,6 +38,21 @@ const categoryOrder = ['admin', 'adherents', 'entrainement', 'interclubs', 'comp
 const sortedCategories = Object.entries(groupedHelp).sort(
   ([a], [b]) => categoryOrder.indexOf(a) - categoryOrder.indexOf(b)
 );
+
+/*
+  Les rubriques passent à l'îlot, qui les réduit au terme cherché sans aller-retour
+  réseau : la collection est lue au build, il n'y a rien à demander au serveur pour
+  filtrer quarante articles.
+*/
+const rubriques = sortedCategories.map(([category, entries]) => ({
+  cle: category,
+  titre: categoryNames[category] || category,
+  articles: entries.map((entry) => ({
+    id: entry.id,
+    titre: entry.data.title,
+    description: entry.data.description
+  }))
+}));
 ---
 
 <Layout title="Aide aux bénévoles">
@@ -53,31 +69,7 @@ const sortedCategories = Object.entries(groupedHelp).sort(
         description="Trouvez des réponses à vos questions et apprenez à utiliser l'application."
       />
 
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {Object.keys(groupedHelp).length === 0 ? (
-          <p class="text-muted-foreground">Aucun article d'aide n'a été trouvé.</p>
-        ) : (
-          sortedCategories.map(([category, entries]) => (
-            <div class="rounded-xl border bg-card text-card-foreground shadow">
-              <div class="flex flex-col space-y-1.5 p-6">
-                <h3 class="font-semibold leading-none tracking-tight">{categoryNames[category] || category}</h3>
-              </div>
-              <div class="p-6 pt-0">
-                <div class="grid gap-2">
-                  {entries.map(entry => (
-                    <a href={`/admin/help/${entry.id}`} class="flex items-center gap-2 hover:bg-muted p-2 rounded-md transition-colors">
-                      <div class="flex-1">
-                        <div class="font-medium text-sm">{entry.data.title}</div>
-                        {entry.data.description && <div class="text-xs text-muted-foreground">{entry.data.description}</div>}
-                      </div>
-                    </a>
-                  ))}
-                </div>
-              </div>
-            </div>
-          ))
-        )}
-      </div>
+      <HelpCenterScreen client:load {rubriques} />
     </div>
   </AdminLayout>
 </Layout>
