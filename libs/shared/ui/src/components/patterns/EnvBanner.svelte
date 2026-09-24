@@ -10,16 +10,23 @@
   // Le ruban se décale sous l'encoche : avec `viewport-fit=cover`, le haut de la page
   // passe derrière l'îlot dynamique, et un bandeau qui dit « TEST » n'a d'utilité que
   // s'il se voit.
+  //
+  // Géométrie du coin : le ruban doit **sortir des deux bords**, en haut et à droite.
+  // Il n'en sortait que d'un cheveu à droite (10 px), et le conteneur qui le rogne
+  // s'arrêtait à 128 px — juste à l'endroit où sa pointe basse traversait le bord. On
+  // voyait donc un ruban coupé net, décollé du bord droit. Le décalage passe à 64 px et
+  // la fenêtre de rognage à 160 px, qui contient la diagonale du ruban (222 px) autour
+  // de son centre.
 </script>
 
 {#if label}
   <div
-    class="fixed top-0 inset-x-0 z-[10000] pointer-events-none overflow-hidden h-32"
+    class="fixed top-0 inset-x-0 z-[10000] pointer-events-none overflow-hidden h-40"
     style="padding-top: env(safe-area-inset-top, 0px)"
     aria-hidden="true"
   >
     <div
-      class="absolute top-6 -right-12 w-64 text-white text-center text-xs font-bold py-1 rotate-45 shadow-md border-y border-white/20 tracking-widest"
+      class="absolute top-6 -right-16 w-64 text-white text-center text-xs font-bold py-1 rotate-45 shadow-md border-y border-white/20 tracking-widest"
       style={`background:${color}`}
     >
       {label}
