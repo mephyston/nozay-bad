@@ -63,12 +63,9 @@ const announced = session.status === 'announced';
           {session.status === 'cancelled' ? `Annulée — ${status.text}` : status.text}
         </p>
 
-        {!announced && (
-          <p class="mt-1 text-sm text-muted-foreground">
-            {session.slots.length} créneau{session.slots.length > 1 ? 'x' : ''} de {session.capacityPerSlot} place{session.capacityPerSlot > 1 ? 's' : ''} :
-            {session.slots.map((slot) => formatSlot(slot)).join(', ')}. L'entraîneur annonce les retenus la veille.
-          </p>
-        )}
+        {/* Le découpage en créneaux ne se dit plus ici : il ne décide de rien pour
+            l'adhérent, qui candidate à la soirée et non à une tranche horaire, et le
+            tiroir de candidature les nomme déjà dans sa liste déroulante. */}
 
         {announced && (
           <ul class="mt-2 space-y-1 text-sm">

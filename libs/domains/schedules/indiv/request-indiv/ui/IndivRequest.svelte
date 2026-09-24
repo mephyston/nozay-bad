@@ -114,6 +114,7 @@
   }
 </script>
 
+{#if status === 'announced' || !open || errorMsg}
 <div class="rounded-lg border border-border bg-muted/30 p-3">
   {#if status === 'announced'}
     {#if myRequest?.selectedSlot}
@@ -140,32 +141,44 @@
       {requested ? 'Vous aviez candidaté.' : 'Les candidatures sont closes.'}
     </p>
   {:else}
-    <!-- Une seule commande sur la carte, et elle dit où elle mène. -->
-    <Button onclick={ouvrir} disabled={busy} class="min-h-[44px] w-full font-bold sm:w-auto">
-      {requested ? 'Gérer ma candidature' : 'Je candidate'}
-    </Button>
-
-    {#if requested}
-      <p class="mt-2 text-xs text-muted-foreground">
-        Candidature envoyée{myRequest?.preferredSlot
-          ? ` · ${myRequest.preferredSlot === 1 ? '1er' : `${myRequest.preferredSlot}e`} créneau souhaité`
-          : ' · créneau indifférent'}.
-      </p>
-    {/if}
+    <!--
+      Rien ici : le bouton est rendu **hors** de l'encart, plus bas. L'encart gris dit
+      un état — « vous étiez inscrit », « les candidatures sont closes » — et un bouton
+      posé dedans se lit comme une étiquette de plus.
+    -->
   {/if}
 
   {#if errorMsg}
     <p class="mt-2 text-xs font-medium text-destructive" role="alert">{errorMsg}</p>
   {/if}
 </div>
+{/if}
+
+{#if status !== 'announced' && open}
+  <!-- Une seule commande, hors de l'encart, et elle dit où elle mène. -->
+  <Button onclick={ouvrir} disabled={busy} class="min-h-[44px] w-full font-bold sm:w-auto">
+    {requested ? 'Gérer ma candidature' : 'Je candidate'}
+  </Button>
+
+  {#if requested}
+    <p class="mt-2 text-xs text-muted-foreground">
+      Candidature envoyée{myRequest?.preferredSlot
+        ? ` · ${myRequest.preferredSlot === 1 ? '1er' : `${myRequest.preferredSlot}e`} créneau souhaité`
+        : ' · créneau indifférent'}.
+    </p>
+  {/if}
+{/if}
 
 <!--
-  `namedActions` : « Me retirer » rend une place à quelqu'un d'autre et l'entraîneur
-  compose sa soirée avec ce qu'on lui annonce. Un rond ne nomme pas ce qu'il fait.
+  Les deux ronds de la barre : la croix à gauche, la validation à droite — la
+  disposition d'une modale iOS, et celle de tous les autres formulaires.
+
+  « Me retirer » ne peut donc pas vivre dans le pied, que les ronds remplacent sous
+  768 px : il est posé en fin de formulaire, nommé, là où on le lit après avoir vu ce
+  qu'on s'apprête à changer.
 -->
 <FormSheet
   bind:open={ouvert}
-  namedActions
   title={titre}
   description={sousTitre || undefined}
   error={errorMsg || null}
@@ -205,22 +218,21 @@
     />
   </FormField>
 
-  {#snippet footer(formId)}
-    <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-      {#if requested}
-        <Button
-          type="button"
-          variant="outline"
-          onclick={() => send('withdraw')}
-          disabled={busy}
-          class="min-h-[44px] w-full sm:w-auto"
-        >
-          {busy ? 'Un instant…' : 'Me retirer'}
-        </Button>
-      {/if}
-      <Button type="submit" form={formId} disabled={busy} class="min-h-[44px] w-full font-bold sm:w-auto">
-        {busy ? 'Un instant…' : requested ? 'Mettre à jour' : 'Je candidate'}
+  {#if requested}
+    <div class="border-t border-border pt-4">
+      <Button
+        type="button"
+        variant="outline"
+        onclick={() => send('withdraw')}
+        disabled={busy}
+        class="min-h-[44px] w-full"
+      >
+        {busy ? 'Un instant…' : 'Me retirer de la soirée'}
       </Button>
+      <p class="mt-2 text-xs text-muted-foreground">
+        Votre place retourne au groupe ; vous pourrez recandidater tant que la soirée est
+        ouverte.
+      </p>
     </div>
-  {/snippet}
+  {/if}
 </FormSheet>

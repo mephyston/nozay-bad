@@ -120,17 +120,36 @@
   }
 </script>
 
-<div class="rounded-lg border border-border bg-muted/30 p-3">
-  {#if !open}
-    <p class="text-sm text-muted-foreground">
-      {registered ? 'Vous étiez inscrit·e.' : 'Les inscriptions sont closes.'}
-    </p>
-  {:else}
-    <!--
-      Une seule commande sur la ligne, et elle dit où elle mène. Le formulaire entier —
-      deux champs par invité, un bouton pour en ajouter, deux pour trancher — était
-      déplié sous chacune des quinze séances de l'agenda.
-    -->
+{#if !open || playerCount > 0 || (errorMsg && !ouvert)}
+  <!--
+    L'encart gris dit un **état** : les inscriptions sont closes, il manque des joueurs.
+    Un bouton posé dedans se lit comme une étiquette de plus ; la commande vit dehors.
+  -->
+  <div class="rounded-lg border border-border bg-muted/30 p-3">
+    {#if !open}
+      <p class="text-sm text-muted-foreground">
+        {registered ? 'Vous étiez inscrit·e.' : 'Les inscriptions sont closes.'}
+      </p>
+    {/if}
+
+    {#if playerCount > 0}
+      <p class="text-xs text-muted-foreground" class:mt-2={!open}>
+        {playerCount} joueur{playerCount > 1 ? 's' : ''} attendu{playerCount > 1 ? 's' : ''}
+        {#if playerCount < minPlayers}
+          · il en faut {minPlayers} pour ouvrir
+        {/if}
+      </p>
+    {/if}
+
+    {#if errorMsg && !ouvert}
+      <p class="mt-2 text-xs font-medium text-destructive" role="alert">{errorMsg}</p>
+    {/if}
+  </div>
+{/if}
+
+{#if open}
+  <div class="mt-2">
+    <!-- Une seule commande sur la ligne, et elle dit où elle mène. -->
     <Button onclick={ouvrir} disabled={busy} class="min-h-[44px] w-full font-bold sm:w-auto">
       {registered ? 'Gérer mon inscription' : 'Je viens'}
     </Button>
@@ -142,30 +161,19 @@
           : ''}.
       </p>
     {/if}
-  {/if}
-
-  {#if playerCount > 0}
-    <p class="mt-2 text-xs text-muted-foreground">
-      {playerCount} joueur{playerCount > 1 ? 's' : ''} attendu{playerCount > 1 ? 's' : ''}
-      {#if playerCount < minPlayers}
-        · il en faut {minPlayers} pour ouvrir
-      {/if}
-    </p>
-  {/if}
-
-  {#if errorMsg && !ouvert}
-    <p class="mt-2 text-xs font-medium text-destructive" role="alert">{errorMsg}</p>
-  {/if}
-</div>
+  </div>
+{/if}
 
 <!--
-  `namedActions` : « Je ne viens plus » retire une inscription que d'autres regardent —
-  l'ouvreur compte sur le nombre annoncé. Un rond ne nomme pas ce qu'il fait, et deux
-  ronds côte à côte ne diraient pas lequel désinscrit.
+  Les deux ronds de la barre : la croix à gauche, la validation à droite — la
+  disposition d'une modale iOS, la même que pour l'indiv.
+
+  « Je ne viens plus » ne peut donc pas vivre dans le pied, que les ronds remplacent
+  sous 768 px : il est posé en fin de formulaire, nommé, là où on le lit après avoir vu
+  ce qu'on s'apprête à changer.
 -->
 <FormSheet
   bind:open={ouvert}
-  namedActions
   title={titre}
   description={sousTitre || undefined}
   error={errorMsg || null}
@@ -220,26 +228,20 @@
     </Button>
   {/if}
 
-  {#snippet footer(formId)}
-    <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-      {#if registered}
-        <!--
-          La désinscription reste en retrait : elle n'est pas destructrice — on peut se
-          réinscrire — mais c'est l'inverse de ce qu'on est venu faire ici.
-        -->
-        <Button
-          type="button"
-          variant="outline"
-          onclick={() => send('unregister')}
-          disabled={busy}
-          class="min-h-[44px] w-full sm:w-auto"
-        >
-          {busy ? 'Un instant…' : 'Je ne viens plus'}
-        </Button>
-      {/if}
-      <Button type="submit" form={formId} disabled={busy} class="min-h-[44px] w-full font-bold sm:w-auto">
-        {busy ? 'Un instant…' : registered ? 'Mettre à jour' : 'Je viens'}
+  {#if registered}
+    <div class="border-t border-border pt-4">
+      <Button
+        type="button"
+        variant="outline"
+        onclick={() => send('unregister')}
+        disabled={busy}
+        class="min-h-[44px] w-full"
+      >
+        {busy ? 'Un instant…' : 'Je ne viens plus'}
       </Button>
+      <p class="mt-2 text-xs text-muted-foreground">
+        L'ouvreur compte sur le nombre annoncé : prévenir vaut mieux que ne pas venir.
+      </p>
     </div>
-  {/snippet}
+  {/if}
 </FormSheet>

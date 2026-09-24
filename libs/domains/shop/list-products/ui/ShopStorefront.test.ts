@@ -34,6 +34,20 @@ describe('ShopStorefront', () => {
 
   const cards = (target: HTMLElement) => Array.from(target.querySelectorAll('[data-testid="product-card"]')) as HTMLButtonElement[];
   const dialog = () => document.querySelector('[data-testid="order-dialog"]') as HTMLElement | null;
+  /*
+    La feuille porte son pied **hors** du `<form>`, rattaché par l'attribut `form` : le
+    bouton de validation ne vit donc pas dans `order-dialog`, et l'erreur non plus — elle
+    est rendue par la coquille, au-dessus des champs. Les deux se cherchent à la racine.
+  */
+  const feuille = () => document.querySelector('[role="dialog"]') as HTMLElement | null;
+  const submitBtn = () => document.querySelector('[data-testid="order-submit"]') as HTMLButtonElement;
+  /* jsdom ne relaie pas l'association `form=` jusqu'à l'événement `submit`. */
+  const soumettre = () => {
+    const form = feuille()?.querySelector('form');
+    if (!form) throw new Error('aucun formulaire dans la feuille');
+    form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    flushSync();
+  };
 
   beforeEach(() => {
     vi.stubGlobal('fetch', vi.fn().mockImplementation(() =>
@@ -102,9 +116,10 @@ describe('ShopStorefront', () => {
     await vi.waitFor(() => expect(dialog()).not.toBeNull());
 
     const box = dialog()!;
-    expect(box.textContent).toContain('Maillot du club');
+    // Le nom de l'article est le titre de la feuille, donc hors des champs.
+    expect(feuille()?.textContent).toContain('Maillot du club');
     expect(box.textContent).toContain('D. Jean');
-    const submit = box.querySelector('[data-testid="order-submit"]') as HTMLButtonElement;
+    const submit = submitBtn();
     expect(submit.disabled).toBe(true);
     expect(box.textContent).toContain('Choisissez une déclinaison.');
 
@@ -125,7 +140,7 @@ describe('ShopStorefront', () => {
     expect(box.querySelector('[data-testid="order-total"]')?.textContent?.replace(/ | /g, ' ')).toBe('24,00 €');
     expect(plus.disabled).toBe(true);
 
-    submit.click();
+    soumettre();
     await vi.waitFor(() => expect(fetch).toHaveBeenCalled());
     const body = JSON.parse((fetch as any).mock.calls[0][1].body);
     expect(body).toEqual({ seasonId: '25-26', memberId: 1, productId: 12, quantity: 2, paymentMethod: 'especes' });
@@ -146,10 +161,9 @@ describe('ShopStorefront', () => {
     await vi.waitFor(() => expect(dialog()).not.toBeNull());
     const box = dialog()!;
     expect(box.querySelectorAll('[data-testid="variant-choice"]')).toHaveLength(0);
-    const submit = box.querySelector('[data-testid="order-submit"]') as HTMLButtonElement;
-    expect(submit.disabled).toBe(false);
+    expect(submitBtn().disabled).toBe(false);
 
-    submit.click();
+    soumettre();
     await vi.waitFor(() => expect(fetch).toHaveBeenCalled());
     expect(JSON.parse((fetch as any).mock.calls[0][1].body).productId).toBe(20);
   });
@@ -164,8 +178,8 @@ describe('ShopStorefront', () => {
     cards(target)[1].click();
     flushSync();
     await vi.waitFor(() => expect(dialog()).not.toBeNull());
-    (dialog()!.querySelector('[data-testid="order-submit"]') as HTMLButtonElement).click();
-    await vi.waitFor(() => expect(dialog()?.textContent).toContain('La saison est clôturée.'));
+    soumettre();
+    await vi.waitFor(() => expect(feuille()?.textContent).toContain('La saison est clôturée.'));
     expect(document.querySelector('[data-testid="order-confirmation"]')).toBeNull();
   });
 
