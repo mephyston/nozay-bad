@@ -39,8 +39,25 @@ if (Astro.request.method === 'POST') {
     }
 
     const body = await Astro.request.json();
-    // L'adhérent de la commande est TOUJOURS le profil actif de la session.
-    const order = { ...body, memberId: postSession.activeMemberId };
+
+    /*
+      L'adhérent de la commande appartient TOUJOURS au foyer de la session.
+
+      C'était le seul profil actif, ce qui obligeait un parent à basculer de profil pour
+      commander à son enfant — donc à quitter la boutique. La boutique le propose
+      maintenant dans le tiroir, et c'est ici que la règle se tient : un identifiant
+      absent du foyer est refusé, jamais corrigé en silence. Le profil actif reste le
+      défaut quand rien n'est demandé.
+    */
+    const demande = Number((body as any).memberId);
+    const duFoyer = postSession.members.some((m) => m.id === demande);
+    if ((body as any).memberId !== undefined && !duFoyer) {
+      return new Response(
+        JSON.stringify({ success: false, error: "Cet adhérent ne fait pas partie de votre compte." }),
+        { status: 403, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+    const order = { ...body, memberId: duFoyer ? demande : postSession.activeMemberId };
 
     return apiService.fetch('http://localhost/shop/orders', {
       method: 'POST',

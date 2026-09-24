@@ -1,6 +1,6 @@
 <script lang="ts">
   import { ShoppingBag, Info, Package, Minus, Plus } from '@lucide/svelte';
-  import { FormSheet, Button, SearchableCombobox, FormField, Badge } from '@nba/ui';
+  import { FormSheet, Button, SearchableCombobox, ChoiceField, FormField, Badge } from '@nba/ui';
   import type { Member, OrderConfirmation, PaymentMethodOption, Product } from './catalog-types';
   import { isOutOfStock, maxOrderableQuantity, productLabel } from './catalog-types';
   import type { ProductFamily } from './catalog-families';
@@ -18,7 +18,9 @@
   let {
     family = $bindable(null),
     member,
-    memberId,
+    members = [],
+    memberId = $bindable(''),
+    onClosed,
     activeSeasonId,
     paymentMethods = [],
     imageUrl,
@@ -27,7 +29,11 @@
     /** La famille à commander ; `null` ferme la boîte. */
     family: ProductFamily | null;
     member: Member | null;
+    /** Le foyer de la session : c'est parmi eux, et eux seuls, qu'on peut commander. */
+    members?: Member[];
     memberId: string;
+    /** Appelé à la fermeture, pour rendre le choix au profil actif. */
+    onClosed?: () => void;
     activeSeasonId: string;
     paymentMethods: PaymentMethodOption[];
     imageUrl: (key: string | null | undefined) => string | null;
@@ -72,7 +78,10 @@
   });
 
   function onOpenChange(next: boolean) {
-    if (!next) family = null;
+    if (!next) {
+      family = null;
+      onClosed?.();
+    }
   }
 
   async function order() {
@@ -115,13 +124,16 @@
   un téléphone, le bouton « Valider » se trouvait sous le pli dès qu'une déclinaison
   ajoutait une ligne, et le clavier du champ de quantité le recouvrait.
 
-  `namedActions` : commander engage un paiement au trésorier. Un rond ne nomme pas ce
-  qu'il fait, et on ne valide pas une dépense sans lire le mot qui la déclenche.
+  Les deux ronds en haut de la feuille : la croix à gauche, la validation à droite,
+  comme partout ailleurs. Le pied nommé reste au-dessus de 768 px, où les ronds
+  n'existent pas — c'est lui qui porte le bouton grisé tant qu'il manque quelque chose.
+
+  Au doigt, le rond ne peut pas se griser : il ne dirait pas pourquoi. La soumission
+  écrit donc ce qui bloque, à la place de ne rien faire.
 -->
 <FormSheet
   {open}
   {onOpenChange}
-  namedActions
   title={family?.product.name ?? 'Commander'}
   description={family?.product.description || undefined}
   error={errorMessage}
@@ -130,6 +142,10 @@
   submittingLabel="Envoi de la commande…"
   onSubmit={(e) => {
     e.preventDefault();
+    if (blockingReason) {
+      errorMessage = blockingReason;
+      return;
+    }
     void order();
   }}
 >
@@ -144,14 +160,33 @@
             <Package class="h-6 w-6 text-muted-foreground/50" />
           {/if}
         </div>
-        {#if member}
-          <!-- Pour qui l'on commande : le foyer peut en compter plusieurs. -->
+        {#if member && members.length <= 1}
+          <!-- Un seul adhérent au compte : il n'y a rien à choisir, on le rappelle. -->
           <div class="min-w-0 flex-1 rounded-xl border border-border bg-muted/30 px-3 py-2 text-xs">
             <span class="text-muted-foreground">Pour : </span>
             <span class="font-semibold text-foreground">{formatMemberName(member)}</span>
           </div>
         {/if}
       </div>
+
+      {#if members.length > 1}
+        <!--
+          Le foyer en compte plusieurs : on choisit ici pour qui l'on commande.
+
+          Il fallait auparavant basculer de profil depuis le menu du compte — donc
+          quitter la boutique, y revenir et retrouver l'article. Le choix ne porte que
+          sur le foyer de la session : le serveur refuse tout autre adhérent, et c'est
+          lui qui fait autorité.
+        -->
+        <FormField id="order-member" label="Pour qui ?">
+          <ChoiceField
+            id="order-member"
+            label="Pour qui ?"
+            options={members.map((m) => ({ value: m.id.toString(), label: formatMemberName(m) }))}
+            bind:value={memberId}
+          />
+        </FormField>
+      {/if}
 
       {#if family.variants.length > 0}
         <fieldset>

@@ -42,7 +42,19 @@
     initialProductId?: number | null;
   } = $props();
 
-  const member = $derived(members.find((m) => m.id.toString() === initialMemberId) ?? null);
+  /**
+   * Pour qui l'on commande.
+   *
+   * Le profil actif de la session au départ ; le tiroir laisse en changer quand le
+   * compte en porte plusieurs — un parent commandait pour son enfant en basculant de
+   * profil dans le menu, ce qui faisait quitter la boutique et retrouver l'article.
+   *
+   * Réinitialisé au profil actif à chaque fermeture du tiroir : la commande suivante
+   * ne doit pas hériter du choix de la précédente.
+   */
+  // svelte-ignore state_referenced_locally
+  let selectedMemberId = $state(initialMemberId);
+  const member = $derived(members.find((m) => m.id.toString() === selectedMemberId) ?? null);
   const families = $derived(groupFamilies(products));
   const categories = $derived(familyCategories(families));
 
@@ -142,7 +154,9 @@
 <ShopOrderDialog
   bind:family={ordering}
   {member}
-  memberId={member ? member.id.toString() : ''}
+  {members}
+  bind:memberId={selectedMemberId}
+  onClosed={() => (selectedMemberId = initialMemberId)}
   {activeSeasonId}
   {paymentMethods}
   {imageUrl}
