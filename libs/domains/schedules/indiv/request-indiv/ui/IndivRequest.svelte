@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Button, Input, Label, Select } from '@nba/ui';
+  import { Button, Input, FormField, ChoiceField, FormSheet } from '@nba/ui';
 
   type SlotWindow = { index: number; startTime: string; endTime: string };
   type MyRequest = { preferredSlot: number | null; note: string | null; selectedSlot: number | null };
@@ -24,7 +24,9 @@
     myRequest = null,
     status = 'open',
     open = true,
-    endpoint = '/agenda'
+    endpoint = '/agenda',
+    titre = 'Séance individuelle',
+    sousTitre = ''
   } = $props<{
     sessionId: number;
     slots?: SlotWindow[];
@@ -35,6 +37,9 @@
     open?: boolean;
     /** Page qui porte le POST : l'agenda, même depuis l'accueil. */
     endpoint?: string;
+    /** De quelle soirée parle le tiroir. */
+    titre?: string;
+    sousTitre?: string;
   }>();
 
   const requested = $derived(myRequest !== null);
@@ -49,7 +54,32 @@
   let busy = $state(false);
   let errorMsg = $state('');
 
+  /**
+   * La candidature se prend **dans un tiroir**, comme tous les formulaires.
+   *
+   * Elle était dépliée dans la carte de la soirée : une liste déroulante, un champ libre
+   * et deux boutons, sous les créneaux qu'on venait lire. La carte ne porte plus qu'une
+   * commande, et dit ce qu'elle fera.
+   */
+  let ouvert = $state(false);
+
+  function ouvrir() {
+    preferred = myRequest?.preferredSlot ? String(myRequest.preferredSlot) : '';
+    note = myRequest?.note ?? '';
+    errorMsg = '';
+    ouvert = true;
+  }
+
   const h = (t: string) => t.replace(':', 'h');
+
+  /* « Indifférent » d'abord : c'est la réponse la plus fréquente, et la seule qui n'engage à rien. */
+  const optionsDeCreneau = $derived([
+    { value: '', label: 'Indifférent' },
+    ...slots.map((slot: SlotWindow) => ({
+      value: String(slot.index),
+      label: `${slot.index === 1 ? '1er' : `${slot.index}e`} créneau (${h(slot.startTime)}-${h(slot.endTime)})`
+    }))
+  ]);
 
   async function send(action: 'request' | 'withdraw') {
     busy = true;
@@ -110,49 +140,87 @@
       {requested ? 'Vous aviez candidaté.' : 'Les candidatures sont closes.'}
     </p>
   {:else}
-    <div class="space-y-3">
-      <div class="grid gap-3 sm:grid-cols-2">
-        <div>
-          <Label for={`indiv-slot-${sessionId}`} class="mb-1 block text-xs text-muted-foreground">Créneau souhaité</Label>
-          <Select id={`indiv-slot-${sessionId}`} bind:value={preferred} class="min-h-[44px]">
-            <option value="">Indifférent</option>
-            {#each slots as slot (slot.index)}
-              <option value={String(slot.index)}>
-                {slot.index === 1 ? '1er' : `${slot.index}e`} créneau ({h(slot.startTime)}-{h(slot.endTime)})
-              </option>
-            {/each}
-          </Select>
-        </div>
-        <div>
-          <Label for={`indiv-note-${sessionId}`} class="mb-1 block text-xs text-muted-foreground">Un mot pour l'entraîneur (facultatif)</Label>
-          <Input
-            id={`indiv-note-${sessionId}`}
-            bind:value={note}
-            maxlength={200}
-            placeholder="Travailler le service…"
-            class="min-h-[44px]"
-          />
-        </div>
-      </div>
+    <!-- Une seule commande sur la carte, et elle dit où elle mène. -->
+    <Button onclick={ouvrir} disabled={busy} class="min-h-[44px] w-full font-bold sm:w-auto">
+      {requested ? 'Gérer ma candidature' : 'Je candidate'}
+    </Button>
 
-      <div class="flex flex-wrap items-center justify-end gap-2">
-        {#if requested}
-          <Button variant="outline" onclick={() => send('withdraw')} disabled={busy} class="min-h-[44px]">
-            {busy ? 'Un instant…' : 'Me retirer'}
-          </Button>
-          <Button onclick={() => send('request')} disabled={busy} class="min-h-[44px] font-bold">
-            {busy ? 'Un instant…' : 'Mettre à jour'}
-          </Button>
-        {:else}
-          <Button onclick={() => send('request')} disabled={busy} class="min-h-[44px] font-bold">
-            {busy ? 'Un instant…' : 'Je candidate'}
-          </Button>
-        {/if}
-      </div>
-    </div>
+    {#if requested}
+      <p class="mt-2 text-xs text-muted-foreground">
+        Candidature envoyée{myRequest?.preferredSlot
+          ? ` · ${myRequest.preferredSlot === 1 ? '1er' : `${myRequest.preferredSlot}e`} créneau souhaité`
+          : ' · créneau indifférent'}.
+      </p>
+    {/if}
   {/if}
 
   {#if errorMsg}
     <p class="mt-2 text-xs font-medium text-destructive" role="alert">{errorMsg}</p>
   {/if}
 </div>
+
+<!--
+  `namedActions` : « Me retirer » rend une place à quelqu'un d'autre et l'entraîneur
+  compose sa soirée avec ce qu'on lui annonce. Un rond ne nomme pas ce qu'il fait.
+-->
+<FormSheet
+  bind:open={ouvert}
+  namedActions
+  title={titre}
+  description={sousTitre || undefined}
+  error={errorMsg || null}
+  isSubmitting={busy}
+  submitLabel={requested ? 'Mettre à jour' : 'Je candidate'}
+  submittingLabel="Un instant…"
+  onSubmit={(e) => {
+    e.preventDefault();
+    void send('request');
+  }}
+>
+  <p class="text-sm text-muted-foreground">
+    L'entraîneur compose la soirée et annonce les retenus la veille. Candidater ne
+    garantit pas une place.
+  </p>
+
+  <FormField id={`indiv-slot-${sessionId}`} label="Créneau souhaité">
+    <ChoiceField
+      id={`indiv-slot-${sessionId}`}
+      label="Créneau souhaité"
+      options={optionsDeCreneau}
+      bind:value={preferred}
+    />
+  </FormField>
+
+  <FormField
+    id={`indiv-note-${sessionId}`}
+    label="Un mot pour l'entraîneur"
+    hint="Facultatif — ce que vous aimeriez travailler."
+  >
+    <Input
+      id={`indiv-note-${sessionId}`}
+      bind:value={note}
+      maxlength={200}
+      placeholder="Travailler le service…"
+      class="min-h-[44px]"
+    />
+  </FormField>
+
+  {#snippet footer(formId)}
+    <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+      {#if requested}
+        <Button
+          type="button"
+          variant="outline"
+          onclick={() => send('withdraw')}
+          disabled={busy}
+          class="min-h-[44px] w-full sm:w-auto"
+        >
+          {busy ? 'Un instant…' : 'Me retirer'}
+        </Button>
+      {/if}
+      <Button type="submit" form={formId} disabled={busy} class="min-h-[44px] w-full font-bold sm:w-auto">
+        {busy ? 'Un instant…' : requested ? 'Mettre à jour' : 'Je candidate'}
+      </Button>
+    </div>
+  {/snippet}
+</FormSheet>

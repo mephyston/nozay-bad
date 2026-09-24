@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Button, Input, Label } from '@nba/ui';
+  import { Button, Input, Label, FormSheet } from '@nba/ui';
   import { MAX_OPEN_PLAY_GUESTS } from '../../../shared/open-play';
 
   type GuestName = { firstName: string; lastName: string };
@@ -25,7 +25,9 @@
     open = true,
     playerCount = 0,
     minPlayers = 4,
-    endpoint = ''
+    endpoint = '',
+    titre = 'Jeu libre',
+    sousTitre = ''
   } = $props<{
     sessionId: number;
     myGuests?: GuestName[] | null;
@@ -34,6 +36,9 @@
     minPlayers?: number;
     /** Page à qui poster. Vide = la page courante, cas de l'espace adhérent. */
     endpoint?: string;
+    /** De quelle séance parle le tiroir : sans elle, la feuille s'ouvre sur « Jeu libre » et rien d'autre. */
+    titre?: string;
+    sousTitre?: string;
   }>();
 
   const registered = $derived(myGuests !== null);
@@ -43,6 +48,23 @@
   let guests = $state<GuestName[]>((myGuests ?? []).map((guest) => ({ ...guest })));
   let busy = $state(false);
   let errorMsg = $state('');
+
+  /**
+   * L'inscription se prend **dans un tiroir**, comme tous les formulaires.
+   *
+   * Elle était dépliée sous chaque séance : deux champs par invité, un bouton pour en
+   * ajouter et deux pour trancher, sur chacune des quinze lignes de l'agenda. Le
+   * calendrier se lisait donc à travers les formulaires de tout le monde. La ligne ne
+   * porte plus qu'un bouton, et dit ce qu'il fera.
+   */
+  let ouvert = $state(false);
+
+  /* Rouvrir après un abandon ne doit pas rejouer la saisie abandonnée. */
+  function ouvrir() {
+    guests = (myGuests ?? []).map((guest) => ({ ...guest }));
+    errorMsg = '';
+    ouvert = true;
+  }
 
   function addGuest() {
     if (guests.length < MAX_OPEN_PLAY_GUESTS) guests = [...guests, { firstName: '', lastName: '' }];
@@ -104,63 +126,22 @@
       {registered ? 'Vous étiez inscrit·e.' : 'Les inscriptions sont closes.'}
     </p>
   {:else}
-    <div class="space-y-3">
-      {#if guests.length > 0}
-        <div class="space-y-2">
-          <Label class="block text-xs text-muted-foreground">
-            Vos invités — leur nom permet à l'ouvreur de savoir qui entre.
-          </Label>
-          {#each guests as guest, index (index)}
-            <div class="flex items-center gap-2">
-              <Input
-                bind:value={guests[index].firstName}
-                placeholder="Prénom"
-                aria-label={`Prénom de l'invité ${index + 1}`}
-                class="min-h-[44px] flex-1"
-              />
-              <Input
-                bind:value={guests[index].lastName}
-                placeholder="Nom"
-                aria-label={`Nom de l'invité ${index + 1}`}
-                class="min-h-[44px] flex-1"
-              />
-              <Button
-                variant="ghost"
-                onclick={() => removeGuest(index)}
-                disabled={busy}
-                aria-label={`Retirer l'invité ${index + 1}`}
-                class="min-h-[44px] px-3 text-muted-foreground"
-              >
-                ✕
-              </Button>
-            </div>
-          {/each}
-        </div>
-      {/if}
+    <!--
+      Une seule commande sur la ligne, et elle dit où elle mène. Le formulaire entier —
+      deux champs par invité, un bouton pour en ajouter, deux pour trancher — était
+      déplié sous chacune des quinze séances de l'agenda.
+    -->
+    <Button onclick={ouvrir} disabled={busy} class="min-h-[44px] w-full font-bold sm:w-auto">
+      {registered ? 'Gérer mon inscription' : 'Je viens'}
+    </Button>
 
-      <div class="flex flex-wrap items-center gap-2">
-        {#if guests.length < MAX_OPEN_PLAY_GUESTS}
-          <Button variant="outline" onclick={addGuest} disabled={busy} class="min-h-[44px]">
-            + Inviter quelqu'un
-          </Button>
-        {/if}
-
-        <div class="ml-auto flex flex-wrap items-center gap-2">
-          {#if registered}
-            <Button variant="outline" onclick={() => send('unregister')} disabled={busy} class="min-h-[44px]">
-              {busy ? 'Un instant…' : 'Je ne viens plus'}
-            </Button>
-            <Button onclick={() => send('register')} disabled={busy} class="min-h-[44px] font-bold">
-              {busy ? 'Un instant…' : 'Mettre à jour'}
-            </Button>
-          {:else}
-            <Button onclick={() => send('register')} disabled={busy} class="min-h-[44px] font-bold">
-              {busy ? 'Un instant…' : 'Je viens'}
-            </Button>
-          {/if}
-        </div>
-      </div>
-    </div>
+    {#if registered}
+      <p class="mt-2 text-xs text-muted-foreground">
+        Vous êtes inscrit·e{guests.length > 0
+          ? ` avec ${guests.length} invité${guests.length > 1 ? 's' : ''}`
+          : ''}.
+      </p>
+    {/if}
   {/if}
 
   {#if playerCount > 0}
@@ -172,7 +153,93 @@
     </p>
   {/if}
 
-  {#if errorMsg}
+  {#if errorMsg && !ouvert}
     <p class="mt-2 text-xs font-medium text-destructive" role="alert">{errorMsg}</p>
   {/if}
 </div>
+
+<!--
+  `namedActions` : « Je ne viens plus » retire une inscription que d'autres regardent —
+  l'ouvreur compte sur le nombre annoncé. Un rond ne nomme pas ce qu'il fait, et deux
+  ronds côte à côte ne diraient pas lequel désinscrit.
+-->
+<FormSheet
+  bind:open={ouvert}
+  namedActions
+  title={titre}
+  description={sousTitre || undefined}
+  error={errorMsg || null}
+  isSubmitting={busy}
+  submitLabel={registered ? 'Mettre à jour' : 'Je viens'}
+  submittingLabel="Un instant…"
+  onSubmit={(e) => {
+    e.preventDefault();
+    void send('register');
+  }}
+>
+  <p class="text-sm text-muted-foreground">
+    Vous venez seul·e ? Validez. Sinon, ajoutez vos invités : leur nom permet à l'ouvreur
+    de savoir qui entre.
+  </p>
+
+  {#if guests.length > 0}
+    <div class="space-y-2">
+      <Label class="block text-xs text-muted-foreground">Vos invités</Label>
+      {#each guests as guest, index (index)}
+        <div class="flex items-center gap-2">
+          <Input
+            bind:value={guests[index].firstName}
+            placeholder="Prénom"
+            aria-label={`Prénom de l'invité ${index + 1}`}
+            class="min-h-[44px] flex-1"
+          />
+          <Input
+            bind:value={guests[index].lastName}
+            placeholder="Nom"
+            aria-label={`Nom de l'invité ${index + 1}`}
+            class="min-h-[44px] flex-1"
+          />
+          <Button
+            type="button"
+            variant="ghost"
+            onclick={() => removeGuest(index)}
+            disabled={busy}
+            aria-label={`Retirer l'invité ${index + 1}`}
+            class="min-h-[44px] px-3 text-muted-foreground"
+          >
+            ✕
+          </Button>
+        </div>
+      {/each}
+    </div>
+  {/if}
+
+  {#if guests.length < MAX_OPEN_PLAY_GUESTS}
+    <Button type="button" variant="outline" onclick={addGuest} disabled={busy} class="min-h-[44px]">
+      + Inviter quelqu'un
+    </Button>
+  {/if}
+
+  {#snippet footer(formId)}
+    <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+      {#if registered}
+        <!--
+          La désinscription reste en retrait : elle n'est pas destructrice — on peut se
+          réinscrire — mais c'est l'inverse de ce qu'on est venu faire ici.
+        -->
+        <Button
+          type="button"
+          variant="outline"
+          onclick={() => send('unregister')}
+          disabled={busy}
+          class="min-h-[44px] w-full sm:w-auto"
+        >
+          {busy ? 'Un instant…' : 'Je ne viens plus'}
+        </Button>
+      {/if}
+      <Button type="submit" form={formId} disabled={busy} class="min-h-[44px] w-full font-bold sm:w-auto">
+        {busy ? 'Un instant…' : registered ? 'Mettre à jour' : 'Je viens'}
+      </Button>
+    </div>
+  {/snippet}
+</FormSheet>

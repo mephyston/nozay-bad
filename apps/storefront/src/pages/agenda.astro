@@ -9,7 +9,7 @@ import { EventSignup } from '@nba/events-ui';
 import { OpenPlaySignup, OpenPlayOpenerButton, OpenPlayAttendees } from '@nba/schedules-ui';
 import { featureOn } from '@nba/club/context';
 import { resolveEnv } from '../lib/request-context';
-import { fetchOpenPlaySessions, OPEN_PLAY_HORIZON_DAYS } from '../lib/open-play';
+import { fetchOpenPlaySessions, formatSessionDate, OPEN_PLAY_HORIZON_DAYS } from '../lib/open-play';
 import { fetchNextIndivSession } from '../lib/indiv';
 import { env } from 'cloudflare:workers';
 import { createApiClient } from '@nba/api-client';
@@ -371,6 +371,8 @@ const today = new Date().toISOString().slice(0, 10);
                     open={row.session.status !== 'cancelled' && row.session.date >= today}
                     playerCount={row.session.playerCount}
                     minPlayers={row.session.minPlayers}
+                    titre={row.session.label ?? 'Jeu libre'}
+                    sousTitre={`${formatSessionDate(row.session.date)} · ${row.session.startTime} – ${row.session.endTime}${row.session.venue ? ` · ${row.session.venue.name}` : ''}`}
                   />
                 </div>
 

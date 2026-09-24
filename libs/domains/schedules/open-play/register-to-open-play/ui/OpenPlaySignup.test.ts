@@ -10,6 +10,20 @@ import OpenPlaySignup from './OpenPlaySignup.svelte';
  * rien ne les reprenne.
  */
 
+/**
+ * Le formulaire vit dans un tiroir, porté hors du conteneur de montage : tout ce qui
+ * s'y trouve se cherche dans `document.body`. La ligne, elle, ne porte qu'un bouton.
+ */
+function ouvrir(host: HTMLElement): HTMLElement {
+  const declencheur = [...host.querySelectorAll('button')].find((b) =>
+    /Je viens|Gérer mon inscription/.test(b.textContent ?? '')
+  );
+  if (!declencheur) throw new Error("aucun bouton n'ouvre l'inscription");
+  declencheur.click();
+  flushSync();
+  return document.body;
+}
+
 function clickByText(host: HTMLElement, text: string) {
   const button = [...host.querySelectorAll('button')].find((b) => b.textContent?.includes(text));
   if (!button) throw new Error(`bouton « ${text} » introuvable`);
@@ -63,27 +77,31 @@ describe('OpenPlaySignup', () => {
     // `[]` veut dire « inscrit et je viens seul », `null` « pas inscrit » : c'est cette
     // différence qui décide du libellé.
     render({ myGuests: [] });
-    expect(host.textContent).toContain('Je ne viens plus');
-    expect(host.textContent).toContain('Mettre à jour');
+    expect(host.textContent).toContain('Gérer mon inscription');
+    const feuille = ouvrir(host);
+    expect(feuille.textContent).toContain('Je ne viens plus');
+    expect(feuille.textContent).toContain('Mettre à jour');
   });
 
   it('préremplit les invités déjà annoncés', () => {
     render({ myGuests: [{ firstName: 'Léa', lastName: 'Martin' }] });
-    const first = host.querySelector<HTMLInputElement>('[aria-label="Prénom de l\'invité 1"]');
+    const feuille = ouvrir(host);
+    const first = feuille.querySelector<HTMLInputElement>('[aria-label="Prénom de l\'invité 1"]');
     expect(first?.value).toBe('Léa');
   });
 
   it('ajoute puis retire une ligne d’invité', () => {
     render({ myGuests: [] });
-    expect(host.querySelector('[aria-label="Prénom de l\'invité 1"]')).toBeNull();
+    const feuille = ouvrir(host);
+    expect(feuille.querySelector('[aria-label="Prénom de l\'invité 1"]')).toBeNull();
 
-    clickByText(host, 'Inviter quelqu’un'.replace('’', "'"));
-    expect(host.querySelector('[aria-label="Prénom de l\'invité 1"]')).not.toBeNull();
+    clickByText(feuille, 'Inviter quelqu’un'.replace('’', "'"));
+    expect(feuille.querySelector('[aria-label="Prénom de l\'invité 1"]')).not.toBeNull();
 
-    const remove = host.querySelector<HTMLButtonElement>('[aria-label="Retirer l\'invité 1"]')!;
+    const remove = feuille.querySelector<HTMLButtonElement>('[aria-label="Retirer l\'invité 1"]')!;
     remove.click();
     flushSync();
-    expect(host.querySelector('[aria-label="Prénom de l\'invité 1"]')).toBeNull();
+    expect(feuille.querySelector('[aria-label="Prénom de l\'invité 1"]')).toBeNull();
   });
 
   it('cesse de proposer une ligne au-delà de trois invités', () => {
@@ -95,7 +113,8 @@ describe('OpenPlaySignup', () => {
       ]
     });
     // L'écran ne doit jamais proposer une valeur que l'API refuserait.
-    const invite = [...host.querySelectorAll('button')].find((b) =>
+    const feuille = ouvrir(host);
+    const invite = [...feuille.querySelectorAll('button')].find((b) =>
       b.textContent?.includes('Inviter')
     );
     expect(invite).toBeUndefined();
@@ -103,22 +122,24 @@ describe('OpenPlaySignup', () => {
 
   it('refuse d’envoyer un invité sans nom, avec la phrase du serveur', () => {
     render({ myGuests: [] });
-    clickByText(host, 'Inviter');
-    fill(host, "Prénom de l'invité 1", 'Léa');
+    const feuille = ouvrir(host);
+    clickByText(feuille, 'Inviter');
+    fill(feuille, "Prénom de l'invité 1", 'Léa');
 
-    clickByText(host, 'Mettre à jour');
+    clickByText(feuille, 'Mettre à jour');
 
     expect(fetchMock).not.toHaveBeenCalled();
-    expect(host.textContent).toContain('Renseignez le prénom et le nom de chaque invité');
+    expect(feuille.textContent).toContain('Renseignez le prénom et le nom de chaque invité');
   });
 
   it('poste exactement les invités saisis, élagués', async () => {
     render({ myGuests: [] });
-    clickByText(host, 'Inviter');
-    fill(host, "Prénom de l'invité 1", '  Léa ');
-    fill(host, "Nom de l'invité 1", ' Martin  ');
+    const feuille = ouvrir(host);
+    clickByText(feuille, 'Inviter');
+    fill(feuille, "Prénom de l'invité 1", '  Léa ');
+    fill(feuille, "Nom de l'invité 1", ' Martin  ');
 
-    clickByText(host, 'Mettre à jour');
+    clickByText(feuille, 'Mettre à jour');
     await vi.waitFor(() => expect(fetchMock).toHaveBeenCalled());
 
     const body = JSON.parse(fetchMock.mock.calls[0][1].body as string);
