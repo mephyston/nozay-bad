@@ -108,6 +108,6 @@
   <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
     <FormField label="Créneaux" id="gen-count"><Input id="gen-count" type="number" min="1" max={MAX_SLOT_COUNT} bind:value={slotCount} /></FormField>
     <FormField label="Minutes" id="gen-minutes"><Input id="gen-minutes" type="number" min="5" max={MAX_SLOT_MINUTES} step="5" bind:value={slotMinutes} /></FormField>
-    <FormField label="Places" id="gen-capacity"><Input id="gen-capacity" type="number" min="1" max={MAX_CAPACITY_PER_SLOT} bind:value={capacityPerSlot} /></FormField>
+    <FormField label="Places par créneau" id="gen-capacity" hint="Deux, à l'habitude du club."><Input id="gen-capacity" type="number" min="1" max={MAX_CAPACITY_PER_SLOT} bind:value={capacityPerSlot} /></FormField>
   </div>
 </FormSheet>

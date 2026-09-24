@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { ShoppingBag, History, PackageOpen } from '@lucide/svelte';
+  import { History, PackageOpen } from '@lucide/svelte';
+  import { Tabs } from '@nba/ui';
   import type { Member, OrderConfirmation, PaymentMethodOption, Product } from './catalog-types';
   import { familyCategories, groupFamilies, type ProductFamily } from './catalog-families';
   import type { ClubBankDetails } from './catalog-utils';
@@ -46,6 +47,11 @@
   const categories = $derived(familyCategories(families));
 
   let selectedCategory = $state<number | null>(null);
+
+  /* « tout » plutôt que la chaîne vide : un onglet a besoin d'une valeur, et `null` n'en est pas une. */
+  function choisirCategorie(valeur: string) {
+    selectedCategory = valeur === 'tout' ? null : Number(valeur);
+  }
   const shown = $derived(selectedCategory === null ? families : families.filter((f) => f.product.productCategoryId === selectedCategory));
 
   // svelte-ignore state_referenced_locally
@@ -60,47 +66,63 @@
 </script>
 
 <div class="mx-auto w-full max-w-4xl space-y-4">
-  <header class="flex flex-row flex-wrap items-center gap-3">
-    <ShoppingBag class="h-5 w-5 shrink-0 text-primary" />
+  <!--
+    Le titre à la forme des autres pages de l'espace adhérent — « Calendrier », « Mon
+    club » : un `h1` de 24 px et sa phrase dessous. Il était en 16 px avec une icône,
+    plus petit que les noms des articles qu'il coiffe.
+  -->
+  <header class="flex flex-wrap items-end justify-between gap-3">
     <div class="min-w-0">
-      <h1 class="text-base font-semibold text-foreground">Boutique du club</h1>
-      <p class="mt-0.5 text-xs text-muted-foreground">Touchez un article pour le commander.</p>
+      <h1 class="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">Boutique</h1>
+      <p class="mt-1 text-sm text-muted-foreground">Touchez un article pour le commander.</p>
     </div>
     {#if historyHref}
+      <!--
+        Au doigt, un rond à icône sur la ligne du titre, aligné à droite : le lien de
+        texte passait à la ligne sous le titre, en douze pixels, et se confondait avec
+        la phrase d'explication juste à côté. À la souris, la phrase entière : elle dit
+        où l'on va, et le curseur n'a pas besoin d'une cible de 44 points.
+      -->
       <a
         href={historyHref}
-        class="basis-full pl-8 min-h-[44px] sm:basis-auto sm:pl-0 sm:min-h-0 sm:ml-auto shrink-0 inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline"
+        aria-label="Mon historique de commandes"
+        class="border-border bg-card text-foreground hover:bg-muted flex size-11 shrink-0 items-center justify-center rounded-full border no-underline transition-colors md:hidden"
         data-testid="orders-history-link"
       >
-        <History class="h-3.5 w-3.5" />
+        <History class="size-5" />
+      </a>
+
+      <a
+        href={historyHref}
+        class="hidden min-h-[44px] shrink-0 items-center gap-1.5 text-sm font-medium text-primary hover:underline md:inline-flex"
+      >
+        <History class="h-4 w-4" />
         Mon historique de commandes
       </a>
     {/if}
   </header>
 
   {#if categories.length > 1}
-    <nav class="-mx-3 flex gap-2 overflow-x-auto px-3 pb-1 sm:mx-0 sm:px-0" aria-label="Catégories">
-      <button
-        type="button"
-        onclick={() => (selectedCategory = null)}
-        aria-pressed={selectedCategory === null}
-        class="shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium transition
-          {selectedCategory === null ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-card text-foreground hover:border-primary/50'}"
-      >
-        Tout
-      </button>
-      {#each categories as category (category.id)}
-        <button
-          type="button"
-          onclick={() => (selectedCategory = category.id)}
-          aria-pressed={selectedCategory === category.id}
-          class="shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium transition
-            {selectedCategory === category.id ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-card text-foreground hover:border-primary/50'}"
-        >
-          {category.label}
-        </button>
-      {/each}
-    </nav>
+    <!--
+      Les mêmes onglets que l'administration : le contrôle segmenté en verre sous
+      768 px, la rangée d'onglets au-dessus. Des pastilles de douze pixels défilaient
+      en largeur, et celle qui était active ne se distinguait que par sa couleur.
+    -->
+    <Tabs.Root value={selectedCategory === null ? 'tout' : String(selectedCategory)} onValueChange={choisirCategorie} class="w-full">
+      <Tabs.List variant="glass" class="w-full md:hidden" aria-label="Catégories">
+        <Tabs.Trigger variant="glass" value="tout">Tout</Tabs.Trigger>
+        {#each categories as category (category.id)}
+          <Tabs.Trigger variant="glass" value={String(category.id)}>{category.label}</Tabs.Trigger>
+        {/each}
+      </Tabs.List>
+
+      <Tabs.List class="hidden w-full justify-start md:flex" aria-label="Catégories">
+        <Tabs.Trigger value="tout">Tout</Tabs.Trigger>
+        {#each categories as category (category.id)}
+          <Tabs.Trigger value={String(category.id)}>{category.label}</Tabs.Trigger>
+        {/each}
+      </Tabs.List>
+    </Tabs.Root>
   {/if}
 
   {#if shown.length === 0}

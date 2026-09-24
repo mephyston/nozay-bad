@@ -92,7 +92,11 @@ describe('ShopStorefront', () => {
     mountStorefront(target);
     flushSync();
 
-    const chips = Array.from(target.querySelectorAll('nav[aria-label="Catégories"] button')) as HTMLButtonElement[];
+    // Deux rangées d'onglets — en verre au doigt, ordinaire à la souris — donc deux
+    // jeux de déclencheurs pour les mêmes catégories. On pilote celui du téléphone.
+    const chips = Array.from(
+      target.querySelectorAll('[data-slot="tabs-list"][data-variant="glass"] button')
+    ) as HTMLButtonElement[];
     expect(chips.map((c) => c.textContent?.trim())).toEqual(['Tout', 'Textile', 'Volants']);
 
     chips[2].click();

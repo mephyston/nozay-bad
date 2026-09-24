@@ -105,7 +105,7 @@
   <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
     <FormField label="Créneaux" id="indiv-count"><Input id="indiv-count" type="number" min="1" max={MAX_SLOT_COUNT} bind:value={slotCount} /></FormField>
     <FormField label="Minutes" id="indiv-minutes"><Input id="indiv-minutes" type="number" min="5" max={MAX_SLOT_MINUTES} step="5" bind:value={slotMinutes} /></FormField>
-    <FormField label="Places" id="indiv-capacity"><Input id="indiv-capacity" type="number" min="1" max={MAX_CAPACITY_PER_SLOT} bind:value={capacityPerSlot} /></FormField>
+    <FormField label="Places par créneau" id="indiv-capacity" hint="Deux, à l'habitude du club."><Input id="indiv-capacity" type="number" min="1" max={MAX_CAPACITY_PER_SLOT} bind:value={capacityPerSlot} /></FormField>
   </div>
   <FormField label="Libellé (facultatif)" id="indiv-label"><Input id="indiv-label" bind:value={label} placeholder="Indiv mardi" /></FormField>
   <FormField label="Consigne (facultatif)" id="indiv-notes"><Textarea id="indiv-notes" bind:value={notes} rows={2} placeholder="Terrain 4, volants fournis" /></FormField>

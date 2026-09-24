@@ -131,16 +131,25 @@ const directory = players.map((p: any) => ({
       </p>
     </div>
 
-    <nav class="flex flex-wrap gap-2" aria-label="Choisir ce qu’affiche la page">
+    {/*
+      Le contrôle segmenté en verre, celui de l'administration et de la boutique — mais
+      en **liens**, pas en onglets d'une île.
+
+      Ce sont eux qui gardent l'adresse partageable, le retour arrière fonctionnel et la
+      page utilisable sans JavaScript ; les onglets de `bits-ui` demanderaient une île
+      pour le seul plaisir d'un `aria-selected`. La forme est reprise à la lettre de
+      `tabs-trigger` — segments de largeur égale, actif surélevé sur la surface en verre.
+    */}
+    <nav class="glass-surface flex h-12 gap-1 rounded-full p-1" aria-label="Choisir ce qu’affiche la page">
       {VIEWS.map((v) => (
         <a
           href={v.id === 'equipes' ? '/equipes' : `/equipes?vue=${v.id}`}
           aria-current={view === v.id ? 'page' : undefined}
           class:list={[
-            'inline-flex min-h-[36px] items-center rounded-full border px-3 text-sm font-medium transition-colors no-underline',
+            'inline-flex flex-1 items-center justify-center whitespace-nowrap rounded-full px-3 text-sm font-medium no-underline transition-all',
             view === v.id
-              ? 'border-primary bg-primary/10 text-primary'
-              : 'border-border text-muted-foreground hover:text-foreground'
+              ? 'bg-card text-foreground font-bold shadow-sm ring-1 ring-border/60'
+              : 'text-muted-foreground hover:text-foreground'
           ]}
         >
           {v.label}
