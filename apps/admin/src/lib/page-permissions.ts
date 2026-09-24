@@ -86,7 +86,10 @@ export const PAGE_PERMISSIONS: Record<string, Permission | null> = {
   // Gestion des salles : les créneaux, l'agenda et le site y renvoient.
   '/admin/settings/gymnases': 'schedules:slots:write',
 
-  '/admin/iam': 'iam:users:read'
+  // L'accueil des accès, puis ses deux rubriques : les comptes et les rôles.
+  '/admin/iam': 'iam:users:read',
+  '/admin/iam/utilisateurs': 'iam:users:read',
+  '/admin/iam/roles': 'iam:roles:read'
 };
 
 /**

@@ -1,14 +1,16 @@
 <script lang="ts">
   import { PageHeader, ErrorAlert } from '@nba/ui';
-  import { UsersManager, RolesMatrix } from '@nba/iam-ui';
+  import { UsersManager } from '@nba/iam-ui';
   import EcranDistant from './EcranDistant.svelte';
 
+  /** Les comptes d'administration. La matrice des droits vit sur sa propre page. */
   let errorMsg = $state<string | null>(null);
 </script>
 
 <PageHeader
-  title="Accès et rôles"
-  description="Attribuez un rôle aux personnes qui administrent le club."
+  retour={{ href: '/admin/iam', libelle: 'Retour aux accès et rôles' }}
+  title="Utilisateurs"
+  description="Qui administre le club, et avec quels rôles."
 />
 
 {#if errorMsg}
@@ -23,14 +25,7 @@
     onDonnees={(d) => (errorMsg = d.errorMsg ?? null)}
   >
     {#snippet pret(d)}
-      <div class="space-y-6">
-        <div>
-          <UsersManager users={d.users} />
-        </div>
-        <div>
-          <RolesMatrix roles={d.roles} canEdit={d.canEditRoles} />
-        </div>
-      </div>
+      <UsersManager users={d.users} />
     {/snippet}
   </EcranDistant>
 </div>

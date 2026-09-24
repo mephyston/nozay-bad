@@ -1,0 +1,18 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import AdminLayout from '../../../components/AdminLayout.svelte';
+import IamRolesScreen from '../../../components/IamRolesScreen.svelte';
+
+/*
+  Page figée : l'îlot demande ses données au relais des accès.
+*/
+export const prerender = true;
+---
+
+<Layout title="Rôles">
+  <AdminLayout client:idle breadcrumb="Accès & Rôles / Rôles">
+    <div class="space-y-6">
+      <IamRolesScreen client:load />
+    </div>
+  </AdminLayout>
+</Layout>

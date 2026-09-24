@@ -1,7 +1,6 @@
 <script lang="ts">
-  import { tick } from 'svelte';
-  import { CollapsibleSection, Table, Badge, Button, Checkbox, Input, FormField, ChoiceField, SwitchField, submitForm } from '@nba/ui';
-  import { Check, Minus, AlertTriangle, RotateCcw, Search, ChevronDown } from '@lucide/svelte';
+  import { Table, Badge, Button, Input, SwitchField, FormSheet, ListView, ListRow, submitForm } from '@nba/ui';
+  import { Check, Minus, AlertTriangle, RotateCcw, Search, ChevronDown, Shield } from '@lucide/svelte';
   import { ROLE_PERMISSIONS, type Role } from '../shared/roles';
   import { PERMISSION_LABELS, groupedPermissions } from '../shared/catalog';
   import type { Permission } from '../shared/permissions';
@@ -29,25 +28,20 @@
   let saving = $state(false);
 
   /**
-   * L'édition se fait rôle par rôle, dans une liste verticale — jamais dans la matrice.
+   * Un rôle s'ouvre **en tiroir**, jamais dans la matrice.
    *
    * La matrice fait 64 droits × 7 rôles : sur un téléphone il fallait la faire défiler
-   * horizontalement pour atteindre la colonne du rôle édité, puis la garder alignée avec
-   * la ligne du droit. Comme on n'édite de toute façon qu'un rôle à la fois, la
-   * comparaison entre colonnes ne sert à rien pendant la saisie : la matrice reste pour
-   * la lecture sur grand écran, l'édition passe par une liste pleine largeur.
+   * horizontalement pour atteindre la colonne du rôle, puis la garder alignée avec la
+   * ligne du droit. Comme on n'ouvre de toute façon qu'un rôle à la fois, la comparaison
+   * entre colonnes n'a d'intérêt que là où elle tient à l'écran : la matrice reste pour
+   * la lecture au-dessus de 768 px, le rôle se lit et se modifie dans sa feuille.
+   *
+   * `ouvert` est le rôle du tiroir — modifiable ou non ; `editing` n'est renseigné que
+   * lorsqu'on peut écrire, et c'est lui que la sauvegarde regarde.
    */
+  let ouvert = $state<string | null>(null);
   let query = $state('');
   let onlyGranted = $state(false);
-  /**
-   * Rôle affiché par la vue liste en lecture (mobile). On ouvre sur le premier rôle
-   * modifiable : `super_admin` arrive en tête de la liste mais détient tout, sa colonne
-   * n'apprend rien.
-   */
-  let viewedRole = $state<string>(
-    (roles.find((r) => r.editable) ?? roles[0])?.role ?? ''
-  );
-  let editorEl = $state<HTMLElement | null>(null);
 
   /**
    * Repli des rubriques, par vue.
@@ -60,11 +54,10 @@
   let listOpen = $state<Set<string>>(new Set());
 
   const editedRole = $derived(editing ? roles.find((r) => r.role === editing) : undefined);
+  /** Le rôle du tiroir, qu'on l'y modifie ou qu'on s'y contente de lire. */
+  const roleOuvert = $derived(ouvert ? roles.find((r) => r.role === ouvert) : undefined);
   const needle = $derived(query.trim().toLowerCase());
   const searching = $derived(needle.length > 0);
-
-  /** Le rôle dont la liste verticale montre les droits : celui édité, sinon celui choisi. */
-  const listedRole = $derived(editing ? editedRole : roles.find((r) => r.role === viewedRole));
 
   function matches(permission: Permission): boolean {
     if (!searching) return true;
@@ -91,8 +84,7 @@
       .map((g) => ({
         label: g.label,
         permissions: g.permissions.filter(
-          (p) =>
-            matches(p) && (editing || !onlyGranted || has(listedRole?.role ?? '', p))
+          (p) => matches(p) && (editing || !onlyGranted || has(ouvert ?? '', p))
         )
       }))
       .filter((g) => g.permissions.length > 0)
@@ -178,21 +170,31 @@
   }
 
   /**
-   * Le formulaire d'édition s'affiche sous les cartes de rôle : sans ce défilement, on
-   * clique « Modifier les droits » et rien ne semble se produire à l'écran.
+   * Ouvre le tiroir d'un rôle. Modifiable seulement si le compte en a le droit **et**
+   * si le rôle l'est : le super administrateur détient tout par construction, sa feuille
+   * se consulte.
    */
-  async function startEditing(role: Role) {
-    editing = role;
+  function ouvrir(role: RoleSummary) {
+    ouvert = role.role;
+    editing = canEdit && role.editable ? (role.role as Role) : null;
     query = '';
     onlyGranted = false;
     listOpen = new Set();
-    await tick();
-    editorEl?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
-  function cancel() {
-    const role = editing!;
-    draft = { ...draft, [role]: new Set(roles.find((r) => r.role === role)?.permissions ?? []) };
+  /**
+   * Referme le tiroir en abandonnant la saisie.
+   *
+   * Appelée par la feuille elle-même — croix, échappement, voile — comme par le bouton
+   * d'annulation : une fermeture qui laisserait `draft` modifié rouvrirait le rôle sur
+   * des cases cochées que personne n'a enregistrées.
+   */
+  function fermer() {
+    if (editing) {
+      const role = editing;
+      draft = { ...draft, [role]: new Set(roles.find((r) => r.role === role)?.permissions ?? []) };
+    }
+    ouvert = null;
     editing = null;
     query = '';
   }
@@ -210,6 +212,7 @@
       },
       close: () => {
         editing = null;
+        ouvert = null;
       }
     });
     saving = false;
@@ -230,19 +233,22 @@
   />
 {/snippet}
 
-<!-- Une ligne de droit de la liste verticale : lecture seule, ou case à cocher. -->
+<!-- Une ligne de droit : interrupteur quand on peut écrire, coche sinon. -->
 {#snippet permissionRow(role: string, permission: Permission, editable: boolean)}
   {#if editable}
-    <!-- Le <label> englobe toute la ligne : la cible tactile fait la largeur de l'écran. -->
-    <label
-      class="flex items-center gap-3 py-2 min-h-11 cursor-pointer border-b border-border/50 last:border-0"
-    >
-      <Checkbox checked={has(role, permission)} onCheckedChange={() => toggle(role, permission)} />
-      <span class="min-w-0 flex-1">
-        <span class="block text-sm text-foreground leading-snug">{PERMISSION_LABELS[permission]}</span>
-        <span class="block text-[11px] text-muted-foreground font-mono">{permission}</span>
-      </span>
-    </label>
+    <!--
+      Un interrupteur, et non une case à cocher : la rangée porte son intitulé à gauche
+      et son état à droite, au même endroit sur les soixante-quatre lignes. Une case
+      posait l'état avant des libellés de longueurs différentes.
+    -->
+    <SwitchField
+      sansCadre
+      id={`droit-${role}-${permission}`}
+      label={PERMISSION_LABELS[permission]}
+      hint={permission}
+      checked={has(role, permission)}
+      onChange={() => toggle(role, permission)}
+    />
   {:else}
     <div class="flex items-center gap-3 py-2 min-h-11 border-b border-border/50 last:border-0">
       {#if has(role, permission)}
@@ -275,26 +281,9 @@
       {@const all = granted === group.permissions.length}
       <div class="rounded-lg border border-border overflow-hidden">
         <div class="flex items-center gap-2 bg-muted/50 pr-2">
-          {#if editable}
-            <!-- Case de rubrique tri-état, hors du bouton de repli : deux commandes
-                 distinctes, donc deux éléments interactifs séparés. -->
-            <label
-              class="flex items-center pl-3 py-2 cursor-pointer"
-              title={all ? 'Retirer toute la rubrique' : 'Accorder toute la rubrique'}
-            >
-              <Checkbox
-                checked={all}
-                indeterminate={granted > 0 && !all}
-                onCheckedChange={() => toggleGroupAll(role, group.permissions)}
-                aria-label={`Accorder ou retirer toute la rubrique ${group.label}`}
-              />
-            </label>
-          {/if}
           <button
             type="button"
-            class="flex-1 flex items-center justify-between gap-2 py-2.5 {editable
-              ? 'pl-1'
-              : 'pl-3'} text-left min-h-11"
+            class="flex-1 flex items-center justify-between gap-2 py-2.5 pl-3 text-left min-h-11"
             aria-expanded={isOpen(listOpen, group.label)}
             onclick={() => toggleListGroup(group.label)}
           >
@@ -325,6 +314,18 @@
 
         {#if isOpen(listOpen, group.label)}
           <div class="px-3 py-1">
+            {#if editable}
+              <!--
+                Donner « toute la comptabilité » à un trésorier, c'était dix-huit
+                interrupteurs dispersés dans une liste de soixante-quatre. Le geste est
+                nommé plutôt que porté par une case tri-état, que rien n'explique.
+              -->
+              <div class="flex justify-end pt-1">
+                <Button size="sm" variant="ghost-muted" onclick={() => toggleGroupAll(role, group.permissions)}>
+                  {all ? 'Tout retirer' : 'Tout accorder'}
+                </Button>
+              </div>
+            {/if}
             {#each group.permissions as permission (permission)}
               {@render permissionRow(role, permission, editable)}
             {/each}
@@ -341,87 +342,180 @@
   </div>
 {/snippet}
 
-<CollapsibleSection
-  title="Que permet chaque rôle ?"
-  description={canEdit
-    ? "Cochez les droits accordés par un rôle. Le super administrateur détient l'intégralité des droits par construction et n'est pas modifiable."
-    : "Droits accordés par chaque rôle. Un compte peut en cumuler plusieurs ; ses droits sont l'union des leurs."}
-  badge={`${roles.length} rôles`}
->
-  <div class="space-y-6">
-    <!-- Rappel de ce que recouvre chaque rôle, avec son écart éventuel. -->
-    <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-      {#each roles as role (role.role)}
-        <div
-          class="rounded-lg border p-3 {editing === role.role
-            ? 'border-primary ring-1 ring-primary/30'
-            : 'border-border'}"
-        >
-          <div class="flex items-center justify-between gap-2">
-            <span class="text-sm font-bold text-foreground">{role.label}</span>
-            <Badge
-              variant={role.role === 'super_admin'
-                ? 'destructive'
-                : role.role === 'membre'
-                  ? 'outline'
-                  : 'secondary'}
-              size="xs"
-            >
-              {draft[role.role]?.size ?? role.permissions.length} droits
-            </Badge>
-          </div>
-          <p class="mt-1 text-xs text-muted-foreground leading-snug">{role.description}</p>
+<div class="space-y-6">
+  <!--
+    Les rôles en rangées, et non en cartes.
 
+    Sept cartes de cent pixels de haut faisaient défiler deux écrans pour lire ce que
+    chacune dit en une ligne : son nom, ce qu'il recouvre, et le nombre de droits qu'il
+    accorde. Une rangée ouvre le rôle ; c'est là qu'on lit ses droits et qu'on les
+    modifie, sans quitter la page ni chercher où le formulaire s'est déplié.
+  -->
+  <ListView
+    items={roles}
+    emptyIcon={Shield}
+    emptyTitle="Aucun rôle"
+    emptyDescription="Les rôles sont définis par l'application."
+  >
+    {#snippet listRow(role)}
+      <ListRow
+        item={role}
+        onclick={() => ouvrir(role)}
+        title={role.label}
+        subtitle={role.description}
+        value={`${draft[role.role]?.size ?? role.permissions.length} droits`}
+        valueTone={role.role === 'super_admin' ? 'destructive' : 'muted'}
+      >
+        {#snippet badge()}
+          <!--
+            Tant que les rôles vivaient en code, git disait qui avait changé quoi et
+            pourquoi. Cet écart le remplace : il rend la dérive visible, et c'est la
+            seule chose qu'une rangée signale.
+          -->
           {#if role.added.length > 0 || role.removed.length > 0}
-            <!-- Tant que les rôles vivaient en code, git disait qui avait changé quoi
-                 et pourquoi. Cet écart le remplace : il rend la dérive visible. -->
-            <p class="mt-2 text-xs text-warning flex items-start gap-1.5">
-              <AlertTriangle class="w-3.5 h-3.5 shrink-0 mt-0.5" />
-              <span>
-                Modifié depuis la définition d'origine :
-                {#if role.added.length}{role.added.length} ajout{role.added.length > 1 ? 's' : ''}{/if}{#if role.added.length && role.removed.length},
-                {/if}{#if role.removed.length}{role.removed.length} retrait{role.removed.length > 1
-                    ? 's'
-                    : ''}{/if}.
-              </span>
-            </p>
+            <Badge variant="warning" size="xs">
+              <AlertTriangle class="w-3 h-3" />
+              Modifié
+            </Badge>
           {/if}
+        {/snippet}
+      </ListRow>
+    {/snippet}
+  </ListView>
 
-          {#if canEdit && role.editable}
-            <div class="mt-3 flex flex-wrap items-center gap-2">
-              {#if editing === role.role}
-                <span class="text-xs text-primary font-medium">Modification en cours…</span>
-              {:else}
-                <!-- Passer d'un rôle à l'autre en cours d'édition abandonnerait la
-                     saisie sans le dire : le bouton attend qu'on ait tranché. -->
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={editing !== null}
-                  onclick={() => startEditing(role.role)}
-                >
-                  Modifier les droits
-                </Button>
-              {/if}
-            </div>
-          {/if}
-        </div>
-      {/each}
+  <!--
+    La matrice, au-dessus de 768 px seulement : elle sert à comparer les rôles entre
+    eux, ce qui demande de les voir côte à côte. Au doigt, on ouvre un rôle.
+  -->
+  <div class="hidden space-y-3 md:block">
+    <div>
+      <h3 class="text-foreground text-sm font-bold">Tous les droits, rôle par rôle</h3>
+      <p class="text-muted-foreground text-xs">
+        Lecture seule : un rôle se modifie depuis sa rangée.
+      </p>
     </div>
 
-    {#if editing && editedRole}
-      {@const changes = pendingChanges(editing)}
-      <div bind:this={editorEl} class="scroll-mt-4 space-y-3">
+    {@render searchField('Rechercher un droit…')}
+
+    <!--
+      La matrice déborde en largeur : elle défile dans son propre conteneur, la page
+      ne défile jamais horizontalement.
+    -->
+    <div class="hidden md:block overflow-x-auto rounded-lg border border-border">
+      <Table.Root class="min-w-[640px]">
+        <Table.Header>
+          <Table.Row>
+            <Table.Head class="sticky left-0 bg-card z-10 min-w-[260px]">Droit</Table.Head>
+            {#each roles as role (role.role)}
+              <Table.Head class="text-center whitespace-nowrap">{role.label}</Table.Head>
+            {/each}
+          </Table.Row>
+        </Table.Header>
+        <Table.Body>
+          {#each matrixGroups as group (group.label)}
+            <Table.Row class="bg-muted/50 hover:bg-muted/50">
+              <Table.Cell colspan={roles.length + 1} class="p-0">
+                <button
+                  type="button"
+                  class="w-full flex items-center gap-2 px-4 py-2 text-left"
+                  aria-expanded={isOpen(matrixOpen, group.label)}
+                  onclick={() => toggleMatrixGroup(group.label)}
+                >
+                  <ChevronDown
+                    class="w-4 h-4 text-muted-foreground transition-transform duration-200 {isOpen(
+                      matrixOpen,
+                      group.label
+                    )
+                      ? 'rotate-180'
+                      : '-rotate-90'}"
+                  />
+                  <span class="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                    {group.label}
+                  </span>
+                  <span class="text-xs text-muted-foreground tabular-nums">
+                    ({group.permissions.length})
+                  </span>
+                </button>
+              </Table.Cell>
+            </Table.Row>
+            {#if isOpen(matrixOpen, group.label)}
+              {#each group.permissions as permission (permission)}
+                <Table.Row>
+                  <Table.Cell class="sticky left-0 bg-card z-10">
+                    <span class="text-sm text-foreground">{PERMISSION_LABELS[permission]}</span>
+                    <span class="block text-[11px] text-muted-foreground font-mono">
+                      {permission}
+                    </span>
+                  </Table.Cell>
+                  {#each roles as role (role.role)}
+                    <Table.Cell class="text-center">
+                      {#if has(role.role, permission)}
+                        <Check class="w-4 h-4 mx-auto text-primary" aria-label="accordé" />
+                      {:else}
+                        <Minus
+                          class="w-4 h-4 mx-auto text-muted-foreground/40"
+                          aria-label="non accordé"
+                        />
+                      {/if}
+                    </Table.Cell>
+                  {/each}
+                </Table.Row>
+              {/each}
+            {/if}
+          {/each}
+        </Table.Body>
+      </Table.Root>
+
+      {#if matrixGroups.length === 0}
+        <p class="text-sm text-muted-foreground py-6 text-center">
+          Aucun droit ne correspond à cette recherche.
+        </p>
+      {/if}
+    </div>
+  </div>
+</div>
+
+<!--
+  Le rôle ouvert, en tiroir.
+
+  Le formulaire se dépliait sous les cartes, et il fallait le faire défiler jusqu'en bas
+  pour retrouver « Enregistrer » — une barre collante y suppléait. La feuille porte sa
+  validation dans sa propre barre, et la croix annule.
+
+  `{#key}` sur le rôle : sans lui, Svelte réemploie la feuille d'un rôle à l'autre, avec
+  la recherche et les rubriques dépliées du précédent.
+-->
+{#key ouvert}
+  <FormSheet
+    open={ouvert !== null}
+    onOpenChange={(o) => {
+      if (!o) fermer();
+    }}
+    title={roleOuvert?.label ?? 'Rôle'}
+    description={editing
+      ? `${draft[editing]?.size ?? 0} droits accordés sur ${groups.reduce((n, g) => n + g.permissions.length, 0)}.`
+      : roleOuvert?.description}
+    lectureSeule={!editing}
+    isSubmitting={saving}
+    submitLabel="Enregistrer"
+    onSubmit={(e) => {
+      e.preventDefault();
+      if (editing) void save(editing);
+    }}
+  >
+    {#if roleOuvert}
+      {@const changes = editing ? pendingChanges(editing) : { added: 0, removed: 0 }}
+
+      {#if editing}
         <div class="flex flex-wrap items-center justify-between gap-2">
-          <div>
-            <p class="text-sm font-bold text-foreground">Droits de « {editedRole.label} »</p>
-            <p class="text-xs text-muted-foreground">
-              {draft[editing]?.size ?? 0} droits accordés sur {groups.reduce(
-                (n, g) => n + g.permissions.length,
-                0
-              )}.
-            </p>
-          </div>
+          {#if changes.added || changes.removed}
+            <span class="text-muted-foreground text-xs">
+              {#if changes.added}+{changes.added}{/if}{#if changes.added && changes.removed},
+              {/if}{#if changes.removed}−{changes.removed}{/if} en attente
+            </span>
+          {:else}
+            <span></span>
+          {/if}
           <Button
             size="sm"
             variant="ghost"
@@ -434,144 +528,18 @@
             Réinitialiser
           </Button>
         </div>
+      {:else}
+        <!-- En lecture, dérouler soixante-quatre lignes barrées n'apprend rien. -->
+        <SwitchField
+          id="droits-accordes"
+          label="Droits accordés seulement"
+          bind:checked={onlyGranted}
+        />
+      {/if}
 
-        {@render searchField('Rechercher un droit à accorder…')}
+      {@render searchField(editing ? 'Rechercher un droit à accorder…' : 'Rechercher un droit…')}
 
-        {@render roleList(editing, true)}
-
-        <!--
-          Barre d'actions collante : la liste fait 64 lignes, sur aucun écran on ne doit
-          la parcourir en entier pour retrouver « Enregistrer ». `bottom-16` la pose
-          au-dessus de la barre du bas (cercles de 56 px, décollés de 8 px), qui
-          disparaît à partir de `md`.
-        -->
-        <div
-          class="sticky bottom-16 md:bottom-0 z-30 -mx-4 px-4 py-3 bg-card border-t border-border flex flex-wrap items-center gap-2"
-        >
-          <Button size="sm" onclick={() => save(editing!)} disabled={saving || !dirty(editing)}>
-            Enregistrer
-          </Button>
-          <Button size="sm" variant="ghost" onclick={cancel} disabled={saving}>Annuler</Button>
-          {#if changes.added || changes.removed}
-            <span class="text-xs text-muted-foreground">
-              {#if changes.added}+{changes.added}{/if}{#if changes.added && changes.removed},
-              {/if}{#if changes.removed}−{changes.removed}{/if} en attente
-            </span>
-          {/if}
-        </div>
-      </div>
-    {:else}
-      <div class="space-y-3">
-        {@render searchField('Rechercher un droit…')}
-
-        <!--
-          Lecture sur mobile : un rôle à la fois. Sept colonnes dans 390 px sont
-          illisibles, et la comparaison entre rôles n'a d'intérêt que là où elle tient à
-          l'écran — au-delà de `md`, où la matrice reprend la main.
-        -->
-        <div class="md:hidden space-y-3">
-          <!--
-            Les deux contrôles de la vue aux normes des champs : une rangée qui mène à
-            l'écran de choix pour le rôle affiché, un interrupteur pour le filtre. Une
-            liste déroulante native fait 32 px de haut, et une case à cocher posait
-            l'état avant un libellé, à une abscisse qui dépendait du libellé voisin.
-          -->
-          <FormField id="role-affiche" label="Rôle affiché">
-            <ChoiceField
-              id="role-affiche"
-              label="Rôle affiché"
-              options={roles.map((r) => ({ value: r.role, label: r.label }))}
-              bind:value={viewedRole}
-            />
-          </FormField>
-
-          <SwitchField
-            id="droits-accordes"
-            label="Droits accordés seulement"
-            bind:checked={onlyGranted}
-          />
-
-          {#if listedRole}
-            {@render roleList(listedRole.role, false)}
-          {/if}
-        </div>
-
-        <!--
-          La matrice déborde en largeur : elle défile dans son propre conteneur, la page
-          ne défile jamais horizontalement.
-        -->
-        <div class="hidden md:block overflow-x-auto rounded-lg border border-border">
-          <Table.Root class="min-w-[640px]">
-            <Table.Header>
-              <Table.Row>
-                <Table.Head class="sticky left-0 bg-card z-10 min-w-[260px]">Droit</Table.Head>
-                {#each roles as role (role.role)}
-                  <Table.Head class="text-center whitespace-nowrap">{role.label}</Table.Head>
-                {/each}
-              </Table.Row>
-            </Table.Header>
-            <Table.Body>
-              {#each matrixGroups as group (group.label)}
-                <Table.Row class="bg-muted/50 hover:bg-muted/50">
-                  <Table.Cell colspan={roles.length + 1} class="p-0">
-                    <button
-                      type="button"
-                      class="w-full flex items-center gap-2 px-4 py-2 text-left"
-                      aria-expanded={isOpen(matrixOpen, group.label)}
-                      onclick={() => toggleMatrixGroup(group.label)}
-                    >
-                      <ChevronDown
-                        class="w-4 h-4 text-muted-foreground transition-transform duration-200 {isOpen(
-                          matrixOpen,
-                          group.label
-                        )
-                          ? 'rotate-180'
-                          : '-rotate-90'}"
-                      />
-                      <span class="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                        {group.label}
-                      </span>
-                      <span class="text-xs text-muted-foreground tabular-nums">
-                        ({group.permissions.length})
-                      </span>
-                    </button>
-                  </Table.Cell>
-                </Table.Row>
-                {#if isOpen(matrixOpen, group.label)}
-                  {#each group.permissions as permission (permission)}
-                    <Table.Row>
-                      <Table.Cell class="sticky left-0 bg-card z-10">
-                        <span class="text-sm text-foreground">{PERMISSION_LABELS[permission]}</span>
-                        <span class="block text-[11px] text-muted-foreground font-mono">
-                          {permission}
-                        </span>
-                      </Table.Cell>
-                      {#each roles as role (role.role)}
-                        <Table.Cell class="text-center">
-                          {#if has(role.role, permission)}
-                            <Check class="w-4 h-4 mx-auto text-primary" aria-label="accordé" />
-                          {:else}
-                            <Minus
-                              class="w-4 h-4 mx-auto text-muted-foreground/40"
-                              aria-label="non accordé"
-                            />
-                          {/if}
-                        </Table.Cell>
-                      {/each}
-                    </Table.Row>
-                  {/each}
-                {/if}
-              {/each}
-            </Table.Body>
-          </Table.Root>
-
-          {#if matrixGroups.length === 0}
-            <p class="text-sm text-muted-foreground py-6 text-center">
-              Aucun droit ne correspond à cette recherche.
-            </p>
-          {/if}
-        </div>
-      </div>
+      {@render roleList(roleOuvert.role, !!editing)}
     {/if}
-  </div>
-</CollapsibleSection>
+  </FormSheet>
+{/key}

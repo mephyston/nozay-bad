@@ -41,7 +41,19 @@
      * dans la barre latérale des écrans du CMS, des séances et de l'agenda, qui n'ont ni
      * les mêmes permissions ni le même modèle.
      */
-    domaine?: 'cms' | 'schedules' | 'events' | 'club' | 'notifications' | 'members';
+    domaine?:
+      | 'cms'
+      | 'schedules'
+      | 'events'
+      | 'club'
+      | 'notifications'
+      | 'members'
+      | 'accounting'
+      | 'dashboard'
+      | 'expenses'
+      | 'iam'
+      | 'shop'
+      | 'teams';
     /** Nom de l'écran auprès du relais `/admin/api/<domaine>/[screen]`. */
     ecran: string;
     /** Forme du squelette, à l'image du contenu attendu. */
