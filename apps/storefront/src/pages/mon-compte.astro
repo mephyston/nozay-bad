@@ -92,7 +92,7 @@ const compte = (n: number, mot: string) => (n === 0 ? 'aucune' : `${n} ${mot}${n
         <div class="divide-y divide-border overflow-hidden rounded-xl border border-border bg-card">
           {active && (
             <AccountRow
-              href={`/adherents/${licenceUrl}`}
+              href={`/adherents/${licenceUrl}?de=compte`}
               title="Ma fiche"
               description="Votre photo, vos équipes et vos classements, tels que les voient les autres adhérents."
             />

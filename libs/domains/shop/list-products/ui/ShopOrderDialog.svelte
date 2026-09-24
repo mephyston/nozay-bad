@@ -190,7 +190,9 @@
 
       {#if family.variants.length > 0}
         <fieldset>
-          <legend class="mb-2 text-sm font-medium text-foreground">Déclinaison</legend>
+          <!-- Même taille et même graisse que « Quantité » ou « Mode de paiement » :
+               c'est un intitulé de champ comme les autres, et `FormField` les écrit ainsi. -->
+          <legend class="mb-2 text-xs font-bold uppercase text-muted-foreground">Déclinaison</legend>
           <div class="flex flex-wrap gap-2" role="radiogroup">
             {#each family.variants as variant (variant.id)}
               {@const out = isOutOfStock(variant)}

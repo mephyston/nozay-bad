@@ -187,6 +187,50 @@ describe('ShopStorefront', () => {
     expect(document.querySelector('[data-testid="order-confirmation"]')).toBeNull();
   });
 
+  it('laisse choisir pour qui l’on commande quand le compte porte plusieurs adhérents', async () => {
+    /*
+      Le foyer, et la mécanique du tiroir avec lui : choisir un autre adhérent ne doit
+      rien remettre à zéro — ni la déclinaison, ni la quantité, ni le total.
+    */
+    const foyer = [
+      { id: 1, firstName: 'Jean', lastName: 'Dupont', licence: '123456' },
+      { id: 2, firstName: 'Lise', lastName: 'Dupont', licence: '123457' }
+    ];
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+    mountStorefront(target, { members: foyer });
+    flushSync();
+
+    cards(target)[0].click();
+    flushSync();
+    await vi.waitFor(() => expect(dialog()).not.toBeNull());
+
+    const box = dialog()!;
+    // Le typage DOM de ce projet de test n'accepte pas le générique de `querySelector`.
+    const choix = box.querySelector('#order-member') as unknown as HTMLSelectElement;
+    expect(choix).not.toBeNull();
+    expect([...choix.options].map((o) => o.textContent?.trim())).toContain('D. Lise');
+
+    // On choisit la taille, puis la quantité : le total suit.
+    (box.querySelectorAll('[data-testid="variant-choice"]')[1] as HTMLButtonElement).click();
+    flushSync();
+    expect(box.querySelector('[data-testid="order-total"]')?.textContent?.replace(/\u202f|\u00a0/g, ' ')).toBe('12,00 €');
+
+    (box.querySelector('button[aria-label="Plus"]') as HTMLButtonElement).click();
+    flushSync();
+    expect(box.querySelector('[data-testid="order-total"]')?.textContent?.replace(/\u202f|\u00a0/g, ' ')).toBe('24,00 €');
+
+    // Changer d'adhérent ne rejoue pas l'ouverture : la saisie reste.
+    choix.value = '2';
+    choix.dispatchEvent(new Event('change', { bubbles: true }));
+    flushSync();
+    expect(box.querySelector('[data-testid="order-total"]')?.textContent?.replace(/\u202f|\u00a0/g, ' ')).toBe('24,00 €');
+
+    soumettre();
+    await vi.waitFor(() => expect(fetch).toHaveBeenCalled());
+    expect(JSON.parse((fetch as any).mock.calls[0][1].body).memberId).toBe(2);
+  });
+
   it('dit quand rien n’est proposé', () => {
     const target = document.createElement('div');
     document.body.appendChild(target);

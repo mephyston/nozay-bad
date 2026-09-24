@@ -1,7 +1,7 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import Header from '../../components/Header.astro';
-import BackLink from '../../components/BackLink.astro';
+import PageTitle from '../../components/PageTitle.astro';
 import MobileNav from '../../components/MobileNav.svelte';
 import { env } from 'cloudflare:workers';
 import { createApiClient } from '@nba/api-client';
@@ -43,14 +43,9 @@ if (active) {
 
   <main class="w-full flex-1 p-3 pb-nav sm:p-6 md:pb-6">
     <div class="mx-auto max-w-3xl space-y-4">
-      <BackLink href="/mon-compte" label="Mon compte" />
-
-      <div>
-        <h1 class="text-xl font-bold text-foreground sm:text-2xl">Mes commandes</h1>
-        <p class="mt-1 text-sm text-muted-foreground">
-          Vos achats à la boutique du club et leur règlement.
-        </p>
-      </div>
+      <PageTitle title="Mes commandes" retour={{ href: '/mon-compte', label: 'Mon compte' }}>
+        <p class="text-sm text-muted-foreground">Vos achats à la boutique du club et leur règlement.</p>
+      </PageTitle>
 
       {orders.length === 0 ? (
         <p class="rounded-xl border border-border bg-card px-4 py-8 text-center text-sm text-muted-foreground">

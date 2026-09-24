@@ -1,6 +1,7 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import Header from '../components/Header.astro';
+import PageTitle from '../components/PageTitle.astro';
 import MobileNav from '../components/MobileNav.svelte';
 import { env } from 'cloudflare:workers';
 import { getSessionMembersStatus } from '../lib/member-status';
@@ -49,14 +50,13 @@ const showPdf = Boolean(selected && attestable(selected));
        défile normalement et le cadre a une hauteur fixe. -->
   <main class="flex-1 min-h-0 flex flex-col p-3 sm:p-6 w-full pb-nav md:pb-6">
     <div class="max-w-2xl mx-auto w-full flex-1 min-h-0 flex flex-col gap-3">
-      <div>
-        <h1 class="text-xl font-bold text-foreground">Attestation CSE</h1>
-        <p class="text-sm text-muted-foreground mt-1">
+      <PageTitle title="Attestation CSE" retour={{ href: '/mon-compte', label: 'Mon compte' }}>
+        <p class="text-sm text-muted-foreground">
           {solo
             ? "Attestation de paiement à présenter à votre comité d'entreprise."
             : "Attestation de paiement à présenter à votre comité d'entreprise, pour chaque adhérent de votre compte."}
         </p>
-      </div>
+      </PageTitle>
 
       <!-- Un onglet par profil du foyer ; le lien reste dans la même fenêtre, ce qui
            convient aussi à l'application installée. -->

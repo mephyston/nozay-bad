@@ -1,7 +1,7 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import Header from '../../components/Header.astro';
-import BackLink from '../../components/BackLink.astro';
+import PageTitle from '../../components/PageTitle.astro';
 import MobileNav from '../../components/MobileNav.svelte';
 import { env } from 'cloudflare:workers';
 import { createApiClient } from '@nba/api-client';
@@ -47,22 +47,17 @@ if (active && !canExpense) return new Response(null, { status: 404 });
 
   <main class="w-full flex-1 p-3 pb-nav sm:p-6 md:pb-6">
     <div class="mx-auto max-w-3xl space-y-4">
-      <BackLink href="/mon-compte" label="Mon compte" />
-
-      <div class="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 class="text-xl font-bold text-foreground sm:text-2xl">Mes notes de frais</h1>
-          <p class="mt-1 text-sm text-muted-foreground">
-            Vos demandes de remboursement déposées et leur suivi.
-          </p>
-        </div>
+      <PageTitle title="Mes notes de frais" retour={{ href: '/mon-compte', label: 'Mon compte' }}>
+        <p class="text-sm text-muted-foreground">
+          Vos demandes de remboursement déposées et leur suivi.
+        </p>
         <a
           href="/note-de-frais"
           class="inline-flex min-h-[44px] items-center rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground no-underline hover:bg-primary/90"
         >
           Déposer une note
         </a>
-      </div>
+      </PageTitle>
 
       {expenses.length === 0 ? (
         <p class="rounded-xl border border-border bg-card px-4 py-8 text-center text-sm text-muted-foreground">

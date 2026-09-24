@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { SwitchField } from '@nba/ui';
   import { onMount } from 'svelte';
 
   /**
@@ -72,24 +73,23 @@
     <p class="text-sm text-destructive mb-3">{error}</p>
   {/if}
 
-  <div class="rounded-xl border border-border bg-card divide-y divide-border">
+  <!--
+    Des interrupteurs, et non des cases à cocher : ce sont des **réglages** — « est-ce
+    actif ? » —, et l'interrupteur met leur état au même endroit sur toutes les lignes,
+    là où une case le posait après des libellés de longueurs différentes. Le cadre
+    commun dit qu'ils vont ensemble ; `sansCadre` retire celui de chaque rangée.
+  -->
+  <div class="divide-y divide-border overflow-hidden rounded-xl border border-border bg-card">
     {#each preferences as preference (preference.id)}
-      <label class="flex items-start justify-between gap-4 p-4 cursor-pointer">
-        <span class="min-w-0">
-          <span class="block text-sm font-semibold text-foreground">{preference.label}</span>
-          <span class="block text-xs text-muted-foreground mt-0.5">{preference.description}</span>
-        </span>
-
-        <!-- Interrupteur natif : accessible au clavier et aux lecteurs d'écran sans
-             réimplémenter le comportement d'une case à cocher. -->
-        <input
-          type="checkbox"
-          class="mt-0.5 h-5 w-5 shrink-0 accent-primary cursor-pointer disabled:opacity-50"
-          checked={preference.enabled}
-          disabled={savingId === preference.id}
-          onchange={() => toggle(preference.id)}
-        />
-      </label>
+      <SwitchField
+        sansCadre
+        id={`preference-${preference.id}`}
+        label={preference.label}
+        hint={preference.description}
+        checked={preference.enabled}
+        disabled={savingId === preference.id}
+        onChange={() => toggle(preference.id)}
+      />
     {/each}
   </div>
 

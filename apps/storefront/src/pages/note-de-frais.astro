@@ -1,6 +1,7 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import Header from '../components/Header.astro';
+import PageTitle from '../components/PageTitle.astro';
 import MobileNav from '../components/MobileNav.svelte';
 import { ErrorAlert } from '@nba/ui';
 import { ExpenseReportForm } from '@nba/expenses-ui';
@@ -82,6 +83,14 @@ const activeSeasonId = displaySeason(seasons, session?.seasonCode)?.code ?? '';
   <Header currentPath="/note-de-frais" />
 
   <main class="flex-1 p-3 sm:p-6 w-full pb-nav md:pb-6">
+    <div class="mx-auto mb-4 max-w-3xl">
+      <PageTitle title="Déposer une note de frais" retour={{ href: '/mon-compte', label: 'Mon compte' }}>
+        <p class="text-sm text-muted-foreground">
+          Demandez le remboursement d'une dépense engagée pour le club.
+        </p>
+      </PageTitle>
+    </div>
+
     {errorMsg && (
       <div class="mb-6">
         <ErrorAlert message={errorMsg} />

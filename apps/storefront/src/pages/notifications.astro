@@ -1,6 +1,7 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import Header from '../components/Header.astro';
+import PageTitle from '../components/PageTitle.astro';
 import MobileNav from '../components/MobileNav.svelte';
 import PushOptIn from '../components/PushOptIn.svelte';
 import PushPreferences from '../components/PushPreferences.svelte';
@@ -12,7 +13,7 @@ import PushPreferences from '../components/PushPreferences.svelte';
 
   <main class="flex-1 p-3 sm:p-6 w-full pb-nav md:pb-6">
     <div class="max-w-3xl mx-auto space-y-8">
-      <h1 class="text-xl sm:text-2xl font-bold text-foreground">Mes notifications</h1>
+      <PageTitle title="Mes notifications" retour={{ href: '/mon-compte', label: 'Mon compte' }} />
 
       <section>
         <h2 class="text-base font-bold text-foreground mb-3">Cet appareil</h2>

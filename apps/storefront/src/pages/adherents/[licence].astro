@@ -140,11 +140,20 @@ const directoryHref = (() => {
  * Les deux liens étaient écrits deux fois — une phrase au-dessus de la fiche — et il
  * fallait les recopier une troisième pour le rond du téléphone.
  */
+const fromCompte = Astro.url.searchParams.get('de') === 'compte';
+
+/*
+  À défaut d'origine connue, on ne laisse pas la page sans retour : sa propre fiche
+  ramène au compte — c'est de là qu'on l'ouvre —, celle d'un autre à l'annuaire, où
+  toutes les fiches vivent. Une page de détail sans sortie est un cul-de-sac.
+*/
 const retour = fromTeam
   ? { href: `/equipes/${fromTeam.id}`, label: `Retour à ${fromTeam.name ?? "l'équipe"}` }
   : fromDirectory
     ? { href: directoryHref, label: 'Retour aux joueurs' }
-    : null;
+    : fromCompte || isMe
+      ? { href: '/mon-compte', label: 'Mon compte' }
+      : { href: '/equipes?vue=joueurs', label: 'Retour aux joueurs' };
 
 const fullName = member ? `${member.firstName} ${member.lastName}`.trim() : '';
 const initials = member
