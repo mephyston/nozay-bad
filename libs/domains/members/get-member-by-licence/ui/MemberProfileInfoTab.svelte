@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Shield, Calendar, Tag, Mail, Phone, Receipt, Copy, Check, User, Users, Landmark } from '@lucide/svelte';
-  import { Card, Button, Badge, Checkbox, uiConfirm, uiAlert } from '@nba/ui';
+  import { Card, Button, Badge, SwitchField, uiAlert } from '@nba/ui';
   import type { Member } from './member-profile-types';
   import { CLUB_FUNCTIONS, CLUB_FUNCTION_LABELS, type ClubFunction } from '../../shared/club-functions';
 
@@ -8,12 +8,24 @@
     member,
     season = '25-26',
     clubFunctions = [],
-    canWrite = false
+    canWrite = false,
+    authorized = false,
+    toggling = false,
+    onToggleExpense
   }: {
     member: Member;
     season?: string;
     clubFunctions?: ClubFunction[];
     canWrite?: boolean;
+    /**
+     * L'autorisation de note de frais, tenue par la fiche.
+     *
+     * Elle l'était ici, et la barre du bas la bascule désormais aussi : deux détenteurs
+     * du même booléen se seraient contredits dès la première bascule depuis la barre.
+     */
+    authorized?: boolean;
+    toggling?: boolean;
+    onToggleExpense?: () => void;
   } = $props();
 
   // Représentants légaux réellement renseignés, pour ne pas afficher une section vide.
@@ -23,37 +35,6 @@
       { name: member.parent2Name, email: member.parent2Email, phone: member.parent2Phone }
     ].filter((g) => g.name)
   );
-
-  // Autorisation de note de frais : bascule persistée via l'API admin.
-  let authorized = $state(Boolean(member.expenseAuthorized));
-  let toggling = $state(false);
-  async function toggleExpense() {
-    if (toggling) return;
-    const name = `${member.firstName} ${member.lastName}`;
-    const ok = await uiConfirm(
-      !authorized
-        ? `Autoriser ${name} à soumettre des notes de frais ?`
-        : `Retirer à ${name} l'autorisation de soumettre des notes de frais ?`
-    );
-    if (!ok) return;
-    toggling = true;
-    try {
-      const res = await fetch('/admin/api/members', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: member.id, authorized: !authorized })
-      });
-      if (res.ok) {
-        authorized = !authorized;
-      } else {
-        const txt = await res.text().catch(() => '');
-        uiAlert(txt || `Échec de la mise à jour (HTTP ${res.status}).`);
-      }
-    } catch (e: any) {
-      uiAlert('Erreur réseau : ' + (e?.message ?? String(e)));
-    }
-    toggling = false;
-  }
 
   // Fonction au club : une au plus (pas de cumul de mandats) — cliquer une autre
   // fonction remplace, recliquer la même la retire. Remplacement complet à
@@ -189,7 +170,7 @@
             </div>
           </div>
           {#if canWrite}
-            <Button variant={authorized ? 'outline' : 'default'} size="sm" disabled={toggling} onclick={toggleExpense}>
+            <Button variant={authorized ? 'outline' : 'default'} size="sm" disabled={toggling} onclick={() => onToggleExpense?.()}>
               {authorized ? 'Retirer' : 'Autoriser'}
             </Button>
           {/if}
@@ -246,16 +227,22 @@
         <span class="text-xs font-normal text-muted-foreground">saison {season}</span>
       </h3>
       {#if canWrite}
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+        <!--
+          Des interrupteurs, et un seul cadre autour d'eux : une grille de cases plaçait
+          l'état après des libellés de longueurs différentes — « Président » et
+          « Trésorier adjoint » ne commençaient pas leur case au même endroit. Chaque
+          rangée cerclée du sien donnait par ailleurs à lire huit réglages sans rapport ;
+          le cadre du groupe dit qu'ils vont ensemble, et qu'on n'en choisit qu'un.
+        -->
+        <div class="divide-y divide-border overflow-hidden rounded-lg border border-border">
           {#each CLUB_FUNCTIONS as fn (fn)}
-            <label class="flex items-center gap-2 rounded-lg border border-border p-2.5 cursor-pointer hover:bg-muted/40">
-              <Checkbox
-                checked={selectedFunctions.includes(fn)}
-                onCheckedChange={() => toggleFunction(fn)}
-                aria-label={CLUB_FUNCTION_LABELS[fn]}
-              />
-              <span class="text-sm">{CLUB_FUNCTION_LABELS[fn]}</span>
-            </label>
+            <SwitchField
+              sansCadre
+              id={`fonction-${fn}`}
+              label={CLUB_FUNCTION_LABELS[fn]}
+              checked={selectedFunctions.includes(fn)}
+              onChange={() => toggleFunction(fn)}
+            />
           {/each}
         </div>
         <div class="flex items-center justify-between gap-3">

@@ -128,7 +128,7 @@
     conflit de hiérarchie : un `text-base font-semibold` orné d'une icône colorée pesait
     autant que le titre de la page, alors qu'il n'est qu'une étiquette de section.
   -->
-  <section class="space-y-2" data-testid="treasury-accounts">
+  <section data-testid="treasury-accounts">
     <h2 class="flex items-baseline px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Comptes de trésorerie</h2>
     <DataTable mobileSpacing="list" data={accounts} emptyTitle="Aucun compte" emptyDescription="Créez le compte bancaire du club pour ouvrir la comptabilité.">
       {#snippet toolbar()}
@@ -187,13 +187,13 @@
         </Table.Row>
       {/snippet}
     </DataTable>
-    <p class="px-4 text-xs text-muted-foreground">
+    <p class="mt-2 px-4 text-xs text-muted-foreground">
       Un compte ne se supprime pas : ses écritures y renvoient. Désactivé, il sort des menus et des formulaires et garde son historique.
       Le compte d'attente des adhérents se gère avec le rapprochement.
     </p>
   </section>
 
-  <section class="space-y-2" data-testid="payment-methods">
+  <section data-testid="payment-methods">
     <h2 class="flex items-baseline px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Moyens de paiement</h2>
     <DataTable mobileSpacing="list" data={paymentMethods} emptyTitle="Aucun moyen de paiement" emptyDescription="Ajoutez ce que le club accepte.">
       {#snippet toolbar()}
@@ -268,7 +268,7 @@
         </Table.Row>
       {/snippet}
     </DataTable>
-    <p class="px-4 text-xs text-muted-foreground">
+    <p class="mt-2 px-4 text-xs text-muted-foreground">
       « Retirer de la boutique » le cache aux adhérents ; « désactiver partout » le retire aussi de l'administration.
       Un moyen déjà employé par une écriture ou une commande ne se supprime pas.
     </p>

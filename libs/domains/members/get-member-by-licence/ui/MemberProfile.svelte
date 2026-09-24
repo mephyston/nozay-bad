@@ -2,8 +2,8 @@
 </script>
 
 <script lang="ts">
-  import { ArrowLeft, ChevronLeft, FileText } from '@lucide/svelte';
-  import { Button, Badge, Tabs, Card, openDocument } from '@nba/ui';
+  import { ArrowLeft, ChevronLeft, FileText, Receipt } from '@lucide/svelte';
+  import { Button, Tabs, Card, openDocument, uiConfirm, uiAlert, dockDePage } from '@nba/ui';
   import type { Member, GLTransaction } from './member-profile-types';
   import type { ClubFunction } from '../../shared/club-functions';
   import MemberPhotoField from '../../upload-member-photo/ui/MemberPhotoField.svelte';
@@ -49,6 +49,73 @@
     const connu = RETOURS.find((r) => r.motif.test(referent));
     if (!connu) return parDefaut;
     return { href: `${connu.href}?season=${encodeURIComponent(seasonId)}`, libelle: connu.libelle };
+  });
+
+  /*
+    L'autorisation de note de frais est tenue **ici**, et non plus dans l'onglet Profil.
+
+    C'est une action de la fiche entière : elle a sa place dans le menu contextuel de la
+    barre du bas, qui ne dépend pas de l'onglet ouvert. L'onglet garde la rangée qui
+    l'affiche et son bouton de bureau, mais il les reçoit — deux détenteurs du même
+    booléen se seraient contredits dès la première bascule depuis la barre.
+  */
+  let authorized = $state(Boolean(member.expenseAuthorized));
+  let toggling = $state(false);
+
+  async function toggleExpense() {
+    if (toggling) return;
+    const name = `${member.firstName} ${member.lastName}`;
+    const ok = await uiConfirm(
+      !authorized
+        ? `Autoriser ${name} à soumettre des notes de frais ?`
+        : `Retirer à ${name} l'autorisation de soumettre des notes de frais ?`
+    );
+    if (!ok) return;
+    toggling = true;
+    try {
+      const res = await fetch('/admin/api/members', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: member.id, authorized: !authorized })
+      });
+      if (res.ok) {
+        authorized = !authorized;
+      } else {
+        const txt = await res.text().catch(() => '');
+        uiAlert(txt || `Échec de la mise à jour (HTTP ${res.status}).`);
+      }
+    } catch (e: any) {
+      uiAlert('Erreur réseau : ' + (e?.message ?? String(e)));
+    }
+    toggling = false;
+  }
+
+  function ouvrirAttestation() {
+    openDocument(`/admin/accounting/attestations/${member.id}`);
+  }
+
+  /*
+    Les deux gestes de la fiche descendent dans la barre du bas. Ils vivaient dans
+    l'en-tête de la carte d'identité — le premier écran à défiler hors de vue — et
+    l'autorisation était plus bas encore, dans une rangée de l'onglet Profil.
+
+    Un « + » y annoncerait une création : ces deux-là impriment et autorisent.
+  */
+  $effect(() => {
+    const actions = [];
+    if (member.paid) {
+      actions.push({ id: 'attestation', label: 'Attestation CSE', icon: FileText, run: ouvrirAttestation });
+    }
+    if (canWrite) {
+      actions.push({
+        id: 'notes-de-frais',
+        label: authorized ? 'Retirer les notes de frais' : 'Autoriser les notes de frais',
+        icon: Receipt,
+        run: () => void toggleExpense()
+      });
+    }
+    if (actions.length === 0) return;
+    return dockDePage.declarerActions(actions, { icon: FileText, label: 'Actions' });
   });
 
   let activeTab = $state<'profil' | 'cotisation' | 'transactions'>('profil');
@@ -114,8 +181,16 @@
         {/snippet}
       </MemberPhotoField>
     </div>
-    <div class="flex flex-wrap items-center justify-center sm:justify-end gap-3 w-full sm:w-auto">
-      {#if member.paid}
+    <!--
+      L'état du règlement est parti à l'onglet Cotisation, où il coiffe les montants qui
+      l'expliquent : ici il pesait autant que le nom de l'adhérent pour un fait qui se
+      lit en un mot, et il disait « réglée » au-dessus de trois chiffres qui le disaient
+      déjà mieux.
+
+      Le bouton, lui, reste au bureau : la barre du bas n'existe pas au-dessus de 768 px.
+    -->
+    {#if member.paid}
+      <div class="hidden w-full shrink-0 justify-end md:flex md:w-auto">
         <!-- Nouvel onglet dans un navigateur, même fenêtre en application installée :
              une fenêtre neuve y est sans retour possible (cf. openDocument). -->
         <Button
@@ -124,21 +199,14 @@
           class="no-underline shrink-0"
           onclick={(e: MouseEvent) => {
             e.preventDefault();
-            openDocument(`/admin/accounting/attestations/${member.id}`);
+            ouvrirAttestation();
           }}
         >
           <FileText class="w-3.5 h-3.5" />
           Attestation CSE
         </Button>
-        <Badge variant="success" size="lg" shape="pill" class="shrink-0">
-          Cotisation réglée
-        </Badge>
-      {:else}
-        <Badge variant="warning" size="lg" shape="pill" class="shrink-0">
-          Règlement en attente
-        </Badge>
-      {/if}
-    </div>
+      </div>
+    {/if}
   </Card.Content>
   </Card.Root>
 
@@ -161,7 +229,7 @@
     </Tabs.List>
 
     <Tabs.Content value="profil">
-      <MemberProfileInfoTab {member} season={seasonId} {clubFunctions} {canWrite} />
+      <MemberProfileInfoTab {member} season={seasonId} {clubFunctions} {canWrite} {authorized} {toggling} onToggleExpense={toggleExpense} />
     </Tabs.Content>
 
     <Tabs.Content value="cotisation">

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Landmark } from '@lucide/svelte';
-  import { Card, Amount } from '@nba/ui';
+  import { Card, Amount, Badge } from '@nba/ui';
   import type { Member } from './member-profile-types';
 
   let { member }: { member: Member } = $props();
@@ -14,10 +14,22 @@
 
 <Card.Root>
   <Card.Content class="p-6 space-y-6">
-    <h3 class="font-bold text-lg flex items-center gap-2 border-b border-border pb-2 text-foreground">
-      <Landmark class="w-5 h-5 text-primary" />
-      État financier de la cotisation (Poona)
-    </h3>
+    <!--
+      L'état du règlement coiffe les montants qui l'expliquent. Il vivait dans l'en-tête
+      de la fiche, où il pesait autant que le nom de l'adhérent : c'est un fait qui se
+      lit en un mot, et il annonçait « réglée » loin des trois chiffres qui le disent.
+    -->
+    <div class="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-2">
+      <h3 class="font-bold text-lg flex items-center gap-2 text-foreground">
+        <Landmark class="w-5 h-5 text-primary" />
+        État financier de la cotisation (Poona)
+      </h3>
+      {#if member.paid}
+        <Badge variant="success" size="lg" shape="pill" class="shrink-0">Cotisation réglée</Badge>
+      {:else}
+        <Badge variant="warning" size="lg" shape="pill" class="shrink-0">Règlement en attente</Badge>
+      {/if}
+    </div>
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
       <div class="p-3 bg-muted/40 rounded-lg">
         <div class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Montant dû</div>
