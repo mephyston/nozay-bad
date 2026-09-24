@@ -55,7 +55,17 @@
 </script>
 
 {#if !sansEntete}
-  <PageHeader title={titre} {description} />
+  <!--
+    `retour` est en dur, et c'est exact : ces trois pages n'ont qu'un seul parent, le
+    hub de configuration, et n'apparaissent nulle part ailleurs dans le menu. Le rond
+    à chevron ne se montre que sous 768 px — au-dessus, le fil d'Ariane de la barre du
+    haut dit déjà d'où l'on vient.
+  -->
+  <PageHeader
+    title={titre}
+    {description}
+    retour={{ href: '/admin/settings', libelle: 'Retour à la configuration' }}
+  />
 {/if}
 
 {#if errorMsg}

@@ -1,7 +1,7 @@
 <script lang="ts">
   import TreasuryAccountList from './TreasuryAccountList.svelte';
   import PaymentMethodList from './PaymentMethodList.svelte';
-  import { Plus, Edit2, Trash2, Power, Store, Landmark, CreditCard, AlertCircle } from '@lucide/svelte';
+  import { Plus, Edit2, Trash2, Power, Store, AlertCircle } from '@lucide/svelte';
   import { Alert, Badge, Button, Card, DataTable, DataTableToolbar, DataTableColumnHeader, DataTableRowActions, DropdownMenu, Table, dockDePage, toast, uiAlert } from '@nba/ui';
   import type { SettingsState } from '../../../seasons/list-seasons/ui/settings-api-classes';
   import * as api from './treasury-api';
@@ -121,8 +121,15 @@
     </Alert.Root>
   {/if}
 
-  <section class="space-y-3" data-testid="treasury-accounts">
-    <h2 class="text-base font-semibold flex items-center gap-2"><Landmark class="w-4 h-4 text-primary" /> Comptes de trésorerie</h2>
+  <!--
+    Les deux rubriques prennent la forme d'un groupe de champs : un intitulé discret
+    au-dessus de la carte, l'explication sous elle. C'est la grammaire d'iOS, déjà
+    celle de `FieldGroup` dans les formulaires — et elle règle un conflit de hiérarchie :
+    un `text-base font-semibold` orné d'une icône colorée pesait autant que le titre
+    de la page, alors qu'il n'est qu'une étiquette de section.
+  -->
+  <section class="space-y-2" data-testid="treasury-accounts">
+    <h2 class="px-4 text-sm text-muted-foreground">Comptes de trésorerie</h2>
     <DataTable mobileSpacing="list" data={accounts} emptyTitle="Aucun compte" emptyDescription="Créez le compte bancaire du club pour ouvrir la comptabilité.">
       {#snippet toolbar()}
         <DataTableToolbar hasSearch={false}>
@@ -180,14 +187,14 @@
         </Table.Row>
       {/snippet}
     </DataTable>
-    <p class="text-xs text-muted-foreground">
+    <p class="px-4 text-xs text-muted-foreground">
       Un compte ne se supprime pas : ses écritures y renvoient. Désactivé, il sort des menus et des formulaires et garde son historique.
       Le compte d'attente des adhérents se gère avec le rapprochement.
     </p>
   </section>
 
-  <section class="space-y-3" data-testid="payment-methods">
-    <h2 class="text-base font-semibold flex items-center gap-2"><CreditCard class="w-4 h-4 text-primary" /> Moyens de paiement</h2>
+  <section class="space-y-2" data-testid="payment-methods">
+    <h2 class="px-4 text-sm text-muted-foreground">Moyens de paiement</h2>
     <DataTable mobileSpacing="list" data={paymentMethods} emptyTitle="Aucun moyen de paiement" emptyDescription="Ajoutez ce que le club accepte.">
       {#snippet toolbar()}
         <DataTableToolbar hasSearch={false}>
@@ -261,7 +268,7 @@
         </Table.Row>
       {/snippet}
     </DataTable>
-    <p class="text-xs text-muted-foreground">
+    <p class="px-4 text-xs text-muted-foreground">
       « Retirer de la boutique » le cache aux adhérents ; « désactiver partout » le retire aussi de l'administration.
       Un moyen déjà employé par une écriture ou une commande ne se supprime pas.
     </p>

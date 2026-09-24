@@ -140,4 +140,39 @@ describe('Design System — usage rules', () => {
     }
     expect(violations, `Surcharge de style sur <Badge> interdite — utiliser variant/size/shape:\n${violations.join('\n')}`).toEqual([]);
   });
+
+  it("DS6: pas deux utilités d'affichage sans préfixe dans la même classe (tailwind-merge garde la dernière)", () => {
+    /*
+      `class="hidden md:flex font-bold flex items-center"` ne masque rien.
+
+      Les composants de @nba/ui passent leur `class` par `cn()`, donc par
+      `tailwind-merge`, qui résout les conflits en **gardant la dernière** utilité du
+      groupe — ici `flex`, qui efface `hidden`. La cascade CSS, elle, aurait gardé
+      `hidden` : la règle sortie en dernier de Tailwind. Le bouton se comporte donc
+      autrement selon qu'il traverse `cn()` ou non, et le `flex` de trop ne se voit
+      pas à la relecture.
+
+      Constaté le 24/09/2026 sur les quatre écrans de configuration comptable : le
+      bouton d'ajout, censé céder la place à la barre du bas sous 768 px, y restait.
+    */
+    const AFFICHAGE = new Set([
+      'block', 'inline-block', 'inline', 'flex', 'inline-flex', 'grid', 'inline-grid',
+      'table', 'inline-table', 'contents', 'flow-root', 'list-item', 'hidden'
+    ]);
+    const violations: string[] = [];
+    for (const file of scanTargets) {
+      const content = fs.readFileSync(file, 'utf-8');
+      for (const m of content.matchAll(/\bclass="([^"{}]*)"/g)) {
+        const trouvees = m[1].trim().split(/\s+/).filter(t => AFFICHAGE.has(t));
+        if (trouvees.length > 1) {
+          const line = content.slice(0, m.index).split('\n').length;
+          violations.push(`${rel(file)}:${line} → ${trouvees.join(' + ')}`);
+        }
+      }
+    }
+    expect(
+      violations,
+      `Deux utilités d'affichage sans préfixe dans la même classe — n'en garder qu'une :\n${violations.join('\n')}`
+    ).toEqual([]);
+  });
 });

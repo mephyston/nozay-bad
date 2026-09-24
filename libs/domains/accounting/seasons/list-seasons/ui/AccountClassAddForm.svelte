@@ -1,16 +1,25 @@
 <script lang="ts">
-  import { SearchableCombobox, Button, Input, FormField } from '@nba/ui';
-  import { Plus } from "@lucide/svelte";
-  
+  import { SearchableCombobox, Input, FormField, FormSheet } from '@nba/ui';
+  import { Plus, Settings } from "@lucide/svelte";
 
+  /**
+   * Créer ou modifier une classe du plan comptable, **en tiroir**.
+   *
+   * Même bascule que {@link CategoryAddForm} : les champs sont fournis à `FormSheet`,
+   * qui porte la validation dans sa barre plutôt qu'en bas des champs.
+   */
   let {
+    open = $bindable(false),
     isSubmitting = false,
     initialData = null,
-    onSubmitAccountClass
+    onSubmitAccountClass,
+    onOpenChange
   }: {
+    open?: boolean;
     isSubmitting: boolean;
     initialData?: { code: string; label: string; type: 'recette' | 'depense' | 'tresorerie' } | null;
     onSubmitAccountClass: (data: { code: string; label: string; type: 'recette' | 'depense' | 'tresorerie' }) => Promise<void>;
+    onOpenChange?: (open: boolean) => void;
   } = $props();
 
   let newClassCode = $state(initialData?.code || '');
@@ -31,8 +40,19 @@
   }
 </script>
 
-<form onsubmit={handleSubmit} class="space-y-4">
-    <FormField id="new-class-code" label="Code (ex: 63)">
+<FormSheet
+  bind:open
+  title={initialData ? 'Modifier la classe' : 'Nouvelle classe'}
+  description={initialData
+    ? 'Modifiez le libellé ou le type de cette classe de compte.'
+    : 'Ajoutez une nouvelle rubrique pour structurer le compte de résultat.'}
+  icon={initialData ? Settings : Plus}
+  {isSubmitting}
+  submitLabel={initialData ? 'Enregistrer les modifications' : 'Créer la classe'}
+  onSubmit={handleSubmit}
+  {onOpenChange}
+>
+  <FormField id="new-class-code" label="Code (ex: 63)">
     <Input
       type="text"
       id="new-class-code"
@@ -44,7 +64,7 @@
     />
   </FormField>
 
-    <FormField id="new-class-label" label="Libellé (ex: 63 - Impôts)">
+  <FormField id="new-class-label" label="Libellé (ex: 63 - Impôts)">
     <Input
       type="text"
       id="new-class-label"
@@ -54,24 +74,11 @@
     />
   </FormField>
 
-    <FormField id="new-class-type" label="Type">
+  <FormField id="new-class-type" label="Type">
     <SearchableCombobox
       id="new-class-type"
       items={[{ label: 'Produit (7 - Recette)', value: 'recette' }, { label: 'Charge (6 - Dépense)', value: 'depense' }, { label: 'Trésorerie (5)', value: 'tresorerie' }]}
       bind:value={newClassType}
     />
   </FormField>
-
-  <Button
-    type="submit"
-    disabled={isSubmitting}
-    class="w-full font-bold flex items-center justify-center gap-1.5"
-  >
-    {#if initialData}
-      Enregistrer les modifications
-    {:else}
-      <Plus class="w-4 h-4" />
-      Créer la classe
-    {/if}
-  </Button>
-</form>
+</FormSheet>

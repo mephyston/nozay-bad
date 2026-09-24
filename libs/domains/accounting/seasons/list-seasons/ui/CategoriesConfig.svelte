@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { Settings, Plus } from "@lucide/svelte";
-  import { Card, Button, Sheet, dockDePage } from "@nba/ui";
+  import { Plus } from "@lucide/svelte";
+  import { Button, dockDePage } from "@nba/ui";
   import type { Category, AccountClass } from "./settings-types";
   import CategoryListTable from "./CategoryListTable.svelte";
   import CategoryAddForm from "./CategoryAddForm.svelte";
@@ -73,7 +73,7 @@
     {tabsNav}
   >
     {#snippet actions()}
-      <Button onclick={() => showAddSheet = true} size="sm" class="hidden md:flex font-bold flex items-center gap-1.5 shrink-0 self-start sm:self-auto">
+      <Button onclick={() => showAddSheet = true} size="sm" class="hidden md:flex font-bold items-center gap-1.5 shrink-0 self-start sm:self-auto">
         <Plus class="w-4 h-4" />
         Nouvelle catégorie
       </Button>
@@ -81,47 +81,26 @@
   </CategoryListTable>
 </div>
 
-<Sheet.Root bind:open={showAddSheet}>
-  <Sheet.Content size="md" class="overflow-y-auto">
-    <Sheet.Header>
-      <Sheet.Title class="flex items-center gap-2">
-        <Plus class="w-5 h-5 text-primary" />
-        Nouvelle catégorie
-      </Sheet.Title>
-      <Sheet.Description>
-        Créez une nouvelle imputation pour les dépenses et recettes de l'asso.
-      </Sheet.Description>
-    </Sheet.Header>
-    <div class="pt-4">
-      <CategoryAddForm
-        {accountClasses}
-        {isSubmitting}
-        onSubmitCategory={handleCreate}
-      />
-    </div>
-  </Sheet.Content>
-</Sheet.Root>
+<CategoryAddForm
+  bind:open={showAddSheet}
+  {accountClasses}
+  {isSubmitting}
+  onSubmitCategory={handleCreate}
+/>
 
-<Sheet.Root open={!!editingCategory} onOpenChange={(o) => { if (!o) editingCategory = null; }}>
-  <Sheet.Content size="md" class="overflow-y-auto">
-    <Sheet.Header>
-      <Sheet.Title class="flex items-center gap-2">
-        <Settings class="w-5 h-5 text-primary" />
-        Modifier la catégorie
-      </Sheet.Title>
-      <Sheet.Description>
-        Mettez à jour les libellés ou les classes comptables par défaut.
-      </Sheet.Description>
-    </Sheet.Header>
-    <div class="pt-4">
-      {#if editingCategory}
-        <CategoryAddForm
-          {accountClasses}
-          {isSubmitting}
-          initialData={editingCategory}
-          onSubmitCategory={handleUpdate}
-        />
-      {/if}
-    </div>
-  </Sheet.Content>
-</Sheet.Root>
+<!--
+  `{#key}` n'est pas une précaution : sans lui, Svelte réemploie le composant d'une
+  catégorie à l'autre. Son `open` interne étant repassé à faux à la première fermeture,
+  le tiroir ne se rouvrait plus — et quand il s'ouvrait, il montrait les valeurs de la
+  catégorie précédente, ses `$state` ayant été initialisés une seule fois.
+-->
+{#key editingCategory?.id}
+  <CategoryAddForm
+    open={!!editingCategory}
+    onOpenChange={(o) => { if (!o) editingCategory = null; }}
+    {accountClasses}
+    {isSubmitting}
+    initialData={editingCategory}
+    onSubmitCategory={handleUpdate}
+  />
+{/key}

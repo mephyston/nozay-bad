@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { Settings, Plus } from "@lucide/svelte";
-  import { Card, Button, Sheet, dockDePage } from "@nba/ui";
+  import { Plus } from "@lucide/svelte";
+  import { Button, dockDePage } from "@nba/ui";
   import type { AccountClass, TreasuryAccount } from "./settings-types";
   import AccountClassListTable from "./AccountClassListTable.svelte";
   import TreasuryAccountsList from "./TreasuryAccountsList.svelte";
@@ -62,7 +62,7 @@
     {tabsNav}
   >
     {#snippet actions()}
-      <Button onclick={() => showAddSheet = true} size="sm" class="hidden md:flex font-bold flex items-center gap-1.5 shrink-0 self-start sm:self-auto">
+      <Button onclick={() => showAddSheet = true} size="sm" class="hidden md:flex font-bold items-center gap-1.5 shrink-0 self-start sm:self-auto">
         <Plus class="w-4 h-4" />
         Nouvelle classe
       </Button>
@@ -72,45 +72,19 @@
   <TreasuryAccountsList {accounts} {accountClasses} />
 </div>
 
-<Sheet.Root bind:open={showAddSheet}>
-  <Sheet.Content size="md" class="overflow-y-auto">
-    <Sheet.Header>
-      <Sheet.Title class="flex items-center gap-2">
-        <Plus class="w-5 h-5 text-primary" />
-        Nouvelle classe
-      </Sheet.Title>
-      <Sheet.Description>
-        Ajoutez une nouvelle rubrique pour structurer le compte de résultat.
-      </Sheet.Description>
-    </Sheet.Header>
-    <div class="pt-4">
-      <AccountClassAddForm
-        {isSubmitting}
-        onSubmitAccountClass={handleCreate}
-      />
-    </div>
-  </Sheet.Content>
-</Sheet.Root>
+<AccountClassAddForm
+  bind:open={showAddSheet}
+  {isSubmitting}
+  onSubmitAccountClass={handleCreate}
+/>
 
-<Sheet.Root open={!!editingAccountClass} onOpenChange={(o) => { if (!o) editingAccountClass = null; }}>
-  <Sheet.Content size="md" class="overflow-y-auto">
-    <Sheet.Header>
-      <Sheet.Title class="flex items-center gap-2">
-        <Settings class="w-5 h-5 text-primary" />
-        Modifier la classe
-      </Sheet.Title>
-      <Sheet.Description>
-        Modifiez le libellé ou le type de cette classe de compte.
-      </Sheet.Description>
-    </Sheet.Header>
-    <div class="pt-4">
-      {#if editingAccountClass}
-        <AccountClassAddForm
-          {isSubmitting}
-          initialData={editingAccountClass}
-          onSubmitAccountClass={handleUpdate}
-        />
-      {/if}
-    </div>
-  </Sheet.Content>
-</Sheet.Root>
+<!-- Remonté à chaque classe : voir la note de `CategoriesConfig`. -->
+{#key editingAccountClass?.code}
+  <AccountClassAddForm
+    open={!!editingAccountClass}
+    onOpenChange={(o) => { if (!o) editingAccountClass = null; }}
+    {isSubmitting}
+    initialData={editingAccountClass}
+    onSubmitAccountClass={handleUpdate}
+  />
+{/key}

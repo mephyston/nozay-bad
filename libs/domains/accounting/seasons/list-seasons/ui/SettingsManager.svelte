@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { Calendar, AlertCircle, Plus } from "@lucide/svelte";
-  import { Card, Alert, SegmentedFilter, Tabs, Button, uiAlert } from "@nba/ui";
+  import { AlertCircle } from "@lucide/svelte";
+  import { Alert, Tabs, uiAlert } from "@nba/ui";
   import SeasonConfig from "./SeasonConfig.svelte";
   import CategoriesConfig from "./CategoriesConfig.svelte";
   import AccountClassesConfig from "./AccountClassesConfig.svelte";
@@ -105,6 +105,20 @@
     activeView = view;
   });
 
+  /*
+    Un seul catalogue pour les deux rangées : un libellé court pour le téléphone, le
+    libellé complet au-dessus de 768 px. Deux listes recopiées auraient divergé, comme
+    l'ont fait les libellés de la vue tableau et de la vue mobile des adhérents.
+  */
+  const TOUS_LES_ONGLETS = [
+    { value: 'seasons', court: 'Saisons', label: 'Saisons comptables' },
+    { value: 'compta', court: 'Catégories', label: 'Catégories comptables' },
+    { value: 'classes', court: 'Plan comptable', label: 'Plan comptable' },
+    { value: 'shop', court: 'Produits', label: 'Catégories de produits' }
+  ] as const;
+
+  const onglets = $derived(TOUS_LES_ONGLETS.filter((o) => (allowedViews as string[]).includes(o.value)));
+
   function handleViewChange(newView: string) {
     activeView = newView as 'seasons' | 'compta' | 'classes' | 'shop';
     if (typeof window !== 'undefined') {
@@ -124,27 +138,29 @@
   {/if}
 
   <Tabs.Root value={activeView} onValueChange={handleViewChange} class="w-full">
-    {#if allowedViews.length > 1}
+    {#if onglets.length > 1}
       <!--
-        Un contrôle segmenté, et non une barre d'onglets qui **défile horizontalement**.
+        Le segmented control en verre sur téléphone, la rangée d'onglets au-dessus de
+        768 px : la paire employée partout ailleurs — le profil d'un adhérent, le détail
+        d'un rapprochement. Un `SegmentedFilter` en tenait la place, mais c'est un
+        **filtre** : il dit quelles lignes d'une même liste on garde. Ici on change
+        d'écran, et c'est ce que des onglets disent.
 
-        « Catégories comptables » et « Plan comptable » côte à côte dépassaient la
-        largeur d'un téléphone : le dernier onglet se cachait derrière le bord, sans que
-        rien ne l'annonce, et rien ne défile horizontalement dans cette application. Les
-        segments se partagent la largeur et vont à la ligne s'il le faut.
+        Les libellés restent courts sur téléphone : « Catégories comptables » et
+        « Plan comptable » côte à côte dépassaient la largeur d'un téléphone, et rien
+        ne défile horizontalement dans cette application.
       -->
-      <div class="mb-6">
-        <SegmentedFilter
-          value={activeView}
-          onChange={handleViewChange}
-          options={[
-            ...(allowedViews.includes('seasons') ? [{ value: 'seasons', label: 'Saisons' }] : []),
-            ...(allowedViews.includes('compta') ? [{ value: 'compta', label: 'Catégories' }] : []),
-            ...(allowedViews.includes('classes') ? [{ value: 'classes', label: 'Plan comptable' }] : []),
-            ...(allowedViews.includes('shop') ? [{ value: 'shop', label: 'Produits' }] : [])
-          ]}
-        />
-      </div>
+      <Tabs.List variant="glass" class="mb-6 w-full md:hidden">
+        {#each onglets as onglet (onglet.value)}
+          <Tabs.Trigger variant="glass" value={onglet.value}>{onglet.court}</Tabs.Trigger>
+        {/each}
+      </Tabs.List>
+
+      <Tabs.List class="mb-6 hidden w-full justify-start md:flex md:justify-center">
+        {#each onglets as onglet (onglet.value)}
+          <Tabs.Trigger value={onglet.value}>{onglet.label}</Tabs.Trigger>
+        {/each}
+      </Tabs.List>
     {/if}
 
     <!-- VIEW: SEASONS -->

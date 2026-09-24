@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Settings, Plus, Save, Trash2, Edit } from "@lucide/svelte";
-  import { Badge, Button, Input, DataTable, DataTableToolbar, DataTableColumnHeader, Checkbox, Sheet, AlertDialog, FormField, Card, Table, SearchableCombobox , dockDePage } from '@nba/ui';
+  import { Badge, Button, Input, DataTable, DataTableToolbar, DataTableColumnHeader, SwitchField, FormSheet, AlertDialog, FormField, Card, Table, SearchableCombobox , dockDePage } from '@nba/ui';
   import type { Category, ProductCategory } from "./settings-types";
   import ProductCategoryList from './ProductCategoryList.svelte';
 
@@ -124,7 +124,7 @@
     {#snippet toolbar()}
       <DataTableToolbar hasSearch={false}>
         {#snippet actions()}
-          <Button onclick={() => showAddSheet = true} size="sm" class="hidden md:flex font-bold flex items-center gap-1.5 shrink-0 self-start sm:self-auto">
+          <Button onclick={() => showAddSheet = true} size="sm" class="hidden md:flex font-bold items-center gap-1.5 shrink-0 self-start sm:self-auto">
             <Plus class="w-4 h-4" />
             Nouvelle catégorie
           </Button>
@@ -179,79 +179,72 @@
     {/snippet}
   </DataTable>
 
-<Sheet.Root bind:open={showAddSheet}>
-  <Sheet.Content size="md">
-    <Sheet.Header>
-      <Sheet.Title class="flex items-center gap-2">
-        <Plus class="w-5 h-5 text-primary" />
-        Nouvelle catégorie
-      </Sheet.Title>
-      <Sheet.Description>
-        Ajoutez une catégorie pour classer les produits dans la boutique.
-      </Sheet.Description>
-    </Sheet.Header>
-    <form class="space-y-6 pt-6" onsubmit={handleCreate}>
-      <FormField id="new-label" label="Libellé de la catégorie">
-      <Input id="new-label" bind:value={newLabel} placeholder="Ex: Raquettes, Textile, Volants" required />
-      </FormField>
+<!--
+  Les deux formulaires montent du bas sur téléphone et gardent leur validation dans la
+  barre de la feuille : sous un clavier logiciel, un bouton posé en bas des champs est
+  recouvert, et réduire la hauteur de la feuille ne le remonte pas.
 
-        <FormField id="new-category" label="Catégorie Comptable associée">
-        <SearchableCombobox id="new-category" items={categories.map((c) => ({ label: c.adminLabel, value: c.id }))} bind:value={newAccountingCategoryId} placeholder="Sélectionner une catégorie..." />
-      <p class="text-xs text-muted-foreground mt-1.5">Les ventes de ces produits seront affectées à ce compte.</p>
-      </FormField>
+  « Statut actif » est un réglage, donc un interrupteur : la case à cocher plaçait
+  l'état après une phrase d'explication, à une abscisse différente de chaque rangée.
+-->
+<FormSheet
+  bind:open={showAddSheet}
+  title="Nouvelle catégorie"
+  description="Ajoutez une catégorie pour classer les produits dans la boutique."
+  icon={Plus}
+  {isSubmitting}
+  submitLabel="Créer la catégorie"
+  submittingLabel="Création…"
+  onSubmit={handleCreate}
+>
+  <FormField id="new-label" label="Libellé de la catégorie">
+    <Input id="new-label" bind:value={newLabel} placeholder="Ex: Raquettes, Textile, Volants" required />
+  </FormField>
 
-          <div class="p-3 rounded-lg border border-border bg-muted/20">
-          <FormField id="new-active" label="Statut Actif">
-          <div class="flex items-center justify-between">
-          <p class="text-xs text-muted-foreground">Rendre cette catégorie visible et utilisable.</p>
-          <Checkbox id="new-active" bind:checked={newActive} />
-        </div>
-        </FormField>
-      </div>
+  <FormField id="new-category" label="Catégorie Comptable associée" hint="Les ventes de ces produits seront affectées à ce compte.">
+    <SearchableCombobox id="new-category" items={categories.map((c) => ({ label: c.adminLabel, value: c.id }))} bind:value={newAccountingCategoryId} placeholder="Sélectionner une catégorie..." />
+  </FormField>
 
-      <Button type="submit" class="w-full font-bold" disabled={isSubmitting}>
-        {isSubmitting ? 'Création...' : 'Créer la catégorie'}
-      </Button>
-    </form>
-  </Sheet.Content>
-</Sheet.Root>
+  <FormField id="new-active" label="Statut actif">
+    <SwitchField
+      id="new-active"
+      label="Statut actif"
+      hint="Rendre cette catégorie visible et utilisable."
+      bind:checked={newActive}
+    />
+  </FormField>
+</FormSheet>
 
-<Sheet.Root open={!!editingId} onOpenChange={(o) => { if (!o) editingId = null; }}>
-  <Sheet.Content size="md">
-    <Sheet.Header>
-      <Sheet.Title class="flex items-center gap-2">
-        <Edit class="w-5 h-5 text-primary" />
-        Modifier la catégorie
-      </Sheet.Title>
-      <Sheet.Description>
-        Modifiez le libellé ou la catégorie comptable associée.
-      </Sheet.Description>
-    </Sheet.Header>
-    <form class="space-y-6 pt-6" onsubmit={handleSaveEdit}>
-      <FormField id="edit-label" label="Libellé de la catégorie">
+<!-- Remonté à chaque catégorie : voir la note de `CategoriesConfig`. -->
+{#key editingId}
+  <FormSheet
+    open={!!editingId}
+    onOpenChange={(o) => { if (!o) editingId = null; }}
+    title="Modifier la catégorie"
+    description="Modifiez le libellé ou la catégorie comptable associée."
+    icon={Edit}
+    {isSubmitting}
+    submitLabel="Enregistrer les modifications"
+    onSubmit={handleSaveEdit}
+  >
+    <FormField id="edit-label" label="Libellé de la catégorie">
       <Input id="edit-label" bind:value={editLabel} required />
-      </FormField>
+    </FormField>
 
-        <FormField id="edit-category" label="Catégorie Comptable associée">
-        <SearchableCombobox id="edit-category" items={categories.map((c) => ({ label: c.adminLabel, value: c.id }))} bind:value={editAccountingCategoryId} placeholder="Sélectionner une catégorie..." />
-      <p class="text-xs text-muted-foreground mt-1.5">Les ventes de ces produits seront affectées à ce compte.</p>
-      </FormField>
+    <FormField id="edit-category" label="Catégorie Comptable associée" hint="Les ventes de ces produits seront affectées à ce compte.">
+      <SearchableCombobox id="edit-category" items={categories.map((c) => ({ label: c.adminLabel, value: c.id }))} bind:value={editAccountingCategoryId} placeholder="Sélectionner une catégorie..." />
+    </FormField>
 
-          <div class="p-3 rounded-lg border border-border bg-muted/20">
-          <FormField id="edit-active" label="Statut Actif">
-          <div class="flex items-center justify-between">
-          <p class="text-xs text-muted-foreground">Rendre cette catégorie visible et utilisable.</p>
-          <Checkbox id="edit-active" bind:checked={editActive} />
-        </div>
-        </FormField>
-      </div>
-
-      <Button type="submit" class="w-full font-bold" disabled={isSubmitting}>
-        {isSubmitting ? 'Enregistrement...' : 'Enregistrer les modifications'}
-      </Button>
-    </form>
-  </Sheet.Content>
-</Sheet.Root>
+    <FormField id="edit-active" label="Statut actif">
+      <SwitchField
+        id="edit-active"
+        label="Statut actif"
+        hint="Rendre cette catégorie visible et utilisable."
+        bind:checked={editActive}
+      />
+    </FormField>
+  </FormSheet>
+{/key}
 
 <AlertDialog.Root bind:open={showDeleteDialog}>
   <AlertDialog.Content>

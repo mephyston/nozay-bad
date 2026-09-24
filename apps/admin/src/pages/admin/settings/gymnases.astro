@@ -8,6 +8,12 @@ import { PageHeader } from '@nba/ui';
  * Les gymnases du club, sous « Configuration ».
  *
  * Page figée : l'îlot demande la liste au relais des créneaux (`gymnases`).
+ *
+ * Le retour vers le hub est confié à `retour` de `PageHeader` : un rond à chevron à
+ * gauche du titre, sur téléphone seulement. Le lien de texte qu'il remplace vivait
+ * *au-dessus* du titre, là où le pouce ne va pas, et doublait sur grand écran le fil
+ * d'Ariane de la barre du haut — comme sur les quatre pages voisines, qui n'en ont
+ * jamais eu.
  */
 export const prerender = true;
 ---
@@ -15,16 +21,10 @@ export const prerender = true;
 <Layout title="Gymnases">
   <AdminLayout client:idle breadcrumb="Configuration / Gymnases">
     <div class="space-y-6">
-      <a
-        href="/admin/settings"
-        class="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
-        Retour à la configuration
-      </a>
       <PageHeader
         title="Gymnases"
         description="Les salles où le club joue. Les créneaux, l'agenda et le site public y renvoient."
+        retour={{ href: '/admin/settings', libelle: 'Retour à la configuration' }}
       />
       <VenuesScreen client:load />
     </div>

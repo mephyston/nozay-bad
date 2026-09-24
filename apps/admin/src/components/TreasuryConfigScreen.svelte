@@ -14,7 +14,9 @@
 </script>
 
 {#if !sansEntete}
+  <!-- Même parent unique que ses voisines : le hub de configuration. -->
   <PageHeader
+    retour={{ href: '/admin/settings', libelle: 'Retour à la configuration' }}
     title="Comptes et moyens de paiement"
     description="Les comptes de trésorerie du club — banque, caisses, porte-monnaie — et ce qu'il accepte comme règlement. Sans compte bancaire actif, la comptabilité reste fermée."
   />

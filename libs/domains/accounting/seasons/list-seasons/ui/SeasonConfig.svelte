@@ -1,7 +1,7 @@
 <script lang="ts">
   import SeasonList from './SeasonList.svelte';
   import { Calendar, Plus, Wallet2 } from "@lucide/svelte";
-  import { Button, Input, Badge, Sheet, AlertDialog, DataTable, DataTableToolbar, Table, DataTableColumnHeader, FormField, Alert, Card , Checkbox , dockDePage } from '@nba/ui';
+  import { Button, Input, Badge, AlertDialog, DataTable, DataTableToolbar, Table, DataTableColumnHeader, FormField, Alert, Card , Checkbox , SwitchField, FormSheet, ResponsiveSheet, dockDePage } from '@nba/ui';
   import InitialBalancesConfig from "./InitialBalancesConfig.svelte";
 
   let {
@@ -104,7 +104,7 @@
     {#snippet toolbar()}
       <DataTableToolbar hasSearch={false}>
         {#snippet actions()}
-          <Button onclick={() => showAddSheet = true} size="sm" class="hidden md:flex font-bold flex items-center gap-1.5 shrink-0 self-start sm:self-auto">
+          <Button onclick={() => showAddSheet = true} size="sm" class="hidden md:flex font-bold items-center gap-1.5 shrink-0 self-start sm:self-auto">
             <Plus class="w-4 h-4" />
             Nouvelle saison
           </Button>
@@ -182,52 +182,39 @@
     {/snippet}
   </DataTable>
 
-<Sheet.Root bind:open={showAddSheet}>
-    <Sheet.Content size="md" class="overflow-y-auto">
-      <Sheet.Header>
-        <Sheet.Title class="flex items-center gap-2">
-          <Calendar class="w-5 h-5 text-primary" />
-          Nouvelle saison
-        </Sheet.Title>
-        <Sheet.Description>Ajoutez un nouvel exercice comptable pour l'association.</Sheet.Description>
-      </Sheet.Header>
-      <form onsubmit={handleSubmit} class="space-y-4 pt-4">
-          <FormField id="new-season-id" label="ID (ex: 26-27)">
-          <Input
-            type="text"
-            id="new-season-id"
-            bind:value={newSeasonId}
-            placeholder="26-27"
-            required
-          />
-          </FormField>
-          <FormField id="new-season-name" label="Libellé (ex: Saison 2026-2027)">
-          <Input
-            type="text"
-            id="new-season-name"
-            bind:value={newSeasonName}
-            placeholder="Saison 2026-2027"
-            required
-          />
-        </FormField>
+<!--
+  La création monte du bas et garde sa validation dans la barre de la feuille : le
+  bouton posé en pied des champs passait sous le clavier logiciel, que réduire la
+  hauteur de la feuille ne fait pas remonter.
+-->
+<FormSheet
+  bind:open={showAddSheet}
+  title="Nouvelle saison"
+  description="Ajoutez un nouvel exercice comptable pour l'association."
+  icon={Calendar}
+  {isSubmitting}
+  submitLabel="Créer la saison"
+  submittingLabel="Création…"
+  onSubmit={handleSubmit}
+>
+  <FormField id="new-season-id" label="ID (ex: 26-27)">
+    <Input type="text" id="new-season-id" bind:value={newSeasonId} placeholder="26-27" required />
+  </FormField>
 
-        <FormField id="new-season-active" label="Définir comme active immédiatement">
-          <Checkbox id="new-season-active" bind:checked={newSeasonActive} />
-        </FormField>
+  <FormField id="new-season-name" label="Libellé (ex: Saison 2026-2027)">
+    <Input type="text" id="new-season-name" bind:value={newSeasonName} placeholder="Saison 2026-2027" required />
+  </FormField>
 
-        <Sheet.Footer class="pt-6">
-          <Button
-            type="submit"
-            disabled={isSubmitting}
-            class="w-full font-bold flex items-center justify-center gap-1.5"
-          >
-            <Plus class="w-4 h-4" />
-            Créer la saison
-          </Button>
-        </Sheet.Footer>
-      </form>
-    </Sheet.Content>
-  </Sheet.Root>
+  <!-- Un réglage, donc un interrupteur — et non une case à cocher. -->
+  <FormField id="new-season-active" label="Saison active">
+    <SwitchField
+      id="new-season-active"
+      label="Saison active"
+      hint="L'exercice sur lequel la saisie s'ouvre par défaut."
+      bind:checked={newSeasonActive}
+    />
+  </FormField>
+</FormSheet>
 
 <AlertDialog.Root open={!!closingSeasonId} onOpenChange={(o) => { if(!o) closingSeasonId = null; }}>
   <AlertDialog.Content>
@@ -304,22 +291,14 @@
   </AlertDialog.Content>
 </AlertDialog.Root>
 
-<Sheet.Root bind:open={showBalancesSheet}>
-  <Sheet.Content size="md" class="overflow-y-auto">
-    <Sheet.Header>
-      <Sheet.Title class="flex items-center gap-2">
-        <Wallet2 class="w-5 h-5 text-primary" />
-        Soldes Initiaux de la Saison
-      </Sheet.Title>
-      <Sheet.Description>
-        Définissez l'état des comptes de l'association au premier jour de la saison comptable (1er septembre).
-      </Sheet.Description>
-    </Sheet.Header>
-    <div class="pt-6">
-      {#if balancesSeasonId}
-        <InitialBalancesConfig {seasons} seasonId={balancesSeasonId} />
-      {/if}
-    </div>
-  </Sheet.Content>
-</Sheet.Root>
-
+<!--
+  Les soldes montent du bas eux aussi. Pas un `FormSheet` pour autant :
+  `InitialBalancesConfig` porte son propre formulaire et son propre enregistrement, et
+  son bouton clôt une liste de montants qu'on parcourt de haut en bas — c'est sa place.
+-->
+<ResponsiveSheet bind:open={showBalancesSheet} title="Soldes initiaux de la saison" icon={Wallet2}
+  description="Définissez l'état des comptes de l'association au premier jour de la saison comptable (1er septembre).">
+  {#if balancesSeasonId}
+    <InitialBalancesConfig {seasons} seasonId={balancesSeasonId} />
+  {/if}
+</ResponsiveSheet>
