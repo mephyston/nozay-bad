@@ -12,17 +12,17 @@
   // s'il se voit.
   //
   // Géométrie du coin. Le ruban doit **sortir des deux bords**, en haut et à droite, et
-  // serrer l'angle d'aussi près que possible.
+  // serrer l'angle d'aussi près que le texte le permet.
   //
-  // Sa distance au coin vaut `(décalage à droite + hauteur du haut) / √2`. Elle était de
-  // 71 px — le ruban flottait au large de l'angle — et la fenêtre qui le rogne s'arrêtait
-  // à 128 px, juste où sa pointe basse traversait le bord droit : il paraissait coupé net
-  // et décollé. À `top-3` et `-right-24`, elle tombe à 40 px, et la fenêtre de 160 px
-  // contient la diagonale du ruban (222 px) autour de son centre.
+  // Sa distance au coin vaut `(largeur/2 − décalage à droite + demi-épaisseur) / √2`.
+  // Elle est passée de 71 px à 40, puis à 26 : le bouton du compte vit dans ce même
+  // coin, et chaque pixel gagné le dégage d'autant. Le ruban est aussi aminci — demi
+  // interligne et dix pixels de texte — ce qui retire huit pixels de plus à son emprise.
   //
-  // On ne va pas plus près : le texte est centré sur les 256 px du ruban, et plus on
-  // serre l'angle, plus la portion visible est courte. À 40 px il reste une centaine de
-  // pixels de corde, de quoi lire « DEV » ou « TEST ».
+  // On ne va pas plus près : le texte est centré sur le ruban, donc son centre se
+  // rapproche du bord droit à mesure qu'on serre. À 84 px de décalage pour 224 de large,
+  // il reste 28 px entre ce centre et le bord — juste de quoi écrire « TEST » sans le
+  // couper. La fenêtre de rognage de 160 px, elle, contient toujours la diagonale.
 </script>
 
 {#if label}
@@ -32,7 +32,7 @@
     aria-hidden="true"
   >
     <div
-      class="absolute top-3 -right-24 w-64 text-white text-center text-xs font-bold py-1 rotate-45 shadow-md border-y border-white/20 tracking-widest"
+      class="absolute top-0 -right-[84px] w-56 py-0.5 text-center text-[10px] font-bold tracking-widest text-white rotate-45 shadow-md border-y border-white/20"
       style={`background:${color}`}
     >
       {label}
