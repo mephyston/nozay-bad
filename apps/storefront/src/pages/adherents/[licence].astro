@@ -134,6 +134,18 @@ const directoryHref = (() => {
   return `/equipes?${params}`;
 })();
 
+/**
+ * D'où l'on vient, en un seul endroit : l'équipe qui a mené ici, sinon l'annuaire.
+ *
+ * Les deux liens étaient écrits deux fois — une phrase au-dessus de la fiche — et il
+ * fallait les recopier une troisième pour le rond du téléphone.
+ */
+const retour = fromTeam
+  ? { href: `/equipes/${fromTeam.id}`, label: `Retour à ${fromTeam.name ?? "l'équipe"}` }
+  : fromDirectory
+    ? { href: directoryHref, label: 'Retour aux joueurs' }
+    : null;
+
 const fullName = member ? `${member.firstName} ${member.lastName}`.trim() : '';
 const initials = member
   ? `${member.firstName?.[0] ?? ''}${member.lastName?.[0] ?? ''}`.toUpperCase()
@@ -149,19 +161,20 @@ const frenchDate = (iso: string) =>
 ---
 
 <Layout title={member ? fullName : 'Fiche adhérent'}>
+
   <Header currentPath="/adherents" />
 
   <main class="flex-1 p-3 sm:p-6 w-full pb-nav md:pb-6">
     <div class="max-w-3xl mx-auto space-y-6">
-      {fromTeam && (
-        <a href={`/equipes/${fromTeam.id}`} class="text-sm text-muted-foreground hover:text-foreground no-underline">
-          ← Retour à {fromTeam.name ?? "l'équipe"}
-        </a>
-      )}
-
-      {fromDirectory && !fromTeam && (
-        <a href={directoryHref} class="text-sm text-muted-foreground hover:text-foreground no-underline">
-          ← Retour aux joueurs
+      {/*
+        D'où l'on vient : l'équipe qui a mené ici, ou l'annuaire. À la souris, la phrase
+        au-dessus de la fiche ; au doigt, le rond à chevron va **sur la ligne du nom**,
+        plus bas — posé ici, il occupait une ligne pour lui seul avant la photo.
+      */}
+      {retour && (
+        <a href={retour.href} class="hidden items-center gap-2 text-sm text-muted-foreground no-underline hover:text-foreground md:inline-flex">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+          {retour.label}
         </a>
       )}
 
@@ -180,6 +193,16 @@ const frenchDate = (iso: string) =>
       {member && (
         <>
           <section class="rounded-xl border border-border bg-card px-5 py-5 shadow-sm">
+            <div class="flex items-start gap-3">
+            {retour && (
+              <a
+                href={retour.href}
+                aria-label={retour.label}
+                class="mt-2 flex size-11 shrink-0 items-center justify-center rounded-full border border-border bg-card text-foreground no-underline transition-colors hover:bg-muted md:hidden"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+              </a>
+            )}
             <MemberPhotoField client:load
               baseSrc={`/api/adherents/photo/${licence}`}
               endpoint=""
@@ -195,6 +218,7 @@ const frenchDate = (iso: string) =>
                 </p>
               </Fragment>
             </MemberPhotoField>
+            </div>
           </section>
 
           <section class="rounded-xl border border-border bg-card px-5 py-4 space-y-3">
