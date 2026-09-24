@@ -28,7 +28,11 @@ const ICON_SUFFIX = APP_ENV === 'development' ? '-dev' : APP_ENV === 'staging' ?
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content={club?.shortName || "Espace adhérent"} />
-    <link rel="icon" type="image/png" href="/pwa/favicon.png" />
+    <!-- L'onglet aussi dit l'environnement : sans variante, dev, test et production
+         portaient le même logo, et rien ne distinguait trois onglets ouverts côte à
+         côte. Le bandeau y est réduit au mot — à seize pixels, c'est la couleur qui
+         porte l'information. -->
+    <link rel="icon" type="image/png" href={`/pwa/favicon${ICON_SUFFIX}.png`} />
     <link rel="apple-touch-icon" sizes="180x180" href={`/pwa/apple-touch-icon${ICON_SUFFIX}.png`} />
     <link rel="manifest" href="/manifest.webmanifest" />
     {description && <meta name="description" content={description} />}

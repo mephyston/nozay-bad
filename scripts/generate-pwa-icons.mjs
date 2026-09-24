@@ -49,10 +49,17 @@ const VARIANTS = [
 ];
 
 // Icônes à produire : nom de base + taille (px).
+//
+// Le favicon a deux particularités. `variantesSeules` : la production garde le fichier
+// d'origine — le logo transparent, déjà en place et référencé par les gabarits — et
+// seules les déclinaisons d'environnement sont écrites ici. `motSeul` : son bandeau ne
+// porte que « Dev » ou « Test », sans le nom de l'app ; dans un onglet de seize pixels,
+// « Adhérent Dev » n'est plus qu'une tache, et c'est la **couleur** qui distingue.
 const ICONS = [
   { dir: 'pwa', base: 'icon-192', size: 192 },
   { dir: 'pwa', base: 'icon-512', size: 512 },
-  { dir: 'pwa', base: 'apple-touch-icon', size: 180 }
+  { dir: 'pwa', base: 'apple-touch-icon', size: 180 },
+  { dir: 'pwa', base: 'favicon', size: 256, variantesSeules: true, motSeul: true }
 ];
 
 // Chaque app a un libellé propre affiché dans le bandeau de l'icône.
@@ -99,8 +106,12 @@ let count = 0;
 for (const app of APPS) {
   for (const icon of ICONS) {
     for (const variant of VARIANTS) {
+      if (icon.variantesSeules && !variant.word) continue;
       const ribbon = variant.word
-        ? { text: `${app.label} ${variant.word}`, color: variant.color }
+        ? {
+            text: icon.motSeul ? variant.word : `${app.label} ${variant.word}`,
+            color: variant.color
+          }
         : null;
       const buf = await buildIcon(icon.size, ribbon, app.bg);
       const out = path.join(root, app.dir, icon.dir, `${icon.base}${variant.suffix}.png`);

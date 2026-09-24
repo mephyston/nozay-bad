@@ -35,7 +35,11 @@ const ORIGINE_MEDIAS = (import.meta.env.PUBLIC_WEBSITE_URL as string | undefined
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <link rel="icon" type="image/png" href="/pwa/favicon.png" />
+    <!-- L'onglet aussi dit l'environnement : sans variante, dev, test et production
+         portaient le même logo, et rien ne distinguait trois onglets ouverts côte à
+         côte. Le bandeau y est réduit au mot — à seize pixels, c'est la couleur qui
+         porte l'information. -->
+    <link rel="icon" type="image/png" href={`/pwa/favicon${ICON_SUFFIX}.png`} />
     {/*
       Les octets des médias sont servis par le site public, jamais par l'administration :
       toute vignette de la médiathèque et toute image attachée à un bloc traverse donc une
