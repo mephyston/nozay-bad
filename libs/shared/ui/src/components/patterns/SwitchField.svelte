@@ -2,6 +2,7 @@
   import { getContext } from 'svelte';
   import { Switch } from '../ui/switch/index.js';
   import { cn } from '../../lib/utils.js';
+  import { FIELD_ROW_BARE } from '../../lib/field.js';
   import { CLE_CHAMP, type ContexteChamp } from './FormField.svelte';
 
   /**
@@ -69,7 +70,8 @@
 <div
   data-field-row
   class={cn(
-    'flex min-h-11 w-full items-center justify-between gap-4 px-3 py-2',
+    FIELD_ROW_BARE,
+    'justify-between gap-4 py-2',
     sansCadre ? '' : 'border-input dark:bg-input/30 rounded-lg border bg-transparent',
     className
   )}

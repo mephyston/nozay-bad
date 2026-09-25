@@ -1,6 +1,6 @@
 <script lang="ts">
   import { FileText, Sparkles } from '@lucide/svelte';
-  import { Button, Amount, Badge } from '@nba/ui';
+  import { Button, Amount, Badge, Checkbox } from '@nba/ui';
   import type { ReconciliationState, BankStatementLine } from './reconciliation.svelte';
 
   /*
@@ -69,11 +69,10 @@
           {@const isExact = Math.abs(inv.totalAmount - Math.abs(selectedTx.amount)) <= 10}
           <label class="p-2.5 flex items-center justify-between text-xs hover:bg-muted/50 transition-colors cursor-pointer">
             <span class="flex items-center gap-2.5">
-              <input
-                type="checkbox"
-                class="invoice-checkbox h-4 w-4 rounded border-input text-primary focus:ring-primary"
+              <Checkbox
+                class="invoice-checkbox"
                 checked={reconState.selectedInvoiceIds.has(inv.id)}
-                onchange={() => reconState.toggleInvoiceSelection(inv.id)}
+                onCheckedChange={() => reconState.toggleInvoiceSelection(inv.id)}
               />
               <span>
                 <span class="font-medium block">{inv.clientName}</span>

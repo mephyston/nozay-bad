@@ -175,4 +175,32 @@ describe('Design System — usage rules', () => {
       `Deux utilités d'affichage sans préfixe dans la même classe — n'en garder qu'une :\n${violations.join('\n')}`
     ).toEqual([]);
   });
+
+  it('DS7: un champ de formulaire ne reçoit ni hauteur, ni marge verticale, ni corps de texte (voir lib/field.ts)', () => {
+    /*
+      La taille d'un champ s'écrit à un seul endroit, `libs/shared/ui/src/lib/field.ts` : 44 px au
+      doigt, 32 px à la souris, et la même frontière pour tous. Un `class="h-9"` posé par un écran
+      l'emporte sur l'atome (tailwind-merge garde la dernière) : le champ dépareille ses voisins, et
+      la correction suivante de l'atome ne l'atteint plus. `<textarea>` brut suit la même règle —
+      c'est `<Textarea>` qui porte la taille du texte.
+    */
+    const FIELD_TAG = /<(Input|Select|Textarea|SearchableCombobox|Combobox|ChoiceField|MultiChoiceField|DateTimeField)\b([^>]*?)\/?>/gs;
+    const SIZING = /(^|[\s"'`{])((sm|md|lg):)?(!?)(h-(\d|\[|full|auto)|min-h-|py-|pt-|pb-|text-(xs|sm|base|lg|\[))/;
+    const violations: string[] = [];
+    for (const file of scanTargets) {
+      const content = fs.readFileSync(file, 'utf-8');
+      if (/<textarea[\s>]/.test(content)) violations.push(`${rel(file)} : <textarea> brut (utiliser <Textarea>)`);
+      for (const m of content.matchAll(FIELD_TAG)) {
+        const cls = /\bclass=("[^"]*"|\{[^}]*\})/.exec(m[2]);
+        if (cls && SIZING.test(cls[1])) {
+          const line = content.slice(0, m.index).split('\n').length;
+          violations.push(`${rel(file)}:${line} <${m[1]} class=${cls[1]}>`);
+        }
+      }
+    }
+    expect(
+      violations,
+      `Taille de champ imposée par un écran — la retirer, l'atome la porte :\n${violations.join('\n')}`
+    ).toEqual([]);
+  });
 });

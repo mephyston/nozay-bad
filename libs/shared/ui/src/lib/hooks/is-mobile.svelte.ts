@@ -1,6 +1,8 @@
 import { MediaQuery } from "svelte/reactivity";
+import { MOBILE_BREAKPOINT } from "../field.js";
 
-const DEFAULT_MOBILE_BREAKPOINT = 768;
+/** Le même seuil que le préfixe `md:` des champs : voir `lib/field.ts`. */
+const DEFAULT_MOBILE_BREAKPOINT = MOBILE_BREAKPOINT;
 
 export class IsMobile extends MediaQuery {
 	constructor(breakpoint: number = DEFAULT_MOBILE_BREAKPOINT) {

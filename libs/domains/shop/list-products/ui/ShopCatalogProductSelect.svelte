@@ -73,7 +73,7 @@
           variant="ghost"
           onclick={onDecrementQty}
           disabled={selectedQuantity <= 1 || !selectedProduct || (selectedProduct.trackStock && selectedProduct.stock <= 0)}
-          class="h-11 px-4 text-base hover:bg-muted disabled:opacity-30 font-bold rounded-none border-0 md:h-10 md:px-3 md:text-sm"
+          class="px-4 hover:bg-muted disabled:opacity-30 font-bold rounded-none border-0"
         >
           -
         </Button>
@@ -84,13 +84,13 @@
           max={maxQuantity}
           bind:value={selectedQuantity}
           disabled={!selectedProduct || (selectedProduct.trackStock && selectedProduct.stock <= 0)}
-          class="h-11 w-12 text-center text-base font-semibold border-0 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent p-0 md:h-10 md:text-sm"
+          class="w-12 text-center font-semibold border-0 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent !px-0"
         />
         <Button
           variant="ghost"
           onclick={onIncrementQty}
           disabled={!selectedProduct || selectedQuantity >= maxQuantity || (selectedProduct.trackStock && selectedProduct.stock <= 0)}
-          class="h-11 px-4 text-base hover:bg-muted disabled:opacity-30 font-bold rounded-none border-0 md:h-10 md:px-3 md:text-sm"
+          class="px-4 hover:bg-muted disabled:opacity-30 font-bold rounded-none border-0"
         >
           +
         </Button>

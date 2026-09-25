@@ -117,7 +117,7 @@
       placeholder="Rechercher une opération…"
       bind:value={reconState.searchQuery}
       bind:ref={searchInput}
-      class="text-xs !pr-8"
+      class="!pr-8"
     />
     {#if reconState.searchQuery}
       <button

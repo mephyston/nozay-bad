@@ -1,6 +1,7 @@
 <script lang="ts">
   import { getContext } from 'svelte';
   import { cn } from '../../lib/utils.js';
+  import { FIELD_ROW_BARE } from '../../lib/field.js';
   import { creerIsMobile } from '../../lib/hooks/is-mobile.svelte.js';
   import { CLE_CHAMP, type ContexteChamp } from './FormField.svelte';
   import { Input } from '../ui/input/index.js';
@@ -106,7 +107,7 @@
     lui-même quand plusieurs champs partagent une même carte.
   -->
   <div class="border-input dark:bg-input/30 divide-y divide-border overflow-hidden rounded-lg border bg-transparent">
-    <div data-field-row class="flex min-h-11 w-full items-center justify-between gap-3 px-3">
+    <div data-field-row class={cn(FIELD_ROW_BARE, 'justify-between')}>
       {#if Icone}
         {@const I = Icone as any}
         <I class="size-5 shrink-0 text-muted-foreground" aria-hidden="true" />
@@ -138,7 +139,7 @@
       </div>
     {/if}
 
-    <div data-field-row class="flex min-h-11 w-full items-center justify-between gap-3 px-3">
+    <div data-field-row class={cn(FIELD_ROW_BARE, 'justify-between')}>
       <label for={`${id}-heure`} class="min-w-0 flex-1 truncate text-base text-muted-foreground">
         Heure
       </label>
@@ -156,7 +157,7 @@
   </div>
 {:else if enRangee}
   <div class="border-input dark:bg-input/30 divide-y divide-border overflow-hidden rounded-lg border bg-transparent">
-    <div data-field-row class="flex min-h-11 w-full items-center justify-between gap-3 px-3">
+    <div data-field-row class={cn(FIELD_ROW_BARE, 'justify-between')}>
       {#if Icone}
         {@const I = Icone as any}
         <I class="size-5 shrink-0 text-muted-foreground" aria-hidden="true" />

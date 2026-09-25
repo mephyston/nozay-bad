@@ -3,6 +3,7 @@
   import { cn } from '../../../lib/utils';
   import { creerIsMobile } from '../../../lib/hooks/is-mobile.svelte.js';
   import ChoicePicker from '../../patterns/ChoicePicker.svelte';
+  import { FIELD_ROW, FIELD_SIZE } from '../../../lib/field.js';
   import type { ComboboxItem } from './types';
 
   let {
@@ -152,7 +153,7 @@
     onclick={() => (pickerOuvert = true)}
     data-field-row
     class={cn(
-      'border-input dark:bg-input/30 flex min-h-11 w-full items-center justify-between gap-3 rounded-lg border bg-transparent px-3 text-base disabled:pointer-events-none disabled:opacity-50',
+      FIELD_ROW,
       className
     )}
   >
@@ -216,7 +217,7 @@
         }, 150);
       }}
       onkeydown={handleKeyDown}
-      class="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary pr-8 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+      class="w-full {FIELD_SIZE} bg-transparent dark:bg-input/30 border border-input rounded-lg text-foreground outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 pr-8 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
     />
 
     {#if value && allowClear && !disabled}

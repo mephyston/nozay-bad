@@ -143,7 +143,7 @@
 {#if open}
   <div class="mt-2">
     <!-- Une seule commande sur la ligne, et elle dit où elle mène. -->
-    <Button onclick={ouvrir} disabled={busy} class="min-h-[44px] w-full font-bold sm:w-auto">
+    <Button onclick={ouvrir} disabled={busy} class="w-full font-bold sm:w-auto">
       {registered ? 'Gérer mon inscription' : 'Je viens'}
     </Button>
 
@@ -192,13 +192,13 @@
             bind:value={guests[index].firstName}
             placeholder="Prénom"
             aria-label={`Prénom de l'invité ${index + 1}`}
-            class="min-h-[44px] flex-1"
+            class="flex-1"
           />
           <Input
             bind:value={guests[index].lastName}
             placeholder="Nom"
             aria-label={`Nom de l'invité ${index + 1}`}
-            class="min-h-[44px] flex-1"
+            class="flex-1"
           />
           <Button
             type="button"
@@ -206,7 +206,7 @@
             onclick={() => removeGuest(index)}
             disabled={busy}
             aria-label={`Retirer l'invité ${index + 1}`}
-            class="min-h-[44px] px-3 text-muted-foreground"
+            class="px-3 text-muted-foreground"
           >
             ✕
           </Button>
@@ -216,7 +216,7 @@
   {/if}
 
   {#if guests.length < MAX_OPEN_PLAY_GUESTS}
-    <Button type="button" variant="outline" onclick={addGuest} disabled={busy} class="min-h-[44px]">
+    <Button type="button" variant="outline" onclick={addGuest} disabled={busy} >
       + Inviter quelqu'un
     </Button>
   {/if}
@@ -228,7 +228,7 @@
         variant="outline"
         onclick={() => send('unregister')}
         disabled={busy}
-        class="min-h-[44px] w-full"
+        class="w-full"
       >
         {busy ? 'Un instant…' : 'Je ne viens plus'}
       </Button>

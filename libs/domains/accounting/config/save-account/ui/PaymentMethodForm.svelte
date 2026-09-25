@@ -1,6 +1,6 @@
 <script lang="ts">
   import { CreditCard } from '@lucide/svelte';
-  import { FormSheet, FormField, Input, SearchableCombobox, Checkbox } from '@nba/ui';
+  import { FormSheet, FormField, Input, SearchableCombobox, SwitchField } from '@nba/ui';
   import {
     DEFAULT_STATUS_BY_KIND,
     ENTRY_STATUS_LABELS,
@@ -95,11 +95,11 @@
   <FormField id="method-status" label="État de l'écriture à la saisie">
     <SearchableCombobox id="method-status" items={STATUSES} bind:value={defaultEntryStatus} />
   </FormField>
-  <label class="flex items-start gap-3 cursor-pointer">
-    <Checkbox checked={storefront} onCheckedChange={(v) => (storefront = v === true)} aria-label="Proposé dans la boutique" />
-    <span class="space-y-0.5">
-      <span class="block text-sm font-medium leading-none">Proposé dans la boutique des adhérents</span>
-      <span class="block text-xs text-muted-foreground">Décoché, seule l'administration peut l'employer.</span>
-    </span>
-  </label>
+  <!-- Un réglage oui/non de formulaire est un interrupteur, comme partout dans l'admin. -->
+  <SwitchField
+    id="method-storefront"
+    label="Proposé dans la boutique des adhérents"
+    hint="Désactivé, seule l'administration peut l'employer."
+    bind:checked={storefront}
+  />
 </FormSheet>

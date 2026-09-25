@@ -3,6 +3,7 @@
   import { ChevronRight, ImagePlus, Minus } from '@lucide/svelte';
   import { Button } from '../ui/button/index.js';
   import { cn } from '../../lib/utils.js';
+  import { FIELD_ROW_BARE } from '../../lib/field.js';
   import { creerIsMobile } from '../../lib/hooks/is-mobile.svelte.js';
   import { CLE_CHAMP, type ContexteChamp } from './FormField.svelte';
 
@@ -114,7 +115,7 @@
 
 {#snippet lignesImages()}
   {#each apercus as apercu, index (cleDe(apercu, index))}
-    <div data-field-row class="flex min-h-11 items-center gap-3 px-3 py-2">
+    <div data-field-row class={cn(FIELD_ROW_BARE, 'py-2')}>
       {#if onClear}
         <!-- La pastille au signe moins d'iOS, en tête de la rangée qu'elle retire. -->
         <button
@@ -159,7 +160,7 @@
         {disabled}
         data-field-row
         onclick={ouvrir}
-        class="flex min-h-11 w-full items-center gap-3 px-3 text-left text-base disabled:pointer-events-none disabled:opacity-50"
+        class={cn(FIELD_ROW_BARE, 'text-left text-base disabled:pointer-events-none disabled:opacity-50')}
       >
         <ImagePlus class="size-5 shrink-0 text-muted-foreground" aria-hidden="true" />
         <span class="min-w-0 flex-1 truncate text-muted-foreground">{invite}…</span>

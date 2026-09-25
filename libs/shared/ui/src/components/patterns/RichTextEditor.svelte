@@ -521,7 +521,6 @@
           bind:value={linkSearch}
           placeholder="Rechercher une page…"
           aria-label="Rechercher une page"
-          class="h-9"
           onkeydown={(e: KeyboardEvent) => {
             if (e.key === 'Escape') cancelLink();
           }}
@@ -558,7 +557,6 @@
             bind:value={linkUrl}
             placeholder="https://exemple.fr ou /boutique"
             aria-label="Adresse du lien"
-            class="h-9"
             onkeydown={(e: KeyboardEvent) => {
               if (e.key === 'Enter') {
                 e.preventDefault();

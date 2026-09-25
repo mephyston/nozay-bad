@@ -6,6 +6,7 @@
   import { cn } from '../../lib/utils.js';
   import { creerIsMobile } from '../../lib/hooks/is-mobile.svelte.js';
   import { CLE_CHAMP, type ContexteChamp } from './FormField.svelte';
+  import { FIELD_ROW } from '../../lib/field.js';
 
   /**
    * Un choix parmi quelques options connues, sans recherche.
@@ -72,7 +73,7 @@
           {...props}
           {id}
           data-field-row
-          class="border-input dark:bg-input/30 flex min-h-11 w-full items-center justify-between gap-3 rounded-lg border bg-transparent px-3 text-base disabled:pointer-events-none disabled:opacity-50"
+          class={FIELD_ROW}
         >
           {#if absorbable}
             <span class="shrink-0 text-muted-foreground">{label}</span>

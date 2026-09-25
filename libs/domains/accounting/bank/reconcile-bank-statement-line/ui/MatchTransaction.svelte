@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Check, Search, Target } from '@lucide/svelte';
-  import { Button, Input, Table, Amount, Badge } from '@nba/ui';
+  import { Button, Input, Table, Amount, Badge, FormField, SearchableCombobox } from '@nba/ui';
   import type { GLTransaction, Member } from './reconciliation-types';
 
   let {
@@ -26,8 +26,6 @@
 
   let search = $state('');
   let showAll = $state(false);
-  let isMemberDropdownOpen = $state(false);
-  let memberSearchQuery = $state('');
 
   const suggestedIds = $derived(new Set(suggestions.map((gt) => gt.id)));
 
@@ -47,15 +45,15 @@
     return others.filter((gt) => (gt.description || '').toLowerCase().includes(q));
   });
 
-  const filteredMembers = $derived.by(() => {
-    const q = memberSearchQuery.trim().toLowerCase();
-    if (!q) return sortedMembers;
-    return sortedMembers.filter((m) =>
-      `${m.firstName} ${m.lastName} ${m.licence}`.toLowerCase().includes(q)
-    );
-  });
-
-  const selectedMember = $derived(sortedMembers.find((m) => String(m.id) === selectedMemberId));
+  /*
+    L'adhérent se choisit par `SearchableCombobox` : au doigt, un écran dédié avec sa
+    recherche. Le menu maison qui vivait ici se dépliait sous un bouton, avec un champ de
+    recherche que le clavier recouvrait, et tronquait la liste à cinquante noms.
+  */
+  const memberOptions = $derived([
+    { value: '', label: 'Aucun lien adhérent' },
+    ...sortedMembers.map((m) => ({ value: String(m.id), label: `${m.lastName} ${m.firstName}`, hint: m.licence || undefined }))
+  ]);
 </script>
 
 {#snippet entryRows(entries: GLTransaction[])}
@@ -129,7 +127,6 @@
       icon={Search}
       placeholder="Rechercher une écriture par libellé…"
       bind:value={search}
-      class="h-8 text-xs"
     />
 
     {#if searched.length > 0}
@@ -155,60 +152,15 @@
   </div>
 
   <div class="border-t border-border pt-4">
-    <span class="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-      Lier à un adhérent (optionnel)
-    </span>
-    <div class="relative">
-      <button
-        type="button"
-        onclick={() => (isMemberDropdownOpen = !isMemberDropdownOpen)}
-        class="w-full flex justify-between items-center bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-      >
-        <span>
-          {#if selectedMember}
-            {selectedMember.lastName} {selectedMember.firstName}
-          {:else}
-            Choisir un adhérent...
-          {/if}
-        </span>
-        <span class="text-muted-foreground">▼</span>
-      </button>
-
-      <!--
-        Monté à l'ouverture, et non masqué en CSS.
-
-        Le menu vivait derrière `class:hidden` : jusqu'à mille `<button>` restaient dans le DOM en
-        permanence, menu fermé compris, sur un écran qui en compte déjà des centaines.
-      -->
-      {#if isMemberDropdownOpen}
-        <div class="absolute z-50 w-full mt-1 bg-popover border border-border text-popover-foreground rounded-lg shadow-lg max-h-60 overflow-y-auto p-2 space-y-2">
-          <Input placeholder="Tapez pour rechercher un adhérent..." bind:value={memberSearchQuery} size="sm" />
-          <div class="space-y-0.5">
-            <button
-              type="button"
-              onclick={() => { selectedMemberId = ''; isMemberDropdownOpen = false; }}
-              class="w-full text-left px-2 py-1.5 rounded hover:bg-muted text-xs text-destructive font-medium"
-            >
-              Aucun lien adhérent
-            </button>
-            {#each filteredMembers.slice(0, 50) as m (m.id)}
-              <button
-                type="button"
-                onclick={() => { selectedMemberId = String(m.id); isMemberDropdownOpen = false; }}
-                class="w-full text-left px-2 py-1.5 rounded hover:bg-muted text-xs flex justify-between text-foreground"
-              >
-                <span>{m.lastName} {m.firstName}</span>
-                <span class="text-muted-foreground">{m.licence}</span>
-              </button>
-            {/each}
-            {#if filteredMembers.length > 50}
-              <p class="px-2 py-1 text-[11px] text-muted-foreground italic">
-                {filteredMembers.length - 50} autres — précisez la recherche.
-              </p>
-            {/if}
-          </div>
-        </div>
-      {/if}
-    </div>
+    <FormField id="match-member" label="Lier à un adhérent (optionnel)">
+      <SearchableCombobox
+        id="match-member"
+        items={memberOptions}
+        bind:value={selectedMemberId}
+        placeholder="Aucun lien adhérent"
+        searchPlaceholder="Nom ou licence…"
+        emptyText="Aucun adhérent trouvé."
+      />
+    </FormField>
   </div>
 </div>

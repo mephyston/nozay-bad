@@ -124,7 +124,7 @@
           : ''}.
       </p>
       <div class="mt-2 flex justify-end">
-        <Button variant="outline" onclick={() => send('withdraw')} disabled={busy} class="min-h-[44px]">
+        <Button variant="outline" onclick={() => send('withdraw')} disabled={busy} >
           {busy ? 'Un instant…' : 'Je ne peux plus venir'}
         </Button>
       </div>
@@ -156,7 +156,7 @@
 
 {#if status !== 'announced' && open}
   <!-- Une seule commande, hors de l'encart, et elle dit où elle mène. -->
-  <Button onclick={ouvrir} disabled={busy} class="min-h-[44px] w-full font-bold sm:w-auto">
+  <Button onclick={ouvrir} disabled={busy} class="w-full font-bold sm:w-auto">
     {requested ? 'Gérer ma candidature' : 'Je candidate'}
   </Button>
 
@@ -214,8 +214,7 @@
       bind:value={note}
       maxlength={200}
       placeholder="Travailler le service…"
-      class="min-h-[44px]"
-    />
+      />
   </FormField>
 
   {#if requested}
@@ -225,7 +224,7 @@
         variant="outline"
         onclick={() => send('withdraw')}
         disabled={busy}
-        class="min-h-[44px] w-full"
+        class="w-full"
       >
         {busy ? 'Un instant…' : 'Me retirer de la soirée'}
       </Button>

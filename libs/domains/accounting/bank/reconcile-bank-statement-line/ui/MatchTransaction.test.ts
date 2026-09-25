@@ -115,18 +115,17 @@ describe('MatchTransaction', () => {
   it('propose les adhérents qu\'on lui passe', () => {
     const target = render({ sortedMembers: [member(), member({ id: 43, lastName: 'Martin', firstName: 'Léa' })] });
 
-    const toggle = Array.from(target.querySelectorAll('button')).find(
-      (b) => b.textContent?.includes('Choisir un adhérent')
-    ) as HTMLButtonElement;
-    expect(toggle).not.toBeUndefined();
+    const toggle = target.querySelector('#match-member') as HTMLButtonElement;
+    expect(toggle.textContent).toContain('Aucun lien adhérent');
 
     // Fermé, aucun adhérent n'est dans le DOM : le menu est monté, pas masqué en CSS.
-    expect(target.innerHTML).not.toContain('Dupont');
+    expect(document.body.innerHTML).not.toContain('Dupont');
 
     toggle.click();
     flushSync();
-    expect(target.innerHTML).toContain('Dupont');
-    expect(target.innerHTML).toContain('Martin');
+    // Le menu part dans un portail attaché au document.
+    expect(document.body.innerHTML).toContain('Dupont');
+    expect(document.body.innerHTML).toContain('Martin');
   });
 
   it('affiche l\'adhérent déjà lié', () => {

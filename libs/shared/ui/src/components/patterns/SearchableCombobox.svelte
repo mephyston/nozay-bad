@@ -23,6 +23,7 @@
   import { Check, ChevronsUpDown, ChevronRight } from '@lucide/svelte';
   import { cn } from '../../lib/utils.js';
   import ChoicePicker from './ChoicePicker.svelte';
+  import { FIELD_ROW } from '../../lib/field.js';
 
   const champ = getContext<ContexteChamp | undefined>(CLE_CHAMP);
   const requete = creerIsMobile();
@@ -99,7 +100,7 @@
     onclick={() => (open = true)}
     data-field-row
     class={cn(
-      'border-input dark:bg-input/30 flex min-h-11 w-full items-center justify-between gap-3 rounded-lg border bg-transparent px-3 text-base disabled:pointer-events-none disabled:opacity-50',
+      FIELD_ROW,
       className
     )}
   >

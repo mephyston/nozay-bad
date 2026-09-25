@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Input, Label, FormField, SearchableCombobox } from '@nba/ui';
+  import { Input, Textarea, FormField, SearchableCombobox } from '@nba/ui';
 
   let {
     category = $bindable(''),
@@ -27,19 +27,18 @@
       min="0.01"
       placeholder="0.00"
       bind:value={amountStr}
-      class="w-full h-10 rounded-xl font-semibold"
+      class="font-semibold tabular-nums"
       required
     />
   </FormField>
 </div>
 
   <FormField id="description" label="Description / Motif des frais">
-  <textarea
+  <Textarea
     id="description"
     bind:value={description}
-    rows="3"
+    rows={3}
     placeholder="Ex: Achat de volants de compétition pour le tournoi régional."
-    class="w-full px-3 py-2.5 border border-border bg-background rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-primary text-foreground"
     required
-  ></textarea>
+  />
 </FormField>
