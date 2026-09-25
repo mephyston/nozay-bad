@@ -117,5 +117,25 @@ describe('ChoicePicker', () => {
     expect(rangees(target).map((b) => b.textContent)).toEqual([expect.stringContaining('ALLARD Léo')]);
     unmount(component);
   });
+
+  /*
+    Le bug des capitaines : la fiche d'équipe ne passe que trente adhérents et cherche
+    elle-même dans les deux cents, via `onSearch`. Au doigt, l'écran de choix gardait sa
+    recherche pour lui — on ne trouvait que parmi les trente premiers.
+  */
+  it("rend la frappe à l'appelant et, sans filtre, montre ce qu'il renvoie tel quel", () => {
+    const onSearch = vi.fn();
+    const { target, component } = monter({ searchable: true, filter: false, onSearch });
+    const champ = target.querySelector('input') as HTMLInputElement;
+    champ.value = 'zola';
+    champ.dispatchEvent(new Event('input', { bubbles: true }));
+    flushSync();
+
+    expect(onSearch).toHaveBeenLastCalledWith('zola');
+    // Rien ne correspond à « zola » parmi les options reçues : elles restent affichées,
+    // c'est à l'appelant de les remplacer par son résultat.
+    expect(rangees(target)).toHaveLength(OPTIONS.length);
+    unmount(component);
+  });
 });
 

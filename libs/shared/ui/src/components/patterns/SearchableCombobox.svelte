@@ -121,6 +121,8 @@
     value={String(value ?? '')}
     options={optionsPicker}
     searchable
+    {filter}
+    onSearch={(terme) => (searchText = terme)}
     {searchPlaceholder}
     onChoose={choisirDepuisPicker}
   />

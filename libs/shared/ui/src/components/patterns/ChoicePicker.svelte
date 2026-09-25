@@ -23,6 +23,8 @@
     options,
     searchable = false,
     searchPlaceholder = 'Rechercher…',
+    filter = true,
+    onSearch,
     onChoose
   }: {
     open?: boolean;
@@ -43,6 +45,17 @@
     options: { value: string; label: string; hint?: string }[];
     searchable?: boolean;
     searchPlaceholder?: string;
+    /**
+     * Faux quand l'appelant filtre lui-même (`onSearch`) : les options reçues sont déjà
+     * le résultat de la recherche, les refiltrer ici n'y changerait rien — sauf quand
+     * l'appelant plafonne sa liste, où ce second filtre ne cherchait que dans le plafond.
+     */
+    filter?: boolean;
+    /**
+     * Le texte tapé, à chaque frappe. C'est ce qui permet à l'appelant de chercher dans
+     * une liste qu'il ne passe pas entière — les deux cents adhérents du club, par exemple.
+     */
+    onSearch?: (terme: string) => void;
     onChoose: (valeur: string) => void;
   } = $props();
 
@@ -50,7 +63,7 @@
 
   const visibles = $derived.by(() => {
     const terme = recherche.trim().toLowerCase();
-    if (!terme) return options;
+    if (!terme || !filter) return options;
     // La seconde ligne compte aussi, comme dans le menu de la souris : une licence, un parent.
     return options.filter(
       (o) => o.label.toLowerCase().includes(terme) || (o.hint ?? '').toLowerCase().includes(terme)
@@ -60,6 +73,10 @@
   // Rouvrir doit repartir de la liste entière : le filtre appartient à la visite.
   $effect(() => {
     if (!open) recherche = '';
+  });
+
+  $effect(() => {
+    onSearch?.(recherche);
   });
 
   const retenu = (v: string) => (multiple ? values.includes(v) : v === value);
