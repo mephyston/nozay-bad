@@ -11,3 +11,4 @@ export { default as RankingsTable } from '../list-rankings/ui/RankingsTable.svel
 export { default as RankingsImporter } from '../import-rankings/ui/RankingsImporter.svelte';
 export { default as ChampionshipRulesPanel } from '../list-championship-settings/ui/ChampionshipRulesPanel.svelte';
 export { default as ReferenceDatesPanel } from '../list-championship-settings/ui/ReferenceDatesPanel.svelte';
+export { default as RankingChip } from './components/RankingChip.svelte';

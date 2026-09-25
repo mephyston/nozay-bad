@@ -1,4 +1,5 @@
 ---
+import { RankingChip } from '@nba/teams-ui';
 import Layout from '../../../layouts/Layout.astro';
 import Header from '../../../components/Header.astro';
 import PageTitle from '../../../components/PageTitle.astro';
@@ -137,9 +138,15 @@ const frenchDate = (iso: string) =>
                     />
                     <span class="truncate">{p.firstName} {p.lastName}</span>
                   </a>
-                  <span class="text-xs text-muted-foreground">
-                    {p.hasRanking ? `${p.singles ?? '—'} / ${p.doubles ?? '—'} / ${p.mixed ?? '—'}` : 'sans classement'}
-                  </span>
+                  {p.hasRanking ? (
+                    <span class="flex shrink-0 items-center gap-1 text-xs" aria-label="Classements simple, double et mixte">
+                      <RankingChip ranking={p.singles} />
+                      <RankingChip ranking={p.doubles} />
+                      <RankingChip ranking={p.mixed} />
+                    </span>
+                  ) : (
+                    <span class="text-xs text-muted-foreground">sans classement</span>
+                  )}
                 </li>
               ))}
             </ul>

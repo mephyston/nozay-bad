@@ -1,4 +1,5 @@
 ---
+import { RankingChip } from '@nba/teams-ui';
 import Layout from '../../layouts/Layout.astro';
 import Header from '../../components/Header.astro';
 import MobileNav from '../../components/MobileNav.svelte';
@@ -159,7 +160,6 @@ const fullName = member ? `${member.firstName} ${member.lastName}`.trim() : '';
 const initials = member
   ? `${member.firstName?.[0] ?? ''}${member.lastName?.[0] ?? ''}`.toUpperCase()
   : '??';
-const ranking = (value: string | null) => value ?? '—';
 const frenchDate = (iso: string) =>
   new Date(`${iso}T00:00:00Z`).toLocaleDateString('fr-FR', {
     day: 'numeric',
@@ -272,15 +272,15 @@ const frenchDate = (iso: string) =>
               <dl class="grid grid-cols-3 gap-3 text-center">
                 <div>
                   <dt class="text-xs text-muted-foreground">Simple</dt>
-                  <dd class="text-lg font-semibold text-foreground">{ranking(card.rankings.singles)}</dd>
+                  <dd class="text-lg"><RankingChip ranking={card.rankings.singles} /></dd>
                 </div>
                 <div>
                   <dt class="text-xs text-muted-foreground">Double</dt>
-                  <dd class="text-lg font-semibold text-foreground">{ranking(card.rankings.doubles)}</dd>
+                  <dd class="text-lg"><RankingChip ranking={card.rankings.doubles} /></dd>
                 </div>
                 <div>
                   <dt class="text-xs text-muted-foreground">Mixte</dt>
-                  <dd class="text-lg font-semibold text-foreground">{ranking(card.rankings.mixed)}</dd>
+                  <dd class="text-lg"><RankingChip ranking={card.rankings.mixed} /></dd>
                 </div>
               </dl>
             ) : (

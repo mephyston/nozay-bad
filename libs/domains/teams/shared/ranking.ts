@@ -41,6 +41,49 @@ export function isAtLeast(ranking: Ranking, min: Ranking): boolean {
   return rankingStrength(ranking) >= rankingStrength(min);
 }
 
+// ── Séries et couleurs ───────────────────────────────────────────────────────
+
+/** Les quatre séries fédérales, de la plus forte à la plus faible. `NC` n'en est pas une. */
+export const RANKING_SERIES = ['N', 'R', 'D', 'P'] as const;
+export type RankingSeries = (typeof RANKING_SERIES)[number];
+
+/**
+ * Le code couleur des séries, celui des plumes du Pass'Bad que tout badiste connaît :
+ * rouge pour le National, bleu pour le Régional, vert pour le Départemental, jaune pour
+ * la Promotion.
+ *
+ * Des couleurs **littérales**, comme les médailles de l'annuaire : elles appartiennent au
+ * badminton, pas à l'interface, et ne changent pas avec le thème. Chacune vient avec la
+ * couleur de texte qui s'y lit — le blanc sur le jaune ne passerait pas.
+ */
+export const RANKING_SERIES_COLORS: Record<RankingSeries, { fond: string; texte: string; nom: string }> = {
+  N: { fond: '#d32f2f', texte: '#ffffff', nom: 'National' },
+  R: { fond: '#1565c0', texte: '#ffffff', nom: 'Régional' },
+  D: { fond: '#2e7d32', texte: '#ffffff', nom: 'Départemental' },
+  P: { fond: '#f9c80e', texte: '#1f1f1f', nom: 'Promotion' }
+};
+
+/** La série d'un classement (« R5 » → « R ») ; `null` pour `NC`, une case vide ou une saisie inconnue. */
+export function rankingSeries(ranking: string | null | undefined): RankingSeries | null {
+  if (!ranking || !isRanking(ranking) || ranking === 'NC') return null;
+  return ranking.charAt(0) as RankingSeries;
+}
+
+/**
+ * Le meilleur des classements d'un joueur (simple, double, mixte).
+ *
+ * `null` s'il n'en a aucun : un non-compétiteur n'a pas de meilleur classement. `NC`
+ * reste un classement — celui d'un compétiteur sans résultat — et sort s'il est le seul.
+ */
+export function bestRanking(rankings: readonly (string | null | undefined)[]): Ranking | null {
+  let best: Ranking | null = null;
+  for (const value of rankings) {
+    if (!value || !isRanking(value)) continue;
+    if (best === null || rankingStrength(value) > rankingStrength(best)) best = value;
+  }
+  return best;
+}
+
 // ── Disciplines ──────────────────────────────────────────────────────────────
 
 /** Les cinq types de match d'une rencontre d'interclubs. */

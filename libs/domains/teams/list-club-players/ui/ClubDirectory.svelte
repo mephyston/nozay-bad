@@ -1,6 +1,8 @@
 <script lang="ts">
   import { ChevronRight } from '@lucide/svelte';
   import { MemberAvatar } from '@nba/ui';
+  import { RANKING_SERIES_COLORS, bestRanking, rankingSeries } from '../../shared/ranking';
+  import RankingChip from '../../shared/components/RankingChip.svelte';
 
   /**
    * L'annuaire du club, cherchable.
@@ -88,6 +90,20 @@
     3: { classe: 'medaille-bronze', titre: 'Troisième moyenne du club' }
   };
 
+  /**
+   * L'anneau d'un joueur hors podium : la couleur de la série de son **meilleur**
+   * classement, sur les trois disciplines. Un non-compétiteur, ou un `NC`, n'en a pas.
+   * Le podium garde sa médaille : un rang dans le club dit plus qu'une série.
+   */
+  function anneauDe(player: Player): { couleur: string; titre: string } | null {
+    if (!player.hasRanking) return null;
+    const meilleur = bestRanking([player.singles, player.doubles, player.mixed]);
+    const serie = rankingSeries(meilleur);
+    if (!serie) return null;
+    const { fond, nom } = RANKING_SERIES_COLORS[serie];
+    return { couleur: fond, titre: `Meilleur classement : ${meilleur} (série ${nom})` };
+  }
+
   const filtered = $derived.by(() => {
     const terms = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
     if (terms.length === 0) return players;
@@ -157,6 +173,17 @@
                   </span>
                   <span class="sr-only">{medaille.titre}</span>
                 </span>
+              {:else if anneauDe(player)}
+                {@const anneau = anneauDe(player)!}
+                <!-- Même anneau que le podium, dans la couleur de la meilleure série. -->
+                <span class="shrink-0" style="--serie: {anneau.couleur}" title={anneau.titre}>
+                  <MemberAvatar
+                    src={player.photoSrc}
+                    name={`${player.firstName} ${player.lastName}`}
+                    class="ring-2 ring-[var(--serie)] ring-offset-2 ring-offset-card"
+                  />
+                  <span class="sr-only">{anneau.titre}</span>
+                </span>
               {:else}
                 <MemberAvatar
                   src={player.photoSrc}
@@ -180,11 +207,16 @@
 
             <span class="flex shrink-0 items-center gap-2">
             <span class="text-right">
-              <span class="block text-xs tabular-nums text-muted-foreground">
-                {player.hasRanking
-                  ? `${player.singles ?? '—'} / ${player.doubles ?? '—'} / ${player.mixed ?? '—'}`
-                  : 'sans classement'}
-              </span>
+              {#if player.hasRanking}
+                <!-- Simple, double, mixte : chacun dans la couleur de sa série. -->
+                <span class="flex items-center justify-end gap-1 text-xs" aria-label="Classements simple, double et mixte">
+                  <RankingChip ranking={player.singles} />
+                  <RankingChip ranking={player.doubles} />
+                  <RankingChip ranking={player.mixed} />
+                </span>
+              {:else}
+                <span class="block text-xs text-muted-foreground">sans classement</span>
+              {/if}
               {#if player.eloAverage !== null}
                 <!-- La valeur qui ordonne la liste : la montrer évite d'avoir à deviner
                      pourquoi untel passe devant. -->
