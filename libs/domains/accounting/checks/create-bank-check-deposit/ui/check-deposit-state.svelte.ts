@@ -1,4 +1,4 @@
-import { Check, CheckDeposit, Member, BankStatementLine, SeasonOption, categoriesList } from './check-deposit-types';
+import { Check, CheckDeposit, Member, BankStatementLine, SeasonOption, type PlanCategory, receiptCategories } from './check-deposit-types';
 
 export function createCheckDepositState(props: () => {
   seasonId: string;
@@ -6,6 +6,7 @@ export function createCheckDepositState(props: () => {
   checks: Check[];
   checkDeposits: CheckDeposit[];
   members: Member[];
+  categories?: PlanCategory[];
   pendingBankTransactions: BankStatementLine[];
   initialTab?: 'checks' | 'deposits';
   hideTabs?: boolean;
@@ -26,7 +27,7 @@ export function createCheckDepositState(props: () => {
   let checkEmitter = $state('');
   let checkBank = $state('');
   let checkMemberId = $state<string>('');
-  let checkCategory = $state('1');
+  let checkCategory = $state('');
   let checkDate = $state(today());
   // Mois de remise prévu, en calendaire ('9' … '8') ; vide = aucune indication.
   let checkPlannedDepositMonth = $state('');
@@ -44,7 +45,7 @@ export function createCheckDepositState(props: () => {
     checkEmitter = '';
     checkBank = '';
     checkMemberId = '';
-    checkCategory = '1';
+    checkCategory = '';
     checkDate = today();
     checkPlannedDepositMonth = '';
     formError = '';
@@ -67,7 +68,7 @@ export function createCheckDepositState(props: () => {
     checkEmitter = check.emitter;
     checkBank = check.bank ?? '';
     checkMemberId = check.memberId ? String(check.memberId) : '';
-    checkCategory = String(check.categoryId ?? 1);
+    checkCategory = check.categoryId != null ? String(check.categoryId) : '';
     checkDate = check.date ?? String(check.createdAt).slice(0, 10);
     checkPlannedDepositMonth = check.plannedDepositMonth ? String(check.plannedDepositMonth) : '';
     showAddCheckModal = true;
@@ -85,15 +86,20 @@ export function createCheckDepositState(props: () => {
     return m ? `${m.lastName} ${m.firstName} (${m.licence})` : '';
   });
 
+  // La catégorie du chèque en cours de modification reste proposée, même désactivée depuis.
+  const categoriesList = $derived(
+    receiptCategories(p.categories ?? [], checkCategory ? Number(checkCategory) : null)
+  );
+
   const categoryDisplayVal = $derived.by(() => {
-    const cat = categoriesList.find((c: any) => c.id === checkCategory);
+    const cat = categoriesList.find((c) => c.id === checkCategory);
     return cat ? cat.name : '';
   });
 
   const filteredCategories = $derived.by(() => {
     if (!categorySearchQuery.trim()) return categoriesList;
     const q = categorySearchQuery.toLowerCase();
-    return categoriesList.filter((c: any) => c.name.toLowerCase().includes(q));
+    return categoriesList.filter((c) => c.name.toLowerCase().includes(q));
   });
 
   const filteredMembers = $derived.by(() => {

@@ -108,6 +108,18 @@ describe('handleSaveCheck', () => {
     expect(s.showAddCheckModal).toBe(true);
   });
 
+  it("exige une catégorie : le serveur imputerait sinon la catégorie n° 1, quelle qu'elle soit", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+
+    const s = { ...state(), checkCategory: '' };
+    await handleSaveCheck({ preventDefault() {} } as any, '25-26', s);
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(s.formError).toContain('catégorie');
+    expect(s.showAddCheckModal).toBe(true);
+  });
+
   it("relaie une modification sur l'identifiant du chèque, adhérent détaché à null", async () => {
     const fetchMock = vi.fn().mockResolvedValue({ ok: true, text: async () => '{"success":true}' });
     vi.stubGlobal('fetch', fetchMock);

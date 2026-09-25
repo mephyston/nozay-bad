@@ -102,7 +102,9 @@ export async function handleSaveCheck(e: SubmitEvent, seasonId: string, state: a
     validate: () =>
       !state.checkNumber || !state.checkAmount || !state.checkEmitter
         ? 'Veuillez renseigner le numéro, le montant et l\'émetteur.'
-        : null,
+        : !state.checkCategory
+          ? 'Veuillez choisir la catégorie de recette du chèque.'
+          : null,
     submit: async () => {
       const res = await fetch(RELAIS, {
         method: 'POST',

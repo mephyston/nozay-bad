@@ -66,6 +66,7 @@
         checks={d.checks}
         checkDeposits={d.checkDeposits}
         members={d.members}
+        categories={d.categories}
         pendingBankTransactions={d.pendingBankTransactions}
         {initialTab}
         hideTabs={true}

@@ -375,11 +375,13 @@ export const ECRANS: Record<string, Ecran> = {
     charger: async (lire, locals, params) => {
       const saisonnier = await saison(lire, params);
       const s = encodeURIComponent(saisonnier.seasonId);
-      const [cheques, bordereaux, adherents, lignesBancaires] = await Promise.all([
+      const [cheques, bordereaux, adherents, lignesBancaires, categories] = await Promise.all([
         lire(`/accounting/checks?season=${s}`),
         lire(`/accounting/check-deposits?season=${s}`),
         lire(`/members?limit=1000&season=${s}`),
-        lire(`/accounting/bank-transactions?season=${s}`)
+        lire(`/accounting/bank-transactions?season=${s}`),
+        // L'affectation d'un chèque se choisit dans le plan, comme au rapprochement.
+        lire('/accounting/categories')
       ]);
 
       return {
@@ -387,6 +389,7 @@ export const ECRANS: Record<string, Ecran> = {
         checks: cheques ?? [],
         checkDeposits: bordereaux ?? [],
         members: adherents ?? [],
+        categories: categories ?? [],
         // Seules les lignes encore à rapprocher, et au crédit : une remise de chèques
         // ne s'adosse pas à un débit.
         pendingBankTransactions: (lignesBancaires ?? []).filter(

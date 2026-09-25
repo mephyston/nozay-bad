@@ -63,9 +63,34 @@ export interface CategoryItem {
   code?: string;
 }
 
-export const categoriesList: CategoryItem[] = [
-  { id: '1', name: 'Adhésion', code: '70' },
-  { id: '2', name: 'Vente', code: '70' }
-];
+/** Une catégorie du plan, telle que `/accounting/categories` la renvoie. */
+export interface PlanCategory {
+  id: number;
+  adminLabel: string;
+  receiptCode?: string | null;
+  receiptAccountClassId?: number | null;
+  active?: boolean | null;
+}
+
+/**
+ * Les affectations proposées pour un chèque : les catégories de recette du plan.
+ *
+ * Le formulaire tenait sa propre liste, « Adhésion » et « Vente » sous les identifiants
+ * 1 et 2 : un don n'y avait pas sa place, et l'identifiant partait tel quel en base, où
+ * rien ne garantissait qu'il désignât la catégorie affichée. Un chèque est toujours une
+ * recette : seules les catégories actives munies d'une imputation de recette s'offrent.
+ *
+ * `conserver` garde la catégorie d'un chèque déjà saisi même si elle ne remplit plus ces
+ * conditions, pour que sa modification ne l'efface pas en silence.
+ */
+export function receiptCategories(plan: PlanCategory[], conserver?: number | null): CategoryItem[] {
+  return plan
+    .filter(
+      (c) =>
+        c.id === conserver ||
+        (c.active !== false && (c.receiptAccountClassId != null || !!c.receiptCode))
+    )
+    .map((c) => ({ id: String(c.id), name: c.adminLabel, code: c.receiptCode ?? undefined }));
+}
 
 

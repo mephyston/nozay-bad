@@ -8,6 +8,12 @@ const base = {
   checks: [] as Check[],
   checkDeposits: [],
   members: [{ id: 12, licence: '07123456', lastName: 'DURAND', firstName: 'Marie', parent1Name: null, parent2Name: null }],
+  categories: [
+    { id: 1, adminLabel: 'Adhésions', receiptCode: '756', receiptAccountClassId: 10, active: true },
+    { id: 2, adminLabel: 'Dons', receiptCode: '754', receiptAccountClassId: 11, active: true },
+    { id: 3, adminLabel: 'Salaires', receiptCode: null, receiptAccountClassId: null, active: true },
+    { id: 4, adminLabel: 'Buvette', receiptCode: '707', receiptAccountClassId: 12, active: false }
+  ],
   pendingBankTransactions: []
 };
 
@@ -32,17 +38,17 @@ describe('check-deposit-state — formulaire de chèque', () => {
     expect(s.checkMemberId).toBe('12');
     expect(s.memberDisplayVal).toBe('DURAND Marie (07123456)');
     expect(s.checkCategory).toBe('2');
-    expect(s.categoryDisplayVal).toBe('Vente');
+    expect(s.categoryDisplayVal).toBe('Dons');
     expect(s.checkDate).toBe('2026-08-01');
   });
 
-  it("retombe sur la date d'enregistrement et l'adhésion pour un chèque sans recette liée", () => {
+  it("retombe sur la date d'enregistrement et laisse la catégorie à choisir pour un chèque sans recette liée", () => {
     const s = createCheckDepositState(() => base);
 
     s.openEditCheck({ ...cheque, ledgerEntryId: null, date: null, categoryId: null, bank: null, memberId: null });
 
     expect(s.checkDate).toBe('2026-08-20');
-    expect(s.checkCategory).toBe('1');
+    expect(s.checkCategory).toBe('');
     expect(s.checkBank).toBe('');
     expect(s.checkMemberId).toBe('');
   });
@@ -59,7 +65,23 @@ describe('check-deposit-state — formulaire de chèque', () => {
     expect(s.checkNumber).toBe('');
     expect(s.checkAmount).toBe('');
     expect(s.checkMemberId).toBe('');
-    expect(s.checkCategory).toBe('1');
+    expect(s.checkCategory).toBe('');
     expect(s.formError).toBe('');
+  });
+
+  it('propose les catégories de recette actives du plan, et elles seules', () => {
+    const s = createCheckDepositState(() => base);
+    s.openCreateCheck();
+
+    expect(s.filteredCategories.map((c) => c.name)).toEqual(['Adhésions', 'Dons']);
+  });
+
+  it("garde la catégorie désactivée d'un chèque déjà saisi, pour ne pas l'effacer en le modifiant", () => {
+    const s = createCheckDepositState(() => base);
+
+    s.openEditCheck({ ...cheque, categoryId: 4 });
+
+    expect(s.categoryDisplayVal).toBe('Buvette');
+    expect(s.filteredCategories.map((c) => c.name)).toEqual(['Adhésions', 'Dons', 'Buvette']);
   });
 });

@@ -33,7 +33,8 @@ export const PERMISSION_PREREQUISITES: Partial<Record<Permission, readonly Permi
   'accounting:reports:read': SEASONS_AND_CONFIG,
   'accounting:reports:export': SEASONS_AND_CONFIG,
   'accounting:invoices:read': SEASONS,
-  'accounting:checks:read': SEASONS,
+  // Un chèque s'affecte à une catégorie de recette du plan.
+  'accounting:checks:read': SEASONS_AND_CONFIG,
   'accounting:seasons:write': SEASONS,
   'accounting:budget:read': SEASONS,
 
