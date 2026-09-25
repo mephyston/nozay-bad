@@ -51,7 +51,10 @@
   const visibles = $derived.by(() => {
     const terme = recherche.trim().toLowerCase();
     if (!terme) return options;
-    return options.filter((o) => o.label.toLowerCase().includes(terme));
+    // La seconde ligne compte aussi, comme dans le menu de la souris : une licence, un parent.
+    return options.filter(
+      (o) => o.label.toLowerCase().includes(terme) || (o.hint ?? '').toLowerCase().includes(terme)
+    );
   });
 
   // Rouvrir doit repartir de la liste entière : le filtre appartient à la visite.

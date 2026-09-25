@@ -33,9 +33,8 @@ export function createCheckDepositState(props: () => {
   let checkPlannedDepositMonth = $state('');
   let formError = $state('');
 
-  // Search filter for checks & members in select
+  // Search filter for checks
   let checkSearchQuery = $state('');
-  let memberSearchQuery = $state('');
   let matchedMemberName = $state('');
 
   function resetCheckForm() {
@@ -49,9 +48,7 @@ export function createCheckDepositState(props: () => {
     checkDate = today();
     checkPlannedDepositMonth = '';
     formError = '';
-    memberSearchQuery = '';
     matchedMemberName = '';
-    categorySearchQuery = '';
   }
 
   function openCreateCheck() {
@@ -74,58 +71,30 @@ export function createCheckDepositState(props: () => {
     showAddCheckModal = true;
   }
 
-  // Combobox states
-  let isMemberDropdownOpen = $state(false);
-  let isCategoryDropdownOpen = $state(false);
-  let categorySearchQuery = $state('');
-
-  // Derived display values
-  const memberDisplayVal = $derived.by(() => {
-    if (!checkMemberId) return '';
-    const m = p.members.find(item => item.id === parseInt(checkMemberId));
-    return m ? `${m.lastName} ${m.firstName} (${m.licence})` : '';
-  });
-
-  // La catégorie du chèque en cours de modification reste proposée, même désactivée depuis.
-  const categoriesList = $derived(
-    receiptCategories(p.categories ?? [], checkCategory ? Number(checkCategory) : null)
+  /*
+   * Les choix de l'adhérent et de la catégorie, prêts pour `SearchableCombobox` : au doigt, il
+   * ouvre un écran dédié avec sa recherche. Le formulaire tenait deux autocomplétions maison,
+   * dont la liste flottante se dépliait sous un champ que le clavier recouvrait aussitôt.
+   *
+   * La recherche porte sur le libellé et la seconde ligne : nom, licence, parents.
+   */
+  const memberItems = $derived(
+    [...p.members]
+      .sort((a, b) => `${a.lastName} ${a.firstName}`.localeCompare(`${b.lastName} ${b.firstName}`, 'fr', { sensitivity: 'base' }))
+      .map((m) => ({
+        value: String(m.id),
+        label: `${m.lastName} ${m.firstName} (${m.licence})`,
+        hint: [m.parent1Name, m.parent2Name].filter(Boolean).join(' · ') || undefined
+      }))
   );
 
-  const categoryDisplayVal = $derived.by(() => {
-    const cat = categoriesList.find((c) => c.id === checkCategory);
-    return cat ? cat.name : '';
-  });
-
-  const filteredCategories = $derived.by(() => {
-    if (!categorySearchQuery.trim()) return categoriesList;
-    const q = categorySearchQuery.toLowerCase();
-    return categoriesList.filter((c) => c.name.toLowerCase().includes(q));
-  });
-
-  const filteredMembers = $derived.by(() => {
-    if (!memberSearchQuery) return p.members.slice(0, 10);
-    const q = memberSearchQuery.toLowerCase();
-    return p.members.filter(m => 
-      m.firstName.toLowerCase().includes(q) || 
-      m.lastName.toLowerCase().includes(q) || 
-      m.licence.includes(q) ||
-      (m.parent1Name && m.parent1Name.toLowerCase().includes(q)) ||
-      (m.parent2Name && m.parent2Name.toLowerCase().includes(q))
-    ).slice(0, 15);
-  });
-
-  const memberOptions = $derived.by(() => {
-    let list = [...filteredMembers];
-    if (checkMemberId) {
-      const selectedId = parseInt(checkMemberId);
-      const isAlreadyInList = list.some(m => m.id === selectedId);
-      if (!isAlreadyInList) {
-        const found = p.members.find(m => m.id === selectedId);
-        if (found) list = [found, ...list];
-      }
-    }
-    return list;
-  });
+  // La catégorie du chèque en cours de modification reste proposée, même désactivée depuis.
+  const categoryItems = $derived(
+    receiptCategories(p.categories ?? [], checkCategory ? Number(checkCategory) : null).map((c) => ({
+      value: c.id,
+      label: c.name
+    }))
+  );
 
   // Selected checks for deposit
   let selectedCheckIds = $state<Record<number, boolean>>({});
@@ -178,15 +147,9 @@ export function createCheckDepositState(props: () => {
     get checkPlannedDepositMonth() { return checkPlannedDepositMonth; }, set checkPlannedDepositMonth(v) { checkPlannedDepositMonth = v; },
     get formError() { return formError; }, set formError(v) { formError = v; },
     get checkSearchQuery() { return checkSearchQuery; }, set checkSearchQuery(v) { checkSearchQuery = v; },
-    get memberSearchQuery() { return memberSearchQuery; }, set memberSearchQuery(v) { memberSearchQuery = v; },
     get matchedMemberName() { return matchedMemberName; }, set matchedMemberName(v) { matchedMemberName = v; },
-    get isMemberDropdownOpen() { return isMemberDropdownOpen; }, set isMemberDropdownOpen(v) { isMemberDropdownOpen = v; },
-    get isCategoryDropdownOpen() { return isCategoryDropdownOpen; }, set isCategoryDropdownOpen(v) { isCategoryDropdownOpen = v; },
-    get categorySearchQuery() { return categorySearchQuery; }, set categorySearchQuery(v) { categorySearchQuery = v; },
-    get memberDisplayVal() { return memberDisplayVal; },
-    get categoryDisplayVal() { return categoryDisplayVal; },
-    get filteredCategories() { return filteredCategories; },
-    get memberOptions() { return memberOptions; },
+    get memberItems() { return memberItems; },
+    get categoryItems() { return categoryItems; },
     get selectedCheckIds() { return selectedCheckIds; }, set selectedCheckIds(v) { selectedCheckIds = v; },
     get showCreateDepositModal() { return showCreateDepositModal; }, set showCreateDepositModal(v) { showCreateDepositModal = v; },
     get depositReference() { return depositReference; }, set depositReference(v) { depositReference = v; },

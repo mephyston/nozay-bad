@@ -36,9 +36,7 @@ describe('check-deposit-state — formulaire de chèque', () => {
     expect(s.checkEmitter).toBe('Marie Durand');
     expect(s.checkBank).toBe('LCL');
     expect(s.checkMemberId).toBe('12');
-    expect(s.memberDisplayVal).toBe('DURAND Marie (07123456)');
     expect(s.checkCategory).toBe('2');
-    expect(s.categoryDisplayVal).toBe('Dons');
     expect(s.checkDate).toBe('2026-08-01');
   });
 
@@ -73,7 +71,7 @@ describe('check-deposit-state — formulaire de chèque', () => {
     const s = createCheckDepositState(() => base);
     s.openCreateCheck();
 
-    expect(s.filteredCategories.map((c) => c.name)).toEqual(['Adhésions', 'Dons']);
+    expect(s.categoryItems.map((c) => c.label)).toEqual(['Adhésions', 'Dons']);
   });
 
   it("garde la catégorie désactivée d'un chèque déjà saisi, pour ne pas l'effacer en le modifiant", () => {
@@ -81,7 +79,21 @@ describe('check-deposit-state — formulaire de chèque', () => {
 
     s.openEditCheck({ ...cheque, categoryId: 4 });
 
-    expect(s.categoryDisplayVal).toBe('Buvette');
-    expect(s.filteredCategories.map((c) => c.name)).toEqual(['Adhésions', 'Dons', 'Buvette']);
+    expect(s.categoryItems.map((c) => c.label)).toEqual(['Adhésions', 'Dons', 'Buvette']);
+  });
+
+  it("propose les adhérents par nom, licence à l'appui et parents en seconde ligne, pour l'écran de choix", () => {
+    const s = createCheckDepositState(() => ({
+      ...base,
+      members: [
+        ...base.members,
+        { id: 3, licence: '07000003', lastName: 'ALLARD', firstName: 'Léo', parent1Name: 'Camille Allard', parent2Name: null }
+      ]
+    }));
+
+    expect(s.memberItems).toEqual([
+      { value: '3', label: 'ALLARD Léo (07000003)', hint: 'Camille Allard' },
+      { value: '12', label: 'DURAND Marie (07123456)', hint: undefined }
+    ]);
   });
 });

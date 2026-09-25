@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Button, Input, FormField, Select } from '@nba/ui';
+  import { Input, FormField, SearchableCombobox } from '@nba/ui';
   import type { CheckDepositState } from './check-deposit-state.svelte';
   import { DEPOSIT_MONTH_OPTIONS } from '../../../shared/deposit-month';
 
@@ -8,6 +8,20 @@
   }
 
   let { depositState }: Props = $props();
+
+  /*
+    L'adhérent est facultatif : « aucun » devient une option du choix plutôt qu'un bouton
+    d'effacement, que l'écran de choix plein cadre n'a pas d'endroit où poser.
+  */
+  const memberOptions = $derived([
+    { value: '', label: 'Aucun adhérent' },
+    ...depositState.memberItems
+  ]);
+
+  const monthOptions = [
+    { value: '', label: 'Dès que possible' },
+    ...DEPOSIT_MONTH_OPTIONS.map((mois) => ({ value: String(mois.value), label: mois.label }))
+  ];
 </script>
 
 <div class="space-y-4">
@@ -54,108 +68,33 @@
     </FormField>
   </div>
 
-    <FormField id="check-member-input" label="Adhérent concerné (pour rapprochement cotisation)">
-    <div class="relative">
-      <Input
-        id="check-member-input"
-        type="text"
-        placeholder="🔍 Rechercher un adhérent par nom ou licence..."
-        class="pr-8 font-medium"
-        value={depositState.isMemberDropdownOpen ? depositState.memberSearchQuery : depositState.memberDisplayVal}
-        oninput={(e) => {
-          depositState.isMemberDropdownOpen = true;
-          depositState.memberSearchQuery = (e.target as HTMLInputElement).value;
-        }}
-        onfocus={() => {
-          depositState.isMemberDropdownOpen = true;
-          depositState.memberSearchQuery = '';
-        }}
-        onblur={() => {
-          setTimeout(() => { depositState.isMemberDropdownOpen = false; }, 200);
-        }}
-      />
-      {#if depositState.checkMemberId}
-        <Button
-          variant="ghost"
-          size="icon-xs"
-          onclick={() => {
-            depositState.checkMemberId = '';
-            depositState.memberSearchQuery = '';
-            depositState.matchedMemberName = '';
-          }}
-          class="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
-          title="Effacer la sélection"
-        >
-          ✕
-        </Button>
-      {/if}
-
-    {#if depositState.isMemberDropdownOpen}
-      <div class="absolute z-50 w-full mt-1 max-h-60 overflow-y-auto bg-popover border border-border rounded-lg shadow-lg divide-y divide-border">
-        {#each depositState.memberOptions as member}
-          <Button
-            variant="ghost"
-            class="w-full text-left justify-start rounded-none px-3 py-2 text-sm hover:bg-muted text-foreground transition-colors font-medium border-0 cursor-pointer bg-popover"
-            onmousedown={() => {
-              depositState.checkMemberId = member.id.toString();
-              depositState.memberSearchQuery = `${member.lastName} ${member.firstName} (${member.licence})`;
-              depositState.isMemberDropdownOpen = false;
-            }}
-          >
-            {member.lastName} {member.firstName} ({member.licence})
-            {member.parent1Name ? ` - Parent: ${member.parent1Name}` : ''}
-          </Button>
-        {:else}
-          <div class="px-3 py-2 text-xs text-muted-foreground italic bg-popover">Aucun adhérent trouvé</div>
-        {/each}
-      </div>
-    {/if}
-  </div>
+  <!--
+    Les trois choix passent par `SearchableCombobox` : au doigt, un écran dédié avec sa
+    recherche ; à la souris, un menu ancré. Les autocomplétions maison qui vivaient ici
+    dépliaient une liste flottante sous un champ que le clavier recouvrait aussitôt.
+  -->
+  <FormField id="check-member-input" label="Adhérent concerné (pour rapprochement cotisation)">
+    <SearchableCombobox
+      id="check-member-input"
+      items={memberOptions}
+      bind:value={depositState.checkMemberId}
+      placeholder="Aucun adhérent"
+      searchPlaceholder="Nom, licence ou parent…"
+      emptyText="Aucun adhérent trouvé."
+      onValueChange={() => (depositState.matchedMemberName = '')}
+    />
   </FormField>
 
   <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      <FormField id="check-cat-input" label="Affectation / Catégorie">
-      <div class="relative">
-        <Input
-          id="check-cat-input"
-          type="text"
-          placeholder="Filtrer les affectations..."
-          class="pr-6 font-medium"
-          value={depositState.isCategoryDropdownOpen ? depositState.categorySearchQuery : depositState.categoryDisplayVal}
-          oninput={(e) => {
-            depositState.isCategoryDropdownOpen = true;
-            depositState.categorySearchQuery = (e.target as HTMLInputElement).value;
-          }}
-          onfocus={() => {
-            depositState.isCategoryDropdownOpen = true;
-            depositState.categorySearchQuery = '';
-          }}
-          onblur={() => {
-            setTimeout(() => { depositState.isCategoryDropdownOpen = false; }, 200);
-          }}
-        />
-        <span class="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none text-[8px]">▼</span>
-
-      {#if depositState.isCategoryDropdownOpen}
-        <div class="absolute z-50 w-full mt-1 max-h-48 overflow-y-auto bg-popover border border-border rounded-lg shadow-lg divide-y divide-border">
-          {#each depositState.filteredCategories as cat}
-            <Button
-              variant="ghost"
-              class="w-full text-left justify-start rounded-none px-3 py-2 text-sm hover:bg-muted text-foreground transition-colors font-medium border-0 cursor-pointer bg-popover"
-              onmousedown={() => {
-                depositState.checkCategory = cat.id;
-                depositState.categorySearchQuery = cat.name;
-                depositState.isCategoryDropdownOpen = false;
-              }}
-            >
-              {cat.name}
-            </Button>
-          {:else}
-            <div class="px-3 py-2 text-xs text-muted-foreground italic bg-popover">Aucune catégorie trouvée</div>
-          {/each}
-        </div>
-      {/if}
-    </div>
+    <FormField id="check-cat-input" label="Affectation / Catégorie">
+      <SearchableCombobox
+        id="check-cat-input"
+        items={depositState.categoryItems}
+        bind:value={depositState.checkCategory}
+        placeholder="Choisir une catégorie"
+        searchPlaceholder="Rechercher une catégorie…"
+        emptyText="Aucune catégorie trouvée."
+      />
     </FormField>
 
       <FormField id="check-date" label="Date d'émission">
@@ -174,11 +113,12 @@
     le lit pas — on remet ce qu'on coche.
   -->
   <FormField id="check-planned-month" label="Remise prévue (indicatif)">
-    <Select id="check-planned-month" bind:value={depositState.checkPlannedDepositMonth}>
-      <option value="">— Dès que possible —</option>
-      {#each DEPOSIT_MONTH_OPTIONS as mois}
-        <option value={String(mois.value)}>{mois.label}</option>
-      {/each}
-    </Select>
+    <SearchableCombobox
+      id="check-planned-month"
+      items={monthOptions}
+      bind:value={depositState.checkPlannedDepositMonth}
+      placeholder="Dès que possible"
+      searchPlaceholder="Rechercher un mois…"
+    />
   </FormField>
 </div>

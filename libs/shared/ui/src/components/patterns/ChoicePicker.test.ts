@@ -100,4 +100,22 @@ describe('ChoicePicker', () => {
 
     unmount(component);
   });
+
+  it('cherche aussi dans la seconde ligne, comme le menu de la souris', () => {
+    const { target, component } = monter({
+      searchable: true,
+      options: [
+        { value: '1', label: 'ALLARD Léo', hint: 'Camille Allard' },
+        { value: '2', label: 'DURAND Marie' }
+      ]
+    });
+    const champ = target.querySelector('input') as HTMLInputElement;
+    champ.value = 'camille';
+    champ.dispatchEvent(new Event('input', { bubbles: true }));
+    flushSync();
+
+    expect(rangees(target).map((b) => b.textContent)).toEqual([expect.stringContaining('ALLARD Léo')]);
+    unmount(component);
+  });
 });
+
