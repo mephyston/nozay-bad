@@ -93,7 +93,7 @@
   /**
    * L'anneau d'un joueur hors podium : la couleur de la série de son **meilleur**
    * classement, sur les trois disciplines. Un non-compétiteur, ou un `NC`, n'en a pas.
-   * Le podium garde sa médaille : un rang dans le club dit plus qu'une série.
+   * Le podium aussi : sa médaille ne tient plus que dans le petit volant.
    */
   function anneauDe(player: Player): { couleur: string; titre: string } | null {
     if (!player.hasRanking) return null;
@@ -151,16 +151,22 @@
             <span class="flex min-w-0 items-center gap-3">
               {#if podium.get(player.licence)}
                 {@const medaille = MEDAILLES[podium.get(player.licence)!]}
+                {@const anneau = anneauDe(player)}
                 <!--
-                  Le podium : un anneau autour du portrait et un volant de la couleur de
-                  la médaille. Le titre dit ce que la couleur signifie — une médaille
-                  qui ne se lit qu'à la teinte ne se lit pas du tout.
+                  Le podium : l'anneau de la meilleure série, comme pour tout le monde, et
+                  un petit volant de la couleur de la médaille. Le titre dit ce que les
+                  couleurs signifient — une médaille qui ne se lit qu'à la teinte ne se lit
+                  pas du tout.
                 -->
-                <span class="relative shrink-0 {medaille.classe}" title={medaille.titre}>
+                <span
+                  class="relative shrink-0 {medaille.classe}"
+                  style={anneau ? `--serie: ${anneau.couleur}` : undefined}
+                  title={anneau ? `${medaille.titre} · ${anneau.titre}` : medaille.titre}
+                >
                   <MemberAvatar
                     src={player.photoSrc}
                     name={`${player.firstName} ${player.lastName}`}
-                    class="ring-2 ring-[var(--medaille)] ring-offset-2 ring-offset-card"
+                    class={anneau ? 'ring-2 ring-[var(--serie)] ring-offset-2 ring-offset-card' : ''}
                   />
                   <span class="absolute -bottom-1 -right-1 flex size-4 items-center justify-center rounded-full bg-card">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="var(--medaille)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="size-3.5" aria-hidden="true">
@@ -171,7 +177,7 @@
                       <circle cx="12" cy="19" r="3" />
                     </svg>
                   </span>
-                  <span class="sr-only">{medaille.titre}</span>
+                  <span class="sr-only">{medaille.titre}{anneau ? ` — ${anneau.titre}` : ''}</span>
                 </span>
               {:else if anneauDe(player)}
                 {@const anneau = anneauDe(player)!}
