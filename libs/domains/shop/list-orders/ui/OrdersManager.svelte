@@ -18,7 +18,8 @@
     seasonId,
     initialAction = null,
     activeTab = $bindable('open'),
-    paymentMethods = []
+    paymentMethods = [],
+    canWrite = false
   }: {
     seasons: Season[];
     orders: OrderItem[];
@@ -29,6 +30,8 @@
     seasonId: string;
     initialAction?: string | null;
     activeTab?: OrdersTab;
+    /** `shop:orders:write` : créer une commande, et corriger une commande encore ouverte. */
+    canWrite?: boolean;
   } = $props();
 
   const isClosed = $derived(seasons.find((s) => codeDeSaison(s) === seasonId)?.closed || false);
@@ -38,6 +41,12 @@
   let searchTerm = $state('');
   let processingId = $state<number | null>(null);
   let isCreateSheetOpen = $state(initialAction === 'new-order');
+  /** La commande en cours de correction ; `null` quand le formulaire crée. */
+  let commandeEnEdition = $state<OrderItem | null>(null);
+  // La feuille refermée, le formulaire redevient celui de la création.
+  $effect(() => {
+    if (!isCreateSheetOpen) commandeEnEdition = null;
+  });
 
   /** La commande dont on regarde la fiche. Au doigt seulement : le tableau montre tout. */
   let detailItem = $state<OrderItem | null>(null);
@@ -157,6 +166,16 @@
   const handleOpenSecondary = (orderId: number) =>
     (etapeDe(orderId) === 'awaiting_payment' ? handleCancel : handleReject)(orderId);
 
+  /** Absent sans le droit, ou saison close : l'action n'est alors offerte nulle part. */
+  const handleEdit = $derived(
+    canWrite && !isClosed
+      ? (item: OrderItem) => {
+          commandeEnEdition = item;
+          isCreateSheetOpen = true;
+        }
+      : undefined
+  );
+
   function ouvrirFiche(item: OrderItem) {
     detailItem = item;
     detailOuvert = true;
@@ -202,6 +221,7 @@
           ? handleReject
           : handleCancel}
       onOuvrir={ouvrirFiche}
+      onEdit={handleEdit}
     />
   {/if}
 </div>
@@ -213,6 +233,7 @@
   onPrimary={handleOpenPrimary}
   onSecondary={handleOpenSecondary}
   onUnpay={handleUnpay}
+  onEdit={handleEdit}
 />
 
 <AdminOrderForm
@@ -221,4 +242,5 @@
   {members}
   {paymentMethods}
   activeSeasonId={seasonId}
+  commande={commandeEnEdition}
 />

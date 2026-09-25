@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Banknote, Check, Undo2, X } from '@lucide/svelte';
+  import { Banknote, Check, Pencil, Undo2, X } from '@lucide/svelte';
   import { Badge, Button, ResponsiveSheet } from '@nba/ui';
   import type { OrderItem } from './orders-manager-types';
   import {
@@ -33,7 +33,8 @@
     verrouille = false,
     onPrimary,
     onSecondary,
-    onUnpay
+    onUnpay,
+    onEdit
   }: {
     open?: boolean;
     item?: OrderItem | null;
@@ -42,6 +43,8 @@
     onPrimary?: (id: number) => void;
     onSecondary?: (id: number) => void;
     onUnpay?: (id: number) => void;
+    /** Corriger la commande tant qu'elle est ouverte ; absent sans le droit de modifier. */
+    onEdit?: (item: OrderItem) => void;
   } = $props();
 
   const ouverte = $derived(!!item && estOuverte(item));
@@ -124,6 +127,22 @@
   {#snippet footer()}
     <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
       {#if ouverte && etape}
+        {#if onEdit}
+          <Button
+            type="button"
+            variant="outline"
+            onclick={() => {
+              if (!item) return;
+              const courant = item;
+              open = false;
+              onEdit(courant);
+            }}
+            class="w-full sm:mr-auto sm:w-auto"
+          >
+            <Pencil class="size-4" />
+            Modifier
+          </Button>
+        {/if}
         <Button
           type="button"
           variant="outline"

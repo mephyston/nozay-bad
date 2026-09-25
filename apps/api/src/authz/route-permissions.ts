@@ -204,6 +204,8 @@ export const ROUTE_PERMISSIONS: RouteRule[] = [
   { method: 'GET', path: '/shop/orders', permission: 'shop:orders:read', service: true, feature: 'shop' },
   { method: 'POST', path: '/shop/orders', permission: 'shop:orders:write', service: true, feature: 'shop' },
   // Les quatre transitions du workflow relèvent de la même décision de gestion.
+  // Corriger une commande avant règlement : jamais depuis l'espace adhérent (pas de `service`).
+  { method: 'PUT', path: '/shop/orders/:id', permission: 'shop:orders:write', feature: 'shop' },
   { method: 'POST', path: '/shop/orders/:id/validate', permission: 'shop:orders:approve', feature: 'shop' },
   { method: 'POST', path: '/shop/orders/:id/pay', permission: 'shop:orders:approve', feature: 'shop' },
   { method: 'POST', path: '/shop/orders/:id/reject', permission: 'shop:orders:approve', feature: 'shop' },

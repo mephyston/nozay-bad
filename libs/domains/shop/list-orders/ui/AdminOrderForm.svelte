@@ -6,6 +6,7 @@
   import { isOutOfStock, productLabel, type PaymentMethodOption } from '../../list-products/ui/catalog-types';
   import ShopCatalogProductSelect from '../../list-products/ui/ShopCatalogProductSelect.svelte';
   import ShopCatalogSummary from '../../list-products/ui/ShopCatalogSummary.svelte';
+  import type { OrderItem } from './orders-manager-types';
 
   /**
    * Créer une commande au nom d'un adhérent, depuis le bureau.
@@ -17,20 +18,31 @@
    *
    * La coquille est celle de tous les formulaires de l'admin : sur téléphone elle monte
    * du bas et porte ses actions dans sa barre de navigation, hors de portée du clavier.
+   *
+   * Le même formulaire **corrige** une commande encore ouverte quand on lui en passe une
+   * (`commande`) : une autre taille, une quantité, le bon adhérent, le bon règlement. Le
+   * serveur rend et reprend le stock réservé ; ici, on compte cette réservation dans ce
+   * qui est disponible pour la commande, sinon la dernière unité qu'elle tient déjà
+   * paraîtrait en rupture.
    */
   let {
     open = $bindable(false),
     products = [],
     members = [],
     activeSeasonId = '',
-    paymentMethods = []
+    paymentMethods = [],
+    commande = null
   }: {
     open?: boolean;
     products: Product[];
     members: Member[];
     activeSeasonId: string;
     paymentMethods?: PaymentMethodOption[];
+    /** La commande à corriger ; absente, le formulaire en crée une. */
+    commande?: OrderItem | null;
   } = $props();
+
+  const enEdition = $derived(commande !== null);
 
   let selectedMemberId = $state<string | number | undefined>(undefined);
   let selectedCategory = $state<number>(0);
@@ -49,9 +61,36 @@
   const filteredProducts = $derived(
     selectedCategory === 0 ? products : products.filter((p) => p.productCategoryId === selectedCategory)
   );
-  const selectedProduct = $derived(
-    selectedProductId !== null ? (products.find((p) => p.id === Number(selectedProductId)) ?? null) : null
+  /*
+    Ce qu'une commande en attente de paiement a déjà retiré du stock lui reste acquis : sur
+    son propre article, sa quantité s'ajoute au disponible. Le produit rendu ici porte ce
+    disponible, et tout le formulaire — maximum, rupture, résumé — le lit sans le savoir.
+  */
+  const reserve = $derived(
+    commande && commande.order.status === 'awaiting_payment' && Number(selectedProductId) === commande.order.productId
+      ? commande.order.quantity
+      : 0
   );
+  const selectedProduct = $derived.by(() => {
+    const brut = selectedProductId !== null ? (products.find((p) => p.id === Number(selectedProductId)) ?? null) : null;
+    return brut && reserve > 0 ? { ...brut, stock: brut.stock + reserve } : brut;
+  });
+
+  /*
+    Pré-remplissage, à chaque commande qu'on ouvre. La catégorie reprend celle de l'article
+    commandé, pour que la liste d'articles le contienne ; faute de le retrouver (article
+    retiré du catalogue), elle s'ouvre sur « toutes ».
+  */
+  $effect(() => {
+    if (!open || !commande) return;
+    const o = commande.order;
+    selectedMemberId = o.memberId;
+    selectedCategory = products.find((p) => p.id === o.productId)?.productCategoryId ?? 0;
+    selectedProductId = o.productId;
+    selectedQuantity = o.quantity;
+    selectedPaymentMethod = o.paymentMethod;
+    errorMessage = null;
+  });
   const totalPriceCents = $derived(
     selectedProduct ? (selectedProduct.priceCents ?? (selectedProduct as { price?: number }).price ?? 0) * selectedQuantity : 0
   );
@@ -132,13 +171,33 @@
     return data.message || 'Commande créée.';
   }
 
+  async function modifier(): Promise<string> {
+    const res = await fetch('/admin/api/shop/orders', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'update',
+        id: commande!.order.id,
+        memberId: Number(selectedMemberId),
+        productId: selectedProduct!.id,
+        quantity: selectedQuantity,
+        paymentMethod: selectedPaymentMethod
+      })
+    });
+    const data = (await res.json()) as { success?: boolean; error?: string };
+    if (!res.ok || !data.success) {
+      throw new Error(data.error || "La commande n'a pas pu être modifiée.");
+    }
+    return 'Commande modifiée.';
+  }
+
   async function handleSubmit(e: Event) {
     e.preventDefault();
     errorMessage = null;
     submitting = true;
     await submitForm({
       validate: empechement,
-      submit: creer,
+      submit: () => (enEdition ? modifier() : creer()),
       success: (message) => message,
       close: () => {
         open = false;
@@ -155,12 +214,12 @@
 
 <FormSheet
   bind:open
-  title="Créer une commande"
+  title={enEdition ? 'Modifier la commande' : 'Créer une commande'}
   icon={ShoppingBag}
   error={errorMessage}
   isSubmitting={submitting}
-  submitLabel="Créer la commande"
-  submittingLabel="Création…"
+  submitLabel={enEdition ? 'Enregistrer' : 'Créer la commande'}
+  submittingLabel={enEdition ? 'Enregistrement…' : 'Création…'}
   onSubmit={handleSubmit}
 >
   <FormField id="order-member" label="Adhérent acheteur">

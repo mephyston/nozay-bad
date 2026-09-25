@@ -34,7 +34,8 @@
     toolbar: barreDOutils,
     onPrimary,
     onSecondary,
-    onOuvrir
+    onOuvrir,
+    onEdit
   }: {
     orders?: OrderItem[];
     stage: OrdersTab;
@@ -44,6 +45,8 @@
     onPrimary: (id: number) => void;
     onSecondary: (id: number) => void;
     onOuvrir: (item: OrderItem) => void;
+    /** Absent : pas de droit de modifier, l'action n'est pas offerte. */
+    onEdit?: (item: OrderItem) => void;
   } = $props();
 
   /*
@@ -163,7 +166,7 @@
         <Amount cents={montantCents(item)} />
       </Table.Cell>
       <Table.Cell class="text-right relative">
-        {@const actions = actionsDeCommande(item, { verrouille, onPrimary, onSecondary })}
+        {@const actions = actionsDeCommande(item, { verrouille, onPrimary, onSecondary, onEdit })}
         {#if actions.length > 0}
           <DataTableRowActions>
             <DropdownMenu.Label>Actions</DropdownMenu.Label>

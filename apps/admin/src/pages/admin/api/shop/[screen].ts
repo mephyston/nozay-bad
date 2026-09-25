@@ -76,12 +76,21 @@ export const ECRANS: Record<string, Ecran> = {
         permission: 'shop:orders:write',
         route: (data) => ({ chemin: '/shop/orders', method: 'POST', body: data })
       },
+      /*
+        Corriger une commande avant son règlement : adhérent, article, quantité, moyen de
+        paiement. Les quatre champs seuls partent à l'API ; l'identifiant est dans le chemin.
+      */
       update: {
         permission: 'shop:orders:write',
         route: (data) => ({
           chemin: `/shop/orders/${identifiant(data.id, 'de commande')}`,
           method: 'PUT',
-          body: data
+          body: {
+            memberId: data.memberId,
+            productId: data.productId,
+            quantity: data.quantity,
+            paymentMethod: data.paymentMethod
+          }
         })
       }
     }

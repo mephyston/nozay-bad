@@ -1,4 +1,4 @@
-import { Banknote, Check, Undo2, X } from '@lucide/svelte';
+import { Banknote, Check, Pencil, Undo2, X } from '@lucide/svelte';
 import { formatAmount, type SwipeAction, type Tone } from '@nba/ui';
 import type { OrderItem, OrderStatus, Season } from './orders-manager-types';
 
@@ -140,6 +140,11 @@ export type TransitionsDeCommande = {
   onPrimary?: (id: number) => void;
   onSecondary?: (id: number) => void;
   onUnpay?: (id: number) => void;
+  /**
+   * Corriger la commande (adhérent, article, quantité, règlement), tant qu'elle est ouverte.
+   * Offert au menu du tableau ; la liste au doigt le porte dans la fiche, pas au balayage.
+   */
+  onEdit?: (item: OrderItem) => void;
 };
 
 /**
@@ -157,7 +162,7 @@ export type TransitionsDeCommande = {
  */
 export function actionsDeCommande(
   item: OrderItem,
-  { verrouille = false, onPrimary, onSecondary, onUnpay }: TransitionsDeCommande
+  { verrouille = false, onPrimary, onSecondary, onUnpay, onEdit }: TransitionsDeCommande
 ): SwipeAction<OrderItem>[] {
   if (verrouille) return [];
 
@@ -178,6 +183,10 @@ export function actionsDeCommande(
   if (!estOuverte(item) || !onPrimary || !onSecondary) return [];
 
   const etape = etapeOuverte(item);
+  // En dernier : la première action est celle d'un balayage long, et elle doit rester réversible.
+  const corriger: SwipeAction<OrderItem>[] = onEdit
+    ? [{ id: 'modifier', label: 'Modifier', icon: Pencil, tone: 'neutral', run: (x) => onEdit(x) }]
+    : [];
   return [
     {
       id: 'primaire',
@@ -192,6 +201,7 @@ export function actionsDeCommande(
       icon: X,
       tone: 'destructive',
       run: (x) => onSecondary(x.order.id)
-    }
+    },
+    ...corriger
   ];
 }

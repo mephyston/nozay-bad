@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import type { OrderItem } from './orders-manager-types';
 import {
   ACTION_LABELS,
+  actionsDeCommande,
   ETAPE_LABELS,
   articleCommande,
   dateFr,
@@ -117,5 +118,26 @@ describe('orders-row-model', () => {
     expect(codeDeSaison({ id: 2, code: '26-27', name: 'Saison 2026-2027', active: true })).toBe('26-27');
     // Forme ancienne, où l'id portait déjà le code.
     expect(codeDeSaison({ id: '25-26', name: 'Saison 2025-2026', active: true })).toBe('25-26');
+  });
+});
+
+describe('actionsDeCommande — corriger une commande', () => {
+  const noop = () => {};
+  const ids = (item: OrderItem, onEdit?: (i: OrderItem) => void) =>
+    actionsDeCommande(item, { onPrimary: noop, onSecondary: noop, onUnpay: noop, onEdit }).map((a) => a.id);
+
+  it('offre « Modifier » en dernier sur une commande ouverte : le balayage long reste réversible', () => {
+    expect(ids(commande({ status: 'created' }), noop)).toEqual(['primaire', 'secondaire', 'modifier']);
+    expect(ids(commande({ status: 'awaiting_payment', awaitingPaymentSince: '2026-08-20' }), noop)).toEqual([
+      'primaire',
+      'secondaire',
+      'modifier'
+    ]);
+  });
+
+  it("ne l'offre ni sans le droit, ni sur une commande réglée ou close", () => {
+    expect(ids(commande({ status: 'created' }))).toEqual(['primaire', 'secondaire']);
+    expect(ids(commande({ status: 'paid' }), noop)).toEqual(['unpay']);
+    expect(ids(commande({ status: 'rejected' }), noop)).toEqual([]);
   });
 });

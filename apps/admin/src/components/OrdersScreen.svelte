@@ -44,6 +44,7 @@
         members={d.members}
         seasonId={d.season}
         paymentMethods={d.paymentMethods ?? []}
+        canWrite={Boolean(d.canWrite)}
         initialAction={actionInitiale}
       />
     {/snippet}
