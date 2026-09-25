@@ -17,7 +17,6 @@
     myGuests = null,
     /** Faux quand les inscriptions sont closes : l'encart informe au lieu d'agir. */
     open = true,
-    attendeeCount = 0,
     endpoint = '',
     titre = 'Inscription',
     sousTitre = ''
@@ -25,7 +24,6 @@
     eventId: number;
     myGuests?: number | null;
     open?: boolean;
-    attendeeCount?: number;
     /** Page à qui poster. Vide = la page courante, cas de l'agenda. */
     endpoint?: string;
     /** De quel rendez-vous parle le tiroir : sans lui, la feuille s'ouvre sur « Inscription » et rien d'autre. */
@@ -101,10 +99,13 @@
   }
 </script>
 
-{#if !open || attendeeCount > 0 || (errorMsg && !ouvert)}
+{#if !open || (errorMsg && !ouvert)}
   <!--
-    L'encart gris dit un **état** : les inscriptions sont closes, ou combien de monde
-    est attendu. Une commande posée dedans se lit comme une étiquette de plus.
+    L'encart gris dit un **état** : les inscriptions sont closes. Une commande posée
+    dedans se lit comme une étiquette de plus.
+
+    Le nombre de personnes attendues n'y figure plus : le bouton « Voir qui vient (N) »
+    d'`EventAttendees`, posé juste en dessous, le dit déjà — les deux faisaient doublon.
   -->
   <div class="rounded-lg border border-border bg-muted/30 p-3">
     {#if !open}
@@ -115,14 +116,8 @@
       </p>
     {/if}
 
-    {#if attendeeCount > 0}
-      <p class="text-xs text-muted-foreground" class:mt-2={!open}>
-        {attendeeCount} personne{attendeeCount > 1 ? 's' : ''} attendue{attendeeCount > 1 ? 's' : ''}.
-      </p>
-    {/if}
-
     {#if errorMsg && !ouvert}
-      <p class="mt-2 text-xs font-medium text-destructive" role="alert">{errorMsg}</p>
+      <p class:mt-2={!open} class="text-xs font-medium text-destructive" role="alert">{errorMsg}</p>
     {/if}
   </div>
 {/if}

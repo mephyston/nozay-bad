@@ -101,7 +101,6 @@ const today = new Date().toISOString().slice(0, 10);
               eventId={rendezVous.id}
               myGuests={rendezVous.myGuests}
               open={rendezVous.registration === 'open'}
-              attendeeCount={rendezVous.attendeeCount}
               titre={rendezVous.title}
               sousTitre={dateDuRendezVous(rendezVous.startsAt)}
               endpoint="/agenda"
