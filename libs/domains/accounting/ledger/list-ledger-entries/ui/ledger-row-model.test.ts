@@ -108,6 +108,11 @@ describe('ledger-row-model', () => {
     expect(signalement(ecriture({ seasonId: '1', accrualType: 'charge_a_payer' }), '2')?.variant).toBe('warning');
   });
 
+  it('signale une recette rendue, dont le montant rouge passerait sinon pour une erreur', () => {
+    expect(signalement(ecriture({ amount: -10_000 }), '2')).toEqual({ label: 'Remboursement', variant: 'secondary' });
+    expect(signalement(ecriture({ type: 'depense', amount: 10_000 }), '2')).toBeNull();
+  });
+
   it('regroupe par mois et nomme les mois en français', () => {
     expect(moisDe('2026-09-12')).toBe('2026-09');
     // En minuscules : le nom sert au milieu d'une phrase (« Solde fin septembre 2026 »).

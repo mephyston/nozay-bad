@@ -38,6 +38,18 @@ export interface TransactionFormValues {
    * l'attestation. Une dépense ou un virement partent sans.
    */
   memberId?: string;
+  /**
+   * Une recette rendue : le trop-perçu d'une cotisation, remboursé à l'adhérente.
+   *
+   * Ce n'est ni une charge ni une recette nouvelle, mais une **diminution de la recette** dans
+   * sa propre catégorie. Elle part en recette de montant négatif : le résultat, les soldes, le
+   * rapprochement (cumul signé) et le total réglé de l'adhérente le lisent tous correctement.
+   * Saisie en dépense, elle gonflait recettes et charges du même montant — la catégorie
+   * d'adhésion n'ayant pas de compte de charge, jusqu'en « Non ventilé ».
+   *
+   * Le montant du formulaire reste positif ; le signe se pose à l'envoi.
+   */
+  refund?: boolean;
 }
 
 /**
@@ -78,7 +90,8 @@ export function newValuesFor(
     accrualType: 'normal',
     accrualNote: '',
     targetSeasonId: seasonId,
-    memberId: ''
+    memberId: '',
+    refund: false
   };
 }
 
@@ -106,7 +119,8 @@ export function editValuesFor(
     editingId: tx.id,
     editingTransferId: tx.transferId ?? null,
     showPanel: tx.type,
-    amount: (tx.amount / 100).toFixed(2),
+    amount: (Math.abs(tx.amount) / 100).toFixed(2),
+    refund: tx.type === 'recette' && tx.amount < 0,
     category: tx.categoryId ? String(tx.categoryId) : '1',
     paymentMethod: tx.paymentMethod,
     description: tx.description,
@@ -140,6 +154,12 @@ function memberIdFor(params: TransactionFormValues): number | null {
   if (params.showPanel !== 'recette' || !params.memberId) return null;
   const id = Number(params.memberId);
   return Number.isInteger(id) && id > 0 ? id : null;
+}
+
+/** Le montant en centimes tel que l'API l'attend : négatif pour une recette remboursée. */
+export function signedAmountCents(params: TransactionFormValues): number {
+  const cents = Math.round(parseFloat(params.amount) * 100);
+  return params.showPanel === 'recette' && params.refund ? -cents : cents;
 }
 
 export function validateTransaction(params: TransactionFormValues): string | null {
@@ -208,7 +228,7 @@ export async function submitTransaction(params: TransactionFormValues): Promise<
           type: params.showPanel,
           accountId: params.formAccountId,
           category: params.category,
-          amount: Math.round(floatAmount * 100),
+          amount: signedAmountCents(params),
           date: params.date,
           paymentMethod: params.paymentMethod,
           description: params.description,
@@ -224,7 +244,7 @@ export async function submitTransaction(params: TransactionFormValues): Promise<
         type: params.showPanel,
         accountId: params.formAccountId,
         category: params.category,
-        amount: Math.round(floatAmount * 100),
+        amount: signedAmountCents(params),
         date: params.date,
         paymentMethod: params.paymentMethod,
         description: params.description,

@@ -31,7 +31,8 @@ describe('newValuesFor', () => {
       accrualType: 'normal',
       accrualNote: '',
       targetSeasonId: '9',
-      memberId: ''
+      memberId: '',
+      refund: false
     });
   });
 
@@ -172,5 +173,49 @@ describe('submitTransaction, virement en modification', () => {
   it('remonte le refus du serveur tel quel', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ success: false, error: 'pointée sur le relevé' }), { status: 409 })));
     await expect(submitTransaction(base)).rejects.toThrow('pointée sur le relevé');
+  });
+});
+
+describe('submitTransaction, recette remboursée', () => {
+  const base: TransactionFormValues = {
+    editingId: null, editingTransferId: null, showPanel: 'recette', amount: '100.00', date: '2026-09-25', category: '1',
+    formAccountId: 'current', destinationAccountId: '', destinationDate: '', paymentMethod: 'virement',
+    description: 'Trop-perçu cotisation, payée par le CSE', reference: '', accrualType: 'normal', accrualNote: '',
+    targetSeasonId: '2', memberId: '42', refund: true
+  };
+
+  beforeEach(() => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ success: true }), { status: 200 })));
+    vi.stubGlobal('sessionStorage', { setItem: vi.fn(), getItem: vi.fn(), removeItem: vi.fn() });
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
+  const posted = () => JSON.parse((fetch as any).mock.calls[0][1].body);
+
+  it("part en recette négative dans sa catégorie, rattachée à l'adhérente : ni charge ni recette nouvelle", async () => {
+    await submitTransaction(base);
+    expect(posted()).toMatchObject({ action: 'create', type: 'recette', category: '1', amount: -10_000, memberId: 42 });
+  });
+
+  it('reste négative à la modification', async () => {
+    await submitTransaction({ ...base, editingId: 8 });
+    expect(posted().updates).toMatchObject({ type: 'recette', amount: -10_000 });
+  });
+
+  it("n'inverse jamais une dépense, même si l'interrupteur est resté levé", async () => {
+    await submitTransaction({ ...base, showPanel: 'depense' });
+    expect(posted()).toMatchObject({ type: 'depense', amount: 10_000 });
+  });
+
+  it('se rouvre en remboursement, montant saisi en positif', () => {
+    const v = editValuesFor(
+      {
+        id: 8, type: 'recette', accountId: 1, seasonId: 2, categoryId: 1, amount: -10_000,
+        date: '2026-09-25', paymentMethod: 'virement', description: 'Trop-perçu', reference: '', memberId: 42
+      },
+      ACCOUNTS,
+      { accountId: 'current', seasonId: '2' }
+    );
+    expect(v).toMatchObject({ showPanel: 'recette', amount: '100.00', refund: true, memberId: '42' });
   });
 });

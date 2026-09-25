@@ -144,20 +144,28 @@ export async function apiCreateAndMatchSingle(
   category: string,
   amountToLink: number,
   accrualType: string,
-  accrualNote: string
+  accrualNote: string,
+  /**
+   * Sur une ligne au débit : l'argent rendu sur une recette (trop-perçu d'une cotisation). Il
+   * part en recette **négative** dans sa catégorie — une diminution de produit, pas une charge.
+   * Le cumul signé du rapprochement la compte bien au débit de la ligne.
+   */
+  refund = false
 ): Promise<ReconcileOutcome> {
   const btAmt = (bt as any).amountCents ?? bt.amount ?? 0;
   const rawAccountId = bt.accountId;
+  const isRefund = refund && btAmt < 0;
+  const cents = Math.round(amountToLink * 100);
   return toOutcome(await postAction({
       action: 'create',
       btId: bt.id,
       memberId,
       transaction: {
         seasonId: targetSeasonId,
-        type: btAmt < 0 ? 'depense' : 'recette',
+        type: btAmt < 0 && !isRefund ? 'depense' : 'recette',
         accountId: rawAccountId,
         category,
-        amount: Math.round(amountToLink * 100),
+        amount: isRefund ? -Math.abs(cents) : cents,
         date: bt.date,
         /* Une ligne de relevé est, par définition, de l'argent passé par la banque. Le mode ne se
            demande plus : l'API retient le moyen actif de nature « virement ». */

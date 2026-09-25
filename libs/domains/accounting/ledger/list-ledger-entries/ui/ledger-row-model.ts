@@ -69,7 +69,8 @@ export function jourEtMois(date: string): string {
  * Trois badges tenaient sur la carte mobile : le type, la régularisation et
  * « rapprochée ». Le type est déjà dit par le signe et la couleur du montant, et
  * « rapprochée » est le cas courant — un badge qui s'affiche presque toujours cesse
- * d'être un signal. Restent les deux situations qui demandent une vérification.
+ * d'être un signal. Restent les deux situations qui demandent une vérification, et la
+ * recette rendue, dont le montant rouge passerait sinon pour une erreur.
  */
 export function signalement(
   tx: Transaction,
@@ -80,6 +81,8 @@ export function signalement(
   if (saisonAffichee && String(tx.seasonId) !== String(saisonAffichee)) {
     return { label: 'Autre exercice', variant: 'secondary' };
   }
+  // Une recette en rouge surprend : le badge dit que c'est voulu — de l'argent rendu.
+  if (tx.type === 'recette' && montantCents(tx) < 0) return { label: 'Remboursement', variant: 'secondary' };
   return null;
 }
 

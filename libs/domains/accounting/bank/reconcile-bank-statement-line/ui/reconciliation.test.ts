@@ -339,6 +339,59 @@ describe('createReconciliationState logic unit tests', () => {
     expect(body).not.toContain('"btId":null');
   });
 
+  /**
+   * Le trop-perçu d'une cotisation, rendu par virement : une ligne au débit qui n'est pas une
+   * dépense. Elle part en recette négative dans sa catégorie ; le cumul signé du serveur la
+   * compte au débit de la ligne.
+   */
+  it('saisit une ligne au débit en recette remboursée quand on le demande', async () => {
+    vi.mocked(globalThis.fetch).mockResolvedValue({ ok: true, json: () => Promise.resolve({ success: true }) } as Response);
+    const state = createReconciliationState({
+      bankStatementLines: mockBankTransactions,
+      glTransactions: [],
+      seasonId: '25-26',
+      seasons: [{ id: '25-26', name: '2025-2026', active: true }],
+      members: []
+    });
+
+    state.selectedTx = mockBankTransactions[0];
+    state.amountToLink = 50;
+    state.category = '1';
+    state.isRefund = true;
+    await state.handleCreateAndMatch();
+
+    const body = JSON.parse(
+      vi.mocked(globalThis.fetch).mock.calls
+        .map((call) => call?.[1]?.body as string | undefined)
+        .find((b) => typeof b === 'string' && b.includes('"action":"create"')) as string
+    );
+    expect(body.transaction).toMatchObject({ type: 'recette', category: '1', amount: -5000 });
+  });
+
+  it("ignore l'interrupteur sur une ligne au crédit : une recette ordinaire reste positive", async () => {
+    vi.mocked(globalThis.fetch).mockResolvedValue({ ok: true, json: () => Promise.resolve({ success: true }) } as Response);
+    const state = createReconciliationState({
+      bankStatementLines: mockBankTransactions,
+      glTransactions: [],
+      seasonId: '25-26',
+      seasons: [{ id: '25-26', name: '2025-2026', active: true }],
+      members: []
+    });
+
+    state.selectedTx = mockBankTransactions[1];
+    state.amountToLink = 150;
+    state.category = '1';
+    state.isRefund = true;
+    await state.handleCreateAndMatch();
+
+    const body = JSON.parse(
+      vi.mocked(globalThis.fetch).mock.calls
+        .map((call) => call?.[1]?.body as string | undefined)
+        .find((b) => typeof b === 'string' && b.includes('"action":"create"')) as string
+    );
+    expect(body.transaction).toMatchObject({ type: 'recette', amount: 15000 });
+  });
+
   it('refuse un argument qui n’est pas une ligne bancaire', async () => {
     const state = createReconciliationState({
       bankStatementLines: mockBankTransactions,

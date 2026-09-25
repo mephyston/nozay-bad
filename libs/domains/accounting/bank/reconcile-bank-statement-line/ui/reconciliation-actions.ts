@@ -218,7 +218,7 @@ export function createReconciliationActions(s: ReconciliationStateFields) {
         outcome = await apiCreateAndMatchSplit(targetBt, memId, s.targetSeasonId, s.splits, s.accrualType, s.accrualNote);
       } else {
         if (!s.category) throw new Error("La catégorie comptable reste à choisir.");
-        outcome = await apiCreateAndMatchSingle(targetBt, memId, s.targetSeasonId, s.category, s.amountToLink, s.accrualType, s.accrualNote);
+        outcome = await apiCreateAndMatchSingle(targetBt, memId, s.targetSeasonId, s.category, s.amountToLink, s.accrualType, s.accrualNote, s.isRefund);
       }
       settle(outcome, 'Écriture créée et rapprochée avec succès !', targetBt.id);
     } catch (err: any) { 

@@ -123,6 +123,7 @@ export class ReconciliationStore {
 
   selectedInvoiceIds = $state<Set<number>>(new Set());
   isSplitMode = $state(false);
+  isRefund = $state(false);
   splits = $state<SplitRow[]>([]);
 
   isMemberDropdownOpen = $state(false);
@@ -375,7 +376,7 @@ export class ReconciliationStore {
       if (this.selectedTx) {
         this.amountToLink = parseFloat((this.remainingAmount / 100).toFixed(2));
         this.memberSearchQuery = ''; this.categorySearchQuery = '';
-        this.selectedInvoiceIds = new Set(); this.isSplitMode = false; this.splits = [];
+        this.selectedInvoiceIds = new Set(); this.isSplitMode = false; this.splits = []; this.isRefund = false;
       }
     });
 

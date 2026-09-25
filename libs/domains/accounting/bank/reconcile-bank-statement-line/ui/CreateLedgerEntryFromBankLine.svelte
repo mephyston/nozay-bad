@@ -13,6 +13,7 @@
     isSubmitting = false,
     handleCreateAndMatch,
     isSplitMode = $bindable(false),
+    isRefund = $bindable(false),
     splits = $bindable([]),
     addSplitRow,
     removeSplitRow,
@@ -46,6 +47,8 @@
      */
     handleCreateAndMatch: () => void;
     isSplitMode: boolean;
+    /** Ligne au débit : de l'argent rendu sur une recette, et non une dépense. */
+    isRefund?: boolean;
     splits: { category: string; amount: number }[];
     addSplitRow: () => void;
     removeSplitRow: (idx: number) => void;
@@ -192,7 +195,7 @@
      sur une dépense. */
   const accrualItems = $derived<ComboboxItem[]>([
     { label: 'Normal', value: 'normal' },
-    ...(selectedTx && selectedTx.amount > 0
+    ...((selectedTx && selectedTx.amount > 0) || isRefund
       ? [
           { label: "Produit constaté d'avance (ex : cotisation en avance)", value: 'produit_constate_avance' },
           { label: 'Produit à recevoir (ex : subvention)', value: 'produit_a_recevoir' }
@@ -231,6 +234,21 @@
       }
     }}
   />
+
+  <!--
+    Une sortie d'argent qui n'est pas une dépense : le trop-perçu d'une cotisation rendu à
+    l'adhérente. Saisie en dépense, elle gonflait recettes et charges du même montant ; en
+    recette négative, la recette de la catégorie diminue et rien d'autre ne bouge. Une seule
+    imputation : la ventilation reste réservée aux dépenses et recettes ordinaires.
+  -->
+  {#if selectedTx && selectedTx.amount < 0 && !isSplitMode}
+    <SwitchField
+      id="refund-mode"
+      label="Remboursement d'une recette"
+      hint="Trop-perçu rendu (cotisation payée deux fois…) : la recette de la catégorie diminue, aucune charge n'est créée."
+      bind:checked={isRefund}
+    />
+  {/if}
 
   <!--
     Une seule ligne pour la proposition et son bouton.

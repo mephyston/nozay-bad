@@ -133,6 +133,7 @@
 
   let editingId = $state<number | null>(null);
   let memberId = $state('');
+  let refund = $state(false);
 
   /**
    * Verse dans le formulaire un jeu de valeurs complet.
@@ -159,6 +160,7 @@
     accrualNote = v.accrualNote;
     targetSeasonId = v.targetSeasonId;
     memberId = v.memberId ?? '';
+    refund = v.refund ?? false;
   }
 
   function openPanel(type: 'recette' | 'depense' | 'transfert') {
@@ -185,7 +187,7 @@
     isSubmitting = true;
     errorMsg = '';
 
-    const values = { editingId, editingTransferId, showPanel, amount, date, category, formAccountId, destinationAccountId, destinationDate, paymentMethod, description, reference, accrualType, accrualNote, targetSeasonId, memberId };
+    const values = { editingId, editingTransferId, showPanel, amount, date, category, formAccountId, destinationAccountId, destinationDate, paymentMethod, description, reference, accrualType, accrualNote, targetSeasonId, memberId, refund };
     await submitForm({
       validate: () => validateTransaction(values),
       submit: () => submitTransaction(values),
@@ -271,6 +273,7 @@
     bind:showPanel
     {editingId}
     bind:amount
+    bind:refund
     bind:date
     bind:category
     bind:formAccountId

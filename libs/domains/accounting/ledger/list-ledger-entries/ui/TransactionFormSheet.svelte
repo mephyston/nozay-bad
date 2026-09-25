@@ -1,6 +1,6 @@
 <script lang="ts">
   import { ArrowLeftRight, Minus, Plus } from '@lucide/svelte';
-  import { FormSheet, Input, SearchableCombobox, FormField, toSeasonOptions } from '@nba/ui';
+  import { FormSheet, Input, SearchableCombobox, FormField, SwitchField, toSeasonOptions } from '@nba/ui';
   import type { Season, Category } from './ledger-types';
   import { toAccountOptions, type AccountLike } from '../../../shared/account-labels';
   import { membersForSeason, toMemberItems, type MemberLike } from './member-options';
@@ -22,6 +22,7 @@
     accrualNote = $bindable(''),
     targetSeasonId = $bindable(''),
     memberId = $bindable(''),
+    refund = $bindable(false),
     seasons = [],
     accounts = [],
     paymentMethods = [],
@@ -48,6 +49,8 @@
     targetSeasonId: string;
     /** L'adhésion rattachée à une recette ; vide = écriture générale. */
     memberId?: string;
+    /** Recette rendue : enregistrée en négatif, elle diminue la recette de sa catégorie. */
+    refund?: boolean;
     seasons?: Season[];
     /** Les comptes de trésorerie, lus de la base : un sélecteur par compte, quel qu'en soit le nombre. */
     accounts?: AccountLike[];
@@ -99,7 +102,11 @@
     transfert: { indefini: 'un virement interne', defini: 'le virement interne', icone: ArrowLeftRight }
   } as const;
 
-  const nature = $derived(NATURES[showPanel ?? 'recette']);
+  const nature = $derived(
+    showPanel === 'recette' && refund
+      ? { indefini: 'un remboursement', defini: 'le remboursement', icone: Minus }
+      : NATURES[showPanel ?? 'recette']
+  );
   /*
     Le titre nomme l'acte, sans emoji : la coquille porte déjà une icône, et un rond de
     couleur dans un titre ne se lit pas au lecteur d'écran.
@@ -161,6 +168,20 @@
   submittingLabel="Enregistrement…"
   {onSubmit}
 >
+  <!--
+    Le remboursement d'une recette — le trop-perçu d'une cotisation rendu à l'adhérente.
+    Ni charge ni recette nouvelle : la recette de la catégorie diminue d'autant. Le montant
+    se saisit en positif, comme partout ; c'est l'interrupteur qui porte le sens.
+  -->
+  {#if showPanel === 'recette'}
+    <SwitchField
+      id="refund-switch"
+      label="Remboursement"
+      hint="Argent rendu sur une recette (trop-perçu d'une cotisation…) : la recette de la catégorie diminue, aucune charge n'est créée."
+      bind:checked={refund}
+    />
+  {/if}
+
   <!-- Montant et date : côte à côte à la souris, l'un sous l'autre au doigt. -->
   <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
     <FormField id="amount-input" label="Montant (€)">

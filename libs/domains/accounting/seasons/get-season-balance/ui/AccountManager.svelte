@@ -124,6 +124,8 @@
   let accrualNote = $state('');
   let targetSeasonId = $state('');
   let memberId = $state('');
+  // Recette rendue ; distincte de `refund()` plus bas, qui rend une avance d'adhérente.
+  let isRefund = $state(false);
   let isSubmitting = $state(false);
   let errorMsg = $state('');
 
@@ -146,6 +148,7 @@
     accrualNote = values.accrualNote;
     targetSeasonId = values.targetSeasonId;
     memberId = values.memberId ?? '';
+    isRefund = values.refund ?? false;
     errorMsg = '';
     showPanel = values.showPanel;
   }
@@ -180,7 +183,8 @@
     errorMsg = '';
     const values: TransactionFormValues = {
       editingId, editingTransferId, showPanel, amount, date, category, formAccountId, destinationAccountId,
-      destinationDate, paymentMethod, description, reference, accrualType, accrualNote, targetSeasonId, memberId
+      destinationDate, paymentMethod, description, reference, accrualType, accrualNote, targetSeasonId, memberId,
+      refund: isRefund
     };
     await submitForm({
       validate: () => validateTransaction(values),
@@ -240,6 +244,7 @@
     bind:showPanel
     {editingId}
     bind:amount
+    bind:refund={isRefund}
     bind:date
     bind:category
     bind:formAccountId

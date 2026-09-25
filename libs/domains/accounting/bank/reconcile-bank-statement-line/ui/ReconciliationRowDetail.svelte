@@ -106,6 +106,7 @@
           isSubmitting={reconState.isSubmitting}
           handleCreateAndMatch={reconState.handleCreateAndMatch}
           bind:isSplitMode={reconState.isSplitMode}
+          bind:isRefund={reconState.isRefund}
           bind:splits={reconState.splits}
           addSplitRow={reconState.addSplitRow}
           removeSplitRow={reconState.removeSplitRow}

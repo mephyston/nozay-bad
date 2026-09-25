@@ -181,6 +181,8 @@ export interface ReconciliationStateFields {
   remainingAmount: number;
   splits: SplitRow[];
   isSplitMode: boolean;
+  /** Ligne au débit saisie en recette rendue : la recette de la catégorie diminue, sans charge. */
+  isRefund: boolean;
   isSubmitting: boolean;
   isAnalyzing: boolean;
   isAnalyzingSingle: boolean;
