@@ -6,10 +6,11 @@ import type { ListEventRegistrationsInput, ListEventRegistrationsOutput } from '
 /**
  * Qui vient, nom par nom.
  *
- * C'est la seule lecture nominative du domaine, et elle n'est **pas** ouverte aux
- * appelants de service : le site public et l'espace adhérent obtiennent des compteurs,
- * jamais des noms. Une liste de convives est une donnée personnelle d'adhérents, elle
- * ne sort qu'auprès d'une identité d'administration porteuse du droit.
+ * C'est la liste complète — adresse et identifiant d'adhésion compris — et elle n'est
+ * **pas** ouverte aux appelants de service : elle ne sort qu'auprès d'une identité
+ * d'administration porteuse du droit. L'espace adhérent a sa propre lecture, réduite aux
+ * noms et au nombre d'accompagnants (`list-event-attendees`) ; le site public n'obtient
+ * que des compteurs.
  *
  * Le total est calculé ici plutôt que dans l'écran : c'est le chiffre sur lequel le
  * bureau engage une commande, il n'a pas à dépendre d'une addition faite en JavaScript.

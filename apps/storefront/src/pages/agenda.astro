@@ -6,7 +6,7 @@ import MobileNav from '../components/MobileNav.svelte';
 import EventRow from '../components/EventRow.astro';
 import OpenPlayRow from '../components/OpenPlayRow.astro';
 import IndivCard from '../components/IndivCard.astro';
-import { EventSignup } from '@nba/events-ui';
+import { EventSignup, EventAttendees } from '@nba/events-ui';
 import { dateDuRendezVous } from '../lib/agenda';
 import { OpenPlaySignup, OpenPlayOpenerButton, OpenPlayAttendees } from '@nba/schedules-ui';
 import { featureOn } from '@nba/club/context';
@@ -192,6 +192,9 @@ if (Astro.request.method === 'POST') {
         headers: { 'Content-Type': 'application/json' }
       });
     }
+
+    // « Voir qui vient » : des noms et un nombre d'accompagnants, comme au jeu libre.
+    if (body.action === 'attendees') return api.fetch(`http://localhost/events/${eventId}/attendees`);
 
     if (body.action === 'register') {
       return api.fetch(`http://localhost/events/${eventId}/registrations`, {
@@ -406,6 +409,13 @@ const today = new Date().toISOString().slice(0, 10);
                       attendeeCount={event.attendeeCount}
               titre={event.title}
               sousTitre={dateDuRendezVous(event.startsAt)}
+                    />
+                    <EventAttendees
+                      client:visible
+                      eventId={event.id}
+                      attendeeCount={event.attendeeCount}
+                      titre={event.title}
+                      endpoint="/agenda"
                     />
                   </div>
                 )}

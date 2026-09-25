@@ -6,6 +6,7 @@ import { deleteEventRoute } from './delete-event/route';
 import { registerToEventRoute } from './register-to-event/route';
 import { unregisterFromEventRoute } from './unregister-from-event/route';
 import { listEventRegistrationsRoute } from './list-event-registrations/route';
+import { listEventAttendeesRoute } from './list-event-attendees/route';
 
 export type Bindings = { DB: D1Database };
 
@@ -18,9 +19,11 @@ eventsRouter.route('/', deleteEventRoute);
 eventsRouter.route('/', registerToEventRoute);
 eventsRouter.route('/', unregisterFromEventRoute);
 eventsRouter.route('/', listEventRegistrationsRoute);
+eventsRouter.route('/', listEventAttendeesRoute);
 
 export { listEvents } from './list-events/handler';
 export { listEventRegistrations } from './list-event-registrations/handler';
+export { listEventAttendees } from './list-event-attendees/handler';
 export { registerToEvent } from './register-to-event/handler';
 export { unregisterFromEvent } from './unregister-from-event/handler';
 export {

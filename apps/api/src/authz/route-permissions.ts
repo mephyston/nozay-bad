@@ -363,6 +363,9 @@ export const ROUTE_PERMISSIONS: RouteRule[] = [
   { method: 'POST', path: '/events/:id/registrations', permission: 'events:events:read', service: true, feature: 'events' },
   { method: 'DELETE', path: '/events/:id/registrations', permission: 'events:events:read', service: true, feature: 'events' },
   { method: 'GET', path: '/events/:id/registrations', permission: 'events:registrations:read', feature: 'events' },
+  // « Voir qui vient » de l'espace adhérent : des noms et un nombre d'accompagnants, sans
+  // adresse ni identifiant — la liste complète reste au bureau, ligne du dessus.
+  { method: 'GET', path: '/events/:id/attendees', permission: 'events:events:read', service: true, feature: 'events' },
 
   // ── Interclubs ─────────────────────────────────────────────────────────────
   // Les classements et la date à laquelle ils sont arrêtés : jamais `service`. Le

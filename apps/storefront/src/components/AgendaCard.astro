@@ -4,7 +4,7 @@ import type { AgendaEvent } from '../lib/agenda';
 import type { OpenPlaySession } from '../lib/open-play';
 import EventRow from './EventRow.astro';
 import OpenPlayRow from './OpenPlayRow.astro';
-import { EventSignup } from '@nba/events-ui';
+import { EventSignup, EventAttendees } from '@nba/events-ui';
 import { dateDuRendezVous } from '../lib/agenda';
 import { OpenPlaySignup, OpenPlayOpenerButton, OpenPlayAttendees } from '@nba/schedules-ui';
 
@@ -104,6 +104,13 @@ const today = new Date().toISOString().slice(0, 10);
               attendeeCount={rendezVous.attendeeCount}
               titre={rendezVous.title}
               sousTitre={dateDuRendezVous(rendezVous.startsAt)}
+              endpoint="/agenda"
+            />
+            <EventAttendees
+              client:visible
+              eventId={rendezVous.id}
+              attendeeCount={rendezVous.attendeeCount}
+              titre={rendezVous.title}
               endpoint="/agenda"
             />
           </div>
