@@ -75,14 +75,22 @@
    * La liste arrive déjà ordonnée par la page ; on ne suppose pas qu'elle l'est, et on
    * compare les moyennes pour désigner les trois premières.
    */
-  const podium = $derived.by(() => {
+  /*
+    Le rang de **chaque** joueur classé, et plus seulement des trois premiers : les
+    suivants affichent leur numéro là où le podium porte son volant (essai du
+    25/09/2026). Le podium en est la tête.
+  */
+  const rangs = $derived.by(() => {
     const classes = players
       .filter((p: Player) => p.hasRanking && p.eloAverage !== null)
       .sort((a: Player, b: Player) => (b.eloAverage ?? 0) - (a.eloAverage ?? 0));
-    const rangs = new Map<string, 1 | 2 | 3>();
-    classes.slice(0, 3).forEach((p: Player, i: number) => rangs.set(p.licence, (i + 1) as 1 | 2 | 3));
-    return rangs;
+    const parLicence = new Map<string, number>();
+    classes.forEach((p: Player, i: number) => parLicence.set(p.licence, i + 1));
+    return parLicence;
   });
+  const podium = $derived(
+    new Map([...rangs].filter(([, rang]) => rang <= 3) as [string, 1 | 2 | 3][])
+  );
 
   const MEDAILLES: Record<1 | 2 | 3, { classe: string; titre: string }> = {
     1: { classe: 'medaille-or', titre: 'Meilleure moyenne du club' },
@@ -179,16 +187,32 @@
                   </span>
                   <span class="sr-only">{medaille.titre}{anneau ? ` — ${anneau.titre}` : ''}</span>
                 </span>
-              {:else if anneauDe(player)}
-                {@const anneau = anneauDe(player)!}
-                <!-- Même anneau que le podium, dans la couleur de la meilleure série. -->
-                <span class="shrink-0" style="--serie: {anneau.couleur}" title={anneau.titre}>
+              {:else if anneauDe(player) || rangs.get(player.licence)}
+                {@const anneau = anneauDe(player)}
+                {@const rang = rangs.get(player.licence)}
+                <!--
+                  Même anneau que le podium, dans la couleur de la meilleure série ; et, à la
+                  place du volant, le rang du joueur dans le club.
+                -->
+                <span
+                  class="relative shrink-0"
+                  style={anneau ? `--serie: ${anneau.couleur}` : undefined}
+                  title={[rang ? `${rang}e moyenne du club` : '', anneau?.titre ?? ''].filter(Boolean).join(' · ')}
+                >
                   <MemberAvatar
                     src={player.photoSrc}
                     name={`${player.firstName} ${player.lastName}`}
-                    class="ring-2 ring-[var(--serie)] ring-offset-2 ring-offset-card"
+                    class={anneau ? 'ring-2 ring-[var(--serie)] ring-offset-2 ring-offset-card' : ''}
                   />
-                  <span class="sr-only">{anneau.titre}</span>
+                  {#if rang}
+                    <span
+                      class="absolute -bottom-1 -right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full border border-border bg-card px-0.5 text-[10px] font-semibold leading-none tabular-nums text-muted-foreground"
+                      aria-hidden="true"
+                    >
+                      {rang}
+                    </span>
+                  {/if}
+                  <span class="sr-only">{[rang ? `${rang}e moyenne du club` : '', anneau?.titre ?? ''].filter(Boolean).join(' — ')}</span>
                 </span>
               {:else}
                 <MemberAvatar
