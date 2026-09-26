@@ -221,10 +221,18 @@
   data-list-row
   data-reorder-group={reorder?.groupe}
   data-reorder-index={reorder?.rang}
+  data-no-drag={reorder ? '' : undefined}
   data-context-menu={actions.length > 0 && !reorder ? '' : undefined}
   class={cn(
     'relative bg-card',
     actions.length > 0 && !reorder && 'overflow-hidden',
+    /*
+      En réorganisation, un maintien saisit la rangée : il ne doit ni sélectionner son
+      texte ni ouvrir la bulle « Copier » d'iOS, qui prenait le geste pour elle.
+      `data-no-drag` retire aussi la rangée au glissement du tiroir qui la porte — un
+      mouvement vers le bas y déplaçait la feuille au lieu de la rangée.
+    */
+    reorder && 'select-none [-webkit-touch-callout:none]',
     /* Soulevée, la rangée ne doit pas glisser sous ses voisines. */
     'data-[reorder-active]:shadow-lg',
     className

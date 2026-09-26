@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { rangCible } from './reorder';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { MAINTIEN_MS, rangCible, reorderable } from './reorder';
 
 /**
  * Cinq rangées de 60 px, la première commençant à 100 : centres 130, 190, 250, 310, 370.
@@ -51,5 +51,108 @@ describe('rangCible', () => {
 
   it('ne cale pas sur une liste d’un seul élément', () => {
     expect(rangCible(130, [130], 0)).toBe(0);
+  });
+});
+
+/**
+ * Le maintien, au doigt.
+ *
+ * Au doigt, un appui qui tient en place sur la rangée la soulève ; un doigt qui part
+ * tout de suite fait défiler la page. Sans ce geste, un maintien sur la rangée ne
+ * faisait que sélectionner son texte, et iOS proposait « Copier ».
+ */
+describe('reorderable — saisie par maintien', () => {
+  let liste: HTMLElement;
+  let action: { destroy(): void };
+  let appels: [string, number, number][];
+
+  function pointer(type: string, cible: Element, y: number, pointerType = 'touch', x = 10) {
+    const e = new MouseEvent(type, { bubbles: true, clientX: x, clientY: y, button: 0 });
+    Object.defineProperties(e, {
+      isPrimary: { value: true },
+      pointerId: { value: 1 },
+      pointerType: { value: pointerType }
+    });
+    cible.dispatchEvent(e);
+  }
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    liste = document.createElement('ul');
+    // Trois rangées de 60 px empilées à partir de 100 : centres 130, 190, 250.
+    for (let i = 0; i < 3; i += 1) {
+      const li = document.createElement('li');
+      li.dataset.reorderGroup = 'blocs';
+      li.dataset.reorderIndex = String(i);
+      li.textContent = `Bloc ${i + 1}`;
+      li.getBoundingClientRect = () => ({ top: 100 + i * 60, height: 60 }) as DOMRect;
+      liste.appendChild(li);
+    }
+    document.body.appendChild(liste);
+    appels = [];
+    action = reorderable(liste, { onReorder: (g, de, vers) => appels.push([g, de, vers]) });
+    // La trame de dessin n'a pas d'importance ici : seul compte le rang au relâché.
+    vi.stubGlobal('requestAnimationFrame', () => 1);
+    // jsdom ne fournit pas `CSS.escape` ; les noms de groupe testés n'ont rien à échapper.
+    if (!globalThis.CSS?.escape) vi.stubGlobal('CSS', { escape: (valeur: string) => valeur });
+  });
+
+  afterEach(() => {
+    action.destroy();
+    liste.remove();
+    vi.unstubAllGlobals();
+    vi.useRealTimers();
+  });
+
+  const rangees = () => Array.from(liste.querySelectorAll('li'));
+
+  it('soulève la rangée après le maintien, et la dépose au relâché', () => {
+    const [premiere] = rangees();
+    pointer('pointerdown', premiere, 130);
+    vi.advanceTimersByTime(MAINTIEN_MS);
+    expect(premiere.hasAttribute('data-reorder-active')).toBe(true);
+
+    pointer('pointermove', premiere, 200);
+    pointer('pointerup', premiere, 200);
+
+    expect(appels).toEqual([['blocs', 0, 1]]);
+  });
+
+  it('laisse défiler un doigt qui part avant la fin du maintien', () => {
+    const [premiere] = rangees();
+    pointer('pointerdown', premiere, 130);
+    pointer('pointermove', premiere, 160);
+    vi.advanceTimersByTime(MAINTIEN_MS);
+
+    expect(premiere.hasAttribute('data-reorder-active')).toBe(false);
+    pointer('pointerup', premiere, 200);
+    expect(appels).toEqual([]);
+  });
+
+  it('ne saisit rien sur un appui bref', () => {
+    const [premiere] = rangees();
+    pointer('pointerdown', premiere, 130);
+    pointer('pointerup', premiere, 130);
+    vi.advanceTimersByTime(MAINTIEN_MS);
+
+    expect(premiere.hasAttribute('data-reorder-active')).toBe(false);
+  });
+
+  it('retient le défilement une fois la rangée en main', () => {
+    const [premiere] = rangees();
+    pointer('pointerdown', premiere, 130);
+    vi.advanceTimersByTime(MAINTIEN_MS);
+
+    const mouvement = new Event('touchmove', { bubbles: true, cancelable: true });
+    premiere.dispatchEvent(mouvement);
+    expect(mouvement.defaultPrevented).toBe(true);
+  });
+
+  it('laisse la souris à la poignée', () => {
+    const [premiere] = rangees();
+    pointer('pointerdown', premiere, 130, 'mouse');
+    vi.advanceTimersByTime(MAINTIEN_MS);
+
+    expect(premiere.hasAttribute('data-reorder-active')).toBe(false);
   });
 });
