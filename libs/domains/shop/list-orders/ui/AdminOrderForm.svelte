@@ -2,7 +2,6 @@
   import { ShoppingBag } from '@lucide/svelte';
   import { FormField, FormSheet, SearchableCombobox, submitForm } from '@nba/ui';
   import type { Member, Product } from '../../list-products/ui/catalog-types';
-  import { formatMemberName } from '../../list-products/ui/catalog-utils';
   import { isOutOfStock, productLabel, type PaymentMethodOption } from '../../list-products/ui/catalog-types';
   import ShopCatalogProductSelect from '../../list-products/ui/ShopCatalogProductSelect.svelte';
   import ShopCatalogSummary from '../../list-products/ui/ShopCatalogSummary.svelte';
@@ -98,10 +97,18 @@
     selectedProduct ? (selectedProduct.trackStock ? Math.min(selectedProduct.stock, 99) : 99) : 1
   );
 
+  /*
+    Nom en entier, comme partout dans l'administration : « DURAND Camille ».
+
+    La liste reprenait le format de l'espace adhérent, qui masque le nom (« D. Camille »)
+    parce qu'un adhérent n'a pas à lire l'annuaire. Le bureau, lui, doit reconnaître
+    l'acheteur : deux Camille D. ne se distinguaient que par leur licence. La licence
+    passe en seconde ligne, où elle reste cherchable.
+  */
   const memberItems = $derived(
     [...members]
-      .sort((a, b) => a.lastName.localeCompare(b.lastName))
-      .map((m) => ({ label: `${formatMemberName(m)} (${m.licence})`, value: m.id }))
+      .sort((a, b) => a.lastName.localeCompare(b.lastName, 'fr') || a.firstName.localeCompare(b.firstName, 'fr'))
+      .map((m) => ({ label: `${m.lastName.toUpperCase()} ${m.firstName}`, hint: m.licence, value: m.id }))
   );
 
   $effect(() => {
