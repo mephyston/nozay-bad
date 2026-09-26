@@ -207,6 +207,11 @@ export function normaliseBlockPayload(type: BlockType, raw: unknown, position: n
       return { ...payload, items, ratio: items.length === 2 ? payload.ratio : undefined };
     }
 
+    case 'open_play':
+      // `limit` date de la première version et n'est plus lu : le retirer à
+      // l'enregistrement évite qu'une lecture de la base le croie actif.
+      return { ...payload, limit: undefined };
+
     case 'gallery':
       // Doublons retirés : la même image deux fois dans une galerie est toujours une
       // fausse manœuvre, jamais une intention.

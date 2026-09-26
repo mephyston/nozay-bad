@@ -435,12 +435,13 @@ export interface PublicOpenPlaySessionView {
  */
 export async function listPublicOpenPlay(
   env: WebsiteEnv,
-  limit: number
+  to: string
 ): Promise<PublicOpenPlaySessionView[]> {
   markVolatile(env);
+  // Lecture par période, au plafond de l'API : c'est la date qui borne, pas un compte.
   const data = await getJson<{ sessions: PublicOpenPlaySessionView[] }>(
     env,
-    `/schedules/open-play/public?limit=${limit}`,
+    `/schedules/open-play/public?to=${to}&limit=60`,
     false,
     { volatile: true }
   );

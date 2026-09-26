@@ -311,8 +311,24 @@ export const openPlayBlockSchema = Type.Object(
   {
     type: Type.Literal('open_play'),
     heading: Type.Optional(Type.String({ maxLength: 160 })),
-    /** Six sur une page ; au-delà, l'espace adhérent fait mieux le travail. */
-    limit: Type.Integer({ minimum: 1, maximum: 12 }),
+    /**
+     * Semaines affichées, à partir de la semaine en cours : une rangée par semaine, une
+     * colonne par jour qui a une séance.
+     *
+     * **Optionnel** : la première version du bloc comptait des séances (`limit`) et ne
+     * portait pas ce champ. Le rendu retient deux semaines à défaut.
+     */
+    weeks: Type.Optional(Type.Integer({ minimum: 1, maximum: 4 })),
+    /**
+     * Nombre de séances — réglage de la première version, **ignoré** depuis que le bloc
+     * se lit par semaines.
+     *
+     * Conservé optionnel pour une seule raison : les blocs enregistrés entre-temps le
+     * portent, et `additionalProperties: false` ferait échouer leur relecture — le bloc
+     * disparaîtrait des pages en ligne sans un mot. L'éditeur l'efface au prochain
+     * enregistrement.
+     */
+    limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 12 })),
     /**
      * Bouton « S'inscrire » sous les séances, vers le calendrier de l'espace adhérent
      * filtré sur le jeu libre. L'inscription se fait là-bas, au nom de la session : le

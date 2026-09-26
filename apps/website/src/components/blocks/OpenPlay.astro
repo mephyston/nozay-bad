@@ -1,10 +1,14 @@
 ---
 import type { OpenPlayBlock } from '@nba/cms/public';
 import type { PublicOpenPlaySessionView } from '../../lib/cms';
+import { DEFAULT_OPEN_PLAY_WEEKS, groupOpenPlayWeeks } from '../../lib/open-play';
 
 interface Props {
   block: OpenPlayBlock;
-  /** Les prochaines séances, lues une fois par la page pour tous ses blocs « Jeu libre ». */
+  /**
+   * Les séances à venir, lues une fois par la page pour tous ses blocs « Jeu libre »,
+   * jusqu'au dernier dimanche que l'un d'eux affiche.
+   */
   sessions?: PublicOpenPlaySessionView[];
   nested?: boolean;
 }
@@ -16,20 +20,26 @@ const { block, sessions = [], nested = false } = Astro.props;
 */
 const shell = nested ? '' : 'mx-auto max-w-5xl px-4 py-8';
 const Heading = nested ? 'h3' : 'h2';
-const CardHeading = nested ? 'h4' : 'h3';
+const WeekHeading = nested ? 'h4' : 'h3';
+const DayHeading = nested ? 'h5' : 'h4';
 
 /*
-  La page lit une seule fois, à la plus haute des limites de ses blocs : chacun ne
-  garde que ce qu'il a demandé. L'API a déjà écarté les séances passées.
+  Une rangée par semaine, à partir de la semaine en cours ; dans chaque semaine, une
+  colonne par jour **qui a une séance**, comme la grille des créneaux ne donne une
+  colonne qu'aux jours qu'elle occupe.
+
+  La page a lu jusqu'au plus lointain dimanche de ses blocs : chacun ne garde que ses
+  semaines. L'API a déjà écarté les séances des jours passés.
 */
-const shown = sessions.slice(0, block.limit);
+const today = new Date().toISOString().slice(0, 10);
+const weeks = groupOpenPlayWeeks(sessions, today, block.weeks ?? DEFAULT_OPEN_PLAY_WEEKS);
+const nothingAtAll = weeks.every((week) => week.days.length === 0);
 
 /** Midi UTC : la date reste la même quel que soit le fuseau du Worker. */
 const parse = (date: string) => new Date(`${date}T12:00:00Z`);
-const dayNumber = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', timeZone: 'UTC' });
-const monthShort = new Intl.DateTimeFormat('fr-FR', { month: 'short', timeZone: 'UTC' });
-const weekdayShort = new Intl.DateTimeFormat('fr-FR', { weekday: 'short', timeZone: 'UTC' });
-const fullDate = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'full', timeZone: 'UTC' });
+const dayLabel = new Intl.DateTimeFormat('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' });
+const mondayLabel = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'long', timeZone: 'UTC' });
+const capitalise = (text: string) => text.charAt(0).toLocaleUpperCase('fr-FR') + text.slice(1);
 
 /*
   L'inscription se fait dans l'espace adhérent, au nom de la session : le site public
@@ -44,99 +54,108 @@ const plural = (count: number, one: string, many: string) => `${count} ${count >
 <section class:list={[shell]}>
   {block.heading && <Heading class="mb-4 text-2xl font-display">{block.heading}</Heading>}
 
-  {shown.length === 0 ? (
+  {nothingAtAll ? (
     <p class="border-border text-muted-foreground rounded-lg border border-dashed px-4 py-6 text-center text-sm">
       Aucune séance de jeu libre de prévue pour le moment.
     </p>
   ) : (
-    <ul class="space-y-2">
-      {shown.map((session) => {
-        const date = parse(session.date);
-        const cancelled = session.status === 'cancelled';
-        const missing = Math.max(0, session.minPlayers - session.playerCount);
-        return (
-          <li>
-            <article
+    <div class="space-y-6">
+      {weeks.map((week) => (
+        <div>
+          <WeekHeading class="text-muted-foreground mb-2 text-sm font-semibold uppercase tracking-wide">
+            {week.current ? 'Cette semaine' : `Semaine du ${mondayLabel.format(parse(week.monday))}`}
+          </WeekHeading>
+
+          {week.days.length === 0 ? (
+            <p class="border-border text-muted-foreground rounded-lg border border-dashed px-4 py-3 text-sm">
+              Pas de jeu libre cette semaine.
+            </p>
+          ) : (
+            /*
+              Colonnes à partir de `lg`, empilées en dessous — même bascule que la grille
+              des créneaux. Une seule structure pour les deux : ce sont de vrais titres
+              et de vraies listes, que le lecteur d'écran lit dans l'ordre à toute
+              largeur, sans version doublée à masquer.
+
+              Les pistes sont plafonnées à 18 rem plutôt qu'étirées : une semaine d'un
+              seul samedi ne doit pas donner une carte de toute la largeur de la page.
+              Sept jours, eux, se partagent la place.
+
+              Imbriqué dans une colonne de page, le bloc reste empilé : un tiers de page
+              ne loge pas une semaine.
+            */
+            <div
               class:list={[
-                'border-border flex items-stretch gap-4 rounded-xl border p-3 sm:gap-5 sm:p-4',
-                cancelled && 'opacity-70'
+                'grid gap-3',
+                !nested && 'lg:grid-cols-[repeat(var(--days),minmax(0,18rem))]'
               ]}
+              style={`--days: ${week.days.length}`}
             >
-              {/* Pastille de date : même lecture que l'agenda, date complète pour le lecteur d'écran. */}
-              <div
-                class="bg-primary/10 text-primary flex w-16 shrink-0 flex-col items-center justify-center rounded-lg py-2"
-                aria-hidden="true"
-              >
-                <span class="text-[11px] font-medium uppercase leading-none opacity-80">
-                  {weekdayShort.format(date)}
-                </span>
-                <span class="text-2xl font-display leading-tight">{dayNumber.format(date)}</span>
-                <span class="text-[11px] font-medium uppercase leading-none opacity-80">
-                  {monthShort.format(date)}
-                </span>
-              </div>
+              {week.days.map((day) => (
+                <div class="min-w-0">
+                  <DayHeading class="bg-primary/10 text-primary mb-2 rounded-md px-3 py-1.5 text-sm font-semibold">
+                    {capitalise(dayLabel.format(parse(day.date)))}
+                  </DayHeading>
+                  <ul class="space-y-2">
+                    {day.sessions.map((session) => {
+                      const cancelled = session.status === 'cancelled';
+                      const missing = Math.max(0, session.minPlayers - session.playerCount);
+                      return (
+                        <li class:list={['border-border rounded-lg border p-3 text-sm', cancelled && 'opacity-70']}>
+                          <p class:list={['font-medium tabular-nums', cancelled && 'line-through']}>
+                            {session.startTime} – {session.endTime}
+                            {session.label && <span class="font-normal"> · {session.label}</span>}
+                          </p>
+                          {session.venueName && <p class="text-muted-foreground">{session.venueName}</p>}
 
-              <div class="min-w-0 flex-1">
-                <CardHeading class:list={['font-display leading-snug', cancelled && 'line-through']}>
-                  {session.label ?? 'Jeu libre'}
-                </CardHeading>
+                          {cancelled ? (
+                            <p class="text-destructive mt-2 font-medium">Séance annulée</p>
+                          ) : (
+                            <>
+                              {/*
+                                L'ouvreur d'abord : c'est lui qui décide si la séance a
+                                lieu. L'état est écrit en toutes lettres — la couleur
+                                n'en est qu'un repère.
+                              */}
+                              {session.opener ? (
+                                <p class="text-success mt-2 font-medium">
+                                  Ouvreur : <span class="text-foreground">{session.opener}</span>
+                                </p>
+                              ) : (
+                                <p class="text-warning mt-2 font-medium">On cherche toujours un ouvreur</p>
+                              )}
 
-                <p class="text-muted-foreground mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
-                  <span class="sr-only">{fullDate.format(date)}</span>
-                  <span>{session.startTime} – {session.endTime}</span>
-                  {session.venueName && (
-                    <>
-                      <span aria-hidden="true">·</span>
-                      <span>{session.venueName}</span>
-                    </>
-                  )}
-                </p>
+                              <p class="text-muted-foreground mt-2">
+                                {session.playerCount === 0
+                                  ? "Personne n'est encore inscrit."
+                                  : plural(session.playerCount, 'joueur', 'joueurs')}
+                                {missing > 0 && session.playerCount > 0 && ` — encore ${missing} pour ouvrir`}
+                                {missing > 0 && session.playerCount === 0 && ` Il en faut ${session.minPlayers}.`}
+                              </p>
 
-                {cancelled ? (
-                  <p class="text-destructive mt-2 text-sm font-medium">Séance annulée</p>
-                ) : (
-                  <>
-                    {/*
-                      L'ouvreur d'abord : c'est la question qui décide si la séance a
-                      lieu. L'état est écrit en toutes lettres — la couleur n'en est
-                      qu'un repère.
-                    */}
-                    {session.opener ? (
-                      <p class="text-success mt-2 text-sm font-medium">
-                        Ouvreur : <span class="text-foreground">{session.opener}</span>
-                      </p>
-                    ) : (
-                      <p class="text-warning mt-2 text-sm font-medium">On cherche toujours un ouvreur</p>
-                    )}
-
-                    <p class="text-muted-foreground mt-2 text-sm">
-                      {session.playerCount === 0
-                        ? "Personne n'est encore inscrit."
-                        : plural(session.playerCount, 'joueur inscrit', 'joueurs inscrits')}
-                      {missing > 0 && session.playerCount > 0 && ` — encore ${missing} pour atteindre ${session.minPlayers}`}
-                      {missing > 0 && session.playerCount === 0 && ` Il en faut ${session.minPlayers} pour ouvrir.`}
-                    </p>
-
-                    {session.players.length > 0 && (
-                      <ul class="mt-2 flex flex-wrap gap-1.5" aria-label="Inscrits">
-                        {session.players.map((name) => (
-                          <li class="bg-muted rounded-full px-2.5 py-0.5 text-sm">{name}</li>
-                        ))}
-                        {session.guestCount > 0 && (
-                          <li class="border-border text-muted-foreground rounded-full border border-dashed px-2.5 py-0.5 text-sm">
-                            + {plural(session.guestCount, 'invité', 'invités')}
-                          </li>
-                        )}
-                      </ul>
-                    )}
-                  </>
-                )}
-              </div>
-            </article>
-          </li>
-        );
-      })}
-    </ul>
+                              {session.players.length > 0 && (
+                                <ul class="border-border mt-2 space-y-0.5 border-t pt-2" aria-label="Inscrits">
+                                  {session.players.map((name) => (
+                                    <li class="truncate">{name}</li>
+                                  ))}
+                                  {session.guestCount > 0 && (
+                                    <li class="text-muted-foreground">+ {plural(session.guestCount, 'invité', 'invités')}</li>
+                                  )}
+                                </ul>
+                              )}
+                            </>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
   )}
 
   {block.showSignupLink !== false && (

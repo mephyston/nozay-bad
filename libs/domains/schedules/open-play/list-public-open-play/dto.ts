@@ -3,6 +3,13 @@ import type { OpenPlayStatus } from '../../shared/open-play-schema';
 export interface ListPublicOpenPlayInput {
   /** Nombre de séances à venir. Borné par le handler. */
   limit?: number;
+  /**
+   * Dernier jour retenu, « 2026-03-29 », bornes comprises.
+   *
+   * C'est ce que lit le site pour afficher des **semaines** entières : le nombre de
+   * séances d'une semaine n'est pas connu d'avance, une limite couperait un dimanche.
+   */
+  to?: string;
 }
 
 /**

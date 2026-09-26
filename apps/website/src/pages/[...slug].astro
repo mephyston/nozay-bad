@@ -25,6 +25,7 @@ import {
   type PostRow
 } from '../lib/cms';
 import { resolveEnv } from '../lib/request-context';
+import { DEFAULT_OPEN_PLAY_WEEKS, openPlayRangeEnd } from '../lib/open-play';
 import { pageTitle, homeTitle, pageDescription, absoluteUrl, siteIdentityOf } from '../lib/seo';
 import {
   sportsClub,
@@ -116,18 +117,22 @@ const needsEvents = allBlocks.some((block) => block.type === 'events');
 const clubEvents = needsEvents ? await listClubEvents(env) : [];
 
 /*
-  Jeu libre : une lecture pour tous les blocs de la page, à la plus haute des limites
-  qu'ils réclament, et aucune si la page n'en porte pas.
+  Jeu libre : une lecture pour tous les blocs de la page, jusqu'au dernier dimanche
+  qu'ils affichent, et aucune si la page n'en porte pas.
 
   C'est la seule lecture volatile du site — les inscriptions ne republient rien — et
   elle raccourcit d'elle-même la vie de la page au bord (`markVolatile`). Une page sans
   ce bloc garde donc son cache d'une journée.
 */
-const openPlayLimit = allBlocks.reduce(
-  (max, block) => (block.type === 'open_play' ? Math.max(max, block.limit) : max),
+const openPlayWeeks = allBlocks.reduce(
+  (max, block) =>
+    block.type === 'open_play' ? Math.max(max, block.weeks ?? DEFAULT_OPEN_PLAY_WEEKS) : max,
   0
 );
-const openPlaySessions = openPlayLimit > 0 ? await listPublicOpenPlay(env, openPlayLimit) : [];
+const openPlaySessions =
+  openPlayWeeks > 0
+    ? await listPublicOpenPlay(env, openPlayRangeEnd(new Date().toISOString().slice(0, 10), openPlayWeeks))
+    : [];
 
 /*
  * Les gymnases, pour situer le club et ses rendez-vous.

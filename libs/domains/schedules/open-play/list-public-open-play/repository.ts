@@ -1,4 +1,4 @@
-import { asc, eq, gte, inArray, sql } from 'drizzle-orm';
+import { and, asc, eq, gte, inArray, lte, sql } from 'drizzle-orm';
 import { type DbOrTx } from '@nba/db';
 import { venuesTable } from '../../shared/schema';
 import {
@@ -27,7 +27,7 @@ export class ListPublicOpenPlayRepository {
    * La projection est explicite, comme celle des inscrits : ni `opener_licence`, ni
    * `notes`, ni `cancelled_reason` ne sortent d'ici.
    */
-  async upcoming(db: DbOrTx, from: string, limit: number): Promise<PublicSessionRow[]> {
+  async upcoming(db: DbOrTx, from: string, to: string | undefined, limit: number): Promise<PublicSessionRow[]> {
     return db
       .select({
         id: openPlaySessionsTable.id,
@@ -43,7 +43,12 @@ export class ListPublicOpenPlayRepository {
       })
       .from(openPlaySessionsTable)
       .leftJoin(venuesTable, eq(venuesTable.id, openPlaySessionsTable.venueId))
-      .where(gte(openPlaySessionsTable.date, from))
+      .where(
+        and(
+          gte(openPlaySessionsTable.date, from),
+          to ? lte(openPlaySessionsTable.date, to) : undefined
+        )
+      )
       .orderBy(asc(openPlaySessionsTable.date), asc(openPlaySessionsTable.startTime))
       .limit(limit)
       .all();

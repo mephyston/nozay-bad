@@ -6,8 +6,9 @@
    * Jeu libre : le bloc porte une requête, jamais des séances.
    *
    * Rien à choisir séance par séance — les inscriptions bougent d'heure en heure. On
-   * règle un titre et un nombre ; le site montre ce qui vient, avec les inscrits en
-   * « Camille D. » et l'ouvreur, ou l'annonce qu'on le cherche encore.
+   * règle un titre et un nombre de semaines ; le site montre ce qui vient, semaine par
+   * semaine, avec les inscrits en « Camille D. » et l'ouvreur, ou l'annonce qu'on le
+   * cherche encore.
    */
   let { block = $bindable() } = $props<{ block: OpenPlayBlock }>();
 
@@ -22,16 +23,26 @@
     </FormField>
 
     <FormField
-      id={`${uid}-open-play-limit`}
-      label="Nombre affiché"
-      hint="Seules les séances à venir s'affichent : la liste se met à jour toute seule."
+      id={`${uid}-open-play-weeks`}
+      label="Semaines affichées"
+      hint="À partir de la semaine en cours. Seuls les jours qui ont une séance ont une colonne."
     >
       <ChoiceField
-        id={`${uid}-open-play-limit`}
-        label="Nombre affiché"
-        value={String(block.limit ?? 6)}
-        onChange={(v) => (block.limit = Number(v))}
-        options={[2, 3, 4, 6, 8, 12].map((n) => ({ value: String(n), label: `${n} séances` }))}
+        id={`${uid}-open-play-weeks`}
+        label="Semaines affichées"
+        value={String(block.weeks ?? 2)}
+        onChange={(v) => {
+          block.weeks = Number(v);
+          // Réglage de la première version, ignoré au rendu : on ne le laisse pas
+          // traîner dans la page pour qu'une lecture rapide le croie actif.
+          block.limit = undefined;
+        }}
+        options={[
+          { value: '1', label: 'Cette semaine' },
+          { value: '2', label: '2 semaines' },
+          { value: '3', label: '3 semaines' },
+          { value: '4', label: '4 semaines' }
+        ]}
       />
     </FormField>
   </div>

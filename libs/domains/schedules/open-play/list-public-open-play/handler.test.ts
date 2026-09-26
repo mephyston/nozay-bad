@@ -106,6 +106,24 @@ describe('le jeu libre, tel que le site public le montre', () => {
     expect(serialized).not.toContain('Gymnase fermé');
   });
 
+  it("s'arrête au dernier jour demandé, bornes comprises", async () => {
+    await session({ date: '2026-03-15' });
+    await session({ date: '2026-03-22' });
+    await session({ date: '2026-03-23' });
+
+    const { sessions } = await listPublicOpenPlay(db, { to: '2026-03-22', limit: 60 }, NOW);
+
+    expect(sessions.map((s) => s.date)).toEqual(['2026-03-15', '2026-03-22']);
+  });
+
+  it('ignore une borne qui n’est pas une date', async () => {
+    await session({ date: '2026-03-15' });
+
+    const { sessions } = await listPublicOpenPlay(db, { to: '2026-02-31' }, NOW);
+
+    expect(sessions).toHaveLength(1);
+  });
+
   it("écarte les séances passées, garde celle du jour, et s'en tient à la limite", async () => {
     await session({ date: '2026-03-13' });
     await session({ date: '2026-03-14' });

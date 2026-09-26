@@ -269,17 +269,19 @@ Les prochaines séances de jeu libre, avec **qui s'y est inscrit** et **qui ouvr
 | Champ | Détail |
 |---|---|
 | **Titre de section** | Facultatif : « Jeu libre », « Venez jouer ce week-end » |
-| **Nombre affiché** | De 2 à 12 séances, à partir d'aujourd'hui |
+| **Semaines affichées** | Cette semaine seule, ou jusqu'à 4 semaines à partir de celle en cours |
 | **Afficher le bouton « S'inscrire »** | Coché par défaut. Mène au calendrier de l'espace adhérent, filtré sur le jeu libre |
 
 > [!IMPORTANT]
 > Comme le bloc **Créneaux**, celui-ci **n'enregistre aucune séance**. Il affiche celles tenues dans [Jeu libre](/admin/help/creneaux) : ouvrir, annuler ou désigner les ouvreurs se fait là-bas, et toutes les pages suivent.
 
-Pour chaque séance, le visiteur voit la date, l'horaire et le gymnase, puis :
+Le bloc se lit comme la grille des **Créneaux** : **une rangée par semaine** (« Cette semaine », « Semaine du 28 septembre »…), et dans chaque semaine **une colonne par jour qui a une séance** — un jour sans jeu libre n'ouvre pas de colonne vide. Une semaine sans aucune séance l'annonce : « Pas de jeu libre cette semaine. » Sur téléphone, et dans une colonne de page, les jours s'empilent les uns sous les autres.
+
+Dans la colonne d'un jour, chaque séance donne l'horaire et le gymnase, puis :
 
 - **l'ouvreur** — « Ouvreur : Robert M. » dès qu'un bénévole s'est engagé, et sinon **« On cherche toujours un ouvreur »** ;
 - **le nombre de joueurs**, invités compris, et ce qu'il manque pour atteindre le seuil d'ouverture ;
-- **les inscrits**, sous la forme « Camille D. », suivis de « + 2 invités » quand il y en a.
+- **la liste des inscrits**, un par ligne sous la forme « Camille D. », suivie de « + 2 invités » quand il y en a.
 
 > [!NOTE]
 > Le site public est lu par tout le monde et indexé par les moteurs de recherche. C'est pourquoi les inscrits n'y apparaissent que par leur **prénom et l'initiale de leur nom**, et que les **invités ne sont jamais nommés** : ce ne sont pas des adhérents. La liste complète reste réservée à l'espace adhérent et à l'administration. Les consignes de séance (« clé chez Robert ») et le motif d'une annulation ne sont pas affichés non plus : une séance annulée apparaît simplement barrée, « Séance annulée ».

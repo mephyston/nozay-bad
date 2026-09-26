@@ -1,5 +1,5 @@
 import { type Db } from '@nba/db';
-import { publicName } from '../../shared/open-play';
+import { isValidDate, publicName } from '../../shared/open-play';
 import { ListPublicOpenPlayRepository } from './repository';
 import type {
   ListPublicOpenPlayInput,
@@ -9,7 +9,11 @@ import type {
 
 /** Six sur une page ; au-delà, l'espace adhérent fait mieux le travail. */
 export const DEFAULT_PUBLIC_OPEN_PLAY_LIMIT = 6;
-export const MAX_PUBLIC_OPEN_PLAY_LIMIT = 24;
+/**
+ * Plafond absolu, qui vaut aussi quand on lit par semaines : quatre semaines de jeu
+ * libre tiennent largement en dessous. Il borne ce qu'un appelant peut faire lire.
+ */
+export const MAX_PUBLIC_OPEN_PLAY_LIMIT = 60;
 
 /**
  * Les prochaines séances de jeu libre, telles que le site public les affiche.
@@ -42,7 +46,10 @@ export async function listPublicOpenPlay(
   // Même règle que l'espace adhérent : une séance reste affichée jusqu'à la fin de son
   // jour — celui qui arrive en cours de séance doit encore la trouver.
   const today = now.toISOString().slice(0, 10);
-  const rows = await repo.upcoming(db, today, limit);
+  // Une borne mal formée est ignorée plutôt que refusée : le site public n'a pas
+  // d'erreur à montrer, et le plafond ci-dessus tient de toute façon.
+  const to = input.to && isValidDate(input.to) ? input.to : undefined;
+  const rows = await repo.upcoming(db, today, to, limit);
   const ids = rows.map((row) => row.id);
 
   const [players, guestCounts] = await Promise.all([

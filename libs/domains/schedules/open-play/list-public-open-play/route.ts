@@ -10,11 +10,13 @@ listPublicOpenPlayRoute.get('/open-play/public', async (c) => {
   if (!c.env?.DB) return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
 
   const limit = Number(c.req.query('limit'));
+  const to = c.req.query('to');
 
   return c.json({
     success: true,
     data: await listPublicOpenPlay(createDb(c.env.DB), {
-      limit: Number.isSafeInteger(limit) && limit > 0 ? limit : undefined
+      limit: Number.isSafeInteger(limit) && limit > 0 ? limit : undefined,
+      to: to || undefined
     })
   });
 });

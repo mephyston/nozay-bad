@@ -20,7 +20,9 @@ Le site public est lu par n'importe qui et indexé par les moteurs de recherche.
 
 ## 3. Définition de la Règle Métier
 
-**Le bloc porte une requête, jamais des séances.** Le rédacteur choisit un titre et un nombre de séances (1 à 12). Le site affiche, à chaque rendu, les prochaines séances à partir du jour même, de la plus proche à la plus lointaine.
+**Le bloc porte une requête, jamais des séances.** Le rédacteur choisit un titre et un nombre de semaines (1 à 4, à partir de la semaine en cours ; 2 par défaut). Le site affiche, à chaque rendu, les séances de ces semaines à partir du jour même.
+
+**Mise en forme : semaines et jours.** Une rangée par semaine, du lundi au dimanche, titrée « Cette semaine » puis « Semaine du 28 septembre ». Dans chaque semaine, **une colonne par jour qui a au moins une séance** ; un jour sans séance n'a pas de colonne. Une semaine sans aucune séance affiche « Pas de jeu libre cette semaine. » Dans la colonne d'un jour, les séances se suivent par heure de début, et chacune liste ses inscrits un par ligne. Sur téléphone, et dans une colonne de page, les jours s'empilent.
 
 **Les adhérents inscrits sont nommés « Prénom I. »** — le prénom entier, l'initiale du nom en capitale : « Camille D. ». Le nom complet, la licence, l'adresse électronique et l'identifiant d'adhésion ne sortent jamais. La réduction est faite **par l'API** : le site public ne reçoit pas de quoi afficher davantage.
 
@@ -46,8 +48,9 @@ Le site public est lu par n'importe qui et indexé par les moteurs de recherche.
 Fonctionnalité: Le jeu libre sur le site public
 
   Contexte:
-    Étant donné une page publiée qui porte un bloc « Jeu libre » limité à 6 séances
+    Étant donné une page publiée qui porte un bloc « Jeu libre » réglé sur 2 semaines
     Et une séance le samedi 21 mars de 14:00 à 17:00 au gymnase Pierre Dupuis
+    Et que nous sommes le mercredi 18 mars
 
   Scénario: Les inscrits sont nommés par leur prénom et l'initiale de leur nom
     Étant donné que Camille Durand et Léo Martin sont inscrits à la séance
@@ -83,9 +86,19 @@ Fonctionnalité: Le jeu libre sur le site public
     Alors il est conduit à la connexion de l'espace adhérent
     Et, une fois connecté, il arrive sur le calendrier filtré sur le jeu libre
 
-  Scénario: Une séance passée n'est plus affichée
-    Étant donné une séance le vendredi 13 mars
-    Et que nous sommes le samedi 14 mars
+  Scénario: Seuls les jours qui ont une séance ont une colonne
+    Étant donné une seconde séance le dimanche 22 mars
+    Et aucune autre séance la semaine du 16 mars
     Quand un visiteur ouvre la page
-    Alors la séance du 13 mars n'est pas affichée
+    Alors la rangée « Cette semaine » compte deux colonnes, « Samedi 21 mars » et « Dimanche 22 mars »
+
+  Scénario: Une semaine sans séance l'annonce
+    Étant donné qu'aucune séance n'est prévue la semaine du 23 mars
+    Quand un visiteur ouvre la page
+    Alors la rangée « Semaine du 23 mars » affiche « Pas de jeu libre cette semaine. »
+
+  Scénario: Une séance passée n'est plus affichée
+    Étant donné une séance le mardi 17 mars, veille d'aujourd'hui
+    Quand un visiteur ouvre la page
+    Alors la colonne « Mardi 17 mars » n'apparaît pas dans la rangée « Cette semaine »
 ```
