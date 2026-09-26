@@ -84,6 +84,12 @@ export const BLOCK_KINDS: BlockKind[] = [
     create: () => ({ type: 'posts_feed', limit: 6, showImages: true, showArchiveLink: true })
   },
   {
+    type: 'open_play',
+    label: 'Jeu libre',
+    hint: "Les prochaines séances de jeu libre, qui s'y est inscrit, et l'ouvreur.",
+    create: () => ({ type: 'open_play', limit: 6 })
+  },
+  {
     type: 'schedule',
     label: 'Créneaux',
     hint: 'Tableau des créneaux, tenu à jour depuis la rubrique dédiée.',

@@ -24,7 +24,8 @@ export const BLOCK_TYPES = [
   'pdf_link',
   'posts_feed',
   'columns',
-  'events'
+  'events',
+  'open_play'
 ] as const;
 
 export type BlockType = (typeof BLOCK_TYPES)[number];
@@ -52,6 +53,7 @@ export const NESTABLE_BLOCK_TYPES = [
   'posts_feed',
   'events',
   'schedule',
+  'open_play',
   'gallery',
   'pdf_link',
   'cta_grid'
@@ -293,6 +295,28 @@ export const eventsBlockSchema = Type.Object(
   { additionalProperties: false }
 );
 
+/**
+ * Jeu libre : les prochaines séances, qui s'y est inscrit, et qui ouvre.
+ *
+ * Même règle que `events` et `schedule` : le bloc porte une **requête**, jamais des
+ * séances. Les inscriptions changent d'heure en heure ; une page qui les figerait
+ * mentirait dès le premier inscrit.
+ *
+ * Ce que le site en montre — « Camille D. », les invités comptés, l'ouvreur ou
+ * l'annonce qu'on le cherche encore — n'est pas réglable ici : c'est une décision du
+ * club sur des données personnelles, pas un choix de mise en page. Elle vit dans la
+ * tranche `list-public-open-play` du domaine des créneaux.
+ */
+export const openPlayBlockSchema = Type.Object(
+  {
+    type: Type.Literal('open_play'),
+    heading: Type.Optional(Type.String({ maxLength: 160 })),
+    /** Six sur une page ; au-delà, l'espace adhérent fait mieux le travail. */
+    limit: Type.Integer({ minimum: 1, maximum: 12 })
+  },
+  { additionalProperties: false }
+);
+
 export const pdfLinkBlockSchema = Type.Object(
   {
     type: Type.Literal('pdf_link'),
@@ -377,6 +401,7 @@ const BlockColumn = Type.Object(
       postsFeedBlockSchema,
       eventsBlockSchema,
       scheduleBlockSchema,
+      openPlayBlockSchema,
       galleryBlockSchema,
       pdfLinkBlockSchema,
       ctaGridBlockSchema
@@ -443,7 +468,8 @@ export const BLOCK_SCHEMAS = {
   pdf_link: pdfLinkBlockSchema,
   posts_feed: postsFeedBlockSchema,
   columns: columnsBlockSchema,
-  events: eventsBlockSchema
+  events: eventsBlockSchema,
+  open_play: openPlayBlockSchema
 } as const;
 
 export type RichtextBlock = Static<typeof richtextBlockSchema>;
@@ -458,6 +484,7 @@ export type PdfLinkBlock = Static<typeof pdfLinkBlockSchema>;
 export type PostsFeedBlock = Static<typeof postsFeedBlockSchema>;
 export type ColumnsBlock = Static<typeof columnsBlockSchema>;
 export type EventsBlock = Static<typeof eventsBlockSchema>;
+export type OpenPlayBlock = Static<typeof openPlayBlockSchema>;
 
 export type BlockPayload =
   | RichtextBlock
@@ -471,7 +498,8 @@ export type BlockPayload =
   | PdfLinkBlock
   | PostsFeedBlock
   | ColumnsBlock
-  | EventsBlock;
+  | EventsBlock
+  | OpenPlayBlock;
 
 export type CtaLinkValue = Static<typeof CtaLink>;
 export type CarouselSlideValue = Static<typeof CarouselSlide>;

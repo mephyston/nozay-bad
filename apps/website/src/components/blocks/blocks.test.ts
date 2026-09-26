@@ -37,7 +37,8 @@ const COMPONENT_BY_TYPE: Record<string, string> = {
   pdf_link: 'PdfLink',
   posts_feed: 'PostsFeed',
   columns: 'Columns',
-  events: 'Events'
+  events: 'Events',
+  open_play: 'OpenPlay'
 };
 
 function componentName(type: string): string {

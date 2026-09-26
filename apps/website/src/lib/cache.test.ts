@@ -8,7 +8,8 @@ import {
   isFingerprintedPath,
   HTML_CACHE_CONTROL,
   IMMUTABLE_CACHE_CONTROL,
-  NOT_FOUND_CACHE_CONTROL
+  NOT_FOUND_CACHE_CONTROL,
+  VOLATILE_HTML_CACHE_CONTROL
 } from './cache';
 
 const query = (search: string) => canonicalQuery(new URLSearchParams(search));
@@ -225,6 +226,18 @@ describe('withPageCache — ce qui est rangé', () => {
       cacheable: true
     });
     expect(entries.size).toBe(0);
+  });
+
+  it('range une page au jeu libre une minute, et non la journée', async () => {
+    // Les inscrits changent sans publication : la version ne les suit pas, c'est la
+    // durée de vie de l'entrée qui borne leur retard.
+    fakeCaches();
+    const response = await withPageCache(
+      async () => new Response('<html>inscrits</html>', { headers: { 'Content-Type': 'text/html' } }),
+      { pathname: '/jeu-libre/', version: 1, cacheable: true, isVolatile: () => true }
+    );
+    expect(response.headers.get('Cache-Control')).toBe(VOLATILE_HTML_CACHE_CONTROL);
+    expect(VOLATILE_HTML_CACHE_CONTROL).toContain('s-maxage=60');
   });
 
   it('sert un rendu dégradé sans le figer une heure au bord', async () => {

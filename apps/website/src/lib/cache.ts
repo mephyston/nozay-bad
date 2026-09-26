@@ -42,6 +42,20 @@ export const HTML_CACHE_CONTROL =
   'public, max-age=0, s-maxage=172800, stale-while-revalidate=86400, stale-if-error=604800';
 
 /**
+ * Une minute au bord, pour une page qui affiche une donnée vivante.
+ *
+ * Le bloc « Jeu libre » montre qui s'est inscrit : une donnée qui change sans
+ * publication, et que la version de contenu ne suit pas — exprès, sans quoi chaque
+ * inscription viderait le cache de tout le site. La page qui l'affiche se range donc
+ * pour une minute seulement : le temps d'absorber une rafale, pas celui de laisser un
+ * inscrit se demander pourquoi son nom n'apparaît pas.
+ *
+ * Même délai que `VERSION_TTL_SECONDS` : c'est déjà celui qu'on accepte entre une
+ * publication et son apparition.
+ */
+export const VOLATILE_HTML_CACHE_CONTROL = 'public, max-age=0, s-maxage=60';
+
+/**
  * Un quart d'heure pour une adresse morte.
  *
  * Les robots sont la première source de 404 : les ~70 pages mortes de WordPress qui
@@ -264,6 +278,16 @@ interface CacheableOptions {
    * est servie, jamais rangée. Voir `render-context.ts`.
    */
   isDegraded?: () => boolean;
+  /**
+   * Consulté une fois le rendu **lancé** : la page affiche-t-elle une donnée que la
+   * version de contenu ne suit pas ? Voir `VOLATILE_HTML_CACHE_CONTROL`.
+   *
+   * Lu dès le retour de `render()`, et non après le flux comme `isDegraded` : la
+   * directive part avec les en-têtes. C'est sans risque, parce que ce sont les lectures
+   * du *corps de la page* qui posent le drapeau, et Astro les exécute avant de rendre
+   * la main — seuls les composants de mise en page lisent encore pendant le flux.
+   */
+  isVolatile?: () => boolean;
 }
 
 /**
@@ -346,7 +370,12 @@ export async function withPageCache(
 
   const isHtml = (response.headers.get('Content-Type') ?? '').includes('text/html');
   if (status !== 200) response.headers.set('Cache-Control', NOT_FOUND_CACHE_CONTROL);
-  else if (isHtml) response.headers.set('Cache-Control', HTML_CACHE_CONTROL);
+  else if (isHtml) {
+    response.headers.set(
+      'Cache-Control',
+      options.isVolatile?.() ? VOLATILE_HTML_CACHE_CONTROL : HTML_CACHE_CONTROL
+    );
+  }
   else if (!sharedCacheAllowed(response.headers.get('Cache-Control'))) return response;
 
   const headers = new Headers(response.headers);

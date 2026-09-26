@@ -28,10 +28,15 @@ export interface RenderContext {
   version: number | null;
   /** Prolonge la vie du Worker le temps d'une écriture de cache. */
   waitUntil?: (promise: Promise<unknown>) => void;
+  /**
+   * Vrai quand la page affiche une donnée qui change sans publication — les inscrits
+   * du jeu libre. Elle se range alors au bord pour une minute, et non pour la journée.
+   */
+  volatile: boolean;
 }
 
 export function createRenderContext(init: Partial<RenderContext> = {}): RenderContext {
-  return { degraded: false, version: null, ...init };
+  return { degraded: false, version: null, volatile: false, ...init };
 }
 
 /** Accroche le contexte à l'environnement rendu par `resolveEnv`. */
@@ -55,4 +60,17 @@ export function renderContextOf(env: unknown): RenderContext | undefined {
 export function markDegraded(env: unknown): void {
   const context = renderContextOf(env);
   if (context) context.degraded = true;
+}
+
+/**
+ * Signale que la page affiche une donnée que la version de contenu ne suit pas.
+ *
+ * Les inscriptions au jeu libre changent à toute heure, et c'est voulu qu'elles
+ * n'incrémentent pas la version : invalider tout le site à chaque inscription
+ * reviendrait à ne plus avoir de cache (voir `apps/api/src/content-version.ts`). La page
+ * qui les montre est donc seule à payer, par une durée de vie courte au bord.
+ */
+export function markVolatile(env: unknown): void {
+  const context = renderContextOf(env);
+  if (context) context.volatile = true;
 }

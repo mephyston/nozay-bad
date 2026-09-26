@@ -17,6 +17,7 @@ import {
   listScheduleSlots,
   listPublishedPosts,
   listClubEvents,
+  listPublicOpenPlay,
   ANNOUNCEMENT_LOOKUP_LIMIT,
   getSiteSettings,
   listVenues,
@@ -113,6 +114,20 @@ const slots = needsSchedule ? await listScheduleSlots(env) : [];
 // d'allers-retours qu'elle n'en économiserait.
 const needsEvents = allBlocks.some((block) => block.type === 'events');
 const clubEvents = needsEvents ? await listClubEvents(env) : [];
+
+/*
+  Jeu libre : une lecture pour tous les blocs de la page, à la plus haute des limites
+  qu'ils réclament, et aucune si la page n'en porte pas.
+
+  C'est la seule lecture volatile du site — les inscriptions ne republient rien — et
+  elle raccourcit d'elle-même la vie de la page au bord (`markVolatile`). Une page sans
+  ce bloc garde donc son cache d'une journée.
+*/
+const openPlayLimit = allBlocks.reduce(
+  (max, block) => (block.type === 'open_play' ? Math.max(max, block.limit) : max),
+  0
+);
+const openPlaySessions = openPlayLimit > 0 ? await listPublicOpenPlay(env, openPlayLimit) : [];
 
 /*
  * Les gymnases, pour situer le club et ses rendez-vous.
@@ -393,6 +408,7 @@ if (page) {
         media={media}
         slots={slots}
         events={clubEvents}
+        openPlay={openPlaySessions}
         announcements={announcements}
         posts={postsFor(block)}
         postsByCategory={feedPosts}

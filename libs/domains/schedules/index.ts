@@ -15,6 +15,7 @@ import { registerToOpenPlayRoute } from './open-play/register-to-open-play/route
 import { unregisterFromOpenPlayRoute } from './open-play/unregister-from-open-play/route';
 import { listOpenPlayRegistrationsRoute } from './open-play/list-open-play-registrations/route';
 import { listOpenPlayAttendeesRoute } from './open-play/list-open-play-attendees/route';
+import { listPublicOpenPlayRoute } from './open-play/list-public-open-play/route';
 import { listOpenPlayOpenersRoute } from './open-play/list-open-play-openers/route';
 import { saveOpenPlayOpenerRoute } from './open-play/save-open-play-opener/route';
 import { deleteOpenPlayOpenerRoute } from './open-play/delete-open-play-opener/route';
@@ -45,6 +46,8 @@ schedulesRouter.route('/', createScheduleSlotRoute);
 // `/open-play/:id` ne se recouvrent pas — les deux segments finaux diffèrent.
 // `/open-play/openers` avant `/open-play/:id` : le segment littéral serait capté.
 schedulesRouter.route('/', listOpenPlayOpenersRoute);
+// `/open-play/public` de même : littéral, avant tout motif `/open-play/:id`.
+schedulesRouter.route('/', listPublicOpenPlayRoute);
 schedulesRouter.route('/', saveOpenPlayOpenerRoute);
 schedulesRouter.route('/', deleteOpenPlayOpenerRoute);
 schedulesRouter.route('/', listOpenPlaySessionsRoute);
@@ -76,6 +79,11 @@ schedulesRouter.route('/', deleteScheduleSlotRoute);
 export { listOpenPlaySessions } from './open-play/list-open-play-sessions/handler';
 export { listOpenPlayRegistrations } from './open-play/list-open-play-registrations/handler';
 export { listOpenPlayOpeners } from './open-play/list-open-play-openers/handler';
+export { listPublicOpenPlay } from './open-play/list-public-open-play/handler';
+export type {
+  ListPublicOpenPlayOutput,
+  PublicOpenPlaySession
+} from './open-play/list-public-open-play/dto';
 export type {
   ListOpenPlaySessionsInput,
   OpenPlaySessionListItem
@@ -83,7 +91,8 @@ export type {
 export type { GuestName } from './open-play/register-to-open-play/dto';
 export {
   DEFAULT_MIN_PLAYERS,
-  MAX_OPEN_PLAY_GUESTS
+  MAX_OPEN_PLAY_GUESTS,
+  publicName
 } from './shared/open-play';
 export { OPEN_PLAY_STATUS_LABELS } from './shared/open-play-schema';
 export type { OpenPlaySessionRow, OpenPlayStatus } from './shared/open-play-schema';

@@ -10,6 +10,7 @@
   import PostsFeedBlockEditor from './PostsFeedBlockEditor.svelte';
   import EventsBlockEditor from './EventsBlockEditor.svelte';
   import ScheduleBlockEditor from './ScheduleBlockEditor.svelte';
+  import OpenPlayBlockEditor from './OpenPlayBlockEditor.svelte';
   import GalleryBlockEditor from './GalleryBlockEditor.svelte';
   import PdfLinkBlockEditor from './PdfLinkBlockEditor.svelte';
   import CtaGridBlockEditor from './CtaGridBlockEditor.svelte';
@@ -199,6 +200,8 @@
               <EventsBlockEditor bind:block={block.items[index].block} />
             {:else if column.block.type === 'schedule'}
               <ScheduleBlockEditor bind:block={block.items[index].block} />
+            {:else if column.block.type === 'open_play'}
+              <OpenPlayBlockEditor bind:block={block.items[index].block} />
             {:else if column.block.type === 'gallery'}
               <GalleryBlockEditor bind:block={block.items[index].block} {media} {canUploadMedia} />
             {:else if column.block.type === 'pdf_link'}

@@ -31,6 +31,7 @@ export type {
   PostsFeedBlock,
   ColumnsBlock,
   EventsBlock,
+  OpenPlayBlock,
   NestableBlockType,
   NestableBlock,
   CtaLinkValue,

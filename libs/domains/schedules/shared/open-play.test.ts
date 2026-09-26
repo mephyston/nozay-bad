@@ -8,7 +8,8 @@ import {
   isNamedGuest,
   isUpcomingDate,
   isValidDate,
-  isoWeekday
+  isoWeekday,
+  publicName
 } from './open-play';
 
 describe('dates du jeu libre', () => {
@@ -114,5 +115,21 @@ describe('remplissageDeSeance', () => {
 
   it('accorde au singulier', () => {
     expect(remplissageDeSeance(1, 1).texte).toBe('1 joueur inscrit');
+  });
+});
+
+describe('publicName', () => {
+  it('garde le prénom et réduit le nom à son initiale', () => {
+    expect(publicName('Camille', 'Durand')).toBe('Camille D.');
+  });
+
+  it("met l'initiale en capitale, même d'un nom à particule", () => {
+    expect(publicName('Anne', 'de la Tour')).toBe('Anne D.');
+    expect(publicName('Émile', 'éluard')).toBe('Émile É.');
+  });
+
+  it('ne laisse pas de point orphelin', () => {
+    expect(publicName('Camille', '  ')).toBe('Camille');
+    expect(publicName('', 'Durand')).toBe('D.');
   });
 });

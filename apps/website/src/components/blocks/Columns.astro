@@ -7,11 +7,12 @@ import {
   type EventAnnouncement
 } from '@nba/cms/public';
 import { obfuscateEmails } from '@nba/html';
-import type { ScheduleSlotView, PostRow, ClubEventView } from '../../lib/cms';
+import type { ScheduleSlotView, PostRow, ClubEventView, PublicOpenPlaySessionView } from '../../lib/cms';
 import Picture from '../Picture.astro';
 import PostsFeed from './PostsFeed.astro';
 import Events from './Events.astro';
 import Schedule from './Schedule.astro';
+import OpenPlay from './OpenPlay.astro';
 import Gallery from './Gallery.astro';
 import PdfLink from './PdfLink.astro';
 import CtaGrid from './CtaGrid.astro';
@@ -21,6 +22,7 @@ interface Props {
   media?: Map<number, { media: CmsMediaRow; variants: CmsMediaVariantRow[] }>;
   slots?: ScheduleSlotView[];
   events?: ClubEventView[];
+  openPlay?: PublicOpenPlaySessionView[];
   /** Actualité qui annonce chaque rendez-vous, par identifiant d'événement. */
   announcements?: Map<number, EventAnnouncement>;
   /** Actualités déjà chargées par la page, par catégorie demandée ('' = toutes). */
@@ -32,6 +34,7 @@ const {
   media = new Map(),
   slots = [],
   events = [],
+  openPlay = [],
   announcements = new Map<number, EventAnnouncement>(),
   postsByCategory = new Map<string, PostRow[]>()
 } = Astro.props;
@@ -111,6 +114,7 @@ const postsFor = (categorySlug?: string) => postsByCategory.get(categorySlug ?? 
             )}
             {column.block.type === 'events' && <Events block={column.block} {events} {announcements} nested />}
             {column.block.type === 'schedule' && <Schedule block={column.block} {slots} nested />}
+            {column.block.type === 'open_play' && <OpenPlay block={column.block} sessions={openPlay} nested />}
             {column.block.type === 'gallery' && <Gallery block={column.block} {media} nested />}
             {column.block.type === 'pdf_link' && <PdfLink block={column.block} {media} nested />}
             {column.block.type === 'cta_grid' && <CtaGrid block={column.block} {media} nested />}

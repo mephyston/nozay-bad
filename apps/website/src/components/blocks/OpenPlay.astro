@@ -1,0 +1,134 @@
+---
+import type { OpenPlayBlock } from '@nba/cms/public';
+import type { PublicOpenPlaySessionView } from '../../lib/cms';
+
+interface Props {
+  block: OpenPlayBlock;
+  /** Les prochaines séances, lues une fois par la page pour tous ses blocs « Jeu libre ». */
+  sessions?: PublicOpenPlaySessionView[];
+  nested?: boolean;
+}
+const { block, sessions = [], nested = false } = Astro.props;
+
+/*
+  Imbriqué dans une colonne, le bloc perd son enveloppe et son niveau de titre, comme
+  l'agenda : la largeur appartient à la colonne, le titre se range sous le sien.
+*/
+const shell = nested ? '' : 'mx-auto max-w-5xl px-4 py-8';
+const Heading = nested ? 'h3' : 'h2';
+const CardHeading = nested ? 'h4' : 'h3';
+
+/*
+  La page lit une seule fois, à la plus haute des limites de ses blocs : chacun ne
+  garde que ce qu'il a demandé. L'API a déjà écarté les séances passées.
+*/
+const shown = sessions.slice(0, block.limit);
+
+/** Midi UTC : la date reste la même quel que soit le fuseau du Worker. */
+const parse = (date: string) => new Date(`${date}T12:00:00Z`);
+const dayNumber = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', timeZone: 'UTC' });
+const monthShort = new Intl.DateTimeFormat('fr-FR', { month: 'short', timeZone: 'UTC' });
+const weekdayShort = new Intl.DateTimeFormat('fr-FR', { weekday: 'short', timeZone: 'UTC' });
+const fullDate = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'full', timeZone: 'UTC' });
+
+const plural = (count: number, one: string, many: string) => `${count} ${count > 1 ? many : one}`;
+---
+
+<section class:list={[shell]}>
+  {block.heading && <Heading class="mb-4 text-2xl font-display">{block.heading}</Heading>}
+
+  {shown.length === 0 ? (
+    <p class="border-border text-muted-foreground rounded-lg border border-dashed px-4 py-6 text-center text-sm">
+      Aucune séance de jeu libre de prévue pour le moment.
+    </p>
+  ) : (
+    <ul class="space-y-2">
+      {shown.map((session) => {
+        const date = parse(session.date);
+        const cancelled = session.status === 'cancelled';
+        const missing = Math.max(0, session.minPlayers - session.playerCount);
+        return (
+          <li>
+            <article
+              class:list={[
+                'border-border flex items-stretch gap-4 rounded-xl border p-3 sm:gap-5 sm:p-4',
+                cancelled && 'opacity-70'
+              ]}
+            >
+              {/* Pastille de date : même lecture que l'agenda, date complète pour le lecteur d'écran. */}
+              <div
+                class="bg-primary/10 text-primary flex w-16 shrink-0 flex-col items-center justify-center rounded-lg py-2"
+                aria-hidden="true"
+              >
+                <span class="text-[11px] font-medium uppercase leading-none opacity-80">
+                  {weekdayShort.format(date)}
+                </span>
+                <span class="text-2xl font-display leading-tight">{dayNumber.format(date)}</span>
+                <span class="text-[11px] font-medium uppercase leading-none opacity-80">
+                  {monthShort.format(date)}
+                </span>
+              </div>
+
+              <div class="min-w-0 flex-1">
+                <CardHeading class:list={['font-display leading-snug', cancelled && 'line-through']}>
+                  {session.label ?? 'Jeu libre'}
+                </CardHeading>
+
+                <p class="text-muted-foreground mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+                  <span class="sr-only">{fullDate.format(date)}</span>
+                  <span>{session.startTime} – {session.endTime}</span>
+                  {session.venueName && (
+                    <>
+                      <span aria-hidden="true">·</span>
+                      <span>{session.venueName}</span>
+                    </>
+                  )}
+                </p>
+
+                {cancelled ? (
+                  <p class="text-destructive mt-2 text-sm font-medium">Séance annulée</p>
+                ) : (
+                  <>
+                    {/*
+                      L'ouvreur d'abord : c'est la question qui décide si la séance a
+                      lieu. L'état est écrit en toutes lettres — la couleur n'en est
+                      qu'un repère.
+                    */}
+                    {session.opener ? (
+                      <p class="text-success mt-2 text-sm font-medium">
+                        Ouvreur : <span class="text-foreground">{session.opener}</span>
+                      </p>
+                    ) : (
+                      <p class="text-warning mt-2 text-sm font-medium">On cherche toujours un ouvreur</p>
+                    )}
+
+                    <p class="text-muted-foreground mt-2 text-sm">
+                      {session.playerCount === 0
+                        ? "Personne n'est encore inscrit."
+                        : plural(session.playerCount, 'joueur inscrit', 'joueurs inscrits')}
+                      {missing > 0 && session.playerCount > 0 && ` — encore ${missing} pour atteindre ${session.minPlayers}`}
+                      {missing > 0 && session.playerCount === 0 && ` Il en faut ${session.minPlayers} pour ouvrir.`}
+                    </p>
+
+                    {session.players.length > 0 && (
+                      <ul class="mt-2 flex flex-wrap gap-1.5" aria-label="Inscrits">
+                        {session.players.map((name) => (
+                          <li class="bg-muted rounded-full px-2.5 py-0.5 text-sm">{name}</li>
+                        ))}
+                        {session.guestCount > 0 && (
+                          <li class="border-border text-muted-foreground rounded-full border border-dashed px-2.5 py-0.5 text-sm">
+                            + {plural(session.guestCount, 'invité', 'invités')}
+                          </li>
+                        )}
+                      </ul>
+                    )}
+                  </>
+                )}
+              </div>
+            </article>
+          </li>
+        );
+      })}
+    </ul>
+  )}
+</section>

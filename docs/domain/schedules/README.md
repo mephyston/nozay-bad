@@ -7,7 +7,7 @@ Sa raison d'être est écrite dans son schéma : *un créneau change quand la ma
 Il ne faut pas le confondre avec deux voisins :
 
 - l'**Agenda** (`events`) porte les rendez-vous **annoncés** du club — compétitions, stages, animations. Un événement existe même sans inscrit ; une séance de jeu libre n'existe que si assez de monde s'inscrit et qu'un bénévole vient ouvrir ;
-- le **CMS** publie les pages du site. Le bloc `schedule` d'une page ne porte **qu'une requête**, jamais des lignes.
+- le **CMS** publie les pages du site. Les blocs `schedule` et `open_play` d'une page ne portent **qu'une requête**, jamais des lignes.
 
 Le domaine est **feuille** : il ne dépend d'aucun autre. Il ne connaît donc pas les adhérents — il enregistre l'identité qu'on lui présente, et c'est l'application appelante qui garantit qu'elle vient d'une session authentifiée. C'est aussi ce qui permet au refus « vous n'êtes pas ouvreur » d'être rendu **par le handler** plutôt que par un écran contournable.
 
@@ -30,6 +30,7 @@ Le domaine est **feuille** : il ne dépend d'aucun autre. Il ne connaît donc pa
 | **Inscription** | Engagement d'un adhérent à venir, avec les personnes qu'il amène. | `Entity` (`open_play_registrations`) |
 | **Invité** | Personne **nommée** qu'un adhérent amène. N'existe que rattachée à son hôte, et compte dans le seuil. | `Entity` (`open_play_guests`) |
 | **Liste d'appel** | La liste nominative des inscrits et de leurs invités. Lecture réservée à l'administration. | `schedules:registrations:read` |
+| **Nom public** | Forme sous laquelle le site public nomme un inscrit ou un ouvreur : le prénom, puis l'initiale du nom. Les invités n'en ont pas — ils sont seulement comptés. | `publicName()` → « Camille D. » |
 | **Séance individuelle** | **Soirée datée** où l'entraîneur prend, au début de l'entraînement compétiteurs, une ou deux personnes par créneau de trente minutes. Créée à la main ou générée depuis un créneau marqué `indiv` dans la grille. | `Aggregate` (`indiv_sessions`) |
 | **Créneau d'indiv** | Le k-ième tiers d'heure de la soirée. **Dérivé** de `start_time`, `slot_count` et `slot_minutes`, jamais stocké. | `slotWindows()` |
 | **Candidature** | Demande d'un compétiteur pour la soirée, avec sa **préférence** de créneau (ou « indifférent ») et un mot pour l'entraîneur. Une par adhérent et par soirée. | `Entity` (`indiv_requests`) |
@@ -61,3 +62,4 @@ Le domaine est **feuille** : il ne dépend d'aucun autre. Il ne connaît donc pa
 | [RF-SCH-006](./rules/RF-SCH-006-seances-individuelles.md) | Soirées d'indiv : créneaux dérivés, génération, annulation |
 | [RF-SCH-007](./rules/RF-SCH-007-candidature-indiv.md) | Candidature d'un compétiteur, une soirée à la fois |
 | [RF-SCH-008](./rules/RF-SCH-008-selection-et-annonce.md) | Équité, sélection, annonce et notifications |
+| [RF-SCH-009](./rules/RF-SCH-009-jeu-libre-sur-le-site-public.md) | Le jeu libre sur le site public : inscrits, invités, ouvreur |

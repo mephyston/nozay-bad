@@ -326,6 +326,11 @@ export const ROUTE_PERMISSIONS: RouteRule[] = [
   // que la projection elle-même écarte licence, adresse et identifiant d'adhésion — un
   // adhérent choisit de venir parce que ses partenaires viennent, pas pour l'annuaire.
   { method: 'GET', path: '/schedules/open-play/:id/attendees', permission: 'schedules:open-play:read', service: true, feature: 'open_play' },
+  // Ce que montre le bloc « Jeu libre » du site public : les prochaines séances, les
+  // inscrits en « Camille D. », l'ouvreur sous la même forme, les invités comptés. La
+  // réduction des noms est faite par le handler — le site ne reçoit jamais de nom
+  // complet, ni licence, ni consigne du bureau.
+  { method: 'GET', path: '/schedules/open-play/public', permission: 'schedules:open-play:read', service: true, feature: 'open_play' },
 
   // Ouvreurs. Prendre et rendre une séance sont ouverts au service : c'est l'espace
   // adhérent qui appelle, avec la licence de la session — le navigateur ne peut pas

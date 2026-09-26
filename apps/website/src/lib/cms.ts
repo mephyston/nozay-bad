@@ -2,7 +2,7 @@ import { createApiClient } from '@nba/api-client';
 import { flattenBlocks, isBlockColumn } from '@nba/cms/public';
 import type { ResolveRouteOutput } from '@nba/cms/public';
 import { withDataCache } from './cache';
-import { markDegraded, renderContextOf } from './render-context';
+import { markDegraded, markVolatile, renderContextOf } from './render-context';
 
 /**
  * Accès au contenu, via le service binding vers l'API.
@@ -51,7 +51,12 @@ interface Envelope<T> {
  *
  * Un aperçu n'est jamais rangé : `previewVerified` désigne des brouillons.
  */
-async function getJson<T>(env: WebsiteEnv, path: string, previewVerified = false): Promise<T | null> {
+async function getJson<T>(
+  env: WebsiteEnv,
+  path: string,
+  previewVerified = false,
+  options: { volatile?: boolean } = {}
+): Promise<T | null> {
   const context = renderContextOf(env);
 
   const read = async (): Promise<T | null> => {
@@ -88,7 +93,9 @@ async function getJson<T>(env: WebsiteEnv, path: string, previewVerified = false
     }
   };
 
-  return withDataCache(path, previewVerified ? null : (context?.version ?? null), read, context?.waitUntil);
+  // Une donnée volatile ne se range pas sous la version : rien ne l'invaliderait.
+  const version = previewVerified || options.volatile ? null : (context?.version ?? null);
+  return withDataCache(path, version, read, context?.waitUntil);
 }
 
 /**
@@ -397,4 +404,45 @@ export async function listScheduleSlots(
 
 export async function listClubEvents(env: WebsiteEnv, limit = 50): Promise<ClubEventView[]> {
   return (await getJson<ClubEventView[]>(env, `/events?limit=${limit}`)) ?? [];
+}
+
+/**
+ * Une séance de jeu libre, telle que l'API la projette pour le site public.
+ *
+ * Les noms arrivent **déjà réduits** — « Camille D. » — et les invités seulement
+ * comptés : le site ne reçoit jamais de quoi en montrer davantage.
+ */
+export interface PublicOpenPlaySessionView {
+  id: number;
+  date: string;
+  startTime: string;
+  endTime: string;
+  label: string | null;
+  status: 'open' | 'confirmed' | 'cancelled';
+  venueName: string | null;
+  minPlayers: number;
+  playerCount: number;
+  guestCount: number;
+  players: string[];
+  opener: string | null;
+}
+
+/**
+ * Les prochaines séances de jeu libre, avec leurs inscrits et leur ouvreur.
+ *
+ * Lecture **volatile** : elle n'est pas rangée sous la version de contenu, que les
+ * inscriptions n'incrémentent pas, et elle raccourcit la vie de la page au bord.
+ */
+export async function listPublicOpenPlay(
+  env: WebsiteEnv,
+  limit: number
+): Promise<PublicOpenPlaySessionView[]> {
+  markVolatile(env);
+  const data = await getJson<{ sessions: PublicOpenPlaySessionView[] }>(
+    env,
+    `/schedules/open-play/public?limit=${limit}`,
+    false,
+    { volatile: true }
+  );
+  return data?.sessions ?? [];
 }

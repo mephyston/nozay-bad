@@ -120,6 +120,9 @@ export const onRequest = defineMiddleware(async (context, next) => {
     waitUntil,
     // Lu après le flux, quand tous les composants ont fini : une page à laquelle il
     // manque son menu ou ses actualités est servie, jamais figée une heure au bord.
-    isDegraded: () => renderContext.degraded
+    isDegraded: () => renderContext.degraded,
+    // Les inscrits du jeu libre ne suivent pas la version : la page qui les montre se
+    // range une minute, pas une journée.
+    isVolatile: () => renderContext.volatile
   });
 });

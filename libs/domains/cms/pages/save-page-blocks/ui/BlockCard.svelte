@@ -15,6 +15,7 @@
   import PostsFeedBlockEditor from './blocks/PostsFeedBlockEditor.svelte';
   import ColumnsBlockEditor from './blocks/ColumnsBlockEditor.svelte';
   import EventsBlockEditor from './blocks/EventsBlockEditor.svelte';
+  import OpenPlayBlockEditor from './blocks/OpenPlayBlockEditor.svelte';
 
   let {
     block = $bindable(),
@@ -78,6 +79,8 @@
       <PostsFeedBlockEditor bind:block {categories} />
     {:else if block.type === 'events'}
       <EventsBlockEditor bind:block />
+    {:else if block.type === 'open_play'}
+      <OpenPlayBlockEditor bind:block />
     {:else if block.type === 'columns'}
       <ColumnsBlockEditor bind:block {media} {canUploadMedia} {targets} {categories} />
     {/if}

@@ -130,3 +130,20 @@ export function remplissageDeSeance(playerCount: number, minPlayers: number): {
     ouvrable: true
   };
 }
+
+/**
+ * Le nom d'une personne tel que le site public le montre : « Camille D. ».
+ *
+ * Le prénom en entier, le nom réduit à son initiale. C'est ce que le club a retenu pour
+ * le bloc « Jeu libre » : assez pour qu'un habitué reconnaisse ses partenaires, pas assez
+ * pour qu'une page indexée par les moteurs devienne un annuaire des adhérents.
+ *
+ * Un nom vide ne laisse pas un point orphelin, et l'initiale d'un nom composé
+ * (« de la Tour ») reste la première lettre, en capitale.
+ */
+export function publicName(firstName: string, lastName: string): string {
+  const first = firstName.trim();
+  const initial = lastName.trim().charAt(0).toLocaleUpperCase('fr-FR');
+  if (!initial) return first;
+  return first ? `${first} ${initial}.` : `${initial}.`;
+}

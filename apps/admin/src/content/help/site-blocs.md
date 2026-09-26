@@ -19,6 +19,7 @@ Une page du site public se compose en empilant des **blocs**. Cet article décri
 | Montrer plusieurs photos | **Galerie** |
 | Mettre un PDF en téléchargement | **Document** |
 | Afficher les horaires d'entraînement | **Créneaux** |
+| Montrer les prochaines séances de jeu libre, leurs inscrits et leur ouvreur | **Jeu libre** |
 | Reprendre les dernières actualités | **Actualités** |
 | Intégrer une vidéo ou un agenda extérieur | **Intégration** |
 | Présenter le bureau ou les encadrants | **Personnes** *(pas encore affiché)* |
@@ -74,7 +75,7 @@ Deux ou trois contenus **côte à côte** sur ordinateur, **empilés** sur tél�
 ### Ce qu'une colonne peut contenir
 
 - **Texte** — une image facultative *au-dessus*, puis des paragraphes. C'est le choix par défaut.
-- **Actualités**, **Agenda**, **Créneaux**, **Galerie**, **Document**, **Grille de liens** — le bloc s'y règle exactement comme au premier niveau.
+- **Actualités**, **Agenda**, **Créneaux**, **Jeu libre**, **Galerie**, **Document**, **Grille de liens** — le bloc s'y règle exactement comme au premier niveau.
 
 Les autres blocs ne sont pas proposés : **Accroche** et **Carrousel** ont besoin de toute la largeur de la page, et un bloc **Colonnes** ne s'imbrique pas dans un autre.
 
@@ -258,6 +259,31 @@ Ainsi, une page « Jeunes » porte `minibad, poussins, jeunes, elite_jeunes`. Un
 Le visiteur voit un vrai tableau — jour, horaire, groupe, gymnase — lisible par les moteurs de recherche et par un lecteur d'écran, là où l'ancien site enfermait la même information dans une feuille Google invisible. Si aucun créneau ne correspond, le bloc affiche « Les créneaux ne sont pas encore renseignés pour cette saison. »
 
 Les créneaux **masqués** dans l'écran Créneaux n'apparaissent jamais ici.
+
+---
+
+## Jeu libre
+
+Les prochaines séances de jeu libre, avec **qui s'y est inscrit** et **qui ouvre le gymnase**.
+
+| Champ | Détail |
+|---|---|
+| **Titre de section** | Facultatif : « Jeu libre », « Venez jouer ce week-end » |
+| **Nombre affiché** | De 2 à 12 séances, à partir d'aujourd'hui |
+
+> [!IMPORTANT]
+> Comme le bloc **Créneaux**, celui-ci **n'enregistre aucune séance**. Il affiche celles tenues dans [Jeu libre](/admin/help/creneaux) : ouvrir, annuler ou désigner les ouvreurs se fait là-bas, et toutes les pages suivent.
+
+Pour chaque séance, le visiteur voit la date, l'horaire et le gymnase, puis :
+
+- **l'ouvreur** — « Ouvreur : Robert M. » dès qu'un bénévole s'est engagé, et sinon **« On cherche toujours un ouvreur »** ;
+- **le nombre de joueurs**, invités compris, et ce qu'il manque pour atteindre le seuil d'ouverture ;
+- **les inscrits**, sous la forme « Camille D. », suivis de « + 2 invités » quand il y en a.
+
+> [!NOTE]
+> Le site public est lu par tout le monde et indexé par les moteurs de recherche. C'est pourquoi les inscrits n'y apparaissent que par leur **prénom et l'initiale de leur nom**, et que les **invités ne sont jamais nommés** : ce ne sont pas des adhérents. La liste complète reste réservée à l'espace adhérent et à l'administration. Les consignes de séance (« clé chez Robert ») et le motif d'une annulation ne sont pas affichés non plus : une séance annulée apparaît simplement barrée, « Séance annulée ».
+
+Une inscription ou l'engagement d'un ouvreur apparaît sur le site **en moins d'une minute**, sans republier la page. S'il n'y a aucune séance à venir, le bloc affiche « Aucune séance de jeu libre de prévue pour le moment. »
 
 ---
 
