@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { correspondA } from '../../lib/recherche.js';
   import { Dialog } from 'bits-ui';
   import { ChevronLeft, Check, Search } from '@lucide/svelte';
   import { Button } from '../ui/button/index.js';
@@ -62,12 +63,9 @@
   let recherche = $state('');
 
   const visibles = $derived.by(() => {
-    const terme = recherche.trim().toLowerCase();
-    if (!terme || !filter) return options;
+    if (!filter) return options;
     // La seconde ligne compte aussi, comme dans le menu de la souris : une licence, un parent.
-    return options.filter(
-      (o) => o.label.toLowerCase().includes(terme) || (o.hint ?? '').toLowerCase().includes(terme)
-    );
+    return options.filter((o) => correspondA(recherche, o.label, o.hint));
   });
 
   // Rouvrir doit repartir de la liste entière : le filtre appartient à la visite.

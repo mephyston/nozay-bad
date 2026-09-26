@@ -24,6 +24,7 @@
   import { cn } from '../../lib/utils.js';
   import ChoicePicker from './ChoicePicker.svelte';
   import { FIELD_ROW } from '../../lib/field.js';
+  import { correspondA } from '../../lib/recherche.js';
 
   const champ = getContext<ContexteChamp | undefined>(CLE_CHAMP);
   const requete = creerIsMobile();
@@ -156,14 +157,26 @@
       {/snippet}
     </PopoverTrigger>
     <PopoverContent class="w-[--bits-popover-anchor-width] p-0">
-      <Command shouldFilter={filter}>
+      <!--
+        Imbrication de bits-ui : la liste porte le groupe, et non l'inverse. Rangée
+        dans le groupe, elle défaisait le masquage et le tri — une recherche laissait
+        toute la liste affichée, et dans un menu haut de neuf lignes on ne voyait que
+        les premiers adhérents.
+
+        `filter` : la même règle qu'au doigt (`correspondA`), le texte tapé tel quel.
+        Le score flou de bits-ui gardait quiconque avait les mêmes lettres dans l'ordre.
+        Elle porte sur les `keywords` — libellé et seconde ligne —, et non sur `value`,
+        qui embarque l'identifiant technique : « 12 » trouverait sinon l'adhérent n° 12.
+      -->
+      <Command shouldFilter={filter} filter={(_valeur, terme, motsCles) => (correspondA(terme, ...(motsCles ?? [])) ? 1 : 0)}>
         <CommandInput placeholder={searchPlaceholder} bind:value={searchText} />
-        <CommandEmpty>{emptyText}</CommandEmpty>
-        <CommandGroup>
-          <CommandList>
+        <CommandList>
+          <CommandEmpty>{emptyText}</CommandEmpty>
+          <CommandGroup>
             {#each items as item (item.value)}
               <CommandItem
                 value={`${item.label} ${item.hint ?? ''} ${item.value}`}
+                keywords={[item.label, item.hint ?? '']}
                 disabled={item.disabled}
                 onSelect={() => {
                   value = item.value;
@@ -180,8 +193,8 @@
                 </span>
               </CommandItem>
             {/each}
-          </CommandList>
-        </CommandGroup>
+          </CommandGroup>
+        </CommandList>
       </Command>
     </PopoverContent>
   </Popover>
