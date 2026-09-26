@@ -87,7 +87,7 @@ export const BLOCK_KINDS: BlockKind[] = [
     type: 'open_play',
     label: 'Jeu libre',
     hint: "Les prochaines séances de jeu libre, qui s'y est inscrit, et l'ouvreur.",
-    create: () => ({ type: 'open_play', limit: 6 })
+    create: () => ({ type: 'open_play', limit: 6, showSignupLink: true })
   },
   {
     type: 'schedule',

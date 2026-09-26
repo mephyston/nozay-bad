@@ -30,6 +30,8 @@ Le site public est lu par n'importe qui et indexé par les moteurs de recherche.
 
 **Une séance annulée reste affichée, barrée**, avec la mention « Séance annulée ». Son motif, lui, n'est pas repris : il est rédigé pour les inscrits, pas pour le public. Les consignes du bureau (« clé chez Robert ») ne sont jamais affichées.
 
+**S'inscrire.** Sauf si le rédacteur le masque, le bloc porte un bouton « S'inscrire au jeu libre » qui mène au calendrier de l'espace adhérent filtré sur le jeu libre (`/agenda?vue=jeu-libre`). Le site public n'inscrit personne : l'inscription se fait dans l'espace adhérent, au nom de la session. Un visiteur non connecté est d'abord conduit à la connexion, qui le ramène à ce calendrier.
+
 **Fraîcheur.** Une page qui porte ce bloc est gardée **une minute** en cache au lieu d'une journée : une inscription ou un engagement d'ouvreur y apparaît donc au plus une minute plus tard. Les pages sans ce bloc ne sont pas concernées.
 
 **Fonctionnalité éteinte.** Si le club n'a pas activé le jeu libre, le bloc affiche « Aucune séance de jeu libre de prévue pour le moment. »
@@ -74,6 +76,12 @@ Fonctionnalité: Le jeu libre sur le site public
     Quand un visiteur ouvre la page
     Alors il lit « Séance annulée »
     Et le motif « Gymnase fermé » n'apparaît pas dans la page
+
+  Scénario: Le bouton d'inscription mène au calendrier filtré de l'espace adhérent
+    Étant donné que le bouton « S'inscrire » n'est pas masqué dans le bloc
+    Quand un visiteur non connecté clique sur « S'inscrire au jeu libre »
+    Alors il est conduit à la connexion de l'espace adhérent
+    Et, une fois connecté, il arrive sur le calendrier filtré sur le jeu libre
 
   Scénario: Une séance passée n'est plus affichée
     Étant donné une séance le vendredi 13 mars

@@ -128,6 +128,8 @@ function resolve(app, env) {
   }
   if (app === 'website') {
     vars.PUBLIC_SITE_URL = urls.website;
+    // Le bouton « S'inscrire » du bloc Jeu libre mène au calendrier de l'espace adhérent.
+    vars.PUBLIC_STOREFRONT_URL = urls.storefront;
   }
   return vars;
 }

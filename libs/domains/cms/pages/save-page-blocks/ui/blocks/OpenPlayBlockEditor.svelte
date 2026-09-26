@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ChoiceField, FormField, Input } from '@nba/ui';
+  import { ChoiceField, FormField, Input, SwitchField } from '@nba/ui';
   import type { OpenPlayBlock } from '../../../../shared/blocks';
 
   /**
@@ -35,6 +35,14 @@
       />
     </FormField>
   </div>
+
+  <SwitchField
+    id={`${uid}-open-play-signup`}
+    label="Afficher le bouton « S'inscrire »"
+    hint="Mène au calendrier de l'espace adhérent, filtré sur le jeu libre. L'adhérent s'y connecte pour s'inscrire."
+    checked={block.showSignupLink !== false}
+    onChange={(v) => (block.showSignupLink = v)}
+  />
 
   <p class="text-muted-foreground text-sm">
     Les séances se gèrent dans <a class="text-primary hover:underline" href="/admin/website/jeu-libre">Jeu libre</a>.

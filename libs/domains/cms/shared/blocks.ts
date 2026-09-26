@@ -312,7 +312,15 @@ export const openPlayBlockSchema = Type.Object(
     type: Type.Literal('open_play'),
     heading: Type.Optional(Type.String({ maxLength: 160 })),
     /** Six sur une page ; au-delà, l'espace adhérent fait mieux le travail. */
-    limit: Type.Integer({ minimum: 1, maximum: 12 })
+    limit: Type.Integer({ minimum: 1, maximum: 12 }),
+    /**
+     * Bouton « S'inscrire » sous les séances, vers le calendrier de l'espace adhérent
+     * filtré sur le jeu libre. L'inscription se fait là-bas, au nom de la session : le
+     * site public n'a ni compte ni identité.
+     *
+     * **Optionnel** : absent vaut affiché, la valeur par défaut de l'éditeur.
+     */
+    showSignupLink: Type.Optional(Type.Boolean())
   },
   { additionalProperties: false }
 );

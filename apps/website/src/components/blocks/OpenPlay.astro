@@ -31,6 +31,13 @@ const monthShort = new Intl.DateTimeFormat('fr-FR', { month: 'short', timeZone: 
 const weekdayShort = new Intl.DateTimeFormat('fr-FR', { weekday: 'short', timeZone: 'UTC' });
 const fullDate = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'full', timeZone: 'UTC' });
 
+/*
+  L'inscription se fait dans l'espace adhérent, au nom de la session : le site public
+  n'a ni compte ni identité. Le calendrier y est filtré sur le jeu libre par `vue`, et
+  un visiteur non connecté passe par la connexion, qui le ramène ici.
+*/
+const signupHref = new URL('/agenda?vue=jeu-libre', import.meta.env.PUBLIC_STOREFRONT_URL).toString();
+
 const plural = (count: number, one: string, many: string) => `${count} ${count > 1 ? many : one}`;
 ---
 
@@ -130,5 +137,14 @@ const plural = (count: number, one: string, many: string) => `${count} ${count >
         );
       })}
     </ul>
+  )}
+
+  {block.showSignupLink !== false && (
+    <a
+      href={signupHref}
+      class="bg-primary text-primary-foreground hover:bg-primary/90 mt-4 inline-flex min-h-11 items-center gap-1 rounded-lg px-4 text-sm font-medium transition-colors"
+    >
+      S'inscrire au jeu libre <span aria-hidden="true">→</span>
+    </a>
   )}
 </section>

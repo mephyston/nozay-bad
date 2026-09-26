@@ -17,6 +17,15 @@ if (APP_ENV !== 'development' && !process.env.PUBLIC_SITE_URL) {
   console.warn(`${message} : adresse locale utilisée.`);
 }
 
+// L'espace adhérent, vers lequel le bloc « Jeu libre » envoie s'inscrire. Même origine
+// et même garde que `PUBLIC_SITE_URL` ; en local, le port du storefront.
+const STOREFRONT_URL = process.env.PUBLIC_STOREFRONT_URL || 'http://localhost:4322';
+if (APP_ENV !== 'development' && !process.env.PUBLIC_STOREFRONT_URL) {
+  const message = `[website] PUBLIC_STOREFRONT_URL absente pour un build « ${APP_ENV} » (voir scripts/build-env.mjs)`;
+  if (process.env.CI) throw new Error(message);
+  console.warn(`${message} : adresse locale utilisée.`);
+}
+
 export default defineConfig({
   output: 'server',
   site: SITE_URL,
@@ -86,7 +95,8 @@ export default defineConfig({
     server: { strictPort: true },
     define: {
       'import.meta.env.PUBLIC_APP_ENV': JSON.stringify(APP_ENV),
-      'import.meta.env.PUBLIC_SITE_URL': JSON.stringify(SITE_URL)
+      'import.meta.env.PUBLIC_SITE_URL': JSON.stringify(SITE_URL),
+      'import.meta.env.PUBLIC_STOREFRONT_URL': JSON.stringify(STOREFRONT_URL)
     },
     plugins: [tailwindcss()],
     optimizeDeps: {

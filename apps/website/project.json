@@ -34,6 +34,9 @@
         },
         {
           "env": "PUBLIC_SITE_URL"
+        },
+        {
+          "env": "PUBLIC_STOREFRONT_URL"
         }
       ],
       "options": {

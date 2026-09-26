@@ -270,6 +270,7 @@ Les prochaines séances de jeu libre, avec **qui s'y est inscrit** et **qui ouvr
 |---|---|
 | **Titre de section** | Facultatif : « Jeu libre », « Venez jouer ce week-end » |
 | **Nombre affiché** | De 2 à 12 séances, à partir d'aujourd'hui |
+| **Afficher le bouton « S'inscrire »** | Coché par défaut. Mène au calendrier de l'espace adhérent, filtré sur le jeu libre |
 
 > [!IMPORTANT]
 > Comme le bloc **Créneaux**, celui-ci **n'enregistre aucune séance**. Il affiche celles tenues dans [Jeu libre](/admin/help/creneaux) : ouvrir, annuler ou désigner les ouvreurs se fait là-bas, et toutes les pages suivent.
@@ -282,6 +283,8 @@ Pour chaque séance, le visiteur voit la date, l'horaire et le gymnase, puis :
 
 > [!NOTE]
 > Le site public est lu par tout le monde et indexé par les moteurs de recherche. C'est pourquoi les inscrits n'y apparaissent que par leur **prénom et l'initiale de leur nom**, et que les **invités ne sont jamais nommés** : ce ne sont pas des adhérents. La liste complète reste réservée à l'espace adhérent et à l'administration. Les consignes de séance (« clé chez Robert ») et le motif d'une annulation ne sont pas affichés non plus : une séance annulée apparaît simplement barrée, « Séance annulée ».
+
+Le bouton **« S'inscrire au jeu libre »** ouvre le calendrier de l'espace adhérent, déjà filtré sur le jeu libre. Un visiteur non connecté passe d'abord par la connexion, puis arrive directement sur ce calendrier : c'est là, et seulement là, qu'on s'inscrit et qu'on annonce ses invités.
 
 Une inscription ou l'engagement d'un ouvreur apparaît sur le site **en moins d'une minute**, sans republier la page. S'il n'y a aucune séance à venir, le bloc affiche « Aucune séance de jeu libre de prévue pour le moment. »
 
