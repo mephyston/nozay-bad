@@ -24,6 +24,7 @@
     uiConfirm,
     flashAndReload,
     uiAlert,
+    correspondA,
     type SwipeAction
   } from '@nba/ui';
   import PostsList from './PostsList.svelte';
@@ -231,15 +232,7 @@
   // le texte se lisent dans le formulaire, qui est fait pour ça.
 
   const filteredPosts = $derived(
-    posts.filter((row: PostRow) => {
-      const term = searchTerm.trim().toLowerCase();
-      if (!term) return true;
-      return (
-        row.title.toLowerCase().includes(term) ||
-        row.path.toLowerCase().includes(term) ||
-        (row.excerpt || '').toLowerCase().includes(term)
-      );
-    })
+    posts.filter((row: PostRow) => correspondA(searchTerm, row.title, row.path, row.excerpt || ''))
   );
 
   async function post(body: unknown, fallback: string) {

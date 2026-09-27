@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Button, SearchableCombobox, Alert, uiAlert } from '@nba/ui';
+  import { Button, SearchableCombobox, Alert, uiAlert, correspondA } from '@nba/ui';
   import { TriangleAlert, CircleCheck, Info } from '@lucide/svelte';
   import type { GetLineupOutput, LineupSlotView, LineupCandidate } from '../../get-lineup/dto';
   import { DISCIPLINE_RANKING } from '../../shared/ranking';
@@ -57,7 +57,7 @@
           ? 'H'
           : 'F';
 
-    const needle = (queries[`${slot.discipline}${slot.position}-${position}`] ?? '').trim().toLowerCase();
+    const query = queries[`${slot.discipline}${slot.position}-${position}`] ?? '';
     const selected = position === 1
       ? picks[`${slot.discipline}${slot.position}`]?.l1
       : picks[`${slot.discipline}${slot.position}`]?.l2;
@@ -66,15 +66,9 @@
     // mixte pour MX. Un joueur peut être admis sur l'un et pas sur l'autre.
     const ranked = DISCIPLINE_RANKING[slot.discipline];
 
-    const matching = view.candidates.filter((c) => {
-      if (c.gender !== wanted) return false;
-      if (!needle) return true;
-      return (
-        c.lastName.toLowerCase().includes(needle) ||
-        c.firstName.toLowerCase().includes(needle) ||
-        c.licence.includes(needle)
-      );
-    });
+    const matching = view.candidates.filter(
+      (c) => c.gender === wanted && correspondA(query, c.lastName, c.firstName, c.licence)
+    );
 
     const items = matching.slice(0, MAX_SUGGESTIONS).map((c) => {
       // Un refus propre à ce tableau, distinct des motifs valables sur toutes les lignes.

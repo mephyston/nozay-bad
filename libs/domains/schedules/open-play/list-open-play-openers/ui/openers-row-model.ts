@@ -1,5 +1,5 @@
 import { KeyRound } from '@lucide/svelte';
-import { accorder, type SwipeAction, type Tone } from '@nba/ui';
+import { accorder, correspondA, type SwipeAction, type Tone } from '@nba/ui';
 
 /**
  * Le vocabulaire des détenteurs de clé.
@@ -91,13 +91,12 @@ export function adherentsProposes(
   recherche: string,
   maximum = 8
 ): AdherentLike[] {
-  const terme = recherche.trim().toLowerCase();
-  if (terme.length < 3) return [];
+  if (recherche.trim().length < 3) return [];
 
   const vus = new Set<string>();
   return membres
     .filter((m) => !dejaOuvreurs.has(m.licence))
-    .filter((m) => `${m.firstName} ${m.lastName} ${m.licence}`.toLowerCase().includes(terme))
+    .filter((m) => correspondA(recherche, `${m.firstName} ${m.lastName} ${m.licence}`))
     .filter((m) => {
       if (vus.has(m.licence)) return false;
       vus.add(m.licence);

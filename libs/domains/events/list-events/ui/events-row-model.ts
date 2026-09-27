@@ -1,5 +1,5 @@
 import { Ban, Edit, Eye, Trash2, Users } from '@lucide/svelte';
-import type { SwipeAction, Tone } from '@nba/ui';
+import { correspondA, type SwipeAction, type Tone } from '@nba/ui';
 import { EVENT_CATEGORY_LABELS, EVENT_REGISTRATION_LABELS } from '../../shared/schema';
 
 /**
@@ -252,16 +252,12 @@ export function evenementsFiltres<T extends EvenementLike>(
     maintenant?: () => Date;
   }
 ): T[] {
-  const terme = recherche.trim().toLowerCase();
   const repere = maintenant().toISOString().slice(0, 16);
 
   return evenementsOrdonnes(evenements).filter((e) => {
     if (statut !== 'tous' && e.status !== statut) return false;
     if (periode === 'avenir' && e.startsAt < repere) return false;
     if (periode === 'passes' && e.startsAt >= repere) return false;
-    if (!terme) return true;
-    return [e.title, libelleDeCategorie(e.category), e.venueLabel ?? ''].some((champ) =>
-      champ.toLowerCase().includes(terme)
-    );
+    return correspondA(recherche, e.title, libelleDeCategorie(e.category), e.venueLabel ?? '');
   });
 }

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { CheckCircle, AlertCircle, Coins } from '@lucide/svelte';
-  import { Button, Card, Alert } from '@nba/ui';
+  import { Button, Card, Alert, correspondA } from '@nba/ui';
   import type { Member, Props } from './expense-form-types';
   import { formatMemberName, scrollOptionIntoView } from './expense-form-utils';
   import { submitExpenseReport } from './expense-form-submit';
@@ -81,8 +81,7 @@
       : (fetchedMembers.length > 0
           ? fetchedMembers
           : sortedMembers.filter(m =>
-              `${m.lastName} ${m.firstName} ${m.licence}`.toLowerCase().includes(memberSearchQuery.toLowerCase()) ||
-              `${m.firstName} ${m.lastName} ${m.licence}`.toLowerCase().includes(memberSearchQuery.toLowerCase())
+              correspondA(memberSearchQuery, `${m.lastName} ${m.firstName} ${m.licence}`, `${m.firstName} ${m.lastName} ${m.licence}`)
             )
         )
   );

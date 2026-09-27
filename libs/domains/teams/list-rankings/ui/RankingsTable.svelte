@@ -7,7 +7,8 @@
     DataTableToolbar,
     ResponsiveSheet,
     Select,
-    dockDePage
+    dockDePage,
+    correspondA
   } from '@nba/ui';
   import RankingsList from './RankingsList.svelte';
   import {
@@ -55,18 +56,7 @@
 
   let search = $state('');
 
-  const filtered = $derived(
-    search.trim() === ''
-      ? rows
-      : rows.filter((row) => {
-          const needle = search.trim().toLowerCase();
-          return (
-            row.lastName.toLowerCase().includes(needle) ||
-            row.firstName.toLowerCase().includes(needle) ||
-            row.licence.includes(needle)
-          );
-        })
-  );
+  const filtered = $derived(rows.filter((row) => correspondA(search, row.lastName, row.firstName, row.licence)));
 
   /*
     La date des classements est la **portée** de l'écran : ce qu'on regarde, et non ce

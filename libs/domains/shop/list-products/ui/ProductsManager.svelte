@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Plus, Edit, Layers } from "@lucide/svelte";
-  import { FormSheet, submitForm, flashAndReload, uiAlert } from "@nba/ui";
+  import { FormSheet, submitForm, flashAndReload, uiAlert, correspondA } from "@nba/ui";
   import { isVariant, productLabel, type Product, type ProductCategory } from './products-manager-types';
   import {
     submitProduct,
@@ -72,17 +72,12 @@
    * ligne « L » apparaîtrait seule, sans dire de quel produit.
    */
   let filteredProducts = $derived.by(() => {
-    const term = searchTerm.trim().toLowerCase();
-    if (!term) return productsList;
+    if (!searchTerm.trim()) return productsList;
     const matches = new Set(
       productsList
         .filter((p) => {
           const priceVal = p.priceCents ?? p.price ?? 0;
-          return (
-            productLabel(p).toLowerCase().includes(term) ||
-            (p.categoryLabel ?? '').toLowerCase().includes(term) ||
-            (priceVal / 100).toFixed(2).includes(term)
-          );
+          return correspondA(searchTerm, productLabel(p), p.categoryLabel ?? '', (priceVal / 100).toFixed(2));
         })
         .map((p) => p.id)
     );

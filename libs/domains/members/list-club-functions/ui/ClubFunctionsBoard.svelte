@@ -10,7 +10,8 @@
     flashAndReload,
     SeasonSelector,
     ChoiceField,
-    dockDePage
+    dockDePage,
+    correspondA
   } from '@nba/ui';
   import ClubFunctionsList from './ClubFunctionsList.svelte';
   import ClubFunctionsGrid from './ClubFunctionsGrid.svelte';
@@ -104,15 +105,8 @@
   let memberQuery = $state('');
   const byLicence = $derived(new Map(members.map((m) => [m.licence, m])));
   const memberItems = $derived.by(() => {
-    const needle = memberQuery.trim().toLowerCase();
     const matches = members
-      .filter(
-        (m) =>
-          !needle ||
-          m.lastName.toLowerCase().includes(needle) ||
-          m.firstName.toLowerCase().includes(needle) ||
-          m.licence.includes(needle)
-      )
+      .filter((m) => correspondA(memberQuery, m.lastName, m.firstName, m.licence))
       .slice(0, MAX_SUGGESTIONS)
       .map((m) => ({ label: `${m.lastName} ${m.firstName}`, value: m.licence }));
     // La sélection courante reste listée, sinon le libellé retomberait au placeholder.

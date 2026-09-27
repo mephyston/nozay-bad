@@ -61,7 +61,7 @@ Fonctionnalité: Le jeu libre sur le site public
   Scénario: Les invités sont comptés sans être nommés
     Étant donné que Camille Durand est inscrite avec deux invités, Paul et Zoé
     Quand un visiteur ouvre la page
-    Alors il lit « 3 joueurs inscrits » et « + 2 invités »
+    Alors il lit « 3 joueurs » et « + 2 invités »
     Et ni « Paul » ni « Zoé » n'apparaissent dans la page
 
   Scénario: L'ouvreur identifié est affiché

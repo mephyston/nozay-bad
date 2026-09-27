@@ -36,6 +36,7 @@ export { AmountInput } from './components/ui/amount-input';
 export { Toaster, toast } from './components/ui/sonner';
 export { flash, flashAndReload, consumeFlash, type FlashType } from './lib/flash';
 export { softNavigate, hasClientRouter } from './lib/navigation';
+export { correspondA } from './lib/recherche';
 export { searchNav, normalize as normalizeSearchText, type NavSearchHit, type SearchableNavGroup, type SearchableNavItem, type SearchableAction } from './lib/nav-search';
 export { openDocument, isStandaloneApp } from './lib/document-link';
 // Le pluriel régulier du français : les écrans comptent des éléments partout.

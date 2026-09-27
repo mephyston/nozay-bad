@@ -12,9 +12,13 @@ import type { RouteRule } from './types';
  * L'ordre des lignes n'a aucune importance : `matcher.ts` trie par spécificité au
  * chargement. Elles sont groupées par domaine pour la lecture.
  *
- * `service: true` marque les routes appelées par le Worker storefront, qui agit pour
- * un adhérent connecté (session OTP) et non pour un compte d'administration. La liste
- * a été établie à partir des appels réellement présents dans `apps/storefront`.
+ * `service: true` marque les routes appelées par un Worker du club plutôt que par un
+ * compte d'administration : le **storefront**, qui agit pour un adhérent connecté
+ * (session OTP), et le **site public** (`apps/website`), qui lit pour n'importe quel
+ * visiteur. Les deux passent par le même binding de service. Une route `service` qui
+ * rend des données nominatives doit donc dire, là où elle est déclarée, laquelle des
+ * deux l'appelle et ce qu'elle projette. La liste a été établie à partir des appels
+ * réellement présents dans ces deux applications.
  */
 export const ROUTE_PERMISSIONS: RouteRule[] = [
   // ── Identité et gestion des accès ──────────────────────────────────────────

@@ -11,6 +11,7 @@
     uiConfirm,
     softNavigate,
     uiAlert,
+    correspondA,
     type SwipeAction
   } from '@nba/ui';
   import { Trophy, Plus, CalendarDays } from '@lucide/svelte';
@@ -68,16 +69,7 @@
   let daysOpen = $state(false);
 
   const filtered = $derived(
-    search.trim() === ''
-      ? teams
-      : teams.filter((team) => {
-          const needle = search.trim().toLowerCase();
-          return (
-            team.name.toLowerCase().includes(needle) ||
-            team.championshipLabel.toLowerCase().includes(needle) ||
-            team.divisionLabel.toLowerCase().includes(needle)
-          );
-        })
+    teams.filter((team) => correspondA(search, team.name, team.championshipLabel, team.divisionLabel))
   );
 
   /**

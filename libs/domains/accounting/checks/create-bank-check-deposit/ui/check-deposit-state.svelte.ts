@@ -1,3 +1,4 @@
+import { correspondA } from '@nba/ui';
 import { Check, CheckDeposit, Member, BankStatementLine, SeasonOption, type PlanCategory, receiptCategories } from './check-deposit-types';
 
 export function createCheckDepositState(props: () => {
@@ -114,18 +115,11 @@ export function createCheckDepositState(props: () => {
   const selectedChecksList = $derived.by(() => p.checks.filter(c => isDepositable(c) && selectedCheckIds[c.id]));
   const totalSelectedAmount = $derived.by(() => selectedChecksList.reduce((sum, c) => sum + c.amount, 0));
 
-  const filteredChecks = $derived.by(() => {
-    if (!checkSearchQuery) return p.checks.filter(c => c.status === 'received');
-    const q = checkSearchQuery.toLowerCase();
-    return p.checks.filter(c => 
-      c.status === 'received' && (
-        c.number.includes(q) ||
-        c.emitter.toLowerCase().includes(q) ||
-        (c.bank && c.bank.toLowerCase().includes(q)) ||
-        (c.memberName && c.memberName.toLowerCase().includes(q))
-      )
-    );
-  });
+  const filteredChecks = $derived.by(() =>
+    p.checks.filter(
+      c => c.status === 'received' && correspondA(checkSearchQuery, c.number, c.emitter, c.bank || '', c.memberName || '')
+    )
+  );
 
   return {
     get activeTab() { return activeTab; }, set activeTab(v) { activeTab = v; },

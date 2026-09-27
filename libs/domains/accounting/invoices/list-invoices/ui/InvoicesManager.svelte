@@ -12,6 +12,7 @@
     submitForm,
     toSeasonOptions,
     uiAlert,
+    correspondA,
     type SwipeAction
   } from '@nba/ui';
   import type { Invoice, Season } from './invoices-types';
@@ -113,15 +114,9 @@
   const filteredInvoices = $derived(
     invoices
       .filter(inv => statusFilter === 'all' || inv.status === statusFilter)
-      .filter(inv => {
-        const term = searchTerm.toLowerCase();
-        return (
-          inv.invoiceNumber.toLowerCase().includes(term) ||
-          inv.clientName.toLowerCase().includes(term) ||
-          (inv.subject || '').toLowerCase().includes(term) ||
-          (inv.totalAmount / 100).toFixed(2).includes(term)
-        );
-      })
+      .filter(inv =>
+        correspondA(searchTerm, inv.invoiceNumber, inv.clientName, inv.subject || '', (inv.totalAmount / 100).toFixed(2))
+      )
   );
 
   const itemsTotal = $derived(

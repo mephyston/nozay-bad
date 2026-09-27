@@ -1,5 +1,5 @@
 import { Edit, Trash2 } from '@lucide/svelte';
-import { accorder, type SwipeAction, type Tone } from '@nba/ui';
+import { accorder, correspondA, type SwipeAction, type Tone } from '@nba/ui';
 
 /**
  * Le vocabulaire des redirections.
@@ -128,14 +128,10 @@ export function redirectionsFiltrees<T extends RedirectionLike>(
   redirections: readonly T[],
   { recherche = '', nature = 'toutes' }: { recherche?: string; nature?: NatureDeRedirection }
 ): T[] {
-  const terme = recherche.trim().toLowerCase();
   return redirections.filter((r) => {
     if (nature === 'redirect' && estDefinitive(r)) return false;
     if (nature === 'gone' && !estDefinitive(r)) return false;
     if (nature === 'inutilisees' && r.hitCount > 0) return false;
-    if (!terme) return true;
-    return [r.fromPath, r.toPath ?? '', r.note ?? ''].some((champ) =>
-      champ.toLowerCase().includes(terme)
-    );
+    return correspondA(recherche, r.fromPath, r.toPath ?? '', r.note ?? '');
   });
 }

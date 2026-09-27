@@ -151,6 +151,9 @@ export function reorderable(node: HTMLElement, options: ReorderOptions) {
       node.querySelectorAll<HTMLElement>(`[data-reorder-group="${CSS.escape(g)}"]`)
     ).sort((a, b) => rangDe(a) - rangDe(b));
     if (fratrie.length < 2) return false;
+    // Au doigt, la saisie arrive 350 ms après l'appui : la rangée a pu quitter la liste
+    // entre-temps (suppression, rechargement). Sans elle, il n'y a rien à soulever.
+    if (!li.isConnected || !fratrie.includes(li)) return false;
 
     groupe = g;
     voisines = fratrie;

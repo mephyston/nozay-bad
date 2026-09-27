@@ -17,6 +17,7 @@
     submitForm,
     readApiError,
     dockDePage,
+    correspondA,
     type SwipeAction
   } from '@nba/ui';
 
@@ -66,10 +67,7 @@
   let longitude = $state('');
 
   const filtered = $derived(
-    venues.filter((v: VenueRow) => {
-      const term = searchTerm.trim().toLowerCase();
-      return !term || v.name.toLowerCase().includes(term) || (v.city ?? '').toLowerCase().includes(term);
-    })
+    venues.filter((v: VenueRow) => correspondA(searchTerm, v.name, v.city ?? ''))
   );
 
   const pagination = $derived({ page: 1, total: filtered.length, totalPages: 1 });

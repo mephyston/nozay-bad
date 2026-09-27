@@ -9,7 +9,7 @@
   import { submitTransaction, validateTransaction, deleteTransaction, editValuesFor, type TransactionFormValues } from '../../../ledger/list-ledger-entries/ui/ledger-actions';
   import type { AccountLike } from '../../../shared/account-labels';
   import type { MemberLike } from '../../../ledger/list-ledger-entries/ui/member-options';
-  import { submitForm, uiConfirm, flashAndReload, seasonForDate, uiAlert } from '@nba/ui';
+  import { submitForm, uiConfirm, flashAndReload, seasonForDate, uiAlert, correspondA } from '@nba/ui';
 
   /**
    * Un compte sans relevé — la caisse, le porte-monnaie Badnet, le compte d'attente des
@@ -76,16 +76,7 @@
 
   let searchTerm = $state('');
   const filteredTransactions = $derived(
-    transactions.filter((tx) => {
-      if (!searchTerm) return true;
-      const term = searchTerm.toLowerCase();
-      return (
-        tx.description.toLowerCase().includes(term) ||
-        (tx.category ?? '').toLowerCase().includes(term) ||
-        tx.amount.toString().includes(term) ||
-        tx.date.includes(term)
-      );
-    })
+    transactions.filter((tx) => correspondA(searchTerm, tx.description, tx.category ?? '', tx.amount.toString(), tx.date))
   );
 
   const actions = $derived(accountActions(account.kind ?? 'bank'));

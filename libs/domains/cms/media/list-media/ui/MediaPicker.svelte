@@ -4,7 +4,7 @@
 
 <script lang="ts">
   import type { PickableMedia } from './media-types';
-  import { Sheet, Input, Button, EmptyState, ErrorAlert, Label } from '@nba/ui';
+  import { Sheet, Input, Button, EmptyState, ErrorAlert, Label, correspondA } from '@nba/ui';
   import { mediaUrl } from '../../media-url';
   import { ImageOff, Search, Upload } from '@lucide/svelte';
   import { humanSize } from './media-upload';
@@ -70,11 +70,7 @@
         if (kind === 'document') return !isImage(item.mimeType);
         return true;
       })
-      .filter((item) => {
-        const term = searchTerm.trim().toLowerCase();
-        if (!term) return true;
-        return item.alt.toLowerCase().includes(term) || item.key.toLowerCase().includes(term);
-      })
+      .filter((item) => correspondA(searchTerm, item.alt, item.key))
   );
 
   function choose(item: PickableMedia) {

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Check, Search, Target } from '@lucide/svelte';
-  import { Button, Input, Table, Amount, Badge, FormField, SearchableCombobox } from '@nba/ui';
+  import { Button, Input, Table, Amount, Badge, FormField, SearchableCombobox, correspondA } from '@nba/ui';
   import type { GLTransaction, Member } from './reconciliation-types';
 
   let {
@@ -40,9 +40,8 @@
   const others = $derived(glTransactions.filter((gt) => !gt.bankStatementLineId && !suggestedIds.has(gt.id)));
 
   const searched = $derived.by(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return showAll ? others : [];
-    return others.filter((gt) => (gt.description || '').toLowerCase().includes(q));
+    if (!search.trim()) return showAll ? others : [];
+    return others.filter((gt) => correspondA(search, gt.description || ''));
   });
 
   /*

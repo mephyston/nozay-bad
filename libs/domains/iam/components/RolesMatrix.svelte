@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Table, Badge, Button, Input, SwitchField, FormSheet, ListView, ListRow, submitForm } from '@nba/ui';
+  import { Table, Badge, Button, Input, SwitchField, FormSheet, ListView, ListRow, submitForm, correspondA } from '@nba/ui';
   import { Check, Minus, AlertTriangle, RotateCcw, Search, ChevronDown, Shield } from '@lucide/svelte';
   import { ROLE_PERMISSIONS, type Role } from '../shared/roles';
   import { PERMISSION_LABELS, groupedPermissions } from '../shared/catalog';
@@ -56,15 +56,10 @@
   const editedRole = $derived(editing ? roles.find((r) => r.role === editing) : undefined);
   /** Le rôle du tiroir, qu'on l'y modifie ou qu'on s'y contente de lire. */
   const roleOuvert = $derived(ouvert ? roles.find((r) => r.role === ouvert) : undefined);
-  const needle = $derived(query.trim().toLowerCase());
-  const searching = $derived(needle.length > 0);
+  const searching = $derived(query.trim().length > 0);
 
   function matches(permission: Permission): boolean {
-    if (!searching) return true;
-    return (
-      permission.toLowerCase().includes(needle) ||
-      PERMISSION_LABELS[permission].toLowerCase().includes(needle)
-    );
+    return correspondA(query, permission, PERMISSION_LABELS[permission]);
   }
 
   /** Rubriques de la matrice, filtrées par la recherche ; les rubriques vides disparaissent. */

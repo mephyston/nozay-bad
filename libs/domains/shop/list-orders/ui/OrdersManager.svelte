@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { softNavigate, uiAlert } from '@nba/ui';
+  import { softNavigate, uiAlert, correspondA } from '@nba/ui';
   import type { OrderItem, OrdersTab, Season } from './orders-manager-types';
   import { validateOrder, payOrder, rejectOrder, cancelOrder, unpayOrder } from './orders-manager-actions';
   import { codeDeSaison, estOuverte, etapeOuverte } from './orders-row-model';
@@ -87,24 +87,16 @@
   });
 
   let filteredOrders = $derived(
-    ordersList.filter((item) => {
-      const term = searchTerm.toLowerCase().trim();
-      if (!term) return true;
-
-      const memberName = `${item.member?.lastName || ''} ${item.member?.firstName || ''}`.toLowerCase();
-      const licence = (item.member?.licence || '').toLowerCase();
-      const productName = (item.product?.name || '').toLowerCase();
-      const paymentMethod = (item.order.paymentMethodLabel || item.order.paymentMethod).toLowerCase();
-      const amount = (item.order.totalAmount / 100).toFixed(2);
-
-      return (
-        memberName.includes(term) ||
-        licence.includes(term) ||
-        productName.includes(term) ||
-        paymentMethod.includes(term) ||
-        amount.includes(term)
-      );
-    })
+    ordersList.filter((item) =>
+      correspondA(
+        searchTerm,
+        `${item.member?.lastName || ''} ${item.member?.firstName || ''}`,
+        item.member?.licence || '',
+        item.product?.name || '',
+        item.order.paymentMethodLabel || item.order.paymentMethod,
+        (item.order.totalAmount / 100).toFixed(2)
+      )
+    )
   );
 
   const createdOrders = $derived(filteredOrders.filter((item) => item.order.status === 'created'));

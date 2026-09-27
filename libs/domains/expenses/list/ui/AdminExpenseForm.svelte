@@ -35,11 +35,17 @@
     Le choix du demandeur passait par une liste déroulante écrite à la main — `<input>`,
     panneau absolu, navigation au clavier, fermeture au `blur` différée de 200 ms. Au
     doigt, ce panneau s'ouvrait sous le clavier logiciel, qui le recouvrait aussitôt.
+
+    Nom en entier, comme partout dans l'administration (« DURAND Camille ») et comme le
+    choix de l'acheteur d'une commande : le format masqué de l'espace adhérent ne laissait
+    distinguer deux Camille D. que par leur licence, qui passe en seconde ligne. Le nom
+    **enregistré** avec la note, lui, garde la forme de l'espace adhérent (`emitterName`) :
+    les deux formulaires écrivent le même.
   */
   const memberItems = $derived(
     [...members]
-      .sort((a, b) => a.lastName.localeCompare(b.lastName))
-      .map((m) => ({ label: `${formatMemberName(m)} (${m.licence})`, value: m.id }))
+      .sort((a, b) => a.lastName.localeCompare(b.lastName, 'fr') || a.firstName.localeCompare(b.firstName, 'fr'))
+      .map((m) => ({ label: `${m.lastName.toUpperCase()} ${m.firstName}`, hint: m.licence, value: m.id }))
   );
 
   const emitterName = $derived(

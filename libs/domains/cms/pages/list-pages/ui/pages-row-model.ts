@@ -1,5 +1,5 @@
 import { Edit, ExternalLink, Trash2 } from '@lucide/svelte';
-import type { SwipeAction, Tone } from '@nba/ui';
+import { correspondA, type SwipeAction, type Tone } from '@nba/ui';
 
 /**
  * Le vocabulaire des pages du site.
@@ -128,10 +128,8 @@ export function pagesFiltrees<T extends PageLike>(
   pages: readonly T[],
   { recherche = '', statut = 'tous' }: { recherche?: string; statut?: StatutDePage }
 ): T[] {
-  const terme = recherche.trim().toLowerCase();
   return pages.filter((page) => {
     if (statut !== 'tous' && page.status !== statut) return false;
-    if (!terme) return true;
-    return page.title.toLowerCase().includes(terme) || page.path.toLowerCase().includes(terme);
+    return correspondA(recherche, page.title, page.path);
   });
 }

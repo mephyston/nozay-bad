@@ -7,6 +7,7 @@ export * from './reconciliation-actions';
 export * from './reconciliation-suggestion';
 
 import { createReconciliationActions } from './reconciliation-actions';
+import { correspondA } from '@nba/ui';
 import { coverageCents, remainingToReconcileCents } from '../../../shared/bank-statement-line';
 
 /**
@@ -223,30 +224,18 @@ export class ReconciliationStore {
     return m ? `${m.lastName} ${m.firstName}` : '';
   });
   categoryDisplayVal = $derived.by(() => this.categories.find((c) => c.id === this.category)?.name || '');
-  filteredCategories = $derived(
-    this.categorySearchQuery.trim() === ''
-      ? this.categories
-      : this.categories.filter((c) => c.name.toLowerCase().includes(this.categorySearchQuery.toLowerCase()))
-  );
+  filteredCategories = $derived(this.categories.filter((c) => correspondA(this.categorySearchQuery, c.name)));
 
-  /**
-   * L'annuaire filtré, dé-accentué une fois par adhérent et non deux.
-   *
-   * Chaque frappe redéaccentuait deux chaînes par adhérent — quatre `normalize('NFD')` et autant
-   * de regex construites à la volée sur un millier d'adhérents. La clé se calcule maintenant une
-   * fois, avec l'annuaire.
-   */
-  private memberSearchKeys = $derived(
-    this.sortedMembers.map((m) => ({
-      member: m,
-      key: deaccent(`${m.lastName || ''} ${m.firstName || ''} ${m.licence || ''} ${m.firstName || ''} ${m.lastName || ''}`)
-    }))
+  /** Le nom dans les deux ordres : « Dupont Jean » comme « Jean Dupont ». */
+  filteredMembers = $derived(
+    this.sortedMembers.filter((m) =>
+      correspondA(
+        this.memberSearchQuery || '',
+        `${m.lastName || ''} ${m.firstName || ''} ${m.licence || ''}`,
+        `${m.firstName || ''} ${m.lastName || ''}`
+      )
+    )
   );
-  filteredMembers = $derived.by(() => {
-    const q = deaccent(this.memberSearchQuery || '');
-    if (!q) return this.sortedMembers;
-    return this.memberSearchKeys.filter((e) => e.key.includes(q)).map((e) => e.member);
-  });
 
   /* Les factures dont le montant colle exactement à la ligne : elles se signalent dans la liste.
      Le partitionnement en deux listes a disparu avec le troisième onglet — la reprise les propose
@@ -293,10 +282,7 @@ export class ReconciliationStore {
 
   /** Les filtres de recherche, communs à la file et à l'archive. */
   matchesFilters(t: BankStatementLine) {
-    if (this.searchQuery.trim()) {
-      const query = this.searchQuery.toLowerCase().trim();
-      if (!(t.name || '').toLowerCase().includes(query) && !(t.memo || '').toLowerCase().includes(query)) return false;
-    }
+    if (!correspondA(this.searchQuery, t.name || '', t.memo || '')) return false;
     if (this.accountFilter && String((t as any).accountId) !== this.accountFilter) return false;
     return true;
   }
@@ -442,11 +428,6 @@ export class ReconciliationStore {
       this.resetEntryFields();
     }
   }
-}
-
-/** Minuscules et sans accents : la forme sous laquelle une recherche se compare. */
-function deaccent(value: string): string {
-  return value.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 }
 
 /**

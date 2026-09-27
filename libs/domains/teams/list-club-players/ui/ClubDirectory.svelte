@@ -1,8 +1,8 @@
 <script lang="ts">
   import { ChevronRight } from '@lucide/svelte';
-  import { MemberAvatar } from '@nba/ui';
+  import { MemberAvatar, correspondA } from '@nba/ui';
   import { RANKING_SERIES_COLORS, bestRanking, rankingSeries } from '../../shared/ranking';
-  import RankingChip from '../../shared/components/RankingChip.svelte';
+  import RankingChip from '../../shared/ui/RankingChip.svelte';
 
   /**
    * L'annuaire du club, cherchable.
@@ -113,19 +113,14 @@
   }
 
   const filtered = $derived.by(() => {
-    const terms = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
+    // Chaque mot tapé doit se retrouver, dans n'importe quel ordre, selon la règle commune `correspondA`.
+    const terms = query.split(/\s+/).filter(Boolean);
     if (terms.length === 0) return players;
-    return players.filter((player: Player) => {
-      const haystack = [
-        player.lastName,
-        player.firstName,
-        player.category ?? '',
-        player.clubFunction ?? ''
-      ]
-        .join(' ')
-        .toLowerCase();
-      return terms.every((term) => haystack.includes(term));
-    });
+    return players.filter((player: Player) =>
+      terms.every((term) =>
+        correspondA(term, player.lastName, player.firstName, player.category ?? '', player.clubFunction ?? '')
+      )
+    );
   });
 </script>
 

@@ -19,6 +19,7 @@
     uiConfirm,
     flashAndReload,
     uiAlert,
+    correspondA,
     type SwipeAction
   } from '@nba/ui';
   import IndivSessionForm from './IndivSessionForm.svelte';
@@ -69,9 +70,7 @@
   const filtered = $derived(
     sessions.filter((row: SessionRow) => {
       if (onlyToAnnounce && !resteAAnnoncer(row as SoireeLike, today)) return false;
-      const term = searchTerm.trim().toLowerCase();
-      if (!term) return true;
-      return row.date.includes(term) || (row.venue?.name ?? '').toLowerCase().includes(term) || (row.label ?? '').toLowerCase().includes(term);
+      return correspondA(searchTerm, row.date, row.venue?.name ?? '', row.label ?? '');
     })
   );
 

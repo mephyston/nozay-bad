@@ -1,5 +1,5 @@
 import { ExternalLink, Pencil, Trash2 } from '@lucide/svelte';
-import type { SwipeAction } from '@nba/ui';
+import { correspondA, type SwipeAction } from '@nba/ui';
 import { humanSize } from './media-upload';
 
 /**
@@ -99,11 +99,9 @@ export function mediasFiltres<T extends MediaLike>(
   medias: readonly T[],
   { recherche = '', nature = 'tous' }: { recherche?: string; nature?: NatureDeMedia }
 ): T[] {
-  const terme = recherche.trim().toLowerCase();
   return medias.filter((m) => {
     if (nature === 'images' && !estImage(m)) return false;
     if (nature === 'documents' && estImage(m)) return false;
-    if (!terme) return true;
-    return m.alt.toLowerCase().includes(terme) || m.key.toLowerCase().includes(terme);
+    return correspondA(recherche, m.alt, m.key);
   });
 }

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { AlertCircle } from '@lucide/svelte';
-  import { Alert, uiConfirm, Badge, PageHeader, softNavigate, submitForm } from '@nba/ui';
+  import { Alert, uiConfirm, Badge, PageHeader, softNavigate, submitForm, correspondA } from '@nba/ui';
   import type { Expense, Season, Category } from './expenses-types';
   import { getCategoryOptions, getCategoryLabels } from './expenses-types';
   import { ExpensesState } from './expenses-state.svelte';
@@ -38,19 +38,13 @@
   const pendingExpenses = $derived(
     expenses
       .filter(e => e.status === 'pending')
-      .filter(e => 
-        e.emitterName.toLowerCase().includes(viewState.searchTerm.toLowerCase()) ||
-        e.description.toLowerCase().includes(viewState.searchTerm.toLowerCase())
-      )
+      .filter(e => correspondA(viewState.searchTerm, e.emitterName, e.description))
   );
 
   const historyExpenses = $derived(
     expenses
       .filter(e => e.status !== 'pending')
-      .filter(e => 
-        e.emitterName.toLowerCase().includes(viewState.searchTerm.toLowerCase()) ||
-        e.description.toLowerCase().includes(viewState.searchTerm.toLowerCase())
-      )
+      .filter(e => correspondA(viewState.searchTerm, e.emitterName, e.description))
   );
 
   async function saveEdit(id: number) {

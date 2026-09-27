@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { FormSheet, Button, Badge, SearchableCombobox, Alert, MemberAvatar, toast, Separator, uiAlert } from '@nba/ui';
+  import { FormSheet, Button, Badge, SearchableCombobox, Alert, MemberAvatar, toast, Separator, uiAlert, correspondA } from '@nba/ui';
   import { UserRoundX, TriangleAlert, Plus, X } from '@lucide/svelte';
   import type { GetTeamOutput } from '../dto';
 
@@ -54,16 +54,9 @@
   let addQuery = $state('');
 
   function suggest(query: string, exclude: string[] = []) {
-    const needle = query.trim().toLowerCase();
-    const matches = members.filter((m) => {
-      if (exclude.includes(m.licence)) return false;
-      if (!needle) return true;
-      return (
-        m.lastName.toLowerCase().includes(needle) ||
-        m.firstName.toLowerCase().includes(needle) ||
-        m.licence.includes(needle)
-      );
-    });
+    const matches = members.filter(
+      (m) => !exclude.includes(m.licence) && correspondA(query, m.lastName, m.firstName, m.licence)
+    );
     return matches
       .slice(0, MAX_SUGGESTIONS)
       .map((m) => ({ label: `${m.lastName} ${m.firstName}`, value: m.licence }));

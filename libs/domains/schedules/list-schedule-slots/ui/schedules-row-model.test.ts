@@ -141,6 +141,10 @@ describe('schedules-row-model', () => {
       expect(creneauxFiltres(liste, { recherche: 'bruyères' }).map((c) => c.id)).toEqual([1, 2]);
     });
 
+    it('trouve un gymnase accentué tapé sans accent ni capitale', () => {
+      expect(creneauxFiltres(liste, { recherche: 'BRUYERES' }).map((c) => c.id)).toEqual([1, 2]);
+    });
+
     it('croise la recherche et la visibilité', () => {
       expect(
         creneauxFiltres(liste, { recherche: 'bruyères', visibilite: 'masques' }).map((c) => c.id)

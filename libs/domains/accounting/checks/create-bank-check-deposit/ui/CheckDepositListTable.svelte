@@ -14,7 +14,8 @@
     DataTableToolbar,
     softNavigate,
     openDocument,
-    toSeasonOptions
+    toSeasonOptions,
+    correspondA
   } from '@nba/ui';
   import DepositsList from './DepositsList.svelte';
   import { gestesDeRemise, statutDeRemise } from './checks-row-model';
@@ -63,11 +64,7 @@
     onSupprimer: onDeleteDeposit
   });
 
-  const filteredDeposits = $derived.by(() => {
-    if (!depositSearchQuery) return checkDeposits;
-    const q = depositSearchQuery.toLowerCase();
-    return checkDeposits.filter(d => d.reference.toLowerCase().includes(q));
-  });
+  const filteredDeposits = $derived(checkDeposits.filter(d => correspondA(depositSearchQuery, d.reference)));
 </script>
 
 <!-- Le statut et le menu d'une remise, partagés par la table et la carte mobile. -->

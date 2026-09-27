@@ -23,6 +23,7 @@
     uiConfirm,
     flashAndReload,
     uiAlert,
+    correspondA,
     type SwipeAction
   } from '@nba/ui';
   import { DEFAULT_MIN_PLAYERS } from '../../../shared/open-play';
@@ -110,13 +111,7 @@
   const filtered = $derived(
     sessions.filter((row: SessionRow) => {
       if (onlyToStaff && !row.needsOpener) return false;
-      const term = searchTerm.trim().toLowerCase();
-      if (!term) return true;
-      return (
-        row.date.includes(term) ||
-        (row.venue?.name ?? '').toLowerCase().includes(term) ||
-        (row.label ?? '').toLowerCase().includes(term)
-      );
+      return correspondA(searchTerm, row.date, row.venue?.name ?? '', row.label ?? '');
     })
   );
 

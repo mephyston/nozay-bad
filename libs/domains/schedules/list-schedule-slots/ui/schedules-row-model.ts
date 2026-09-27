@@ -1,5 +1,5 @@
 import { Edit, Eye, EyeOff, Trash2 } from '@lucide/svelte';
-import type { SwipeAction, Tone } from '@nba/ui';
+import { correspondA, type SwipeAction, type Tone } from '@nba/ui';
 import { AUDIENCE_LABELS, WEEKDAY_LABELS } from '../../shared/schema';
 
 /**
@@ -155,16 +155,15 @@ export function creneauxFiltres<T extends CreneauLike>(
   creneaux: readonly T[],
   { recherche = '', visibilite = 'tous' }: { recherche?: string; visibilite?: VisibiliteDeCreneau }
 ): T[] {
-  const terme = recherche.trim().toLowerCase();
   return creneauxOrdonnes(creneaux).filter((slot) => {
     if (visibilite === 'affiches' && !slot.active) return false;
     if (visibilite === 'masques' && slot.active) return false;
-    if (!terme) return true;
-    return [
+    return correspondA(
+      recherche,
       libelleDeJour(slot.weekday),
       libelleDeGroupe(slot.audience),
       slot.label ?? '',
       slot.venue?.name ?? ''
-    ].some((champ) => champ.toLowerCase().includes(terme));
+    );
   });
 }
