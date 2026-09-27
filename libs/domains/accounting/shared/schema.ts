@@ -225,7 +225,11 @@ export const ledgerEntriesTable = sqliteTable('ledger_entries', {
   status: text('status', { enum: ['pending_debit', 'in_vault', 'cleared'] }).notNull().default('cleared'),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
 }, (table) => ({
-  amountCheck: check('ledger_entries_amount_cents_check', sql`${table.amountCents} > 0`),
+  // Positif, ou recette négative : un remboursement diminue la recette de sa catégorie (0040).
+  amountCheck: check(
+    'ledger_entries_amount_cents_check',
+    sql`${table.amountCents} > 0 OR (${table.type} = 'recette' AND ${table.amountCents} < 0)`
+  ),
   /*
    * Une écriture de virement est une jambe, et rien d'autre : elle appartient à un virement, se
    * situe d'un côté, et ne porte jamais de catégorie — un virement ne change pas le résultat.
