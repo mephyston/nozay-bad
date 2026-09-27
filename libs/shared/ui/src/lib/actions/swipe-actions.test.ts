@@ -110,3 +110,78 @@ describe('swipeActions — garde-fou du clic', () => {
     expect(clic.defaultPrevented).toBe(true);
   });
 });
+
+/**
+ * Le tiroir s'ouvre sans agir.
+ *
+ * Le seuil d'exécution valait 55 % de la ligne : trois boutons en occupent autant sur un
+ * téléphone, si bien qu'ouvrir le tiroir en grand exécutait la première action au relâché.
+ */
+describe('swipeActions — ouvrir sans agir', () => {
+  let liste: HTMLElement;
+  let action: ReturnType<typeof swipeActions>;
+  let executions: number;
+
+  /** Une ligne de téléphone (390 px) et trois actions de 72 px. */
+  function ligneDeTelephone(): { li: HTMLElement; cible: HTMLElement } {
+    const li = rangee(true);
+    const piste = li.querySelector<HTMLElement>('[data-swipe-track]')!;
+    piste.querySelector('button')!.addEventListener('click', () => (executions += 1));
+    piste.appendChild(document.createElement('button'));
+    piste.appendChild(document.createElement('button'));
+    // Comme dans ListRowSwipeTrack : les boutons révélés échappent au garde-fou du clic.
+    piste.querySelectorAll('button').forEach((b) => b.setAttribute('data-no-swipe', ''));
+    Object.defineProperty(li, 'offsetWidth', { value: 390 });
+    Object.defineProperty(piste, 'offsetWidth', { value: 216 });
+    liste.appendChild(li);
+    return { li, cible: li.querySelector('[data-swipe-layer] button')! };
+  }
+
+  const balayer = (cible: Element, ...xs: number[]) => {
+    pointer('pointerdown', cible, 380, 100);
+    for (const x of xs) pointer('pointermove', cible, x, 100);
+    pointer('pointerup', cible, xs[xs.length - 1], 100);
+  };
+
+  beforeEach(() => {
+    executions = 0;
+    liste = document.createElement('ul');
+    document.body.appendChild(liste);
+    (liste as unknown as { setPointerCapture: () => void }).setPointerCapture = () => {};
+    (liste as unknown as { releasePointerCapture: () => void }).releasePointerCapture = () => {};
+    (liste as unknown as { hasPointerCapture: () => boolean }).hasPointerCapture = () => false;
+    action = swipeActions(liste);
+  });
+
+  afterEach(() => {
+    action.destroy();
+    liste.remove();
+  });
+
+  it('laisse le tiroir ouvert quand on a juste dévoilé toutes les actions', () => {
+    const { li, cible } = ligneDeTelephone();
+    // 240 px parcourus : plus que les trois boutons (216), loin du seuil (max(273, 280)).
+    balayer(cible, 360, 250, 140);
+    expect(executions).toBe(0);
+    expect(li.hasAttribute('data-swipe-open')).toBe(true);
+  });
+
+  it('exécute l’action de tête après un balayage franc, et l’annonce avant le relâché', () => {
+    const { li, cible } = ligneDeTelephone();
+    pointer('pointerdown', cible, 380, 100);
+    pointer('pointermove', cible, 360, 100);
+    pointer('pointermove', cible, 60, 100);
+    expect(li.hasAttribute('data-swipe-armed')).toBe(true);
+    pointer('pointerup', cible, 60, 100);
+    expect(executions).toBe(1);
+  });
+
+  it('se désarme si le doigt revient en arrière avant de relâcher', () => {
+    const { li, cible } = ligneDeTelephone();
+    balayer(cible, 360, 60, 140);
+    expect(executions).toBe(0);
+    expect(li.hasAttribute('data-swipe-armed')).toBe(false);
+    expect(li.hasAttribute('data-swipe-open')).toBe(true);
+  });
+});
+

@@ -21,14 +21,28 @@ export type SwipeActionsOptions = {
   axisLock?: number;
   /** Fraction de la largeur des actions au-delà de laquelle la ligne reste ouverte. */
   openRatio?: number;
-  /** Fraction de la largeur de la LIGNE au-delà de laquelle l'action de tête s'exécute. */
+  /**
+   * Fraction de la largeur de la LIGNE que le doigt doit parcourir pour armer l'action de
+   * tête. Jamais moins que les actions elles-mêmes plus {@link MARGE_ARMEMENT} : voir
+   * `seuilArmement`.
+   */
   commitRatio?: number;
 };
 
 const MOUVEMENT_MINIMAL = 4;
 
+/**
+ * Ce qu'il faut parcourir **au-delà** des actions révélées pour armer celle de tête.
+ *
+ * Le seuil ne valait que 55 % de la ligne : trois boutons en occupent déjà autant sur un
+ * téléphone. Ouvrir le tiroir en grand, c'était donc franchir le seuil, et le relâché
+ * exécutait la première action au lieu de laisser choisir. Il faut désormais dépasser
+ * franchement le tiroir.
+ */
+const MARGE_ARMEMENT = 64;
+
 export function swipeActions(node: HTMLElement, options: SwipeActionsOptions = {}) {
-  let { axisLock = 8, openRatio = 0.4, commitRatio = 0.55 } = options;
+  let { axisLock = 8, openRatio = 0.4, commitRatio = 0.7 } = options;
 
   let ligneOuverte: HTMLElement | null = null;
 
@@ -40,6 +54,8 @@ export function swipeActions(node: HTMLElement, options: SwipeActionsOptions = {
   let departY = 0;
   let departOffset = 0;
   let dx = 0;
+  /** L'action de tête s'exécutera au relâché. Se défait si le doigt revient en arrière. */
+  let arme = false;
   let axe: 'x' | 'y' | null = null;
   let pointeur: number | null = null;
   let bouge = false;
@@ -53,8 +69,31 @@ export function swipeActions(node: HTMLElement, options: SwipeActionsOptions = {
     if (c) c.style.transform = `translate3d(${x}px, 0, 0)`;
   }
 
+  /**
+   * L'état armé se **voit** : l'action de tête s'étire sur toute la largeur révélée et
+   * les autres s'effacent, comme dans Mail. Sans ce signe, on ne savait pas qu'un
+   * relâché allait agir — ni qu'on pouvait encore revenir en arrière pour l'éviter.
+   */
+  function armer(l: HTMLElement, oui: boolean, largeur = 0) {
+    const piste = pisteDe(l);
+    if (oui) {
+      if (!arme) navigator.vibrate?.(10);
+      l.setAttribute('data-swipe-armed', '');
+      if (piste) piste.style.width = `${largeur}px`;
+    } else {
+      l.removeAttribute('data-swipe-armed');
+      if (piste) piste.style.width = '';
+    }
+    arme = oui;
+  }
+
+  /** Distance que le doigt doit parcourir, depuis la ligne fermée, pour armer. */
+  const seuilArmement = (l: HTMLElement) =>
+    Math.max(l.offsetWidth * commitRatio, largeurActions + MARGE_ARMEMENT);
+
   function fermer(l: HTMLElement | null) {
     if (!l) return;
+    armer(l, false);
     poser(l, 0);
     l.removeAttribute('data-swipe-open');
     if (ligneOuverte === l) ligneOuverte = null;
@@ -123,6 +162,7 @@ export function swipeActions(node: HTMLElement, options: SwipeActionsOptions = {
     departY = e.clientY;
     departOffset = l.hasAttribute('data-swipe-open') ? -mesurer(l) : 0;
     dx = 0;
+    arme = false;
     axe = null;
     pointeur = e.pointerId;
   }
@@ -153,11 +193,20 @@ export function swipeActions(node: HTMLElement, options: SwipeActionsOptions = {
 
     if (Math.abs(ecartX) > MOUVEMENT_MINIMAL) bouge = true;
 
-    let x = departOffset + ecartX;
-    // Rappel élastique : au-delà des actions, et vers la droite, le doigt ne suit plus.
-    if (x < -largeurActions) x = -largeurActions - (-largeurActions - x) * 0.35;
-    if (x > 0) x = x * 0.35;
+    // La distance du doigt, et non celle de la couche : le rappel élastique ci-dessous
+    // la freine à l'écran, et le seuil ne doit pas dépendre de cette résistance.
+    const brut = departOffset + ecartX;
+    const armee = -brut > seuilArmement(ligne);
+
+    // Armée, la ligne suit de nouveau le doigt : c'est le « déclic » qui se voit. Sinon,
+    // rappel élastique : au-delà des actions, et vers la droite, le doigt ne suit plus.
+    let x = brut;
+    if (!armee) {
+      if (x < -largeurActions) x = -largeurActions - (-largeurActions - x) * 0.35;
+      if (x > 0) x = x * 0.35;
+    }
     dx = x;
+    if (armee || arme) armer(ligne, armee, -x);
 
     if (!trame) {
       trame = requestAnimationFrame(() => {
@@ -172,10 +221,11 @@ export function swipeActions(node: HTMLElement, options: SwipeActionsOptions = {
     const l = ligne;
     const parcouru = Math.abs(dx);
     const engage = axe === 'x';
+    const executer = arme;
     terminer();
     if (!engage) return;
 
-    if (parcouru > l.offsetWidth * commitRatio) executerTete(l);
+    if (executer) executerTete(l);
     else if (parcouru > largeurActions * openRatio) ouvrir(l, largeurActions);
     else fermer(l);
   }
@@ -225,7 +275,7 @@ export function swipeActions(node: HTMLElement, options: SwipeActionsOptions = {
 
   return {
     update(o: SwipeActionsOptions = {}) {
-      ({ axisLock = 8, openRatio = 0.4, commitRatio = 0.55 } = o);
+      ({ axisLock = 8, openRatio = 0.4, commitRatio = 0.7 } = o);
     },
     destroy() {
       terminer();

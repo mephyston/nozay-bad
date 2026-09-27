@@ -35,7 +35,17 @@
   parce que c'est elle qu'un balayage long exécute. L'ordre du DOM reste celui de la
   déclaration — le geste prend le premier bouton — seul le rendu s'inverse.
 -->
-<div bind:this={ref} data-swipe-track aria-hidden={!open} class="absolute inset-y-0 right-0 flex flex-row-reverse">
+<!--
+  Armée (`data-swipe-armed` posé sur la ligne par le geste), l'action de tête s'étire sur
+  toute la largeur révélée et les autres s'effacent : on voit qu'un relâché va agir, et
+  qu'il suffit de revenir en arrière pour l'éviter.
+-->
+<div
+  bind:this={ref}
+  data-swipe-track
+  aria-hidden={!open}
+  class="piste absolute inset-y-0 right-0 flex flex-row-reverse"
+>
   {#each actions as action (action.id)}
     {@const Icone = action.icon}
     <button
@@ -53,3 +63,12 @@
     </button>
   {/each}
 </div>
+
+<style>
+  :global([data-swipe-armed]) .piste > button:first-child {
+    flex: 1;
+  }
+  :global([data-swipe-armed]) .piste > button:not(:first-child) {
+    display: none;
+  }
+</style>
