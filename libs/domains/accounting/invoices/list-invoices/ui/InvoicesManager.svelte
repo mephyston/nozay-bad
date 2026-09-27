@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { montantDeLigne } from './invoice-line';
   import { Download, Plus } from '@lucide/svelte';
   import {
     Button,
@@ -119,13 +120,7 @@
       )
   );
 
-  const itemsTotal = $derived(
-    form.items.reduce((sum, item) => {
-      const q = item.quantity || 0;
-      const p = parseFloat(item.unitPriceStr.replace(',', '.')) || 0;
-      return sum + (q * Math.round(p * 100));
-    }, 0)
-  );
+  const itemsTotal = $derived(form.items.reduce((sum, item) => sum + montantDeLigne(item), 0));
 
   function openCreateModal() {
     form.openCreateModal();
