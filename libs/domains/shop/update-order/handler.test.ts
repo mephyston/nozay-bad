@@ -143,4 +143,17 @@ describe('updateOrder (correction avant règlement)', () => {
 
     await expect(updateOrder(db, order.id, body(m.id, 1, { memberId: ailleurs.id }))).rejects.toBeInstanceOf(MemberNotEligibleError);
   });
+
+  it('passe la commande à un adhérent en paiement partiel, comme à la création', async () => {
+    const partiel = await insertMemberFixture(db, {
+      licence: '55556666', seasonId, lastName: 'Durand', firstName: 'Camille', gender: 'F',
+      birthDate: '1990-01-01', email: 'camille@example.com', status: 'incomplet', type: 'senior', importedAt: new Date()
+    });
+    const m = await seedProduct({ stock: 5, trackStock: true });
+    const order = await seedOrder(m.id, { quantity: 1, status: 'created' });
+
+    const updated = await updateOrder(db, order.id, body(m.id, 1, { memberId: partiel.id }));
+    expect(updated.memberId).toBe(partiel.id);
+  });
 });
+

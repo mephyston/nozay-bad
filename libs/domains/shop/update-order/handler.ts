@@ -1,7 +1,7 @@
 import { type Db, AppError } from '@nba/db';
-import { isSeasonClosed } from '@nba/members-api';
+import { isSeasonClosed, membershipGrantsAccess } from '@nba/members-api';
 import { productDisplayName } from '../shared/product';
-import { Order } from '../shared/order';
+import { Order, motifDeRefusCommande } from '../shared/order';
 import {
   ConcurrentModificationError,
   InsufficientStockError,
@@ -55,11 +55,8 @@ export async function updateOrder(db: Db, id: number, body: UpdateOrderInput): P
     if (member.seasonId !== order.seasonId) {
       throw new MemberNotEligibleError("L'adhérent n'est pas inscrit sur la saison de cette commande.");
     }
-    if (member.status !== 'valide') {
-      throw new MemberNotEligibleError(
-        `L'adhérent n'a pas un statut validé (statut actuel : ${member.status}). Seuls les adhérents au statut validé peuvent commander en boutique.`
-      );
-    }
+    const refus = motifDeRefusCommande(member, membershipGrantsAccess);
+    if (refus) throw new MemberNotEligibleError(refus);
   }
 
   const product = await repo.getProductById(db, body.productId);

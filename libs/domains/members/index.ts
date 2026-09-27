@@ -72,6 +72,7 @@ export {
   isSeasonClosed,
   type MemberSummary
 } from './shared/queries';
+export { membershipGrantsAccess } from './shared/membership-status';
 export * from './shared/dashboard';
 export * from './shared/age-categories';
 export { listMembers } from './list-members/handler';

@@ -1,7 +1,8 @@
 import { type Db } from '@nba/db';
 import { CreateOrderRepository } from './repository';
 import { ProductNotFoundError, SeasonClosedError, MemberNotFoundError, MemberNotEligibleError } from '../shared/errors';
-import { isSeasonClosed } from '@nba/members-api';
+import { isSeasonClosed, membershipGrantsAccess } from '@nba/members-api';
+import { motifDeRefusCommande } from '../shared/order';
 import { CreateOrderInput, CreateOrderOutput } from "./dto";
 import { AppError } from '@nba/db';
 
@@ -27,9 +28,8 @@ export async function createOrder(db: Db, body: CreateOrderInput, context: Creat
     throw new MemberNotEligibleError("L'adhérent n'est pas inscrit sur la saison sélectionnée pour la commande.");
   }
 
-  if (member.status !== 'valide') {
-    throw new MemberNotEligibleError(`L'adhérent n'a pas un statut validé (statut actuel : ${member.status}). Seuls les adhérents au statut validé peuvent commander en boutique.`);
-  }
+  const refus = motifDeRefusCommande(member, membershipGrantsAccess);
+  if (refus) throw new MemberNotEligibleError(refus);
 
   if (body.paidAt) {
     const todayStr = new Date().toISOString().split('T')[0];

@@ -17,6 +17,7 @@ Un adhérent du club peut commander un ou plusieurs articles disponibles dans la
 2. Dès la validation de la commande par le bureau, le stock de chaque produit commandé est immédiatement décrémenté de la quantité correspondante. La suite du cycle de vie est décrite par [RF-SHO-003](./RF-SHO-003-workflow-paiement-commande.md).
 3. Le montant total de la commande est la somme exacte des `(quantité * prix_unitaire)` de chaque ligne.
 4. Une commande vide (0 article) est refusée.
+5. **Qui peut commander** : l'adhérent dont la cotisation a reçu au moins un règlement — statut « Validé » (soldée) ou « Paiement partiel ». C'est la même règle que l'accès à l'espace adhérent. Un adhérent « En attente de paiement » (rien reçu) ou « Suspendu » ne commande pas, et le refus le dit en clair. La règle vaut pour la commande passée par l'adhérent comme pour celle que le bureau saisit ou corrige en son nom. *(Décision du 27/09/2026 : la boutique exigeait jusque-là une cotisation soldée.)*
 
 ---
 
@@ -39,4 +40,14 @@ Fonctionnalité: Passage et Validation de Commande
     Quand un adhérent tente de commander 2 unités de "Maillot Club Taille M"
     Alors la commande est refusée avec le message "Stock insuffisant pour Maillot Club Taille M"
     Et le stock de "Maillot Club Taille M" reste inchangé à 1 unité
+
+  Scénario: Commande d'un adhérent en paiement partiel
+    Étant donné que la cotisation de "Camille Durand" a reçu un premier versement sur deux
+    Quand Camille commande 1 unité de "Boîte Volants Plumes"
+    Alors la commande est créée au statut "created"
+
+  Scénario: Refus pour une cotisation sans aucun règlement
+    Étant donné que la cotisation de "Léo Petit" n'a reçu aucun règlement
+    Quand le bureau tente de créer une commande au nom de Léo
+    Alors la commande est refusée avec le message "La cotisation de Léo n'a pas encore été réglée : la boutique s'ouvre dès le premier versement."
 ```

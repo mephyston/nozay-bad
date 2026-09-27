@@ -10,6 +10,27 @@
  * mauvaise commande. Il retire la recette du grand livre, tant qu'elle n'y est pas
  * pointée sur le relevé.
  */
+/**
+ * Pourquoi un adhérent ne peut pas commander, ou `null` s'il le peut.
+ *
+ * Même règle que l'accès à l'espace adhérent (`membershipGrantsAccess`) : dès qu'un
+ * règlement, même partiel, a été reçu. La boutique n'exigeait jusqu'ici qu'une cotisation
+ * **soldée** : les adhérents en paiement partiel voyaient la boutique, remplissaient leur
+ * commande, et se la voyaient refuser à l'envoi, au nom d'un statut interne
+ * (« statut actuel : incomplet ») qui ne leur disait rien. Décidé avec le bureau le
+ * 27/09/2026 : seuls ceux qui n'ont rien payé ne commandent pas — et ceux-là n'ont de
+ * toute façon pas accès à l'application.
+ */
+export function motifDeRefusCommande(
+  member: { status: string; firstName?: string | null },
+  peutCommander: (status: string) => boolean
+): string | null {
+  if (peutCommander(member.status)) return null;
+  const qui = member.firstName ? `${member.firstName}` : "L'adhérent";
+  if (member.status === 'suspendu') return `L'adhésion de ${qui} est suspendue : la boutique ne lui est pas ouverte.`;
+  return `La cotisation de ${qui} n'a pas encore été réglée : la boutique s'ouvre dès le premier versement.`;
+}
+
 export type OrderStatus = 'created' | 'awaiting_payment' | 'paid' | 'rejected' | 'cancelled';
 
 export const ORDER_STATUSES: readonly OrderStatus[] = [

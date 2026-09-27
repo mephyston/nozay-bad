@@ -75,6 +75,30 @@ describe('createOrder handler (Eligibility & Validation)', () => {
     })).rejects.toThrowError(MemberNotEligibleError);
   });
 
+  /*
+   * Règle du 27/09/2026 : la boutique s'ouvre dès le premier versement, comme l'espace
+   * adhérent. Un paiement partiel commande ; rien de payé, non — et on dit pourquoi.
+   */
+  it('3b. Accepte un adhérent en paiement partiel', async () => {
+    const partiel = await insertMemberFixture(db, {
+      licence: '555666', seasonId, lastName: 'Durand', firstName: 'Camille', gender: 'F', birthDate: '1990-01-01',
+      status: 'incomplet', type: 'senior', importedAt: new Date()
+    });
+
+    const order = await createOrder(db, { seasonId, memberId: partiel.id, productId, quantity: 1, paymentMethod: paymentMethodCode });
+    expect(order.status).toBe('created');
+  });
+
+  it("3c. Refuse un adhérent qui n'a rien payé, en le disant en clair", async () => {
+    const enAttente = await insertMemberFixture(db, {
+      licence: '777888', seasonId, lastName: 'Petit', firstName: 'Léo', gender: 'M', birthDate: '1990-01-01',
+      status: 'en_attente', type: 'senior', importedAt: new Date()
+    });
+
+    await expect(createOrder(db, { seasonId, memberId: enAttente.id, productId, quantity: 1, paymentMethod: paymentMethodCode }))
+      .rejects.toThrowError("La cotisation de Léo n'a pas encore été réglée : la boutique s'ouvre dès le premier versement.");
+  });
+
   it('4. Rejects order creation if paidAt is in the future', async () => {
     await expect(createOrder(db, {
       seasonId, memberId, productId, quantity: 1, paymentMethod: paymentMethodCode, paidAt: '2099-12-31'
