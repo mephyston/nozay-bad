@@ -29,6 +29,14 @@ export type DragDetentsOptions = {
 };
 
 const SEUIL_AXE = 6;
+/**
+ * Depuis le contenu, il faut une descente plus nette avant que la feuille ne prenne la main.
+ *
+ * Un doigt qui se pose roule souvent de quelques pixels vers le bas avant de remonter : à
+ * 6 px, ce faux départ engageait la feuille, dont le `preventDefault` bloquait ensuite le
+ * défilement jusqu'au relâché. Depuis la poignée, aucune ambiguïté : 6 px suffisent.
+ */
+const SEUIL_CONTENU = 14;
 const RESSORT = 'transform 320ms cubic-bezier(0.32, 0.72, 0, 1)';
 /** Au-delà, le geste est un rejet quelle que soit la distance parcourue. */
 const VELOCITE_REJET = 0.55;
@@ -48,6 +56,8 @@ export function dragDetents(node: HTMLElement, options: DragDetentsOptions = {})
   let hauteurVisible = 0;
   let palier = opts.detent;
   let depart = 0;
+  let departX = 0;
+  let cibleDepart: Element | null = null;
   let departOffset = 0;
   let depuis = 0;
   let dy = 0;
@@ -55,6 +65,8 @@ export function dragDetents(node: HTMLElement, options: DragDetentsOptions = {})
   let pointeur: number | null = null;
   let trame = 0;
   let premiereMesure = true;
+  /** La dernière translation posée : ce qu'il faut reposer si elle est effacée. */
+  let dernierY = 0;
 
   const mouvementReduit = () =>
     window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
@@ -96,6 +108,7 @@ export function dragDetents(node: HTMLElement, options: DragDetentsOptions = {})
   }
 
   function poser(y: number) {
+    dernierY = y;
     node.style.transform = `translate3d(0, ${y}px, 0)`;
     // La feuille descend, mais son pied doit rester sur le bord visible de l'écran :
     // il se relève d'autant. Sans quoi, au palier bas, le bouton d'enregistrement
@@ -114,7 +127,24 @@ export function dragDetents(node: HTMLElement, options: DragDetentsOptions = {})
     opts.onDetent?.(index);
   }
 
-  const zoneDefilante = (cible: Element | null) => cible?.closest<HTMLElement>('[data-sheet-scroll]') ?? null;
+  /**
+   * Un défilement entre le doigt et la feuille peut-il encore remonter ?
+   *
+   * Seule la zone principale (`[data-sheet-scroll]`) était regardée. Or une feuille contient
+   * souvent ses propres listes défilantes — les écritures proposées et les résultats du
+   * rapprochement, un menu de l'éditeur : zone principale en haut, remonter dans l'une
+   * d'elles tirait la feuille vers le bas au lieu de la faire défiler. On remonte donc tous
+   * les ancêtres défilants jusqu'à la feuille ; un seul qui n'est pas en haut garde le geste.
+   */
+  function contenuPeutRemonter(cible: Element | null): boolean {
+    for (let el = cible as HTMLElement | null; el && el !== node; el = el.parentElement) {
+      if (el.scrollTop > 0 && el.scrollHeight > el.clientHeight) {
+        const debord = getComputedStyle(el).overflowY;
+        if (debord === 'auto' || debord === 'scroll') return true;
+      }
+    }
+    return false;
+  }
 
   function onPointerDown(e: PointerEvent) {
     if (!opts.enabled || !e.isPrimary || e.button !== 0) return;
@@ -130,12 +160,13 @@ export function dragDetents(node: HTMLElement, options: DragDetentsOptions = {})
     if (cible?.closest('input, textarea, select, button, a, [contenteditable]')) return;
 
     const surPoignee = !!cible?.closest('[data-grabber]');
-    const zone = zoneDefilante(cible);
     // Le contenu défile, la feuille ne glisse que depuis le haut : sinon le geste
     // volerait le défilement à un formulaire plus long que l'écran.
-    if (!surPoignee && zone && zone.scrollTop > 0) return;
+    if (!surPoignee && contenuPeutRemonter(cible)) return;
 
+    cibleDepart = cible;
     depart = e.clientY;
+    departX = e.clientX;
     departOffset = offsetDe(palier);
     depuis = performance.now();
     dy = 0;
@@ -149,10 +180,19 @@ export function dragDetents(node: HTMLElement, options: DragDetentsOptions = {})
     const ecart = e.clientY - depart;
 
     if (!actif) {
-      if (Math.abs(ecart) < SEUIL_AXE) return;
+      const depuisContenu = node.dataset.sheetCandidate === 'contenu';
+      const ecartX = e.clientX - departX;
+      if (Math.max(Math.abs(ecart), Math.abs(ecartX)) < (depuisContenu ? SEUIL_CONTENU : SEUIL_AXE)) return;
+      // Verrou d'axe : un geste plutôt horizontal (balayer une ligne, faire défiler une
+      // rangée de vignettes) n'est jamais celui de la feuille.
+      if (Math.abs(ecartX) >= Math.abs(ecart)) {
+        fin();
+        return;
+      }
       // Depuis le contenu en haut de course, seule la descente nous revient :
-      // vers le haut, c'est au défilement natif de reprendre la main.
-      if (node.dataset.sheetCandidate === 'contenu' && ecart < 0) {
+      // vers le haut, c'est au défilement natif de reprendre la main. L'inertie a pu
+      // faire bouger le contenu depuis l'appui : on regarde de nouveau avant de prendre.
+      if (depuisContenu && (ecart < 0 || contenuPeutRemonter(cibleDepart))) {
         fin();
         return;
       }
@@ -212,6 +252,7 @@ export function dragDetents(node: HTMLElement, options: DragDetentsOptions = {})
     if (pointeur !== null && node.hasPointerCapture(pointeur)) node.releasePointerCapture(pointeur);
     pointeur = null;
     actif = false;
+    cibleDepart = null;
     delete node.dataset.sheetCandidate;
     node.removeAttribute('data-sheet-dragging');
   }
@@ -223,6 +264,24 @@ export function dragDetents(node: HTMLElement, options: DragDetentsOptions = {})
   function onTouchMove(e: TouchEvent) {
     if (actif) e.preventDefault();
   }
+
+  /*
+    Nos styles en ligne ne survivent pas toujours.
+
+    bits-ui réécrit **tout** l'attribut `style` du contenu d'un dialogue quand il met à jour
+    ses variables (`--bits-dialog-nested-count`) — c'est ce qui arrive dès qu'un sélecteur
+    s'ouvre par-dessus la feuille. La hauteur et la translation posées ici disparaissaient
+    alors : sans hauteur, la zone de contenu n'avait plus de limite, débordait au lieu de
+    défiler, et le défilement restait mort après la fermeture du sélecteur. On surveille
+    l'attribut et on repose ce qui manque, sans transition.
+  */
+  const gardien = new MutationObserver(() => {
+    if (!opts.enabled || actif || !hauteurVisible) return;
+    if (node.style.height && node.style.transform) return;
+    node.style.height = `${hauteurFeuille()}px`;
+    poser(dernierY);
+  });
+  gardien.observe(node, { attributes: true, attributeFilter: ['style'] });
 
   node.addEventListener('pointerdown', onPointerDown, { passive: true });
   node.addEventListener('pointermove', onPointerMove, { passive: true });
@@ -242,6 +301,7 @@ export function dragDetents(node: HTMLElement, options: DragDetentsOptions = {})
       mesurer();
     },
     destroy() {
+      gardien.disconnect();
       fin();
       node.removeEventListener('pointerdown', onPointerDown);
       node.removeEventListener('pointermove', onPointerMove);
