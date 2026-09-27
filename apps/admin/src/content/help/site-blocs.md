@@ -279,7 +279,7 @@ Le bloc se lit comme la grille des **Créneaux** : **une rangée par semaine** (
 
 Dans la colonne d'un jour, chaque séance donne l'horaire et le gymnase, puis :
 
-- **l'ouvreur** — « Ouvreur : Robert M. » dès qu'un bénévole s'est engagé, et sinon **« On cherche toujours un ouvreur »** ;
+- **l'ouvreur** — « Ouvert par Robert M. » dès qu'un bénévole s'est engagé, et sinon **« On cherche toujours un bénévole pour ouvrir »** ;
 - **le nombre de joueurs**, invités compris, et ce qu'il manque pour atteindre le seuil d'ouverture ;
 - **la liste des inscrits**, un par ligne sous la forme « Camille D. », suivie de « + 2 invités » quand il y en a.
 

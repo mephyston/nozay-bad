@@ -80,7 +80,7 @@ export class TooManyGuestsError extends AppError {
 
 /** Le seul 403 du domaine : le demandeur n'a pas de clé. */
 export class NotAnOpenerError extends AppError {
-  constructor(message = 'Vous ne faites pas partie des ouvreurs désignés.') {
+  constructor(message = 'Vous ne faites pas partie des bénévoles désignés pour ouvrir.') {
     super(message, 403);
     this.name = 'NotAnOpenerError';
   }
@@ -94,7 +94,7 @@ export class SessionAlreadyClaimedError extends AppError {
 }
 
 export class NotTheOpenerError extends AppError {
-  constructor(message = "Vous n'êtes pas l'ouvreur de cette séance.") {
+  constructor(message = "Ce n'est pas vous qui ouvrez cette séance.") {
     super(message, 409);
     this.name = 'NotTheOpenerError';
   }

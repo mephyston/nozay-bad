@@ -28,7 +28,7 @@ Le site public est lu par n'importe qui et indexé par les moteurs de recherche.
 
 **Les invités sont comptés, jamais nommés.** Ce ne sont pas des adhérents. Le bloc affiche « + 2 invités » à la suite des inscrits, et les invités comptent dans le nombre de joueurs, comme pour le seuil d'ouverture.
 
-**L'ouvreur est nommé sous la même forme** (« Robert M. ») dès qu'il s'est engagé. Tant qu'aucun ouvreur ne s'est engagé, le bloc affiche **« On cherche toujours un ouvreur »**.
+**L'ouvreur est nommé sous la même forme** (« Robert M. ») dès qu'il s'est engagé. Tant qu'aucun ouvreur ne s'est engagé, le bloc affiche **« On cherche toujours un bénévole pour ouvrir »**. Le mot « ouvreur » reste celui du bureau : face au public et aux adhérents, on parle du bénévole qui ouvre.
 
 **Une séance annulée reste affichée, barrée**, avec la mention « Séance annulée ». Son motif, lui, n'est pas repris : il est rédigé pour les inscrits, pas pour le public. Les consignes du bureau (« clé chez Robert ») ne sont jamais affichées.
 
@@ -67,12 +67,12 @@ Fonctionnalité: Le jeu libre sur le site public
   Scénario: L'ouvreur identifié est affiché
     Étant donné que Robert Moreau s'est engagé à ouvrir la séance
     Quand un visiteur ouvre la page
-    Alors il lit « Ouvreur : Robert M. »
+    Alors il lit « Ouvert par Robert M. »
 
   Scénario: Aucun ouvreur ne s'est encore engagé
     Étant donné qu'aucun ouvreur ne s'est engagé pour la séance
     Quand un visiteur ouvre la page
-    Alors il lit « On cherche toujours un ouvreur »
+    Alors il lit « On cherche toujours un bénévole pour ouvrir »
 
   Scénario: Une séance annulée ne livre pas son motif
     Étant donné que la séance est annulée avec le motif « Gymnase fermé »

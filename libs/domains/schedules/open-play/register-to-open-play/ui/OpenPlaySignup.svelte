@@ -179,8 +179,8 @@
   }}
 >
   <p class="text-sm text-muted-foreground">
-    Vous venez seul·e ? Validez. Sinon, ajoutez vos invités : leur nom permet à l'ouvreur
-    de savoir qui entre.
+    Vous venez seul·e ? Validez. Sinon, ajoutez vos invités : leur nom permet au bénévole
+    qui ouvre de savoir qui entre.
   </p>
 
   {#if guests.length > 0}
@@ -233,7 +233,7 @@
         {busy ? 'Un instant…' : 'Je ne viens plus'}
       </Button>
       <p class="mt-2 text-xs text-muted-foreground">
-        L'ouvreur compte sur le nombre annoncé : prévenir vaut mieux que ne pas venir.
+        Le bénévole qui ouvre compte sur le nombre annoncé : prévenir vaut mieux que ne pas venir.
       </p>
     </div>
   {/if}

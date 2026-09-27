@@ -117,7 +117,7 @@
       <p class="text-sm text-muted-foreground">
         {needsOpener
           ? 'Assez de joueurs, mais personne pour ouvrir.'
-          : 'Cette séance cherche encore un ouvreur.'}
+          : 'On cherche toujours un bénévole pour ouvrir.'}
       </p>
       <Button onclick={() => send('claim')} disabled={busy} class="min-h-[44px] font-bold">
         {busy ? 'Un instant…' : "J'ouvre ce créneau"}

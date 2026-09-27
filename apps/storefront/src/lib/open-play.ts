@@ -112,7 +112,7 @@ export function sessionStatusLabel(session: OpenPlaySession): {
     const opener = `${session.openerFirstName} ${(session.openerLastName ?? '').charAt(0)}.`.trim();
     return { text: `Confirmée — ouverte par ${opener}`, tone: 'ok' };
   }
-  if (session.needsOpener) return { text: 'Il manque un ouvreur', tone: 'pending' };
+  if (session.needsOpener) return { text: 'On cherche toujours un bénévole pour ouvrir', tone: 'pending' };
   /*
     Le seuil est un minimum pour ouvrir, pas une capacité : « 3 joueurs sur 4 » se
     lisait « il reste une place ». La phrase vient du domaine, qui la sert aussi à

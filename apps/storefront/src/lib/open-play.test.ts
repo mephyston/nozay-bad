@@ -58,7 +58,7 @@ describe('phrase d’état', () => {
 
   it('réclame un ouvreur dès le seuil atteint', () => {
     expect(sessionStatusLabel(session({ playerCount: 4, needsOpener: true }))).toEqual({
-      text: 'Il manque un ouvreur',
+      text: 'On cherche toujours un bénévole pour ouvrir',
       tone: 'pending'
     });
   });
