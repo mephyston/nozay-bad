@@ -137,6 +137,9 @@ dashboardRouter.get('/overview', async (c) => {
         members: {
           currentTotal: membersRes?.currentTotal || 0,
           previousTotal: membersRes?.previousTotal || 0,
+          /** L'effectif de la carte « Adhérents » : hors dossiers suspendus, sur les deux saisons. */
+          activeTotal: membersRes?.activeTotal || 0,
+          previousActiveTotal: membersRes?.previousActiveTotal || 0,
           partiallyPaid: membersRes?.partiallyPaid || 0,
           unpaidCount: membersRes?.unpaidCount || 0,
           /*

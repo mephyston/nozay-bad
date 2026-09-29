@@ -18,12 +18,19 @@ export function buildMembersDashboardStatsStmt(db: D1Database, seasonId: number,
    * exact que la liste affichera au clic. Un dossier `suspendu` (annulé côté Poona) n'a rien
    * payé non plus, mais il n'est pas une relance à faire.
    *
+   * `activeTotal` / `previousActiveTotal` : l'effectif annoncé en tête du tableau de bord, hors
+   * dossiers `suspendu` — un dossier annulé n'est pas un adhérent. `currentTotal` et
+   * `previousTotal` gardent tous les dossiers : le renouvellement (nouveaux = effectif −
+   * renouvelés) et les tableaux par groupe se lisent sur eux, comme les listes de cohortes.
+   *
    * `renewed` : sans saison précédente (`NULL`), le `EXISTS` ne trouve rien et vaut 0.
    */
   return db.prepare(`
     SELECT
       SUM(CASE WHEN m.season_id = ? THEN 1 ELSE 0 END) as currentTotal,
       SUM(CASE WHEN m.season_id = ? THEN 1 ELSE 0 END) as previousTotal,
+      SUM(CASE WHEN m.season_id = ? AND m.status <> 'suspendu' THEN 1 ELSE 0 END) as activeTotal,
+      SUM(CASE WHEN m.season_id = ? AND m.status <> 'suspendu' THEN 1 ELSE 0 END) as previousActiveTotal,
       SUM(CASE WHEN m.season_id = ? AND m.status = 'incomplet' THEN 1 ELSE 0 END) as partiallyPaid,
       SUM(CASE WHEN m.season_id = ? AND m.status = 'en_attente' THEN 1 ELSE 0 END) as unpaidCount,
       SUM(CASE WHEN m.season_id = ? AND EXISTS (
@@ -31,7 +38,7 @@ export function buildMembersDashboardStatsStmt(db: D1Database, seasonId: number,
       ) THEN 1 ELSE 0 END) as renewed
     FROM memberships m
     WHERE m.season_id IN (?, ?)
-  `).bind(seasonId, prevSeasonId, seasonId, seasonId, seasonId, prevSeasonId, seasonId, prevSeasonId);
+  `).bind(seasonId, prevSeasonId, seasonId, prevSeasonId, seasonId, seasonId, seasonId, prevSeasonId, seasonId, prevSeasonId);
 }
 
 /**
