@@ -10,6 +10,10 @@ import type { D1Database, D1PreparedStatement } from '@cloudflare/workers-types'
  * arrivées, et l'effectif de n-1 qui ne revient pas se déduit. C'est ce que `persons` a rendu
  * possible — et c'est le chiffre qui compte en septembre, quand l'effectif brut ne dit pas
  * encore si le club a perdu ses habitués ou seulement pas encore reçu les retardataires.
+ *
+ * Partout ici, un dossier `suspendu` (annulé côté Poona) n'existe pas : ce n'est pas un
+ * adhérent, ni dans l'effectif, ni dans le renouvellement, ni d'une saison à l'autre.
+ * La liste ouverte au clic applique la même règle (`status=inscrits` et les cohortes).
  */
 export function buildMembersDashboardStatsStmt(db: D1Database, seasonId: number, prevSeasonId: number | null): D1PreparedStatement {
   /*
@@ -18,27 +22,20 @@ export function buildMembersDashboardStatsStmt(db: D1Database, seasonId: number,
    * exact que la liste affichera au clic. Un dossier `suspendu` (annulé côté Poona) n'a rien
    * payé non plus, mais il n'est pas une relance à faire.
    *
-   * `activeTotal` / `previousActiveTotal` : l'effectif annoncé en tête du tableau de bord, hors
-   * dossiers `suspendu` — un dossier annulé n'est pas un adhérent. `currentTotal` et
-   * `previousTotal` gardent tous les dossiers : le renouvellement (nouveaux = effectif −
-   * renouvelés) et les tableaux par groupe se lisent sur eux, comme les listes de cohortes.
-   *
    * `renewed` : sans saison précédente (`NULL`), le `EXISTS` ne trouve rien et vaut 0.
    */
   return db.prepare(`
     SELECT
       SUM(CASE WHEN m.season_id = ? THEN 1 ELSE 0 END) as currentTotal,
       SUM(CASE WHEN m.season_id = ? THEN 1 ELSE 0 END) as previousTotal,
-      SUM(CASE WHEN m.season_id = ? AND m.status <> 'suspendu' THEN 1 ELSE 0 END) as activeTotal,
-      SUM(CASE WHEN m.season_id = ? AND m.status <> 'suspendu' THEN 1 ELSE 0 END) as previousActiveTotal,
       SUM(CASE WHEN m.season_id = ? AND m.status = 'incomplet' THEN 1 ELSE 0 END) as partiallyPaid,
       SUM(CASE WHEN m.season_id = ? AND m.status = 'en_attente' THEN 1 ELSE 0 END) as unpaidCount,
       SUM(CASE WHEN m.season_id = ? AND EXISTS (
-        SELECT 1 FROM memberships p WHERE p.person_id = m.person_id AND p.season_id = ?
+        SELECT 1 FROM memberships p WHERE p.person_id = m.person_id AND p.season_id = ? AND p.status <> 'suspendu'
       ) THEN 1 ELSE 0 END) as renewed
     FROM memberships m
-    WHERE m.season_id IN (?, ?)
-  `).bind(seasonId, prevSeasonId, seasonId, prevSeasonId, seasonId, seasonId, seasonId, prevSeasonId, seasonId, prevSeasonId);
+    WHERE m.season_id IN (?, ?) AND m.status <> 'suspendu'
+  `).bind(seasonId, prevSeasonId, seasonId, seasonId, seasonId, prevSeasonId, seasonId, prevSeasonId);
 }
 
 /**
@@ -50,7 +47,7 @@ export function buildMembersAgePyramidStmt(db: D1Database, seasonId: number): D1
     SELECT CAST(substr(p.birth_date, 1, 4) AS INTEGER) AS birthYear, p.gender AS gender, COUNT(*) AS n
     FROM memberships m
     JOIN persons p ON p.id = m.person_id
-    WHERE m.season_id = ?
+    WHERE m.season_id = ? AND m.status <> 'suspendu'
     GROUP BY birthYear, gender
   `).bind(seasonId);
 }
@@ -66,10 +63,10 @@ export function buildMembersLapsedByGroupStmt(db: D1Database, seasonId: number, 
     SELECT prev.type AS groupe,
       COUNT(*) AS previousTotal,
       SUM(CASE WHEN NOT EXISTS (
-        SELECT 1 FROM memberships cur WHERE cur.person_id = prev.person_id AND cur.season_id = ?
+        SELECT 1 FROM memberships cur WHERE cur.person_id = prev.person_id AND cur.season_id = ? AND cur.status <> 'suspendu'
       ) THEN 1 ELSE 0 END) AS lapsed
     FROM memberships prev
-    WHERE prev.season_id = ?
+    WHERE prev.season_id = ? AND prev.status <> 'suspendu'
     GROUP BY prev.type
     ORDER BY lapsed DESC, previousTotal DESC
   `).bind(seasonId, prevSeasonId);
@@ -85,10 +82,10 @@ export function buildMembersRenewalByGroupStmt(db: D1Database, seasonId: number,
     SELECT cur.type AS groupe,
       COUNT(*) AS total,
       SUM(CASE WHEN EXISTS (
-        SELECT 1 FROM memberships prev WHERE prev.person_id = cur.person_id AND prev.season_id = ?
+        SELECT 1 FROM memberships prev WHERE prev.person_id = cur.person_id AND prev.season_id = ? AND prev.status <> 'suspendu'
       ) THEN 1 ELSE 0 END) AS renewed
     FROM memberships cur
-    WHERE cur.season_id = ?
+    WHERE cur.season_id = ? AND cur.status <> 'suspendu'
     GROUP BY cur.type
     ORDER BY total DESC
   `).bind(prevSeasonId, seasonId);

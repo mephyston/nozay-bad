@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { MEMBERSHIP_STATUSES } from '@nba/members/membership-status';
+import { MEMBERSHIP_STATUSES, ENROLLED_STATUS_FILTER } from '@nba/members/membership-status';
 import { can } from '../../../../lib/guard';
 import { createAdminApiClient } from '../../../../lib/api';
 
@@ -19,7 +19,7 @@ import { createAdminApiClient } from '../../../../lib/api';
 const SAISON_VALIDE = /^[A-Za-z0-9-]{1,16}$/;
 const GENRES = ['', 'M', 'F'];
 const TYPES = ['', 'Competiteur', 'Loisir'];
-const STATUTS: readonly string[] = ['', ...MEMBERSHIP_STATUSES];
+const STATUTS: readonly string[] = ['', ENROLLED_STATUS_FILTER, ...MEMBERSHIP_STATUSES];
 const COHORTES = ['', 'new', 'renewed', 'lapsed'];
 const RECHERCHE_MAX = 100;
 

@@ -53,6 +53,13 @@ export function membershipGrantsAccess(status: string): boolean {
  */
 export const ENROLLED_MEMBERSHIP_STATUSES: readonly MembershipStatus[] = ['valide', 'incomplet', 'en_attente'];
 
+/**
+ * Valeur du filtre `?status=` de la liste des adhérents qui retient `ENROLLED_MEMBERSHIP_STATUSES`,
+ * c'est-à-dire tout sauf les dossiers suspendus : l'effectif qu'annonce le tableau de bord.
+ */
+export const ENROLLED_STATUS_FILTER = 'inscrits';
+export const ENROLLED_STATUS_FILTER_LABEL = 'Hors suspendus';
+
 export interface MembershipStatusInput {
   /** Colonne « Statut » ou « Adhérent validé » de l'export, brute. */
   rawStatus: string;

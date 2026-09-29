@@ -1,8 +1,9 @@
 import { membershipsTable, personsTable } from '@nba/members/schema';
 import { getSeasonId, getSeasonById, getAdjacentSeason } from '@nba/accounting-api';
-import { eq, and, or, like, sql, asc, exists, notExists } from 'drizzle-orm';
+import { eq, and, or, like, sql, asc, exists, notExists, inArray } from 'drizzle-orm';
 import { type DbOrTx } from '@nba/db';
 import { selectMembers, type MemberSummary } from '../shared/queries';
+import { ENROLLED_MEMBERSHIP_STATUSES, ENROLLED_STATUS_FILTER } from '../shared/membership-status';
 
 import { ListMembersFilters } from './dto';
 
@@ -48,7 +49,9 @@ export class ListMembersRepository {
     if (filters.type) {
       conditions.push(eq(membershipsTable.type, filters.type));
     }
-    if (filters.status) {
+    if (filters.status === ENROLLED_STATUS_FILTER) {
+      conditions.push(inArray(membershipsTable.status, [...ENROLLED_MEMBERSHIP_STATUSES]));
+    } else if (filters.status) {
       conditions.push(eq(membershipsTable.status, filters.status as any));
     }
     if (filters.season) {
@@ -64,13 +67,17 @@ export class ListMembersRepository {
          * le même partage que le tableau de bord (members/shared/dashboard.ts), et le lien de la
          * carte « Renouvellement » doit ouvrir exactement ce qu'elle a compté. Sans saison
          * précédente, tout le monde est nouveau et personne n'est parti.
+         *
+         * Comme au tableau de bord, un dossier suspendu ne compte d'aucun côté : il n'est ni
+         * listé, ni une adhésion qui ferait d'une personne un renouvelé ou un non-parti.
          */
         const season = await getSeasonById(db, sId);
         const previous = season ? await getAdjacentSeason(db, season.startDate, 'before') : undefined;
         const prevId = previous?.id ?? -1;
         const hadMembership = (seasonId: number) =>
           db.select({ one: sql`1` }).from(sql`memberships AS other`)
-            .where(sql`other.person_id = ${membershipsTable.personId} AND other.season_id = ${seasonId}`);
+            .where(sql`other.person_id = ${membershipsTable.personId} AND other.season_id = ${seasonId} AND other.status <> 'suspendu'`);
+        conditions.push(inArray(membershipsTable.status, [...ENROLLED_MEMBERSHIP_STATUSES]));
 
         if (filters.cohort === 'lapsed') {
           conditions.push(eq(membershipsTable.seasonId, prevId), notExists(hadMembership(sId)));

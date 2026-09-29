@@ -30,16 +30,18 @@ describe('buildMembersDashboardStatsStmt', () => {
 
   it('compte les renouvellements par personne, et les relances par statut', async () => {
     const row = await buildMembersDashboardStatsStmt(d1, 2, 1).first<any>();
-    expect(row).toMatchObject({ currentTotal: 4, previousTotal: 5, renewed: 2, partiallyPaid: 1, unpaidCount: 1 });
+    expect(row).toMatchObject({ currentTotal: 3, previousTotal: 4, renewed: 2, partiallyPaid: 1, unpaidCount: 1 });
   });
 
-  it('l’effectif annoncé écarte les dossiers suspendus, sur les deux saisons', async () => {
+  it('un dossier suspendu ne compte ni dans l’effectif ni dans le renouvellement', async () => {
+    // PARTI3 revient cette saison, mais son adhésion de n-1 était suspendue : c'est une arrivée.
+    await db.insert(membershipsTable).values({ personId: 6, seasonId: 2, status: 'valide', type: 'Loisirs', importedAt: new Date() });
     const row = await buildMembersDashboardStatsStmt(d1, 2, 1).first<any>();
-    expect(row).toMatchObject({ activeTotal: 3, previousActiveTotal: 4 });
+    expect(row).toMatchObject({ currentTotal: 4, previousTotal: 4, renewed: 2 });
   });
 
   it('sans saison précédente, rien n’est renouvelé et l’effectif n-1 est nul', async () => {
     const row = await buildMembersDashboardStatsStmt(d1, 2, null).first<any>();
-    expect(row).toMatchObject({ currentTotal: 4, previousTotal: 0, previousActiveTotal: 0, renewed: 0 });
+    expect(row).toMatchObject({ currentTotal: 3, previousTotal: 0, renewed: 0 });
   });
 });

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { FormField, ChoiceField, toSeasonOptions } from '@nba/ui';
-  import { MEMBERSHIP_STATUSES, MEMBERSHIP_STATUS_LABELS } from '../../shared/membership-status';
+  import { MEMBERSHIP_STATUSES, MEMBERSHIP_STATUS_LABELS, ENROLLED_STATUS_FILTER, ENROLLED_STATUS_FILTER_LABEL } from '../../shared/membership-status';
   import type { Season } from './members-table-types';
 
   /**
@@ -38,6 +38,7 @@
 
   const statusItems = [
     { label: 'Tous les statuts', value: '' },
+    { label: ENROLLED_STATUS_FILTER_LABEL, value: ENROLLED_STATUS_FILTER },
     ...MEMBERSHIP_STATUSES.map((value) => ({ label: MEMBERSHIP_STATUS_LABELS[value], value }))
   ];
 

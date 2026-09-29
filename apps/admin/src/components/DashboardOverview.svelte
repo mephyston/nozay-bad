@@ -3,6 +3,7 @@
   import { DashboardSummaryCard, DashboardPoleCard, CollapsibleSection, Table, ResponsiveSheet, ListView, ListRow } from '@nba/ui';
   import { can } from '@nba/iam-ui';
   import AgePyramidList from './AgePyramidList.svelte';
+  import { ENROLLED_STATUS_FILTER } from '@nba/members/membership-status';
   import {
     sommeDe,
     partDeFeminines,
@@ -36,7 +37,7 @@
     return `/admin/members?${q}`;
   });
 
-  const diff = $derived(data.members.activeTotal - data.members.previousActiveTotal);
+  const diff = $derived(data.members.currentTotal - data.members.previousTotal);
 
   /*
    * Taux de renouvellement : la part de l'effectif n-1 revenue cette saison. Sans n-1, ou
@@ -223,12 +224,12 @@
       containerClass="border-border/50 hover:border-primary/30 from-card/80 to-card"
     >
       {#if canReadMembers}
-        <a href={membersHref()} class="text-2xl font-bold font-outfit hover:underline underline-offset-4">{data.members.activeTotal}</a>
+        <a href={membersHref(ENROLLED_STATUS_FILTER)} class="text-2xl font-bold font-outfit hover:underline underline-offset-4">{data.members.currentTotal}</a>
       {:else}
-        <div class="text-2xl font-bold font-outfit">{data.members.activeTotal}</div>
+        <div class="text-2xl font-bold font-outfit">{data.members.currentTotal}</div>
       {/if}
       <p class="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-        {#if data.members.previousActiveTotal > 0}
+        {#if data.members.previousTotal > 0}
           {#if diff > 0}
             <span class="text-success flex items-center"><ArrowUpRight size={14}/> +{diff}</span>
           {:else if diff < 0}
@@ -236,7 +237,7 @@
           {:else}
             <span class="text-muted-foreground">=</span>
           {/if}
-          <span>vs saison n-1 ({data.members.previousActiveTotal})</span>
+          <span>vs saison n-1 ({data.members.previousTotal})</span>
         {:else}
           <span>Saison n-1 non disponible</span>
         {/if}
