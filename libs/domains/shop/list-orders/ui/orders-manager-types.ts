@@ -14,6 +14,8 @@ export interface Order {
   status: OrderStatus;
   awaitingPaymentSince: string | null;
   ledgerEntryId: number | null;
+  /** Motif d'un refus, quand le bureau en a donné un. */
+  rejectionReason?: string | null;
   createdAt: string | Date;
 }
 

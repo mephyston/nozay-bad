@@ -63,6 +63,8 @@ Les relances automatiques ne partent que si le rappel de cotisation est activé 
 
 Les deux laissent la commande dans l'historique et notifient l'adhérent.
 
+Refuser ouvre une feuille où saisir un **motif**, facultatif, de 500 caractères au plus : « taille épuisée chez le fournisseur », « commande en double »… Donné, il est repris dans la notification et affiché à l'adhérent sous la commande, dans **Mes commandes**. Il reste visible dans l'historique et dans la fiche de la commande. Sans motif, la notification invite l'adhérent à se rapprocher du bureau.
+
 ## Ce qui bloque la clôture
 
 Une **commande portant une date de paiement mais non encaissée** empêche la clôture de l'exercice : la recette correspondante n'existe pas encore en comptabilité. Voir [Saisons comptables](/admin/help/gestion-saisons).

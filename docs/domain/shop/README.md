@@ -16,6 +16,7 @@ Le domaine **Shop** gère le catalogue des produits (volants, maillots, cordages
 | **Commande** | Ensemble d'articles réservés ou achetés par un adhérent. | `Aggregate` (`id`, `memberId`, `totalAmount`, `status`) |
 | **Ligne de Commande** | Quantité et prix unitaire d'un produit donné au sein d'une commande. | `Value Object` (`productId`, `quantity`, `unitPrice`) |
 | **Statut de Commande** | État du cycle de vie de la commande : `created` (créée), `awaiting_payment` (en attente de paiement), `paid` (payée), `rejected` (refusée), `cancelled` (annulée). | `Enum` |
+| **Motif de refus** | Explication facultative donnée par le bureau en refusant une commande, montrée à l'adhérent et reprise dans la notification. 500 caractères au plus. | `string` (`rejection_reason`) |
 | **Validation** | Acceptation de la demande par le bureau. Réserve le stock, n'écrit rien en comptabilité. | `Transition` (`created` → `awaiting_payment`) |
 | **Encaissement** | Enregistrement du règlement. Seul acte qui écrit une recette au grand livre. | `Transition` (`awaiting_payment` → `paid`) |
 | **Date de mise en attente** | Date à laquelle la commande est passée en attente de paiement. Point de départ des relances. | `date` (`awaiting_payment_since`) |

@@ -121,6 +121,14 @@
             <X class="w-3 h-3" />
             Refusée
           </Badge>
+          {#if item.order.rejectionReason}
+            <div
+              class="mx-auto mt-0.5 max-w-48 truncate text-[10px] text-muted-foreground"
+              title={item.order.rejectionReason}
+            >
+              {item.order.rejectionReason}
+            </div>
+          {/if}
         {:else if item.order.status === 'cancelled'}
           <Badge variant="outline">
             <Ban class="w-3 h-3" />

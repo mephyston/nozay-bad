@@ -55,5 +55,7 @@ export const ordersTable = sqliteTable('orders', {
   awaitingPaymentSince: text('awaiting_payment_since'),
   paidAt: text('paid_at'),
   ledgerEntryId: integer('ledger_entry_id'),
+  /** Motif d'un refus, facultatif : montré à l'adhérent et repris dans la notification. */
+  rejectionReason: text('rejection_reason'),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
 });

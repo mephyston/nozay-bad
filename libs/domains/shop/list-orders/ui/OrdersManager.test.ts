@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { mount, flushSync } from 'svelte';
+import { mount, unmount, flushSync } from 'svelte';
 import OrdersManager from './OrdersManager.svelte';
 
 vi.mock('@nba/ui', async (importOriginal) => {
@@ -478,27 +478,45 @@ describe('OrdersManager Component', () => {
     });
   });
 
-  it('triggers reject action when Refuser is clicked', async () => {
+  it('Refuser ouvre la feuille du motif, qui part avec le refus', async () => {
     const target = document.createElement('div');
     document.body.appendChild(target);
 
-    mount(OrdersManager, {
+    const app = mount(OrdersManager, {
       target,
       props: { seasons, orders, seasonId: '25-26' }
     });
+    const { uiConfirm } = await import('@nba/ui');
+    vi.mocked(uiConfirm).mockClear();
+    vi.mocked(globalThis.fetch).mockClear();
 
     openActions(target);
     actionButton(target, 'Refuser').click();
     flushSync();
 
-    const { uiConfirm } = await import('@nba/ui');
+    // La feuille tient lieu de confirmation : plus de « Êtes-vous sûr ? ».
+    expect(uiConfirm).not.toHaveBeenCalled();
+    expect(globalThis.fetch).not.toHaveBeenCalled();
+
+    // La feuille est rendue dans un portail, hors de `target`.
+    const motif = document.querySelector('textarea#reject-reason') as HTMLTextAreaElement;
+    expect(motif, 'champ du motif absent').not.toBeNull();
+    motif.value = 'Taille épuisée';
+    motif.dispatchEvent(new Event('input', { bubbles: true }));
+    flushSync();
+
+    (motif.closest('form') as HTMLFormElement).dispatchEvent(
+      new Event('submit', { bubbles: true, cancelable: true })
+    );
     await new Promise(resolve => setTimeout(resolve, 0));
-    expect(uiConfirm).toHaveBeenCalledWith('Êtes-vous sûr de vouloir refuser cette commande ?');
+
     expect(globalThis.fetch).toHaveBeenCalledWith('/admin/api/shop/orders', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'reject', id: 1 })
+      body: JSON.stringify({ action: 'reject', id: 1, reason: 'Taille épuisée' })
     });
+    // La feuille vit dans un portail : la laisser ouverte fausserait les tests suivants.
+    unmount(app);
   });
 
   it('disables validation actions when the season is closed', async () => {

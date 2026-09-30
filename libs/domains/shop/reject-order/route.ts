@@ -2,7 +2,8 @@ import { Hono } from 'hono';
 import { createDb } from '@nba/db';
 import { tbValidator } from '@hono/typebox-validator';
 import { rejectOrder } from './handler';
-import { rejectOrderParamSchema } from './validator';
+import { Value } from '@sinclair/typebox/value';
+import { rejectOrderBodySchema, rejectOrderParamSchema, REJECTION_REASON_MAX_LENGTH } from './validator';
 
 export type Bindings = {
   DB: D1Database;
@@ -25,7 +26,16 @@ rejectOrderRoute.post(
     const id = parseInt(idStr, 10);
     const db = createDb(c.env.DB);
 
-    const updatedOrder = await rejectOrder(db, id);
+    // Corps facultatif : un appel sans corps refuse sans motif, comme avant.
+    const body = await c.req.json().catch(() => ({}));
+    if (!Value.Check(rejectOrderBodySchema, body)) {
+      return c.json(
+        { success: false, error: `Le motif du refus ne doit pas dépasser ${REJECTION_REASON_MAX_LENGTH} caractères.` },
+        400
+      );
+    }
+
+    const updatedOrder = await rejectOrder(db, { id, reason: body.reason });
     return c.json({ success: true, data: updatedOrder });
   }
 );

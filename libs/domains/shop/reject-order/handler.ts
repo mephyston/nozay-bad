@@ -11,7 +11,14 @@ import { getContactEmailsForMember, isSeasonClosed } from '@nba/members-api';
 import { notifyContacts } from '@nba/notifications-api';
 import { RejectOrderInput, RejectOrderOutput } from "./dto";
 
-export async function rejectOrder(db: Db, id: RejectOrderInput): Promise<RejectOrderOutput> {
+/**
+ * Refuse une commande encore au statut « créée ».
+ *
+ * Le motif est facultatif. Donné, il est gardé sur la commande et remplace, dans la
+ * notification, le renvoi vers le bureau : l'adhérent n'a plus à demander pourquoi.
+ */
+export async function rejectOrder(db: Db, { id, reason }: RejectOrderInput): Promise<RejectOrderOutput> {
+  const motif = reason?.trim() || null;
   const repo = new RejectOrderRepository();
 
   const orderData = await repo.getOrderById(db, id);
@@ -30,15 +37,17 @@ export async function rejectOrder(db: Db, id: RejectOrderInput): Promise<RejectO
     throw new SeasonClosedError();
   }
 
-  const updated = await repo.rejectWithLock(db, id);
+  const updated = await repo.rejectWithLock(db, id, motif);
   if (!updated) {
     throw new ConcurrentModificationError();
   }
 
   await notifyContacts(db, await getContactEmailsForMember(db, order.memberId), {
     title: 'Commande refusée',
-    body: "Votre commande boutique n'a pas été retenue. Rapprochez-vous du bureau pour en savoir plus.",
-    url: '/mon-compte',
+    body: motif
+      ? `Votre commande boutique n'a pas été retenue. Motif : ${motif}`
+      : "Votre commande boutique n'a pas été retenue. Rapprochez-vous du bureau pour en savoir plus.",
+    url: '/mon-compte/commandes',
     source: 'order:rejected',
     category: 'order'
   });

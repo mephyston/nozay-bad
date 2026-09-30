@@ -115,6 +115,13 @@
         {@render rangee('Commande', `n° ${item.order.id}`, true)}
       </div>
 
+      {#if item.order.status === 'rejected' && item.order.rejectionReason}
+        <div class="rounded-xl border border-border bg-card px-4 py-3">
+          <div class="text-sm text-muted-foreground">Motif du refus</div>
+          <p class="mt-1 whitespace-pre-line text-sm text-foreground">{item.order.rejectionReason}</p>
+        </div>
+      {/if}
+
       {#if retard !== null}
         <p class="px-1 text-xs text-muted-foreground">
           Cette commande attend son règlement depuis plus d'une semaine : elle figure dans la relance

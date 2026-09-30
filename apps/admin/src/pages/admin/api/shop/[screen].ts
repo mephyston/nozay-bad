@@ -60,8 +60,14 @@ export const ECRANS: Record<string, Ecran> = {
             route: (data: any) => ({
               chemin: `/shop/orders/${identifiant(data.id, 'de commande')}/${action}`,
               method: 'POST',
-              // `paidAt` n'est porté que par l'encaissement ; les autres l'ignorent.
-              body: data.paidAt ? { paidAt: data.paidAt } : {}
+              // `paidAt` n'est porté que par l'encaissement, `reason` que par le refus ;
+              // les autres transitions n'ont pas de corps.
+              body:
+                action === 'pay' && data.paidAt
+                  ? { paidAt: data.paidAt }
+                  : action === 'reject' && data.reason
+                    ? { reason: data.reason }
+                    : {}
             })
           }
         ])

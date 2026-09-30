@@ -41,6 +41,9 @@ export const ORDER_STATUSES: readonly OrderStatus[] = [
   'cancelled'
 ] as const;
 
+/** Longueur maximale du motif de refus : il tient dans une notification et sur une ligne de liste. */
+export const REJECTION_REASON_MAX_LENGTH = 500;
+
 /** Statuts d'une commande encore en cours de traitement, réglée ou non. */
 export const OPEN_ORDER_STATUSES: readonly OrderStatus[] = ['created', 'awaiting_payment'] as const;
 

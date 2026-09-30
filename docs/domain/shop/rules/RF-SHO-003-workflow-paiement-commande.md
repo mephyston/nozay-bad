@@ -58,6 +58,10 @@ reçoit une erreur de conflit et rien n'est écrit deux fois.
 1. Le **refus** ne libère aucun stock : rien n'avait été réservé.
 2. L'**annulation** **rend au stock** la quantité réservée à la validation.
 3. Ni l'un ni l'autre ne touche à la comptabilité : la recette n'a jamais existé.
+4. Le refus accepte un **motif facultatif** (500 caractères au plus, blancs de tête et de
+   fin ôtés). Il est conservé sur la commande (`rejection_reason`), repris dans la
+   notification et montré à l'adhérent dans « Mes commandes ». Sans motif, la
+   notification renvoie l'adhérent vers le bureau.
 
 ### 3.5 Relance
 1. Les commandes en `awaiting_payment` depuis **plus de sept jours** déclenchent une
@@ -104,6 +108,14 @@ Fonctionnalité: Cycle de vie et paiement d'une commande boutique
     Alors la validation est refusée avec le message "Stock insuffisant pour Maillot Club Taille M"
     Et le stock reste inchangé à 1 unité
     Et la commande reste au statut "créée"
+
+  Scénario: Refus motivé d'une commande
+    Étant donné une commande créée de 1 unité de "Maillot Club Taille M"
+    Quand le bureau refuse la commande avec le motif "Taille épuisée chez le fournisseur"
+    Alors la commande passe au statut "refusée"
+    Et le motif est conservé sur la commande
+    Et l'adhérent reçoit une notification qui cite ce motif
+    Et le motif s'affiche sous la commande dans « Mes commandes »
 
   Scénario: Annulation d'une commande jamais réglée
     Étant donné une commande en attente de paiement de 2 unités de "Boîte Volants Plumes"

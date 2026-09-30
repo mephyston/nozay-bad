@@ -75,15 +75,19 @@ export async function payOrder(orderId: number, paidAt?: string): Promise<OrderA
   );
 }
 
-export async function rejectOrder(orderId: number): Promise<OrderActionResult> {
-  if (!(await uiConfirm('Êtes-vous sûr de vouloir refuser cette commande ?'))) {
-    return { success: false };
-  }
-
-  return postOrderAction('reject', orderId, {
-    error: 'Erreur lors du refus',
-    flash: 'Commande refusée.'
-  });
+/**
+ * Créée → refusée, avec un motif facultatif.
+ *
+ * Pas de `uiConfirm` ici : la feuille de refus, où le motif se saisit, tient lieu de
+ * confirmation.
+ */
+export async function rejectOrder(orderId: number, reason = ''): Promise<OrderActionResult> {
+  return postOrderAction(
+    'reject',
+    orderId,
+    { error: 'Erreur lors du refus', flash: 'Commande refusée.' },
+    reason.trim() ? { reason: reason.trim() } : {}
+  );
 }
 
 export async function cancelOrder(orderId: number): Promise<OrderActionResult> {

@@ -9,6 +9,7 @@
   import OrdersToolbar from './OrdersToolbar.svelte';
   import OrderDetailSheet from './OrderDetailSheet.svelte';
   import AdminOrderForm from './AdminOrderForm.svelte';
+  import RejectOrderSheet from './RejectOrderSheet.svelte';
 
   let {
     seasons = [],
@@ -51,6 +52,10 @@
   /** La commande dont on regarde la fiche. Au doigt seulement : le tableau montre tout. */
   let detailItem = $state<OrderItem | null>(null);
   let detailOuvert = $state(false);
+
+  /** La commande qu'on s'apprête à refuser : la feuille demande le motif. */
+  let refusItem = $state<OrderItem | null>(null);
+  let refusOuvert = $state(false);
 
   onMount(() => {
     const handleOpenNewOrder = () => (isCreateSheetOpen = true);
@@ -144,7 +149,23 @@
 
   const handleValidate = (orderId: number) => runTransition(orderId, validateOrder);
   const handlePay = (orderId: number) => runTransition(orderId, (id) => payOrder(id));
-  const handleReject = (orderId: number) => runTransition(orderId, rejectOrder);
+  /**
+   * Le refus passe par sa feuille, où se saisit le motif. Tous les chemins y mènent :
+   * menu de ligne, balayage et fiche de détail.
+   */
+  const handleReject = (orderId: number) => {
+    if (processingId !== null || isClosed) return;
+    refusItem = ordersList.find((o) => o.order.id === orderId) ?? null;
+    refusOuvert = refusItem !== null;
+  };
+
+  /** Le refus d'API s'affiche dans la feuille, qui reste ouverte. */
+  async function refuser(orderId: number, reason: string): Promise<string | null> {
+    processingId = orderId;
+    const res = await rejectOrder(orderId, reason);
+    processingId = null;
+    return res.success ? null : (res.error ?? 'Erreur lors du refus');
+  }
   const handleCancel = (orderId: number) => runTransition(orderId, cancelOrder);
   const handleUnpay = (orderId: number) => runTransition(orderId, unpayOrder);
 
@@ -227,6 +248,8 @@
   onUnpay={handleUnpay}
   onEdit={handleEdit}
 />
+
+<RejectOrderSheet bind:open={refusOuvert} item={refusItem} onReject={refuser} />
 
 <AdminOrderForm
   bind:open={isCreateSheetOpen}

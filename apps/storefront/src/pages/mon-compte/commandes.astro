@@ -60,6 +60,11 @@ if (active) {
                   {o.product?.name ?? 'Article'} <span class="text-muted-foreground">×{o.order?.quantity ?? 1}</span>
                 </div>
                 <div class="text-xs text-muted-foreground">{dateFr(o.order?.createdAt)}</div>
+                {o.order?.status === 'rejected' && o.order?.rejectionReason && (
+                  <p class="mt-1 whitespace-pre-line text-xs text-destructive">
+                    Motif du refus : {o.order.rejectionReason}
+                  </p>
+                )}
               </div>
               <div class="flex shrink-0 items-center gap-3">
                 <span class="text-sm font-semibold text-foreground">{eur(o.order?.totalAmountCents ?? o.order?.totalAmount ?? 0)}</span>
