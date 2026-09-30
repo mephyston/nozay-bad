@@ -71,15 +71,24 @@
     "postcss": {
       "nanoid": "^3.3.18"
     },
-    "miniflare@4": {
-      "undici": "^7.29.0",
+    "miniflare": {
+      "undici": "^7.29.1",
       "sharp": "^0.35.4"
     },
     "sharp": "^0.35.4",
     "@esbuild-kit/core-utils": {
       "esbuild": "^0.25.12"
     },
-    "smol-toml": "^1.7.1"
+    "smol-toml": "^1.7.1",
+    "unifont": {
+      "undici": "^8.10.2"
+    },
+    "@actions/http-client": {
+      "undici": "^6.28.1"
+    },
+    "@semantic-release/github": {
+      "undici": "^7.29.1"
+    }
   },
   "dependencies": {
     "@astrojs/cloudflare": "^14.3.1",
