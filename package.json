@@ -88,6 +88,16 @@
     },
     "@semantic-release/github": {
       "undici": "^7.29.1"
+    },
+    "axios": "^1.20.0",
+    "minimatch@10": {
+      "brace-expansion": "^5.0.12"
+    },
+    "minimatch@5": {
+      "brace-expansion": "^2.1.7"
+    },
+    "nx": {
+      "brace-expansion": "^5.0.12"
     }
   },
   "dependencies": {
