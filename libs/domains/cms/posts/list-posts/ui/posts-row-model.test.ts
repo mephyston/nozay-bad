@@ -110,8 +110,8 @@ describe('posts-row-model', () => {
     expect(labels(actualite({ visibility: 'private', status: 'published', notifiedAt: 1 }))).toEqual([
       'Adhérents'
     ]);
-    // « À diffuser » remplace « Adhérents » : elle la suppose et en dit plus.
-    expect(labels(actualite({ visibility: 'private', status: 'published' }))).toEqual(['À diffuser']);
+    // Une seule pastille dit à la fois la visibilité et la notification en attente.
+    expect(labels(actualite({ visibility: 'private', status: 'published' }))).toEqual(['Adhérents · à notifier']);
   });
 
   it('ajoute le cas courant pour la colonne du tableau', () => {

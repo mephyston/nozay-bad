@@ -71,12 +71,15 @@ export type Pastille = { label: string; variant: 'outline' | 'warning' | 'primar
  * cas courant, et le cas courant ne s'annonce pas. Ne restent que les écarts :
  * réservée aux adhérents, en attente de diffusion, pas encore publiée.
  *
- * « À diffuser » remplace « Adhérents » plutôt que de s'y ajouter : elle ne peut
- * concerner qu'une actualité réservée, et elle en dit davantage.
+ * « Adhérents · à notifier » remplace « Adhérents » plutôt que de s'y ajouter : une
+ * pastille de plus aurait rendu au titre la place qu'on venait de lui rendre. Elle
+ * s'appelait « À diffuser », qui se lisait « à publier » ; et en taisant « Adhérents »,
+ * elle cachait justement ce qui la distingue — l'absence du site public. Le mot
+ * « notifier » nomme le geste qui l'éteint : prévenir les téléphones.
  */
 export function signalementsDActualite(row: ActualiteLike, canNotify = false): Pastille[] {
   const liste: Pastille[] = [];
-  if (estDiffusable(row, canNotify)) liste.push({ label: 'À diffuser', variant: 'warning' });
+  if (estDiffusable(row, canNotify)) liste.push({ label: 'Adhérents · à notifier', variant: 'warning' });
   else if (row.visibility === 'private') liste.push({ label: 'Adhérents', variant: 'outline' });
   if (!estEnLigne(row)) liste.push({ label: 'Brouillon', variant: 'outline' });
   return liste;

@@ -39,7 +39,9 @@ Le cloisonnement est appliqué par l'API selon l'appelant, jamais par l'affichag
 
 ## Diffuser sur les téléphones
 
-Une actualité **réservée aux adhérents** et **publiée** peut être diffusée en notification depuis le menu **⋯** de la liste. Tous les adhérents abonnés la reçoivent sur leur téléphone, immédiatement.
+Une actualité **réservée aux adhérents** et **publiée** peut être diffusée en notification depuis le menu **⋯** de la liste (**Prévenir les adhérents**). Tous les adhérents abonnés la reçoivent sur leur téléphone, immédiatement.
+
+Dans la liste, la pastille **Adhérents · à notifier** signale une actualité réservée, en ligne dans l'espace adhérent, dont la notification n'est pas encore partie. Une fois l'envoi fait, elle redevient **Adhérents**. Elle n'apparaît qu'à ceux qui ont le droit d'envoyer.
 
 > [!CAUTION]
 > L'envoi est **définitif et unique**. Il ne s'annule pas, et l'application refuse un second envoi pour la même actualité — modifier le texte ensuite ne renotifie personne. Relisez avant de diffuser : un adhérent réveillé pour rien ne se dé-réveille pas.
