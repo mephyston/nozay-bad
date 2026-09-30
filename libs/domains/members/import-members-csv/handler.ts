@@ -57,7 +57,11 @@ export async function importMembersFromCsv(db: Db, csvText: ImportMembersFromCsv
   const genderIdx = headers.findIndex(h => h === 'Sexe');
   const birthDateIdx = headers.findIndex(h => h === 'Date naissance' || h === 'Date de naissance');
   const emailIdx = headers.findIndex(h => h === 'Email');
-  const phoneIdx = headers.findIndex(h => h === 'Téléphone' || h === 'Tél. du contact 1');
+  // Le téléphone de l'adhérent lui-même, et lui seul. Poona n'en exporte pas : ses
+  // colonnes « Tél. du contact N » sont celles des contacts d'urgence et des tuteurs.
+  // Un repli sur « Tél. du contact 1 » inscrivait le numéro du conjoint ou du parent
+  // dans les coordonnées de l'adhérent — celui qu'on appelait croyant le joindre.
+  const phoneIdx = headers.findIndex(h => h === 'Téléphone');
   const statusIdx = headers.findIndex(h => h === 'Statut' || h === 'Adhérent validé');
   // Poona exporte l'état du dossier à part : c'est lui qui dit « annulé ».
   const dossierIdx = headers.findIndex(h => h === 'Etat de dossier' || h === 'État de dossier');

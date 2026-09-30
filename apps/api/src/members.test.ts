@@ -184,6 +184,9 @@ describe('POST /members/import', () => {
     expect(m1.status).toBe('valide'); // Oui/Dossier finalisé mapped to valide
     expect(m1.amountDueCents).toBe(0);
     expect(m1.parent1Phone).toBe('+33682681335');
+    // Le numéro du contact 1 est celui d'un contact d'urgence : il ne devient pas
+    // le téléphone de l'adhérent, que l'export Poona ne fournit pas.
+    expect(m1.phone).toBeNull();
     expect(m1.parent1Name).toBeNull();
 
     const m2 = dbMembers.find(m => m.licence === '07684632')!;
