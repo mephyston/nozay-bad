@@ -4,6 +4,6 @@ export interface ListOrdersInput { seasonId?: number; status?: string; memberId?
 
 export type ListOrdersOutput = {
   order: typeof ordersTable.$inferSelect;
-  member: { id: number; lastName: string; firstName: string; licence: string; gender: 'M' | 'F' } | undefined;
+  member: { id: number; lastName: string; firstName: string; licence: string; gender: 'M' | 'F'; email: string | null } | undefined;
   product: typeof productsTable.$inferSelect | undefined;
 }[];

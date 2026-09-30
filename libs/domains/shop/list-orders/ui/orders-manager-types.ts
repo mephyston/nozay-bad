@@ -32,6 +32,7 @@ export interface Member {
   licence: string;
   /** Sexe de l'adhérent : sert à vérifier qu'un modèle homme ou femme va à la bonne personne. */
   gender?: 'M' | 'F';
+  email?: string | null;
 }
 
 export interface Product {

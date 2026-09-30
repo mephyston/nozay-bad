@@ -3,7 +3,14 @@
   import { softNavigate, uiAlert, correspondA } from '@nba/ui';
   import type { OrderItem, OrdersTab, Season } from './orders-manager-types';
   import { validateOrder, payOrder, rejectOrder, cancelOrder, unpayOrder } from './orders-manager-actions';
-  import { articleDeCommande, articlesCommandes, codeDeSaison, estOuverte, etapeOuverte } from './orders-row-model';
+  import {
+    articleDeCommande,
+    articlesCommandes,
+    codeDeSaison,
+    commandesCsv,
+    estOuverte,
+    etapeOuverte
+  } from './orders-row-model';
   import OrdersOpenTable from './OrdersOpenTable.svelte';
   import OrdersHistoryTable from './OrdersHistoryTable.svelte';
   import OrdersToolbar from './OrdersToolbar.svelte';
@@ -225,6 +232,29 @@
       : undefined
   );
 
+  /**
+   * Télécharge les commandes affichées, filtres compris, en CSV.
+   *
+   * Généré dans le navigateur à partir de la liste déjà chargée : c'est la seule
+   * façon d'honorer à coup sûr la vue, l'article et la recherche en cours, que le
+   * serveur ne connaît pas.
+   */
+  function exporter() {
+    const csv = commandesCsv(vueCourante);
+    const blob = new Blob(['\uFEFF', csv], { type: 'text/csv;charset=utf-8' });
+    const article = articles.find((a) => a.value === articleChoisi)?.label;
+    const suffixe = article
+      ? `-${article.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}`
+      : '';
+    const lien = document.createElement('a');
+    lien.href = URL.createObjectURL(blob);
+    lien.download = `commandes-${seasonId}${suffixe}.csv`;
+    document.body.appendChild(lien);
+    lien.click();
+    lien.remove();
+    setTimeout(() => URL.revokeObjectURL(lien.href), 0);
+  }
+
   function ouvrirFiche(item: OrderItem) {
     detailItem = item;
     detailOuvert = true;
@@ -243,6 +273,7 @@
     resultCount={vueCourante.length}
     canCreate={!isClosed}
     onCreate={() => (isCreateSheetOpen = true)}
+    onExport={vueCourante.length > 0 ? exporter : undefined}
   />
 {/snippet}
 

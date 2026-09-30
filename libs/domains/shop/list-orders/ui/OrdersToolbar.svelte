@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Plus } from '@lucide/svelte';
+  import { Download, Plus } from '@lucide/svelte';
   import {
     Button,
     ChoiceField,
@@ -34,7 +34,8 @@
     counts,
     resultCount = 0,
     canCreate = false,
-    onCreate
+    onCreate,
+    onExport
   }: {
     searchTerm?: string;
     selectedSeason?: string;
@@ -49,6 +50,8 @@
     resultCount?: number;
     canCreate?: boolean;
     onCreate?: () => void;
+    /** Télécharger la vue courante en CSV ; absent quand elle est vide. */
+    onExport?: () => void;
   } = $props();
 
   let filtresOuverts = $state(false);
@@ -108,10 +111,14 @@
     qu'on parcourt la liste.
   */
   $effect(() => {
-    if (!canCreate || !onCreate) return;
-    const actions: SwipeAction[] = [
-      { id: 'creer-commande', label: 'Créer une commande', icon: Plus, run: onCreate }
-    ];
+    const actions: SwipeAction[] = [];
+    if (canCreate && onCreate) {
+      actions.push({ id: 'creer-commande', label: 'Créer une commande', icon: Plus, run: onCreate });
+    }
+    if (onExport) {
+      actions.push({ id: 'exporter-commandes', label: 'Exporter en CSV', icon: Download, run: onExport });
+    }
+    if (actions.length === 0) return;
     return dockDePage.declarerActions(actions);
   });
 </script>
@@ -158,7 +165,13 @@
   {/snippet}
 
   {#snippet actions()}
-    <!-- Sur téléphone, cette action vit dans la barre du bas. -->
+    <!-- Sur téléphone, ces actions vivent dans la barre du bas. -->
+    {#if onExport}
+      <Button variant="outline" onclick={onExport} class="hidden h-9 gap-2 md:inline-flex">
+        <Download class="h-4 w-4" />
+        Exporter
+      </Button>
+    {/if}
     {#if canCreate && onCreate}
       <Button onclick={onCreate} class="hidden h-9 gap-2 md:inline-flex">
         <Plus class="h-4 w-4" />

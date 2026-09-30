@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import type { OrderItem } from './orders-manager-types';
 import {
   articlesCommandes,
+  commandesCsv,
   ACTION_LABELS,
   actionsDeCommande,
   ETAPE_LABELS,
@@ -158,5 +159,21 @@ describe('articlesCommandes — le filtre par article', () => {
       { value: '7', label: 'Boîte de volants' },
       { value: '33', label: 'Maillot du club' }
     ]);
+  });
+});
+
+describe('commandesCsv — l\'export des commandes affichées', () => {
+  it('donne qui a commandé quoi, et comment le joindre, aux conventions du tableur français', () => {
+    const item = {
+      order: { id: 1, quantity: 2, totalAmountCents: 5000, totalAmount: 5000, status: 'awaiting_payment', createdAt: '2026-09-12T10:00:00.000Z' },
+      member: { id: 10, lastName: 'DA COSTA', firstName: 'Dylan', licence: '1', email: ' dylan@example.com ' },
+      product: { id: 34, name: 'Maillot du club — L "homme"' }
+    } as unknown as OrderItem;
+
+    const [entete, ligne] = commandesCsv([item]).trimEnd().split('\n');
+    expect(entete).toBe('Nom;Prénom;Email;Article;Quantité;Montant;Statut;Date');
+    expect(ligne).toBe(
+      '"DA COSTA";"Dylan";"dylan@example.com";"Maillot du club — L ""homme""";"2";"50,00";"En attente de paiement";"12/09/2026"'
+    );
   });
 });

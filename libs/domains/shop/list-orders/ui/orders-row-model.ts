@@ -234,3 +234,43 @@ export function articlesCommandes(items: OrderItem[]): { value: string; label: s
     .map(([value, label]) => ({ value, label }))
     .sort((a, b) => a.label.localeCompare(b.label, 'fr'));
 }
+
+/** Le statut en toutes lettres, pour un fichier qu'on ouvre hors de l'écran. */
+const STATUT_EXPORT: Record<OrderStatus, string> = {
+  created: 'À valider',
+  awaiting_payment: 'En attente de paiement',
+  paid: 'Payée',
+  rejected: 'Refusée',
+  cancelled: 'Annulée'
+};
+
+const cellule = (valeur: string | number | null | undefined) =>
+  `"${String(valeur ?? '').replace(/"/g, '""')}"`;
+
+/**
+ * Les commandes affichées, en CSV : qui a commandé quoi, et comment le joindre.
+ *
+ * L'export reprend **la vue courante**, filtres compris : filtrer l'article « Maillot du
+ * club » puis exporter donne la liste de l'opération, taille par taille, à transmettre
+ * au fournisseur ou à qui distribue. Conventions du tableur français, comme l'export
+ * des adhérents : `;` en séparateur, guillemets doublés ; l'indicateur d'ordre des
+ * octets est ajouté au téléchargement.
+ */
+export function commandesCsv(items: OrderItem[]): string {
+  const lignes = ['Nom;Prénom;Email;Article;Quantité;Montant;Statut;Date'];
+  for (const item of items) {
+    lignes.push(
+      [
+        cellule(item.member?.lastName),
+        cellule(item.member?.firstName),
+        cellule(item.member?.email?.trim()),
+        cellule(item.product?.name ?? 'Produit supprimé'),
+        cellule(item.order.quantity),
+        cellule((montantCents(item) / 100).toFixed(2).replace('.', ',')),
+        cellule(STATUT_EXPORT[item.order.status] ?? item.order.status),
+        cellule(dateFr(item.order.createdAt))
+      ].join(';')
+    );
+  }
+  return lignes.join('\n') + '\n';
+}

@@ -9,6 +9,8 @@ order: 2
 
 Le filtre **Article** isole un produit avec toutes ses déclinaisons : choisir « Maillot du club » montre les commandes de toutes les tailles, pour suivre une opération d'un bout à l'autre. La vue, l'article et la recherche restent appliqués après chaque validation, encaissement ou refus, et se retrouvent dans l'adresse de la page : un lien copié rouvre la même sélection.
 
+Le bouton **Exporter** (dans la barre du bas sur téléphone) télécharge en CSV les commandes **affichées** : nom, prénom, email, article avec sa taille, quantité, montant, statut et date. Il suit les filtres en cours : filtrez l'article « Maillot du club », exportez, et vous obtenez la liste de l'opération, à ouvrir dans un tableur.
+
 Un symbole ♂ ou ♀ suit le nom de l'adhérent, pour repérer d'un coup d'œil une coupe homme commandée par une femme, ou l'inverse.
 
 Une commande suit le parcours **créée** → **en attente de paiement** → **payée**. Deux issues la referment sans règlement : le **refus** d'une demande non validée, et l'**annulation** d'une commande validée que le paiement n'a jamais suivie.

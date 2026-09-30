@@ -22,7 +22,7 @@ export class ListOrdersRepository {
   async getMembersByIds(
     db: DbOrTx,
     ids: number[]
-  ): Promise<{ id: number; lastName: string; firstName: string; licence: string; gender: 'M' | 'F' }[]> {
+  ): Promise<{ id: number; lastName: string; firstName: string; licence: string; gender: 'M' | 'F'; email: string | null }[]> {
     if (ids.length === 0) return [];
     const members = await getMembersByIds(db, ids);
     return members.map((m) => ({
@@ -31,7 +31,9 @@ export class ListOrdersRepository {
       firstName: m.firstName,
       licence: m.licence,
       // Pour repérer d'un coup d'œil un maillot femme pris par un homme, et l'inverse.
-      gender: m.gender
+      gender: m.gender,
+      // Pour l'export des commandes : prévenir les acheteurs d'une opération.
+      email: m.email
     }));
   }
 
