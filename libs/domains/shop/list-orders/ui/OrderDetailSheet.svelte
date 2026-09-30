@@ -98,6 +98,9 @@
         {@render rangee('Article', ligne.sousTitre)}
         {#if item.member}
           {@render rangee('Licence', item.member.licence, true)}
+          {#if item.member.gender}
+            {@render rangee('Sexe', item.member.gender === 'F' ? 'Femme' : 'Homme')}
+          {/if}
         {/if}
         {@render rangee('Règlement', item.order.paymentMethodLabel || item.order.paymentMethod)}
         {@render rangee('Créée le', dateFr(item.order.createdAt))}

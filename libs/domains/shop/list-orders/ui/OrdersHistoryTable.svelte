@@ -1,4 +1,5 @@
 <script lang="ts">
+  import GenreAdherent from './GenreAdherent.svelte';
   import { Ban, Check, X } from '@lucide/svelte';
   import { Amount, Badge, DataTable, DataTableRowActions, DropdownMenu, RowActionItems, Table } from '@nba/ui';
   import type { Snippet } from 'svelte';
@@ -76,9 +77,9 @@
       </Table.Cell>
       <Table.Cell>
         {#if item.member}
-          <div class="font-medium text-foreground">
-            {item.member.lastName}
-            {item.member.firstName}
+          <div class="flex items-center gap-1.5 font-medium text-foreground">
+            <span>{item.member.lastName} {item.member.firstName}</span>
+            <GenreAdherent gender={item.member.gender} />
           </div>
           <div class="text-xs text-muted-foreground font-mono">
             Licence: {item.member.licence}

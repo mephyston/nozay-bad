@@ -1,6 +1,7 @@
 import { Banknote, Check, Pencil, Undo2, X } from '@lucide/svelte';
 import { formatAmount, type SwipeAction, type Tone } from '@nba/ui';
 import type { OrderItem, OrderStatus, Season } from './orders-manager-types';
+import { VARIANT_SEPARATOR } from '../../shared/product';
 
 /**
  * Le vocabulaire de l'écran des commandes, en un seul endroit.
@@ -204,4 +205,32 @@ export function actionsDeCommande(
     },
     ...corriger
   ];
+}
+
+/**
+ * L'article d'une commande, taille comprise ou non.
+ *
+ * Filtrer par article sert à suivre une opération — les maillots, par exemple — et non
+ * une taille : les déclinaisons se rangent donc sous leur parent. L'API sert le nom
+ * déjà suffixé de la taille (« Maillot du club — L ») ; on le lui retire.
+ */
+export function articleDeCommande(item: OrderItem): { value: string; label: string } | null {
+  const p = item.product;
+  if (!p) return null;
+  const taille = p.variantLabel?.trim();
+  const suffixe = taille ? `${VARIANT_SEPARATOR}${taille}` : '';
+  const nom = suffixe && p.name.endsWith(suffixe) ? p.name.slice(0, -suffixe.length) : p.name;
+  return { value: String(p.parentId ?? p.id), label: nom };
+}
+
+/** Les articles effectivement commandés, un par parent, dans l'ordre alphabétique. */
+export function articlesCommandes(items: OrderItem[]): { value: string; label: string }[] {
+  const parArticle = new Map<string, string>();
+  for (const item of items) {
+    const article = articleDeCommande(item);
+    if (article && !parArticle.has(article.value)) parArticle.set(article.value, article.label);
+  }
+  return [...parArticle]
+    .map(([value, label]) => ({ value, label }))
+    .sort((a, b) => a.label.localeCompare(b.label, 'fr'));
 }

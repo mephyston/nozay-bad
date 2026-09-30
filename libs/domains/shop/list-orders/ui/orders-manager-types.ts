@@ -30,6 +30,8 @@ export interface Member {
   firstName: string;
   lastName: string;
   licence: string;
+  /** Sexe de l'adhérent : sert à vérifier qu'un modèle homme ou femme va à la bonne personne. */
+  gender?: 'M' | 'F';
 }
 
 export interface Product {
@@ -39,6 +41,10 @@ export interface Product {
   stock: number;
   active: boolean;
   category: string;
+  /** Le produit parent, pour une déclinaison (une taille de maillot). */
+  parentId?: number | null;
+  /** « L », « XL »… : déjà accolé au nom par l'API, qui sert « Maillot du club — L ». */
+  variantLabel?: string | null;
 }
 
 export interface OrderItem {

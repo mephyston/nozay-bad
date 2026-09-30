@@ -7,6 +7,10 @@ order: 2
 
 **Boutique → Commandes** s'ouvre sur les commandes **en cours** : celles **à valider** et celles **en attente de paiement**, ensemble, chacune avec son statut et ses actions. Le sélecteur de statut permet de n'en voir qu'une étape, ou l'**historique** (payées, refusées, annulées). La recherche porte sur l'adhérent, sa licence, le produit, le moyen de paiement et le montant.
 
+Le filtre **Article** isole un produit avec toutes ses déclinaisons : choisir « Maillot du club » montre les commandes de toutes les tailles, pour suivre une opération d'un bout à l'autre. La vue, l'article et la recherche restent appliqués après chaque validation, encaissement ou refus, et se retrouvent dans l'adresse de la page : un lien copié rouvre la même sélection.
+
+Un symbole ♂ ou ♀ suit le nom de l'adhérent, pour repérer d'un coup d'œil une coupe homme commandée par une femme, ou l'inverse.
+
 Une commande suit le parcours **créée** → **en attente de paiement** → **payée**. Deux issues la referment sans règlement : le **refus** d'une demande non validée, et l'**annulation** d'une commande validée que le paiement n'a jamais suivie.
 
 ## D'où viennent les commandes

@@ -19,7 +19,8 @@
    * réinstallant sa propre `DataTableToolbar` ; elle vit désormais ici, une fois.
    *
    * **Tout ce qui réduit la liste est derrière la loupe, et nulle part ailleurs** :
-   * la saison, qui fixe le périmètre, et la vue, qui choisit l'étape. Ce qui reste
+   * la saison, qui fixe le périmètre, la vue, qui choisit l'étape, et l'article, qui
+   * isole une opération (les maillots) avec toutes ses tailles. Ce qui reste
    * au-dessus de la liste ne règle rien — ce sont les jetons, qui disent ce qui est
    * appliqué et permettent de le défaire d'un appui.
    */
@@ -27,6 +28,8 @@
     searchTerm = $bindable(''),
     selectedSeason = $bindable(''),
     activeTab = $bindable('open'),
+    articleChoisi = $bindable(''),
+    articles = [],
     seasons = [],
     counts,
     resultCount = 0,
@@ -36,6 +39,9 @@
     searchTerm?: string;
     selectedSeason?: string;
     activeTab?: OrdersTab;
+    /** Le produit parent retenu ; vide pour tous. Les tailles d'un maillot s'y rangent. */
+    articleChoisi?: string;
+    articles?: { value: string; label: string }[];
     seasons?: Season[];
     /** Le compte de chaque vue, affiché dans le choix comme dans les jetons. */
     counts: { open: number; created: number; awaiting_payment: number; history: number };
@@ -82,21 +88,19 @@
     vueChoisie = activeTab;
   });
 
-  const isFilterActive = $derived(activeTab !== 'open');
+  const articleItems = $derived([{ value: '', label: 'Tous les articles' }, ...articles]);
+  const libelleDArticle = $derived(articles.find((a) => a.value === articleChoisi)?.label ?? 'Article');
 
-  const criteres = $derived(
-    isFilterActive
-      ? [
-          {
-            id: 'vue',
-            label: libelleDeVue(activeTab),
-            onRemove: () => {
-              activeTab = 'open';
-            }
-          }
-        ]
-      : []
-  );
+  const isFilterActive = $derived(activeTab !== 'open' || articleChoisi !== '');
+
+  const criteres = $derived([
+    ...(activeTab !== 'open'
+      ? [{ id: 'vue', label: libelleDeVue(activeTab), onRemove: () => (activeTab = 'open') }]
+      : []),
+    ...(articleChoisi
+      ? [{ id: 'article', label: libelleDArticle, onRemove: () => (articleChoisi = '') }]
+      : [])
+  ]);
 
   /*
     Créer une commande descend dans la barre du bas : c'est la seule action de cet
@@ -130,6 +134,10 @@
       bind:value={vueChoisie}
       onChange={(v) => (activeTab = v as OrdersTab)}
     />
+  </FormField>
+
+  <FormField id="filter-article" label="Article">
+    <ChoiceField id="filter-article" label="Article" options={articleItems} bind:value={articleChoisi} />
   </FormField>
 {/snippet}
 
@@ -168,6 +176,7 @@
   hasActiveFilters={isFilterActive}
   onReset={() => {
     activeTab = 'open';
+    articleChoisi = '';
     filtresOuverts = false;
   }}
 >

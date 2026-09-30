@@ -87,7 +87,8 @@ describe('OrdersManager Component', () => {
         id: 10,
         firstName: 'Jean',
         lastName: 'Dupont',
-        licence: '123456'
+        licence: '123456',
+        gender: 'M' as const
       },
       product: {
         id: 100,
@@ -245,9 +246,54 @@ describe('OrdersManager Component', () => {
   });
 
   afterEach(() => {
+    // Les critères s'écrivent dans l'URL : un test ne doit pas hériter de ceux du précédent.
+    window.history.replaceState(null, '', '/');
+    document.body.innerHTML = '';
     globalThis.fetch = originalFetch;
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
+  });
+
+  it("filtre par article, et garde les critères dans l'URL pour survivre au rechargement", () => {
+    // La vraie `location`, et non le double à `reload()` seul des autres tests.
+    vi.unstubAllGlobals();
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+    window.history.replaceState(null, '', '/admin/shop/orders?season=25-26&vue=history&article=101');
+
+    const app = mount(OrdersManager, { target, props: { seasons, orders, seasonId: '25-26' } });
+    flushSync();
+
+    // Lu depuis l'URL : l'historique, restreint aux volants — la commande payée et la refusée.
+    const texte = target.textContent ?? '';
+    expect(texte).toContain('Martin');
+    expect(texte).toContain('Lefebvre');
+    expect(texte).not.toContain('Dupont');
+
+    // Réécrit tel quel, la saison préservée : c'est cette URL que le rechargement relira.
+    const params = new URLSearchParams(window.location.search);
+    expect(params.get('season')).toBe('25-26');
+    expect(params.get('vue')).toBe('history');
+    expect(params.get('article')).toBe('101');
+    unmount(app);
+  });
+
+  it("signale le sexe de l'adhérent à côté de son nom", () => {
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+    const app = mount(OrdersManager, { target, props: { seasons, orders, seasonId: '25-26' } });
+    flushSync();
+
+    const cellule = Array.from(target.querySelectorAll('tbody td')).find((td) =>
+      td.textContent?.includes('Dupont')
+    );
+    expect(cellule?.querySelector('[title="Homme"]'), 'symbole ♂ absent').not.toBeNull();
+    // Sexe inconnu : aucun symbole plutôt qu'un symbole au hasard.
+    const sansSexe = Array.from(target.querySelectorAll('tbody td')).find((td) =>
+      td.textContent?.includes('Renard')
+    );
+    expect(sansSexe?.querySelector('[title]')).toBeNull();
+    unmount(app);
   });
 
   it('renders every open order by default: awaiting validation and awaiting payment alike', () => {

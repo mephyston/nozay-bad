@@ -1,4 +1,5 @@
 <script lang="ts">
+  import GenreAdherent from './GenreAdherent.svelte';
   import { Badge, ListView, ListRow } from '@nba/ui';
   import type { OrderItem, OrdersTab } from './orders-manager-types';
   import {
@@ -87,6 +88,7 @@
         propriété au composant. C'est son contenu qui est conditionnel.
       -->
       {#snippet badge()}
+        <GenreAdherent gender={item.member?.gender} />
         {#if issue}
           <Badge variant={issue.variant as 'success'} size="xs">{issue.label}</Badge>
         {:else if retard !== null}

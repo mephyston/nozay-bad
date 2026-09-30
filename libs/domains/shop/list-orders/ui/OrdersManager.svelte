@@ -3,7 +3,7 @@
   import { softNavigate, uiAlert, correspondA } from '@nba/ui';
   import type { OrderItem, OrdersTab, Season } from './orders-manager-types';
   import { validateOrder, payOrder, rejectOrder, cancelOrder, unpayOrder } from './orders-manager-actions';
-  import { codeDeSaison, estOuverte, etapeOuverte } from './orders-row-model';
+  import { articleDeCommande, articlesCommandes, codeDeSaison, estOuverte, etapeOuverte } from './orders-row-model';
   import OrdersOpenTable from './OrdersOpenTable.svelte';
   import OrdersHistoryTable from './OrdersHistoryTable.svelte';
   import OrdersToolbar from './OrdersToolbar.svelte';
@@ -39,7 +39,39 @@
 
   // svelte-ignore state_referenced_locally
   let ordersList = $state<OrderItem[]>(orders);
-  let searchTerm = $state('');
+
+  /*
+    Les critères vivent dans l'URL. Chaque décision — valider, encaisser, refuser —
+    recharge l'écran pour montrer l'état frais, et tout ce qui n'était qu'en mémoire
+    repartait à zéro : on filtrait l'opération maillots, on validait une commande, et
+    l'on retombait sur toutes les commandes en cours. Lus au montage, réécrits à chaque
+    changement, ils survivent au rechargement comme au partage du lien.
+  */
+  const VUES_VALIDES: readonly OrdersTab[] = ['open', 'created', 'awaiting_payment', 'history'];
+  const parametresInitiaux =
+    typeof window === 'undefined' ? new URLSearchParams() : new URLSearchParams(window.location.search);
+  const vueInitiale = parametresInitiaux.get('vue') as OrdersTab | null;
+  if (vueInitiale && VUES_VALIDES.includes(vueInitiale)) activeTab = vueInitiale;
+
+  let searchTerm = $state(parametresInitiaux.get('q') ?? '');
+  /** Identifiant du produit parent ; vide pour tous les articles. */
+  let articleChoisi = $state(parametresInitiaux.get('article') ?? '');
+
+  $effect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const poser = (cle: string, valeur: string, defaut = '') =>
+      valeur && valeur !== defaut ? params.set(cle, valeur) : params.delete(cle);
+    poser('vue', activeTab, 'open');
+    poser('q', searchTerm.trim());
+    poser('article', articleChoisi);
+    const qs = params.toString();
+    const cible = qs ? `${window.location.pathname}?${qs}` : window.location.pathname;
+    if (cible !== `${window.location.pathname}${window.location.search}`) {
+      // L'état d'historique est gardé : le routeur d'Astro y range le sien.
+      window.history.replaceState(window.history.state, '', cible);
+    }
+  });
   let processingId = $state<number | null>(null);
   let isCreateSheetOpen = $state(initialAction === 'new-order');
   /** La commande en cours de correction ; `null` quand le formulaire crée. */
@@ -91,8 +123,12 @@
     }
   });
 
+  /** Les articles commandés dans la saison, pour le choix du filtre. */
+  const articles = $derived(articlesCommandes(ordersList));
+
   let filteredOrders = $derived(
     ordersList.filter((item) =>
+      (!articleChoisi || articleDeCommande(item)?.value === articleChoisi) &&
       correspondA(
         searchTerm,
         `${item.member?.lastName || ''} ${item.member?.firstName || ''}`,
@@ -200,6 +236,8 @@
     bind:searchTerm
     bind:selectedSeason
     bind:activeTab
+    bind:articleChoisi
+    {articles}
     {seasons}
     {counts}
     resultCount={vueCourante.length}

@@ -19,14 +19,19 @@ export class ListOrdersRepository {
     return db.select().from(ordersTable).where(whereClause).all();
   }
 
-  async getMembersByIds(db: DbOrTx, ids: number[]): Promise<{ id: number; lastName: string; firstName: string; licence: string }[]> {
+  async getMembersByIds(
+    db: DbOrTx,
+    ids: number[]
+  ): Promise<{ id: number; lastName: string; firstName: string; licence: string; gender: 'M' | 'F' }[]> {
     if (ids.length === 0) return [];
     const members = await getMembersByIds(db, ids);
     return members.map((m) => ({
       id: m.id,
       lastName: m.lastName,
       firstName: m.firstName,
-      licence: m.licence
+      licence: m.licence,
+      // Pour repérer d'un coup d'œil un maillot femme pris par un homme, et l'inverse.
+      gender: m.gender
     }));
   }
 

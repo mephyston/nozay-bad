@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import type { OrderItem } from './orders-manager-types';
 import {
+  articlesCommandes,
   ACTION_LABELS,
   actionsDeCommande,
   ETAPE_LABELS,
@@ -139,5 +140,23 @@ describe('actionsDeCommande — corriger une commande', () => {
     expect(ids(commande({ status: 'created' }))).toEqual(['primaire', 'secondaire']);
     expect(ids(commande({ status: 'paid' }), noop)).toEqual(['unpay']);
     expect(ids(commande({ status: 'rejected' }), noop)).toEqual([]);
+  });
+});
+
+describe('articlesCommandes — le filtre par article', () => {
+  const commande = (id: number, product: Record<string, unknown>) =>
+    ({ order: { id }, product }) as unknown as OrderItem;
+
+  it('range les tailles sous leur article parent, sans le suffixe de taille', () => {
+    const items = [
+      commande(1, { id: 34, parentId: 33, name: 'Maillot du club — L', variantLabel: 'L' }),
+      commande(2, { id: 35, parentId: 33, name: 'Maillot du club — M', variantLabel: 'M' }),
+      commande(3, { id: 7, parentId: null, name: 'Boîte de volants', variantLabel: null }),
+      commande(4, { id: 7, parentId: null, name: 'Boîte de volants', variantLabel: null })
+    ];
+    expect(articlesCommandes(items)).toEqual([
+      { value: '7', label: 'Boîte de volants' },
+      { value: '33', label: 'Maillot du club' }
+    ]);
   });
 });
