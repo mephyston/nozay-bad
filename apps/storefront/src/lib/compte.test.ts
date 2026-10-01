@@ -35,7 +35,8 @@ describe('libelleDeStatut', () => {
 describe('classeDeStatut', () => {
   it('réserve la couleur d’alerte à ce qui appelle une action', () => {
     expect(classeDeStatut('awaiting_payment')).toContain('warning');
-    expect(classeDeStatut('paid')).toContain('success');
+    expect(classeDeStatut('paid')).toContain('primary');
+    expect(classeDeStatut('delivered')).toContain('success');
   });
 
   it('se rabat sur le ton neutre', () => {

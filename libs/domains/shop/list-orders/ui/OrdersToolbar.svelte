@@ -45,7 +45,7 @@
     articles?: { value: string; label: string }[];
     seasons?: Season[];
     /** Le compte de chaque vue, affiché dans le choix comme dans les jetons. */
-    counts: { open: number; created: number; awaiting_payment: number; history: number };
+    counts: Record<OrdersTab, number>;
     /** Ce que la vue en cours affiche, pour le bouton de la feuille de filtres. */
     resultCount?: number;
     canCreate?: boolean;
@@ -63,15 +63,18 @@
   );
 
   /*
-    La vue réunie est le défaut : elle montre d'un coup ce qui attend une décision et
-    ce qui attend un règlement. Les trois autres sont des restrictions, et c'est à ce
+    La vue réunie est le défaut : elle montre d'un coup ce qui attend une décision,
+    un règlement ou une remise. Les autres suivent les états du workflow, dans
+    l'ordre du parcours, plus les issues sans suite ; ce sont des restrictions, et c'est à ce
     titre qu'elles se signalent par un jeton.
   */
   const VUES: { value: OrdersTab; label: string }[] = [
     { value: 'open', label: 'En cours' },
-    { value: 'created', label: 'À valider' },
-    { value: 'awaiting_payment', label: 'En attente de paiement' },
-    { value: 'history', label: 'Historique' }
+    { value: 'created', label: 'Nouvelles' },
+    { value: 'awaiting_payment', label: 'Validées, en attente de paiement' },
+    { value: 'paid', label: 'Payées' },
+    { value: 'delivered', label: 'Livrées' },
+    { value: 'closed', label: 'Refusées ou annulées' }
   ];
 
   const vueItems = $derived(

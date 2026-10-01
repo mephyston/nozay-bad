@@ -17,7 +17,9 @@ export const dateFr = (v: unknown) => {
 export const STATUT_LABEL: Record<string, string> = {
   created: 'En attente de validation',
   awaiting_payment: 'À régler',
-  paid: 'Payée',
+  // Réglée, l'article reste à prendre au club : c'est ce que l'adhérent doit savoir.
+  paid: 'Payée, à retirer',
+  delivered: 'Livrée',
   rejected: 'Refusée',
   cancelled: 'Annulée'
 };
@@ -26,7 +28,8 @@ export const STATUT_CLASSE: Record<string, string> = {
   created: 'bg-muted text-muted-foreground border-border',
   // Seule ligne qui appelle une action de l'adhérent : elle doit se voir.
   awaiting_payment: 'bg-warning/10 text-warning border-warning/20',
-  paid: 'bg-success/10 text-success border-success/20',
+  paid: 'bg-primary/10 text-primary border-primary/20',
+  delivered: 'bg-success/10 text-success border-success/20',
   rejected: 'bg-destructive/10 text-destructive border-destructive/20',
   cancelled: 'bg-muted text-muted-foreground border-border'
 };

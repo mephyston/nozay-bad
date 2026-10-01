@@ -1,4 +1,4 @@
-import { Banknote, Check, Pencil, Undo2, X } from '@lucide/svelte';
+import { Banknote, Check, PackageCheck, Pencil, Undo2, X } from '@lucide/svelte';
 import { formatAmount, type SwipeAction, type Tone } from '@nba/ui';
 import type { OrderItem, OrderStatus, Season } from './orders-manager-types';
 import { VARIANT_SEPARATOR } from '../../shared/product';
@@ -22,36 +22,56 @@ import { VARIANT_SEPARATOR } from '../../shared/product';
  */
 export const codeDeSaison = (s: Season): string => String(s.code ?? s.id);
 
-/** Une commande encore ouverte est à l'une de ses deux étapes. */
-export type EtapeOuverte = 'created' | 'awaiting_payment';
+/**
+ * Une commande encore ouverte est à l'une de ses trois étapes.
+ *
+ * Payée, elle reste ouverte tant que l'article n'est pas remis : c'est ce qui dit au
+ * bureau ce qu'il lui reste à distribuer.
+ */
+export type EtapeOuverte = 'created' | 'awaiting_payment' | 'paid';
 
+/** L'ordre du parcours : on valide, on encaisse, on remet. */
+export const ETAPES_OUVERTES: readonly EtapeOuverte[] = ['created', 'awaiting_payment', 'paid'];
+
+/**
+ * Le nom de chaque étape : celui de l'état du workflow, le même dans le badge d'une
+ * ligne et dans le filtre qui la sélectionne.
+ */
 export const ETAPE_LABELS: Record<EtapeOuverte, string> = {
-  created: 'À valider',
-  awaiting_payment: 'En attente de paiement'
+  created: 'Nouvelle',
+  awaiting_payment: 'En attente de paiement',
+  paid: 'Payée'
+};
+
+export const ETAPE_VARIANTS: Record<EtapeOuverte, string> = {
+  created: 'warning',
+  awaiting_payment: 'secondary',
+  paid: 'success'
 };
 
 /**
  * Le couple d'actions de chaque étape.
  *
  * La **primaire** est réversible — une commande validée s'annule, un encaissement se
- * défait — et c'est elle qui vient en tête : le balayage long l'exécute, et ce geste
+ * défait, une remise aussi — et c'est elle qui vient en tête : le balayage long l'exécute, et ce geste
  * est trop facile à déclencher par mégarde pour porter une issue définitive.
  */
 export const ACTION_LABELS: Record<EtapeOuverte, { primaire: string; secondaire: string }> = {
   created: { primaire: 'Valider', secondaire: 'Refuser' },
-  awaiting_payment: { primaire: 'Encaisser', secondaire: 'Annuler' }
+  awaiting_payment: { primaire: 'Encaisser', secondaire: 'Annuler' },
+  paid: { primaire: 'Livrer', secondaire: "Annuler l'encaissement" }
 };
 
-/** L'étape d'une commande ouverte ; `created` pour tout ce qui n'attend pas de règlement. */
-export const etapeOuverte = (item: OrderItem): EtapeOuverte =>
-  item.order.status === 'awaiting_payment' ? 'awaiting_payment' : 'created';
-
 export const estOuverte = (item: OrderItem): boolean =>
-  item.order.status === 'created' || item.order.status === 'awaiting_payment';
+  (ETAPES_OUVERTES as readonly string[]).includes(item.order.status);
+
+/** L'étape d'une commande ouverte ; `created` pour tout ce qui n'en a pas. */
+export const etapeOuverte = (item: OrderItem): EtapeOuverte =>
+  estOuverte(item) ? (item.order.status as EtapeOuverte) : 'created';
 
 /** Les issues closes, et ce qu'elles valent à l'écran. */
 const ISSUES: Partial<Record<OrderStatus, { label: string; variant: string }>> = {
-  paid: { label: 'Payée', variant: 'success' },
+  delivered: { label: 'Livrée', variant: 'success' },
   rejected: { label: 'Refusée', variant: 'destructive' },
   cancelled: { label: 'Annulée', variant: 'outline' }
 };
@@ -134,13 +154,16 @@ export function ligneCommande(item: OrderItem): LigneCommande {
   };
 }
 
+export const ICONES_PRIMAIRES = { created: Check, awaiting_payment: Banknote, paid: PackageCheck } as const;
+
 /** Les fonctions de transition que l'écran met à disposition d'une ligne. */
 export type TransitionsDeCommande = {
   /** Saison clôturée, ou transition déjà en vol : plus aucune action n'est offerte. */
   verrouille?: boolean;
   onPrimary?: (id: number) => void;
   onSecondary?: (id: number) => void;
-  onUnpay?: (id: number) => void;
+  /** Défaire une remise cochée par erreur : seule action d'une commande livrée. */
+  onUndeliver?: (id: number) => void;
   /**
    * Corriger la commande (adhérent, article, quantité, règlement), tant qu'elle est ouverte.
    * Offert au menu du tableau ; la liste au doigt le porte dans la fiche, pas au balayage.
@@ -163,19 +186,19 @@ export type TransitionsDeCommande = {
  */
 export function actionsDeCommande(
   item: OrderItem,
-  { verrouille = false, onPrimary, onSecondary, onUnpay, onEdit }: TransitionsDeCommande
+  { verrouille = false, onPrimary, onSecondary, onUndeliver, onEdit }: TransitionsDeCommande
 ): SwipeAction<OrderItem>[] {
   if (verrouille) return [];
 
-  if (item.order.status === 'paid') {
-    if (!onUnpay) return [];
+  if (item.order.status === 'delivered') {
+    if (!onUndeliver) return [];
     return [
       {
-        id: 'unpay',
-        label: "Annuler l'encaissement",
+        id: 'undeliver',
+        label: 'Annuler la remise',
         icon: Undo2,
         tone: 'destructive',
-        run: (x) => onUnpay(x.order.id)
+        run: (x) => onUndeliver(x.order.id)
       }
     ];
   }
@@ -185,21 +208,22 @@ export function actionsDeCommande(
 
   const etape = etapeOuverte(item);
   // En dernier : la première action est celle d'un balayage long, et elle doit rester réversible.
-  const corriger: SwipeAction<OrderItem>[] = onEdit
+  // Une commande payée ne se corrige plus : sa recette est écrite.
+  const corriger: SwipeAction<OrderItem>[] = onEdit && etape !== 'paid'
     ? [{ id: 'modifier', label: 'Modifier', icon: Pencil, tone: 'neutral', run: (x) => onEdit(x) }]
     : [];
   return [
     {
       id: 'primaire',
       label: ACTION_LABELS[etape].primaire,
-      icon: etape === 'created' ? Check : Banknote,
+      icon: ICONES_PRIMAIRES[etape],
       tone: 'primary',
       run: (x) => onPrimary(x.order.id)
     },
     {
       id: 'secondaire',
       label: ACTION_LABELS[etape].secondaire,
-      icon: X,
+      icon: etape === 'paid' ? Undo2 : X,
       tone: 'destructive',
       run: (x) => onSecondary(x.order.id)
     },
@@ -237,9 +261,10 @@ export function articlesCommandes(items: OrderItem[]): { value: string; label: s
 
 /** Le statut en toutes lettres, pour un fichier qu'on ouvre hors de l'écran. */
 const STATUT_EXPORT: Record<OrderStatus, string> = {
-  created: 'À valider',
+  created: 'Nouvelle',
   awaiting_payment: 'En attente de paiement',
   paid: 'Payée',
+  delivered: 'Livrée',
   rejected: 'Refusée',
   cancelled: 'Annulée'
 };

@@ -106,6 +106,26 @@ export async function cancelOrder(orderId: number): Promise<OrderActionResult> {
 }
 
 /**
+ * Payée → livrée. Aucune écriture, aucun mouvement de stock : l'article est remis.
+ *
+ * Pas de confirmation : la remise se défait d'un geste depuis l'historique.
+ */
+export async function deliverOrder(orderId: number): Promise<OrderActionResult> {
+  return postOrderAction('deliver', orderId, {
+    error: 'Erreur lors de la remise',
+    flash: 'Commande livrée.'
+  });
+}
+
+/** Livrée → payée, quand on a coché la mauvaise ligne. La recette n'est pas touchée. */
+export async function undeliverOrder(orderId: number): Promise<OrderActionResult> {
+  return postOrderAction('undeliver', orderId, {
+    error: "Erreur lors de l'annulation de la remise",
+    flash: 'Remise annulée : la commande est de nouveau à livrer.'
+  });
+}
+
+/**
  * Payée → en attente de paiement. Retire la recette du grand livre.
  *
  * Le cas d'usage est l'erreur de ligne : on a encaissé la commande du voisin. Avant,

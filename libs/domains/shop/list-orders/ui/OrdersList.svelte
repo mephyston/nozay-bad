@@ -3,6 +3,7 @@
   import { Badge, ListView, ListRow } from '@nba/ui';
   import type { OrderItem, OrdersTab } from './orders-manager-types';
   import {
+    ETAPES_OUVERTES,
     ETAPE_LABELS,
     actionsDeCommande,
     enRetard,
@@ -28,19 +29,19 @@
     verrouille = false,
     onPrimary,
     onSecondary,
-    onUnpay,
+    onUndeliver,
     onOuvrir,
     emptyTitle,
     emptyDescription
   }: {
     orders?: OrderItem[];
-    /** La vue affichée : `open` regroupe les deux étapes, les autres sont homogènes. */
+    /** La vue affichée : `open` regroupe les trois étapes, les autres sont homogènes. */
     vue: OrdersTab;
     /** Saison clôturée, ou transition en cours : plus aucune action n'est offerte. */
     verrouille?: boolean;
     onPrimary?: (id: number) => void;
     onSecondary?: (id: number) => void;
-    onUnpay?: (id: number) => void;
+    onUndeliver?: (id: number) => void;
     onOuvrir: (item: OrderItem) => void;
     emptyTitle?: string;
     emptyDescription?: string;
@@ -49,14 +50,16 @@
   /**
    * Dans la vue réunie, l'étape devient une section plutôt qu'un badge par ligne.
    *
-   * L'ordre est celui du parcours — on valide avant d'encaisser — et non celui du
-   * relais, pour que les deux blocs ne changent pas de place d'un chargement à
+   * L'ordre est celui du parcours — on valide, on encaisse, on remet — et non celui du
+   * relais, pour que les blocs ne changent pas de place d'un chargement à
    * l'autre. Un en-tête porte son compte, ce qui remplace les compteurs que la
    * liste déroulante de statut affichait en libellé.
    */
   const rangees = $derived(
     vue === 'open'
-      ? [...orders].sort((a, b) => Number(etapeOuverte(a) === 'awaiting_payment') - Number(etapeOuverte(b) === 'awaiting_payment'))
+      ? [...orders].sort(
+          (a, b) => ETAPES_OUVERTES.indexOf(etapeOuverte(a)) - ETAPES_OUVERTES.indexOf(etapeOuverte(b))
+        )
       : orders
   );
 
@@ -81,7 +84,7 @@
       value={l.valeur}
       valueTone={l.ton}
       valueCaption={l.legende}
-      actions={actionsDeCommande(item, { verrouille, onPrimary, onSecondary, onUnpay })}
+      actions={actionsDeCommande(item, { verrouille, onPrimary, onSecondary, onUndeliver })}
     >
       <!--
         Le snippet se déclare toujours : sous un `{#if}` il ne serait pas passé en

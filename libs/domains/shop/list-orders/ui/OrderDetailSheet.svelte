@@ -1,10 +1,12 @@
 <script lang="ts">
-  import { Banknote, Check, Pencil, Undo2, X } from '@lucide/svelte';
+  import { Pencil, Undo2, X } from '@lucide/svelte';
   import { Badge, Button, ResponsiveSheet } from '@nba/ui';
   import type { OrderItem } from './orders-manager-types';
   import {
     ACTION_LABELS,
     ETAPE_LABELS,
+    ETAPE_VARIANTS,
+    ICONES_PRIMAIRES,
     dateFr,
     enRetard,
     estOuverte,
@@ -24,8 +26,8 @@
    *
    * Elle sert aussi de second chemin vers les décisions. Le balayage les offre déjà,
    * mais il ne les **nomme** pas avant de les exécuter : ici les boutons portent leur
-   * libellé, et c'est le dernier garde-fou avant de refuser une commande ou de défaire
-   * un encaissement.
+   * libellé, et c'est le dernier garde-fou avant de refuser une commande, de défaire
+   * un encaissement ou une remise.
    */
   let {
     open = $bindable(false),
@@ -33,7 +35,7 @@
     verrouille = false,
     onPrimary,
     onSecondary,
-    onUnpay,
+    onUndeliver,
     onEdit
   }: {
     open?: boolean;
@@ -42,19 +44,20 @@
     verrouille?: boolean;
     onPrimary?: (id: number) => void;
     onSecondary?: (id: number) => void;
-    onUnpay?: (id: number) => void;
+    onUndeliver?: (id: number) => void;
     /** Corriger la commande tant qu'elle est ouverte ; absent sans le droit de modifier. */
     onEdit?: (item: OrderItem) => void;
   } = $props();
 
   const ouverte = $derived(!!item && estOuverte(item));
   const etape = $derived(item && ouverte ? etapeOuverte(item) : null);
+  const IconePrimaire = $derived(ICONES_PRIMAIRES[etape ?? 'created']);
   const issue = $derived(item ? issueCommande(item) : null);
   const retard = $derived(item ? enRetard(item) : null);
   const ligne = $derived(item ? ligneCommande(item) : null);
 
   /** Une issue close sans retour possible n'a rien à proposer : pas de pied du tout. */
-  const sansActions = $derived(verrouille || (!ouverte && !(item?.order.status === 'paid' && onUnpay)));
+  const sansActions = $derived(verrouille || (!ouverte && !(item?.order.status === 'delivered' && onUndeliver)));
 
   function lancer(action?: (id: number) => void) {
     if (!item || !action) return;
@@ -90,7 +93,7 @@
         {#if issue}
           <Badge variant={issue.variant as 'success'}>{issue.label}</Badge>
         {:else if etape}
-          <Badge variant={etape === 'created' ? 'warning' : 'secondary'}>{ETAPE_LABELS[etape]}</Badge>
+          <Badge variant={ETAPE_VARIANTS[etape] as 'warning'}>{ETAPE_LABELS[etape]}</Badge>
         {/if}
       </div>
 
@@ -111,6 +114,9 @@
               ? `${dateFr(item.order.awaitingPaymentSince)} (${retard} j)`
               : dateFr(item.order.awaitingPaymentSince)
           )}
+        {/if}
+        {#if item.order.status === 'delivered' && item.order.deliveredAt}
+          {@render rangee('Livrée le', dateFr(item.order.deliveredAt))}
         {/if}
         {#if item.order.ledgerEntryId}
           {@render rangee('Écriture', `#${item.order.ledgerEntryId}`, true)}
@@ -137,7 +143,8 @@
   {#snippet footer()}
     <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
       {#if ouverte && etape}
-        {#if onEdit}
+        <!-- Une commande payée ne se corrige plus : sa recette est écrite. -->
+        {#if onEdit && etape !== 'paid'}
           <Button
             type="button"
             variant="outline"
@@ -159,26 +166,26 @@
           onclick={() => lancer(onSecondary)}
           class="w-full text-destructive sm:w-auto"
         >
-          <X class="size-4" />
+          {#if etape === 'paid'}
+            <Undo2 class="size-4" />
+          {:else}
+            <X class="size-4" />
+          {/if}
           {ACTION_LABELS[etape].secondaire}
         </Button>
         <Button type="button" onclick={() => lancer(onPrimary)} class="w-full sm:w-auto">
-          {#if etape === 'created'}
-            <Check class="size-4" />
-          {:else}
-            <Banknote class="size-4" />
-          {/if}
+          <IconePrimaire class="size-4" />
           {ACTION_LABELS[etape].primaire}
         </Button>
-      {:else if item?.order.status === 'paid' && onUnpay}
+      {:else if item?.order.status === 'delivered' && onUndeliver}
         <Button
           type="button"
           variant="outline"
-          onclick={() => lancer(onUnpay)}
+          onclick={() => lancer(onUndeliver)}
           class="w-full text-destructive sm:w-auto"
         >
           <Undo2 class="size-4" />
-          Annuler l'encaissement
+          Annuler la remise
         </Button>
       {/if}
     </div>

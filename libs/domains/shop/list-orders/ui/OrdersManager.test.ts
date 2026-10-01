@@ -109,8 +109,9 @@ describe('OrdersManager Component', () => {
         totalAmount: 1550, // 15.50 €
         paymentMethod: 'cheque',
         paymentMethodLabel: 'Chèque',
-        status: 'paid' as const,
+        status: 'delivered' as const,
         awaitingPaymentSince: null,
+        deliveredAt: '2026-07-14',
         ledgerEntryId: 55,
         createdAt: '2026-07-12T10:00:00.000Z'
       },
@@ -218,6 +219,36 @@ describe('OrdersManager Component', () => {
         active: true,
         category: 'shuttlecock'
       }
+    },
+    {
+      order: {
+        id: 6,
+        seasonId: '25-26',
+        memberId: 15,
+        productId: 101,
+        quantity: 1,
+        totalAmount: 1550,
+        paymentMethod: 'especes',
+        paymentMethodLabel: 'Espèces',
+        status: 'paid' as const,
+        awaitingPaymentSince: '2026-06-20',
+        ledgerEntryId: 61,
+        createdAt: '2026-06-20T10:00:00.000Z'
+      },
+      member: {
+        id: 15,
+        firstName: 'Léa',
+        lastName: 'Garnier',
+        licence: '112233'
+      },
+      product: {
+        id: 101,
+        name: 'Babolat Tour shuttlecock',
+        price: 1550,
+        stock: 10,
+        active: true,
+        category: 'shuttlecock'
+      }
     }
   ];
 
@@ -259,21 +290,22 @@ describe('OrdersManager Component', () => {
     vi.unstubAllGlobals();
     const target = document.createElement('div');
     document.body.appendChild(target);
-    window.history.replaceState(null, '', '/admin/shop/orders?season=25-26&vue=history&article=101');
+    window.history.replaceState(null, '', '/admin/shop/orders?season=25-26&vue=closed&article=101');
 
     const app = mount(OrdersManager, { target, props: { seasons, orders, seasonId: '25-26' } });
     flushSync();
 
-    // Lu depuis l'URL : l'historique, restreint aux volants — la commande payée et la refusée.
+    // Lu depuis l'URL : refusées ou annulées, restreintes aux volants — la refusée et l'annulée.
     const texte = target.textContent ?? '';
-    expect(texte).toContain('Martin');
+    expect(texte).toContain('Noel');
     expect(texte).toContain('Lefebvre');
     expect(texte).not.toContain('Dupont');
+    expect(texte).not.toContain('Martin');
 
     // Réécrit tel quel, la saison préservée : c'est cette URL que le rechargement relira.
     const params = new URLSearchParams(window.location.search);
     expect(params.get('season')).toBe('25-26');
-    expect(params.get('vue')).toBe('history');
+    expect(params.get('vue')).toBe('closed');
     expect(params.get('article')).toBe('101');
     unmount(app);
   });
@@ -316,10 +348,13 @@ describe('OrdersManager Component', () => {
     expect(target.innerHTML).toContain('Yonex BG65 String');
     expect(target.innerHTML).toContain('50,00');
     expect(target.innerHTML).toContain('Virement');
-    expect(target.innerHTML).toContain('À valider');
+    expect(target.innerHTML).toContain('Nouvelle');
     expect(target.innerHTML).toContain('Renard');
     expect(target.innerHTML).toContain('En attente de paiement');
     expect(target.innerHTML).toContain('01/07/2026');
+    // Payée mais pas encore remise : elle attend encore le bureau.
+    expect(target.innerHTML).toContain('Garnier');
+    expect(target.innerHTML).toContain('Payée');
 
     // La première ligne est la demande à valider : ses actions sont celles de son étape.
     openActions(target);
@@ -344,6 +379,34 @@ describe('OrdersManager Component', () => {
     expect(target.innerHTML).toContain('Dupont');
     expect(target.innerHTML).not.toContain('Martin');
     expect(target.innerHTML).not.toContain('Renard');
+    expect(target.innerHTML).not.toContain('Garnier');
+  });
+
+  it('livre une commande payée depuis la vue « Payées »', async () => {
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+
+    mount(OrdersManager, {
+      target,
+      props: { seasons, orders, seasonId: '25-26', activeTab: 'paid' }
+    });
+    flushSync();
+
+    expect(target.innerHTML).toContain('Garnier');
+    expect(target.innerHTML).not.toContain('Renard');
+    expect(target.innerHTML).not.toContain('Martin');
+    // Livrer en tête : la remise se défait, c'est elle que le balayage long exécute.
+    expect(libellesDeBalayage(target)).toEqual(['Livrer', "Annuler l'encaissement"]);
+
+    openActions(target);
+    actionButton(target, 'Livrer').click();
+    flushSync();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      '/admin/api/shop/orders',
+      expect.objectContaining({ body: JSON.stringify({ action: 'deliver', id: 6 }) })
+    );
   });
 
   it('encaisse une commande en attente de paiement depuis la vue réunie', async () => {
@@ -392,56 +455,87 @@ describe('OrdersManager Component', () => {
     expect(target.innerHTML).not.toContain('Dupont');
   });
 
-  it('renders history (paid, rejected and cancelled) orders when history tab is selected', () => {
+  it('montre les commandes livrées dans leur vue, avec leur date de remise', () => {
     const target = document.createElement('div');
     document.body.appendChild(target);
 
-    // La bascule d'onglet se fait via un SearchableCombobox (dans le popover « Filtres »),
-    // impraticable à piloter en jsdom : on monte directement sur la vue historique.
+    // La bascule de vue se fait via un SearchableCombobox (dans le popover « Filtres »),
+    // impraticable à piloter en jsdom : on monte directement sur la vue voulue.
     mount(OrdersManager, {
       target,
-      props: {
-        seasons,
-        orders,
-        seasonId: '25-26',
-        activeTab: 'history'
-      }
+      props: { seasons, orders, seasonId: '25-26', activeTab: 'delivered' }
     });
     flushSync();
 
-    // Paid order
     expect(target.innerHTML).toContain('Martin');
-    expect(target.innerHTML).toContain('Alice');
-    expect(target.innerHTML).toContain('Payée');
+    expect(target.innerHTML).toContain('Livrée');
+    expect(target.innerHTML).toContain('le 14/07/2026');
     expect(target.innerHTML).toContain('15,50');
     expect(target.innerHTML).toContain('Tx: #55');
 
-    // Rejected order
+    // Ni les issues sans suite, ni ce qui est encore en cours — payée comprise, tant
+    // que l'article n'est pas remis.
+    expect(target.innerHTML).not.toContain('Lefebvre');
+    expect(target.innerHTML).not.toContain('Noel');
+    expect(target.innerHTML).not.toContain('Renard');
+    expect(target.innerHTML).not.toContain('Garnier');
+  });
+
+  it('réunit les commandes refusées et annulées dans une même vue', () => {
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+
+    mount(OrdersManager, {
+      target,
+      props: { seasons, orders, seasonId: '25-26', activeTab: 'closed' }
+    });
+    flushSync();
+
     expect(target.innerHTML).toContain('Lefebvre');
     expect(target.innerHTML).toContain('Refusée');
     expect(target.innerHTML).toContain('46,50');
-
-    // Cancelled order
     expect(target.innerHTML).toContain('Noel');
     expect(target.innerHTML).toContain('Annulée');
     expect(target.innerHTML).toContain('31,00');
 
-    // Une commande encore ouverte n'est pas de l'historique.
-    expect(target.innerHTML).not.toContain('Renard');
+    expect(target.innerHTML).not.toContain('Martin');
+    expect(target.innerHTML).not.toContain('Garnier');
+    // Des issues closes : aucune action, ni au menu ni au balayage.
+    expect(target.querySelector('tbody button[aria-haspopup="menu"]')).toBeNull();
+    expect(libellesDeBalayage(target)).toEqual([]);
   });
 
-  it("annule l'encaissement d'une commande payée depuis l'historique, après confirmation", async () => {
+  it("annule la remise d'une commande livrée depuis l'historique", async () => {
     const target = document.createElement('div');
     document.body.appendChild(target);
 
     mount(OrdersManager, {
       target,
-      props: { seasons, orders, seasonId: '25-26', activeTab: 'history' }
+      props: { seasons, orders, seasonId: '25-26', activeTab: 'delivered' }
     });
     flushSync();
 
-    // Seule la commande payée porte un menu : refusée et annulée sont des issues fermées.
-    expect(target.querySelectorAll('tbody button[aria-haspopup="menu"]').length).toBe(1);
+    openActions(target);
+    actionButton(target, 'Annuler la remise').click();
+    flushSync();
+    await new Promise(resolve => setTimeout(resolve, 0));
+
+    expect(globalThis.fetch).toHaveBeenCalledWith('/admin/api/shop/orders', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'undeliver', id: 2 })
+    });
+  });
+
+  it("annule l'encaissement d'une commande payée pas encore livrée, après confirmation", async () => {
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+
+    mount(OrdersManager, {
+      target,
+      props: { seasons, orders, seasonId: '25-26', activeTab: 'paid' }
+    });
+    flushSync();
 
     openActions(target);
     actionButton(target, "Annuler l'encaissement").click();
@@ -453,7 +547,7 @@ describe('OrdersManager Component', () => {
     expect(globalThis.fetch).toHaveBeenCalledWith('/admin/api/shop/orders', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'unpay', id: 2 })
+      body: JSON.stringify({ action: 'unpay', id: 6 })
     });
   });
 
@@ -628,23 +722,21 @@ describe('OrdersManager Component', () => {
     );
   });
 
-  it("n'offre à l'historique que le retour en arrière, et sur la seule commande payée", () => {
+  it("n'offre à une commande livrée que le retour en arrière, au balayage aussi", () => {
     const target = document.createElement('div');
     document.body.appendChild(target);
 
     mount(OrdersManager, {
       target,
-      props: { seasons, orders, seasonId: '25-26', activeTab: 'history' }
+      props: { seasons, orders, seasonId: '25-26', activeTab: 'delivered' }
     });
     flushSync();
 
-    // Trois lignes d'historique, une seule piste de balayage garnie : refusée et
-    // annulée sont des issues closes, et ne se rouvrent pas.
     const garnies = Array.from(target.querySelectorAll('[data-swipe-track]')).filter(
       (piste) => piste.querySelectorAll('button').length > 0
     );
     expect(garnies.length).toBe(1);
-    expect(garnies[0].textContent).toContain("Annuler l'encaissement");
+    expect(garnies[0].textContent).toContain('Annuler la remise');
   });
   it("ouvre la fiche d'une commande au doigt, avec ce que la ligne ne porte plus", async () => {
     const target = document.createElement('div');

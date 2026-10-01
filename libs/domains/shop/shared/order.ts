@@ -1,13 +1,16 @@
 /**
  * Cycle de vie d'une commande boutique.
  *
- * `created` → `awaiting_payment` → `paid`. Seul le passage à `paid` écrit en
- * comptabilité : tant qu'une commande n'est pas réglée, elle n'existe pas pour
- * l'exercice. Les deux issues fermées sont `rejected` (le bureau refuse une
- * demande) et `cancelled` (une commande validée que le règlement n'a jamais suivie).
+ * `created` → `awaiting_payment` → `paid` → `delivered`. Seul le passage à `paid`
+ * écrit en comptabilité : tant qu'une commande n'est pas réglée, elle n'existe pas pour
+ * l'exercice. La remise de l'article (`delivered`) ne touche ni au stock ni à la
+ * compta : elle dit seulement que l'adhérent est reparti avec. Les deux issues fermées
+ * sont `rejected` (le bureau refuse une demande) et `cancelled` (une commande validée
+ * que le règlement n'a jamais suivie).
  *
- * Un seul retour en arrière : `paid` → `awaiting_payment`, quand on a encaissé la
- * mauvaise commande. Il retire la recette du grand livre, tant qu'elle n'y est pas
+ * Deux retours en arrière, un pas à la fois : `delivered` → `paid` quand on a coché la
+ * mauvaise ligne, et `paid` → `awaiting_payment` quand on a encaissé la mauvaise
+ * commande — ce dernier retire la recette du grand livre, tant qu'elle n'y est pas
  * pointée sur le relevé.
  */
 /**
@@ -31,12 +34,13 @@ export function motifDeRefusCommande(
   return `La cotisation de ${qui} n'a pas encore été réglée : la boutique s'ouvre dès le premier versement.`;
 }
 
-export type OrderStatus = 'created' | 'awaiting_payment' | 'paid' | 'rejected' | 'cancelled';
+export type OrderStatus = 'created' | 'awaiting_payment' | 'paid' | 'delivered' | 'rejected' | 'cancelled';
 
 export const ORDER_STATUSES: readonly OrderStatus[] = [
   'created',
   'awaiting_payment',
   'paid',
+  'delivered',
   'rejected',
   'cancelled'
 ] as const;
@@ -44,7 +48,14 @@ export const ORDER_STATUSES: readonly OrderStatus[] = [
 /** Longueur maximale du motif de refus : il tient dans une notification et sur une ligne de liste. */
 export const REJECTION_REASON_MAX_LENGTH = 500;
 
-/** Statuts d'une commande encore en cours de traitement, réglée ou non. */
+/**
+ * Statuts d'une commande pas encore réglée : la décision du bureau, puis l'argent.
+ *
+ * Une commande payée mais pas encore remise (`paid`) n'en fait pas partie : elle est
+ * encore à traiter à l'écran (« À livrer »), mais l'argent est rentré, et c'est ce que
+ * cette liste sert à surveiller — la clôture d'exercice la lit pour repérer un
+ * règlement sans écriture.
+ */
 export const OPEN_ORDER_STATUSES: readonly OrderStatus[] = ['created', 'awaiting_payment'] as const;
 
 export interface OrderData {
@@ -57,6 +68,7 @@ export interface OrderData {
   paymentMethodId: number;
   status: OrderStatus;
   awaitingPaymentSince: string | null;
+  deliveredAt?: string | null;
   ledgerEntryId: number | null;
   createdAt: Date;
 }
@@ -118,5 +130,15 @@ export class Order {
   /** L'encaissement d'une commande réglée se défait : la recette repart du grand livre. */
   canBeUnpaid(): boolean {
     return this.data.status === 'paid';
+  }
+
+  /** L'article est remis à l'adhérent : seulement une fois réglé. */
+  canBeDelivered(): boolean {
+    return this.data.status === 'paid';
+  }
+
+  /** La remise cochée par erreur se défait : la commande redevient « à livrer ». */
+  canBeUndelivered(): boolean {
+    return this.data.status === 'delivered';
   }
 }

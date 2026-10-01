@@ -6,6 +6,7 @@
   import OrdersList from './OrdersList.svelte';
   import {
     ETAPE_LABELS,
+    ETAPE_VARIANTS,
     actionsDeCommande,
     dateFr,
     etapeOuverte,
@@ -15,14 +16,15 @@
   } from './orders-row-model';
 
   /**
-   * Table des commandes encore ouvertes, pour les deux étapes du workflow.
+   * Table des commandes encore ouvertes, pour les trois étapes du workflow.
    *
    * `created` se joue entre valider et refuser ; `awaiting_payment` entre encaisser
-   * et annuler. Les deux tables ne diffèrent que par ce couple d'actions et par la
-   * colonne d'ancienneté, d'où un seul composant plutôt que deux presque identiques.
+   * et annuler ; `paid` entre livrer et défaire l'encaissement. Les tables ne
+   * diffèrent que par ce couple d'actions et par la colonne d'ancienneté, d'où un
+   * seul composant plutôt que trois presque identiques.
    *
    * La vue `open` les réunit : c'est celle qu'on ouvre, et qui montre d'un coup ce
-   * qui attend une décision et ce qui attend un règlement. Chaque ligne y garde les
+   * qui attend une décision, un règlement ou une remise. Chaque ligne y garde les
    * actions de sa propre étape, et une colonne dit laquelle.
    *
    * Sous 768 px, ce n'est plus une table : {@link OrdersList} prend le relais, avec
@@ -68,10 +70,15 @@
             emptyTitle: 'Aucune commande à encaisser',
             emptyDescription: "Aucune commande validée n'attend de règlement."
           }
-        : {
-            emptyTitle: 'Aucune commande en cours',
-            emptyDescription: "Aucune demande d'achat à valider, aucune commande à encaisser."
-          }
+        : stage === 'paid'
+          ? {
+              emptyTitle: 'Aucune commande à livrer',
+              emptyDescription: "Toutes les commandes payées ont été remises."
+            }
+          : {
+              emptyTitle: 'Aucune commande en cours',
+              emptyDescription: "Aucune demande d'achat à valider, aucune commande à encaisser ni à livrer."
+            }
   );
 </script>
 
@@ -106,7 +113,7 @@
     {#if stage === 'open'}
       <Table.Head>Statut</Table.Head>
     {/if}
-    {#if stage !== 'created'}
+    {#if stage === 'open' || stage === 'awaiting_payment'}
       <Table.Head>En attente depuis</Table.Head>
     {/if}
     <Table.Head>Règlement</Table.Head>
@@ -144,12 +151,12 @@
       </Table.Cell>
       {#if stage === 'open'}
         <Table.Cell class="whitespace-nowrap">
-          <Badge variant={etapeOuverte(item) === 'created' ? 'warning' : 'secondary'}>
+          <Badge variant={ETAPE_VARIANTS[etapeOuverte(item)] as 'warning'}>
             {ETAPE_LABELS[etapeOuverte(item)]}
           </Badge>
         </Table.Cell>
       {/if}
-      {#if stage !== 'created'}
+      {#if stage === 'open' || stage === 'awaiting_payment'}
         {@const days = joursDAttente(item.order.awaitingPaymentSince)}
         <Table.Cell class="whitespace-nowrap text-muted-foreground">
           {etapeOuverte(item) === 'awaiting_payment' ? dateFr(item.order.awaitingPaymentSince) : '—'}

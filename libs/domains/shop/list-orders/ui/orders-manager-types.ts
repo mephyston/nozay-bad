@@ -13,6 +13,8 @@ export interface Order {
   paymentMethod: string;
   status: OrderStatus;
   awaitingPaymentSince: string | null;
+  /** Date de remise de l'article, une fois la commande livrée. */
+  deliveredAt?: string | null;
   ledgerEntryId: number | null;
   /** Motif d'un refus, quand le bureau en a donné un. */
   rejectionReason?: string | null;
@@ -20,10 +22,14 @@ export interface Order {
 }
 
 /**
- * Vues de la page commandes : tout ce qui est en cours (les deux étapes ouvertes
- * ensemble, la vue par défaut), chaque étape seule, et l'historique.
+ * Vues de la page commandes : tout ce qui est en cours (les trois étapes ouvertes
+ * ensemble, la vue par défaut), puis une vue par état du workflow — nouvelle,
+ * validée en attente de paiement, payée, livrée —, et les issues refusées ou annulées.
  */
-export type OrdersTab = 'open' | 'created' | 'awaiting_payment' | 'history';
+export type OrdersTab = 'open' | 'created' | 'awaiting_payment' | 'paid' | 'delivered' | 'closed';
+
+/** Les vues des commandes closes : elles se rendent dans la table d'historique. */
+export const VUES_CLOSES: readonly OrdersTab[] = ['delivered', 'closed'];
 
 export interface Member {
   id: number;

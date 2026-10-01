@@ -78,18 +78,24 @@ describe('orders-row-model', () => {
     expect(etapeOuverte(commande())).toBe('created');
     expect(etapeOuverte(commande({ status: 'awaiting_payment' }))).toBe('awaiting_payment');
     expect(estOuverte(commande({ status: 'awaiting_payment' }))).toBe(true);
-    expect(estOuverte(commande({ status: 'paid' }))).toBe(false);
+    // Payée, elle reste ouverte tant que l'article n'est pas remis.
+    expect(etapeOuverte(commande({ status: 'paid' }))).toBe('paid');
+    expect(estOuverte(commande({ status: 'paid' }))).toBe(true);
+    expect(estOuverte(commande({ status: 'delivered' }))).toBe(false);
   });
 
   it('associe à chaque étape son libellé et son couple d’actions', () => {
-    expect(ETAPE_LABELS.created).toBe('À valider');
+    expect(ETAPE_LABELS.created).toBe('Nouvelle');
     expect(ETAPE_LABELS.awaiting_payment).toBe('En attente de paiement');
     expect(ACTION_LABELS.created).toEqual({ primaire: 'Valider', secondaire: 'Refuser' });
     expect(ACTION_LABELS.awaiting_payment).toEqual({ primaire: 'Encaisser', secondaire: 'Annuler' });
+    expect(ETAPE_LABELS.paid).toBe('Payée');
+    expect(ACTION_LABELS.paid).toEqual({ primaire: 'Livrer', secondaire: "Annuler l'encaissement" });
   });
 
   it('nomme les trois issues closes, et rien pour une commande ouverte', () => {
-    expect(issueCommande(commande({ status: 'paid' }))).toEqual({ label: 'Payée', variant: 'success' });
+    expect(issueCommande(commande({ status: 'delivered' }))).toEqual({ label: 'Livrée', variant: 'success' });
+    expect(issueCommande(commande({ status: 'paid' }))).toBeNull();
     expect(issueCommande(commande({ status: 'rejected' }))).toEqual({ label: 'Refusée', variant: 'destructive' });
     expect(issueCommande(commande({ status: 'cancelled' }))).toEqual({ label: 'Annulée', variant: 'outline' });
     expect(issueCommande(commande())).toBeNull();
@@ -126,7 +132,7 @@ describe('orders-row-model', () => {
 describe('actionsDeCommande — corriger une commande', () => {
   const noop = () => {};
   const ids = (item: OrderItem, onEdit?: (i: OrderItem) => void) =>
-    actionsDeCommande(item, { onPrimary: noop, onSecondary: noop, onUnpay: noop, onEdit }).map((a) => a.id);
+    actionsDeCommande(item, { onPrimary: noop, onSecondary: noop, onUndeliver: noop, onEdit }).map((a) => a.id);
 
   it('offre « Modifier » en dernier sur une commande ouverte : le balayage long reste réversible', () => {
     expect(ids(commande({ status: 'created' }), noop)).toEqual(['primaire', 'secondaire', 'modifier']);
@@ -139,7 +145,9 @@ describe('actionsDeCommande — corriger une commande', () => {
 
   it("ne l'offre ni sans le droit, ni sur une commande réglée ou close", () => {
     expect(ids(commande({ status: 'created' }))).toEqual(['primaire', 'secondaire']);
-    expect(ids(commande({ status: 'paid' }), noop)).toEqual(['unpay']);
+    // Payée : livrer ou défaire l'encaissement, mais plus rien à corriger, la recette est écrite.
+    expect(ids(commande({ status: 'paid' }), noop)).toEqual(['primaire', 'secondaire']);
+    expect(ids(commande({ status: 'delivered' }), noop)).toEqual(['undeliver']);
     expect(ids(commande({ status: 'rejected' }), noop)).toEqual([]);
   });
 });

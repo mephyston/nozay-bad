@@ -42,6 +42,7 @@
     "0038_accounts_and_payment_methods.sql": "10cc5e8203e0b78e",
     "0039_product_variants_and_images.sql": "7c233aa19005fa5e",
     "0040_ledger_refund_sign.sql": "80730a2d264de923",
-    "0041_orders_rejection_reason.sql": "56457ad54b1c7e41"
+    "0041_orders_rejection_reason.sql": "56457ad54b1c7e41",
+    "0042_orders_delivered.sql": "efa7e886b80b2909"
   }
 }

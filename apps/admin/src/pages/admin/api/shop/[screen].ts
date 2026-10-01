@@ -10,7 +10,7 @@ import { currentSeasonCode, sortSeasons } from '../../../../lib/seasons';
  */
 
 /** Transition d'une commande → segment d'URL de l'API. */
-const TRANSITIONS = ['validate', 'pay', 'reject', 'cancel', 'unpay'] as const;
+const TRANSITIONS = ['validate', 'pay', 'reject', 'cancel', 'unpay', 'deliver', 'undeliver'] as const;
 
 export const ECRANS: Record<string, Ecran> = {
   orders: {

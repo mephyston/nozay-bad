@@ -10,6 +10,10 @@ La règle sépare deux décisions que le club prenait auparavant en un seul gest
 **accepter la demande** (qui engage le stock) et **encaisser le règlement** (qui écrit
 la recette). Une commande jamais réglée ne laisse ainsi aucune trace dans l'exercice.
 
+Une fois réglée, la commande attend encore la **remise** de l'article (`delivered`) :
+maillots attendus du fournisseur, volants donnés à l'entraînement suivant. Cet état
+final dit au bureau ce qui reste à distribuer, sans effet sur le stock ni la compta.
+
 ---
 
 ## 2. Domaine Fonctionnel
@@ -27,7 +31,8 @@ la recette). Une commande jamais réglée ne laisse ainsi aucune trace dans l'ex
 |---|---|---|
 | `created` | Demande enregistrée, non traitée par le bureau. | `awaiting_payment`, `rejected` |
 | `awaiting_payment` | Demande acceptée, stock réservé, règlement attendu. | `paid`, `cancelled` |
-| `paid` | Règlement encaissé, recette écrite au grand livre. | — (terminal) |
+| `paid` | Règlement encaissé, recette écrite au grand livre ; article à remettre. | `delivered`, `awaiting_payment` (annulation de l'encaissement) |
+| `delivered` | Article remis à l'adhérent. | `paid` (annulation de la remise) |
 | `rejected` | Demande refusée avant validation. | — (terminal) |
 | `cancelled` | Commande validée puis jamais réglée. | — (terminal) |
 
@@ -63,7 +68,21 @@ reçoit une erreur de conflit et rien n'est écrit deux fois.
    notification et montré à l'adhérent dans « Mes commandes ». Sans motif, la
    notification renvoie l'adhérent vers le bureau.
 
-### 3.5 Relance
+### 3.5 Remise (`paid` → `delivered`) et son annulation
+1. La remise n'est permise que sur une commande **payée** : on ne remet pas un article
+   non réglé.
+2. Elle enregistre la **date de remise** (le jour même) et **ne touche ni au stock ni à la
+   comptabilité** : le stock a été réservé à la validation, la recette écrite à
+   l'encaissement.
+3. Elle ne notifie pas l'adhérent : il a l'article en main.
+4. Elle n'est pas bloquée par la clôture d'exercice, faute d'écriture.
+5. Une remise cochée par erreur s'**annule** (`delivered` → `paid`) : la date de remise est
+   effacée, l'encaissement reste. Une commande livrée ne voit pas son encaissement annulé
+   directement : on défait un pas à la fois.
+6. Tant qu'elle n'est pas livrée, une commande payée reste **en cours** à l'écran : elle
+   compte parmi les commandes à traiter du tableau de bord.
+
+### 3.6 Relance
 1. Les commandes en `awaiting_payment` depuis **plus de sept jours** déclenchent une
    relance à l'adhérent, dans la catégorie de notification `reminder`.
 2. La relance est **hebdomadaire** et **idempotente** : un déclencheur programmé rejoué
@@ -71,7 +90,7 @@ reçoit une erreur de conflit et rien n'est écrit deux fois.
 3. Elle ne part que si les relances automatiques sont activées sur le service
    (`PUSH_REMINDERS_ENABLED`), le même interrupteur que les relances de cotisation.
 
-### 3.6 Clôture d'exercice
+### 3.7 Clôture d'exercice
 Une commande portant une **date de paiement** alors qu'elle n'est pas au statut `paid`
 signale de l'argent reçu sans écriture correspondante : elle **bloque la clôture** de
 l'exercice.
@@ -124,6 +143,27 @@ Fonctionnalité: Cycle de vie et paiement d'une commande boutique
     Alors la commande passe au statut "annulée"
     Et le stock remonte à 10 unités
     Et aucune écriture n'est enregistrée au grand livre
+
+  Scénario: Remise d'une commande payée
+    Étant donné une commande payée de 2 unités de "Boîte Volants Plumes"
+    Et un stock de 8 unités
+    Quand le bureau enregistre la remise de l'article
+    Alors la commande passe au statut "livrée", datée du jour
+    Et le stock reste à 8 unités
+    Et la recette au grand livre est inchangée
+
+  Scénario: On ne livre pas une commande non réglée
+    Étant donné une commande en attente de paiement
+    Quand le bureau tente de la livrer
+    Alors l'opération est refusée
+    Et la commande reste au statut "en attente de paiement"
+
+  Scénario: Annulation d'une remise cochée par erreur
+    Étant donné une commande livrée
+    Quand le bureau annule la remise
+    Alors la commande repasse au statut "payée"
+    Et sa date de remise est effacée
+    Et la recette au grand livre est inchangée
 
   Scénario: Une commande payée ne peut plus être annulée
     Étant donné une commande au statut "payée"

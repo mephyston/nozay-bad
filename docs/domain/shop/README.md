@@ -15,10 +15,12 @@ Le domaine **Shop** gère le catalogue des produits (volants, maillots, cordages
 | **Catégorie Produit** | Famille d'articles réglée par le club (Volants, Cordages, Textiles…), rattachée à une catégorie comptable. Modifiable sur un produit à tout moment. | `Entity` (`product_categories`) |
 | **Commande** | Ensemble d'articles réservés ou achetés par un adhérent. | `Aggregate` (`id`, `memberId`, `totalAmount`, `status`) |
 | **Ligne de Commande** | Quantité et prix unitaire d'un produit donné au sein d'une commande. | `Value Object` (`productId`, `quantity`, `unitPrice`) |
-| **Statut de Commande** | État du cycle de vie de la commande : `created` (créée), `awaiting_payment` (en attente de paiement), `paid` (payée), `rejected` (refusée), `cancelled` (annulée). | `Enum` |
+| **Statut de Commande** | État du cycle de vie de la commande : `created` (créée), `awaiting_payment` (en attente de paiement), `paid` (payée), `delivered` (livrée), `rejected` (refusée), `cancelled` (annulée). | `Enum` |
 | **Motif de refus** | Explication facultative donnée par le bureau en refusant une commande, montrée à l'adhérent et reprise dans la notification. 500 caractères au plus. | `string` (`rejection_reason`) |
 | **Validation** | Acceptation de la demande par le bureau. Réserve le stock, n'écrit rien en comptabilité. | `Transition` (`created` → `awaiting_payment`) |
 | **Encaissement** | Enregistrement du règlement. Seul acte qui écrit une recette au grand livre. | `Transition` (`awaiting_payment` → `paid`) |
+| **Remise** | Remise de l'article à l'adhérent. Sans effet sur le stock ni la comptabilité ; dit au bureau ce qui reste à distribuer. Se défait (`delivered` → `paid`). | `Transition` (`paid` → `delivered`) |
+| **Date de remise** | Date à laquelle l'article a été remis. | `date` (`delivered_at`) |
 | **Date de mise en attente** | Date à laquelle la commande est passée en attente de paiement. Point de départ des relances. | `date` (`awaiting_payment_since`) |
 | **Relance** | Notification hebdomadaire adressée à l'adhérent dont une commande attend son règlement depuis plus de sept jours. | `Notification` (catégorie `reminder`) |
 | **Mouvement de Stock** | Variation du stock disponible (entrée réassort, sortie vente, ajustement inventaire). | `Event` / `Record` (`productId`, `delta`, `reason`) |

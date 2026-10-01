@@ -1,15 +1,24 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { softNavigate, uiAlert, correspondA } from '@nba/ui';
-  import type { OrderItem, OrdersTab, Season } from './orders-manager-types';
-  import { validateOrder, payOrder, rejectOrder, cancelOrder, unpayOrder } from './orders-manager-actions';
+  import { VUES_CLOSES, type OrderItem, type OrdersTab, type Season } from './orders-manager-types';
+  import {
+    validateOrder,
+    payOrder,
+    rejectOrder,
+    cancelOrder,
+    unpayOrder,
+    deliverOrder,
+    undeliverOrder
+  } from './orders-manager-actions';
   import {
     articleDeCommande,
     articlesCommandes,
     codeDeSaison,
     commandesCsv,
     estOuverte,
-    etapeOuverte
+    etapeOuverte,
+    type EtapeOuverte
   } from './orders-row-model';
   import OrdersOpenTable from './OrdersOpenTable.svelte';
   import OrdersHistoryTable from './OrdersHistoryTable.svelte';
@@ -54,7 +63,7 @@
     l'on retombait sur toutes les commandes en cours. Lus au montage, réécrits à chaque
     changement, ils survivent au rechargement comme au partage du lien.
   */
-  const VUES_VALIDES: readonly OrdersTab[] = ['open', 'created', 'awaiting_payment', 'history'];
+  const VUES_VALIDES: readonly OrdersTab[] = ['open', 'created', 'awaiting_payment', 'paid', 'delivered', 'closed'];
   const parametresInitiaux =
     typeof window === 'undefined' ? new URLSearchParams() : new URLSearchParams(window.location.search);
   const vueInitiale = parametresInitiaux.get('vue') as OrdersTab | null;
@@ -151,15 +160,22 @@
   const awaitingPaymentOrders = $derived(
     filteredOrders.filter((item) => item.order.status === 'awaiting_payment')
   );
-  // Tout ce qui attend encore quelque chose du club : une décision, puis un règlement.
+  const paidOrders = $derived(filteredOrders.filter((item) => item.order.status === 'paid'));
+  // Tout ce qui attend encore quelque chose du club : une décision, un règlement, une remise.
   const openOrders = $derived(filteredOrders.filter(estOuverte));
-  const historyOrders = $derived(filteredOrders.filter((item) => !estOuverte(item)));
+  const deliveredOrders = $derived(filteredOrders.filter((item) => item.order.status === 'delivered'));
+  // Les deux issues sans suite : demande refusée, commande jamais réglée.
+  const closedOrders = $derived(
+    filteredOrders.filter((item) => item.order.status === 'rejected' || item.order.status === 'cancelled')
+  );
 
   const counts = $derived({
     open: openOrders.length,
     created: createdOrders.length,
     awaiting_payment: awaitingPaymentOrders.length,
-    history: historyOrders.length
+    paid: paidOrders.length,
+    delivered: deliveredOrders.length,
+    closed: closedOrders.length
   });
 
   const vueCourante = $derived(
@@ -167,9 +183,13 @@
       ? createdOrders
       : activeTab === 'awaiting_payment'
         ? awaitingPaymentOrders
-        : activeTab === 'history'
-          ? historyOrders
-          : openOrders
+        : activeTab === 'paid'
+          ? paidOrders
+          : activeTab === 'delivered'
+            ? deliveredOrders
+            : activeTab === 'closed'
+              ? closedOrders
+              : openOrders
   );
 
   /**
@@ -211,16 +231,23 @@
   }
   const handleCancel = (orderId: number) => runTransition(orderId, cancelOrder);
   const handleUnpay = (orderId: number) => runTransition(orderId, unpayOrder);
+  const handleDeliver = (orderId: number) => runTransition(orderId, deliverOrder);
+  const handleUndeliver = (orderId: number) => runTransition(orderId, undeliverOrder);
+
+  /** Le couple d'actions de chaque étape : primaire, puis secondaire. */
+  const TRANSITIONS: Record<EtapeOuverte, [(id: number) => void, (id: number) => void]> = {
+    created: [handleValidate, handleReject],
+    awaiting_payment: [handlePay, handleCancel],
+    paid: [handleDeliver, handleUnpay]
+  };
 
   // Dans la vue réunie, chaque ligne suit les transitions de sa propre étape.
   const etapeDe = (orderId: number) => {
     const item = ordersList.find((o) => o.order.id === orderId);
     return item ? etapeOuverte(item) : 'created';
   };
-  const handleOpenPrimary = (orderId: number) =>
-    (etapeDe(orderId) === 'awaiting_payment' ? handlePay : handleValidate)(orderId);
-  const handleOpenSecondary = (orderId: number) =>
-    (etapeDe(orderId) === 'awaiting_payment' ? handleCancel : handleReject)(orderId);
+  const handleOpenPrimary = (orderId: number) => TRANSITIONS[etapeDe(orderId)][0](orderId);
+  const handleOpenSecondary = (orderId: number) => TRANSITIONS[etapeDe(orderId)][1](orderId);
 
   /** Absent sans le droit, ou saison close : l'action n'est alors offerte nulle part. */
   const handleEdit = $derived(
@@ -278,12 +305,13 @@
 {/snippet}
 
 <div class="space-y-6">
-  {#if activeTab === 'history'}
+  {#if VUES_CLOSES.includes(activeTab)}
     <OrdersHistoryTable
-      {historyOrders}
+      historyOrders={vueCourante}
+      vue={activeTab}
       {isClosed}
       toolbar={barreDOutils}
-      onUnpay={handleUnpay}
+      onUndeliver={handleUndeliver}
       onOuvrir={ouvrirFiche}
     />
   {:else}
@@ -292,16 +320,8 @@
       stage={activeTab}
       {isClosed}
       toolbar={barreDOutils}
-      onPrimary={activeTab === 'open'
-        ? handleOpenPrimary
-        : activeTab === 'created'
-          ? handleValidate
-          : handlePay}
-      onSecondary={activeTab === 'open'
-        ? handleOpenSecondary
-        : activeTab === 'created'
-          ? handleReject
-          : handleCancel}
+      onPrimary={activeTab === 'open' ? handleOpenPrimary : TRANSITIONS[activeTab as EtapeOuverte][0]}
+      onSecondary={activeTab === 'open' ? handleOpenSecondary : TRANSITIONS[activeTab as EtapeOuverte][1]}
       onOuvrir={ouvrirFiche}
       onEdit={handleEdit}
     />
@@ -314,7 +334,7 @@
   verrouille={isClosed}
   onPrimary={handleOpenPrimary}
   onSecondary={handleOpenSecondary}
-  onUnpay={handleUnpay}
+  onUndeliver={handleUndeliver}
   onEdit={handleEdit}
 />
 

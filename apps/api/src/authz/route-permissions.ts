@@ -207,7 +207,7 @@ export const ROUTE_PERMISSIONS: RouteRule[] = [
   { method: 'DELETE', path: '/shop/product-categories/:id', permission: 'shop:categories:write', feature: 'shop' },
   { method: 'GET', path: '/shop/orders', permission: 'shop:orders:read', service: true, feature: 'shop' },
   { method: 'POST', path: '/shop/orders', permission: 'shop:orders:write', service: true, feature: 'shop' },
-  // Les quatre transitions du workflow relèvent de la même décision de gestion.
+  // Les transitions du workflow relèvent de la même décision de gestion.
   // Corriger une commande avant règlement : jamais depuis l'espace adhérent (pas de `service`).
   { method: 'PUT', path: '/shop/orders/:id', permission: 'shop:orders:write', feature: 'shop' },
   { method: 'POST', path: '/shop/orders/:id/validate', permission: 'shop:orders:approve', feature: 'shop' },
@@ -216,6 +216,10 @@ export const ROUTE_PERMISSIONS: RouteRule[] = [
   { method: 'POST', path: '/shop/orders/:id/cancel', permission: 'shop:orders:approve', feature: 'shop' },
   // Défaire un encaissement, c'est retirer une recette : le même droit que l'écrire.
   { method: 'POST', path: '/shop/orders/:id/unpay', permission: 'shop:orders:approve', feature: 'shop' },
+  // Remettre l'article, ou défaire une remise cochée par erreur : sans effet comptable,
+  // mais c'est le même bureau qui suit la commande de bout en bout.
+  { method: 'POST', path: '/shop/orders/:id/deliver', permission: 'shop:orders:approve', feature: 'shop' },
+  { method: 'POST', path: '/shop/orders/:id/undeliver', permission: 'shop:orders:approve', feature: 'shop' },
 
   // ── Notifications ──────────────────────────────────────────────────────────
   // Abonnement et préférences : gestes personnels d'un utilisateur sur son propre

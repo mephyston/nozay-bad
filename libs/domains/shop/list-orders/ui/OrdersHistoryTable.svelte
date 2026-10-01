@@ -1,31 +1,36 @@
 <script lang="ts">
   import GenreAdherent from './GenreAdherent.svelte';
-  import { Ban, Check, X } from '@lucide/svelte';
+  import { Ban, PackageCheck, X } from '@lucide/svelte';
   import { Amount, Badge, DataTable, DataTableRowActions, DropdownMenu, RowActionItems, Table } from '@nba/ui';
   import type { Snippet } from 'svelte';
-  import type { OrderItem } from './orders-manager-types';
+  import type { OrderItem, OrdersTab } from './orders-manager-types';
   import OrdersList from './OrdersList.svelte';
   import { actionsDeCommande, dateFr, montantCents } from './orders-row-model';
 
   /**
-   * Une seule action ici, et sur les seules commandes payées : annuler l'encaissement.
-   * Refusées et annulées sont des issues fermées, elles n'ont plus de menu.
+   * Une seule action ici, et sur les seules commandes livrées : annuler la remise.
+   * Refusées et annulées sont des issues fermées, elles n'ont plus de menu. Une
+   * commande payée n'est pas encore de l'histoire : elle attend d'être remise, et vit
+   * dans les commandes en cours, où se défait aussi son encaissement.
    *
    * Sous 768 px, {@link OrdersList} prend le relais : même projection de ligne et même
    * fiche de détail que les commandes ouvertes, seul le jeu d'actions change.
    */
   let {
     historyOrders = [],
+    vue = 'delivered',
     isClosed = false,
     toolbar: barreDOutils,
-    onUnpay,
+    onUndeliver,
     onOuvrir
   }: {
     historyOrders?: OrderItem[];
+    /** `delivered` ou `closed` : la vue d'issues que la table montre. */
+    vue?: OrdersTab;
     isClosed?: boolean;
     /** La barre d'outils, commune aux deux tables et rendue par l'écran. */
     toolbar?: Snippet;
-    onUnpay?: (id: number) => void;
+    onUndeliver?: (id: number) => void;
     onOuvrir: (item: OrderItem) => void;
   } = $props();
 
@@ -35,13 +40,19 @@
     ré-entrance est déjà gardée par `runTransition`, qui refuse un second appel.
   */
   const verrouille = $derived(isClosed);
+
+  const copy = $derived(
+    vue === 'closed'
+      ? { emptyTitle: 'Aucune commande refusée ou annulée', emptyDescription: 'Aucune demande refusée ni commande annulée sur la saison.' }
+      : { emptyTitle: 'Aucune commande livrée', emptyDescription: "Aucun article n'a encore été remis sur la saison." }
+  );
 </script>
 
 <DataTable
   data={historyOrders}
   mobileSpacing="list"
-  emptyTitle="Aucun historique"
-  emptyDescription="Aucun historique de commande disponible."
+  emptyTitle={copy.emptyTitle}
+  emptyDescription={copy.emptyDescription}
 >
   {#snippet toolbar()}
     {@render barreDOutils?.()}
@@ -50,12 +61,12 @@
   {#snippet mobileView()}
     <OrdersList
       orders={historyOrders}
-      vue="history"
+      {vue}
       {verrouille}
-      {onUnpay}
+      {onUndeliver}
       {onOuvrir}
-      emptyTitle="Aucun historique"
-      emptyDescription="Aucun historique de commande disponible."
+      emptyTitle={copy.emptyTitle}
+      emptyDescription={copy.emptyDescription}
     />
   {/snippet}
 
@@ -107,11 +118,16 @@
         <Amount cents={montantCents(item)} />
       </Table.Cell>
       <Table.Cell class="text-center">
-        {#if item.order.status === 'paid'}
+        {#if item.order.status === 'delivered'}
           <Badge variant="success">
-            <Check class="w-3 h-3" />
-            Payée
+            <PackageCheck class="w-3 h-3" />
+            Livrée
           </Badge>
+          {#if item.order.deliveredAt}
+            <div class="text-[10px] text-muted-foreground mt-0.5">
+              le {dateFr(item.order.deliveredAt)}
+            </div>
+          {/if}
           {#if item.order.ledgerEntryId}
             <div class="text-[10px] text-muted-foreground mt-0.5">
               Tx: #{item.order.ledgerEntryId}
@@ -138,7 +154,7 @@
         {/if}
       </Table.Cell>
       <Table.Cell class="text-right relative">
-        {@const actions = actionsDeCommande(item, { verrouille, onUnpay })}
+        {@const actions = actionsDeCommande(item, { verrouille, onUndeliver })}
         {#if actions.length > 0}
           <DataTableRowActions>
             <DropdownMenu.Label>Actions</DropdownMenu.Label>
