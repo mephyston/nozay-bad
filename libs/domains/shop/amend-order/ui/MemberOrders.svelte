@@ -98,7 +98,12 @@
               <p class="mt-1 whitespace-pre-line text-xs text-destructive">Motif du refus : {row.rejectionReason}</p>
             {/if}
           </div>
-          <div class="flex shrink-0 items-center gap-3">
+          <!--
+            Au téléphone, le montant au-dessus du statut : côte à côte, « En attente de
+            validation » prenait la moitié de la ligne et coupait le nom de l'article
+            avant sa taille et sa quantité — précisément ce qu'on vient vérifier.
+          -->
+          <div class="flex shrink-0 flex-col items-end gap-1 sm:flex-row sm:items-center sm:gap-3">
             <span class="text-sm font-semibold text-foreground">{formatEuros(row.totalCents)}</span>
             <span class="inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium {row.statutClasse}">
               {row.statutLabel}
@@ -108,13 +113,18 @@
 
         {#if estModifiable(row)}
           <!--
-            Deux boutons nommés, à la hauteur des champs (44 points au doigt) : une commande se modifie ou s'annule au
-            doigt, et l'annulation demande confirmation. « Modifier » n'est offert que si
-            l'article est encore au catalogue — sinon il n'y a plus rien à rechoisir.
+            Deux boutons nommés, à la hauteur des champs (44 points au doigt), et l'annulation
+            demande confirmation. Au téléphone ils s'empilent en pleine largeur : côte à côte,
+            « Annuler la commande » ne tenait pas dans les 320 px d'une ligne. « Modifier »
+            n'est offert que si l'article est encore au catalogue — sinon il n'y a plus rien
+            à rechoisir.
+
+            « Annuler la commande » et non « Annuler » : c'est aussi le bouton qui referme
+            une feuille sans rien faire, et l'on ne doit pas confondre les deux.
           -->
-          <div class="mt-2 flex justify-end gap-2">
+          <div class="mt-3 flex flex-col gap-2 sm:flex-row sm:justify-end sm:gap-3">
             {#if familleDeCommande(families, row.productId)}
-              <Button type="button" variant="outline" disabled={occupe} onclick={() => modifier(row)}>
+              <Button type="button" variant="outline" class="w-full sm:w-auto" disabled={occupe} onclick={() => modifier(row)}>
                 <Pencil class="size-4" />
                 Modifier
               </Button>
@@ -122,12 +132,12 @@
             <Button
               type="button"
               variant="outline"
-              class="text-destructive"
+              class="w-full text-destructive sm:w-auto"
               disabled={occupe}
               onclick={() => annuler(row)}
             >
               <X class="size-4" />
-              Annuler
+              Annuler la commande
             </Button>
           </div>
         {/if}

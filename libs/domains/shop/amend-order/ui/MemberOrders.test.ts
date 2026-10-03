@@ -58,7 +58,7 @@ describe('MemberOrders', () => {
     vi.unstubAllGlobals();
   });
 
-  it("n'offre « Modifier » et « Annuler » qu'aux commandes que le bureau n'a pas validées", () => {
+  it("n'offre « Modifier » et « Annuler la commande » qu'aux commandes que le bureau n'a pas validées", () => {
     const target = monter([
       ligne({ id: 1 }),
       ligne({ id: 2, status: 'awaiting_payment', statutLabel: 'À régler' }),
@@ -68,17 +68,17 @@ describe('MemberOrders', () => {
     const lignes = Array.from(target.querySelectorAll('[data-testid="member-orders"] > div'));
     expect(lignes).toHaveLength(3);
     expect(bouton(lignes[0], 'Modifier')).toBeDefined();
-    expect(bouton(lignes[0], 'Annuler')).toBeDefined();
+    expect(bouton(lignes[0], 'Annuler la commande')).toBeDefined();
     for (const l of lignes.slice(1)) {
       expect(bouton(l, 'Modifier')).toBeUndefined();
-      expect(bouton(l, 'Annuler')).toBeUndefined();
+      expect(bouton(l, 'Annuler la commande')).toBeUndefined();
     }
   });
 
   it("ne propose pas de modifier un article retiré du catalogue, mais laisse l'annuler", () => {
     const target = monter([ligne({ productId: 99, productName: 'Ancien article' })]);
     expect(bouton(target, 'Modifier')).toBeUndefined();
-    expect(bouton(target, 'Annuler')).toBeDefined();
+    expect(bouton(target, 'Annuler la commande')).toBeDefined();
   });
 
   it('rouvre la feuille de commande sur la commande : sa taille, sa quantité', async () => {
