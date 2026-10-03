@@ -56,5 +56,32 @@ export function applySecurityHeaders(response: Response): Response {
   });
 }
 
+/**
+ * Le HTML ne se resert jamais sans être redemandé (cf. lib/resume-reload.ts pour
+ * l'incident du 03/10/2026 : une page de boutique périmée dans l'application).
+ *
+ * `private` : la page est celle d'un adhérent, aucun intermédiaire ne la garde.
+ * `no-cache` : le navigateur la redemande à chaque affichage — ce qu'il faisait déjà,
+ * faute d'en-tête et de validateur, mais sans que rien ne le garantisse.
+ *
+ * Pas de `no-store` : il exclurait la page du bfcache, et le retour arrière
+ * redeviendrait une requête complète.
+ */
+export const HTML_CACHE_CONTROL = 'private, no-cache';
+
+/**
+ * Pose l'en-tête sur une page HTML qui n'en a pas.
+ *
+ * Seulement le HTML : les assets gardent leur cache d'un an, le manifeste et les
+ * photos le leur. Une réponse qui a déjà choisi (le PDF en `no-store`) n'est pas touchée.
+ */
+export function applyHtmlCacheControl(response: Response): Response {
+  const type = response.headers.get('Content-Type') ?? '';
+  if (!type.includes('text/html') || response.headers.has('Cache-Control')) return response;
+  const mutable = withMutableHeaders(response);
+  mutable.headers.set('Cache-Control', HTML_CACHE_CONTROL);
+  return mutable;
+}
+
 // Le middleware s'en sert pour ajouter un Set-Cookie à une réponse relayée.
 export { withMutableHeaders };

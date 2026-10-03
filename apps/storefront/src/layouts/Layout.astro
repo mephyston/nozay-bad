@@ -86,6 +86,11 @@ const ICON_SUFFIX = APP_ENV === 'development' ? '-dev' : APP_ENV === 'staging' ?
         );
       }
 
+      // Une page rouverte après une longue absence est rechargée : l'application
+      // installée réaffichait sinon la boutique d'il y a des heures (cf. lib/resume-reload.ts).
+      import { installResumeReload } from '../lib/resume-reload';
+      installResumeReload();
+
       import { registerSW } from 'virtual:pwa-register'
       if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
         const banner = document.getElementById('sw-update-banner');

@@ -15,7 +15,7 @@ import {
 import { resolveEnv, IS_DEV, COOKIE_SECURE } from './lib/request-context';
 import { loadClubContext, featureOn } from '@nba/club/context';
 import type { Feature } from '@nba/club-ui';
-import { applySecurityHeaders, withMutableHeaders } from './lib/security-headers';
+import { applySecurityHeaders, applyHtmlCacheControl, withMutableHeaders } from './lib/security-headers';
 import { listSeasons, isSeasonOpen, parisToday } from './lib/season';
 
 // Chemins accessibles sans session : page de login, endpoints d'auth, et assets Astro (_astro/_image).
@@ -225,7 +225,7 @@ const handleRequest = async (
 };
 
 // M-03 : toutes les réponses (pages, API, redirections, 401) reçoivent les en-têtes
-// de sécurité.
+// de sécurité. Les pages HTML, en plus, ne se resservent jamais sans être redemandées.
 export const onRequest = defineMiddleware(async (context, next) => {
-  return applySecurityHeaders(await handleRequest(context, next));
+  return applySecurityHeaders(applyHtmlCacheControl(await handleRequest(context, next)));
 });

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { applySecurityHeaders, buildCsp } from './security-headers';
+import { applyHtmlCacheControl, applySecurityHeaders, buildCsp } from './security-headers';
 
 /**
  * Simule la réponse d'un service binding : dans workerd, ses en-têtes sont
@@ -68,5 +68,24 @@ describe('buildCsp', () => {
     const csp = buildCsp('');
 
     expect(csp).toContain("img-src 'self' data: blob:;");
+  });
+});
+
+describe('applyHtmlCacheControl', () => {
+  it('interdit de resservir une page sans la redemander, sans la sortir du bfcache', () => {
+    const res = applyHtmlCacheControl(new Response('<html></html>', { headers: { 'Content-Type': 'text/html; charset=utf-8' } }));
+    expect(res.headers.get('Cache-Control')).toBe('private, no-cache');
+  });
+
+  it('laisse leur cache aux réponses qui ne sont pas des pages', () => {
+    const res = applyHtmlCacheControl(new Response('{}', { headers: { 'Content-Type': 'application/json' } }));
+    expect(res.headers.get('Cache-Control')).toBeNull();
+  });
+
+  it("ne remplace pas un choix déjà fait par l'endpoint", () => {
+    const res = applyHtmlCacheControl(
+      new Response('<html></html>', { headers: { 'Content-Type': 'text/html', 'Cache-Control': 'no-store' } })
+    );
+    expect(res.headers.get('Cache-Control')).toBe('no-store');
   });
 });
