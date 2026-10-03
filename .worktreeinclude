@@ -1,0 +1,8 @@
+# Fichiers gitignorés recopiés dans chaque worktree créé par Claude Code
+# (syntaxe .gitignore ; seuls les fichiers à la fois listés ici ET ignorés sont copiés).
+# node_modules n'y est pas : .claude/hooks/worktree-setup.sh le lie à celui de
+# l'arbre principal au démarrage de la session. La D1 locale (apps/api/.wrangler,
+# ~300 Mo) n'y est pas non plus : chaque worktree part d'une base vide.
+
+apps/*/.dev.vars
+apps/storefront/.env

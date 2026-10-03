@@ -20,7 +20,7 @@ Le monorepo `nozay-bad` est organisé en architecture Vertical Slice (VSA) et DD
 Cette asymétrie soulève des questions sur la cohérence architecturale du monorepo et présente plusieurs limites fondamentales :
 
 1. **Faux motif CQRS (Fausse promesse d'architecture)** : Les répertoires `commands/` et `queries/` d'accounting ne mettent en œuvre ni modèle de lecture/écriture séparé, ni projections asynchrones, ni bases distinctes. Ils partagent les mêmes fichiers `repository.ts`, ciblent les mêmes tables SQLite/D1 et s'exécutent dans le même Worker Cloudflare. L'utilisation du vocabulaire CQRS crée une attente trompeuse pour les développeurs et les agents IA.
-2. **Violation du principe premier du standard VSA** : La règle fondamentale édictée dans `.packmind/standards/vertical-slice-architecture-vsa-standards.md` impose de regrouper le code par **cohérence fonctionnelle (Feature Slice)**. Classer une tranche selon qu'elle lit ou écrit en base (`queries/` vs `commands/`) constitue une réintroduction d'un découpage par couche technique au sein du domaine.
+2. **Violation du principe premier du standard VSA** : La règle fondamentale édictée dans le standard VSA (`.packmind/standards/vertical-slice-architecture-vsa-standards.md` à l’époque, `.claude/rules/architecture.md` depuis le 03/10/2026) impose de regrouper le code par **cohérence fonctionnelle (Feature Slice)**. Classer une tranche selon qu'elle lit ou écrit en base (`queries/` vs `commands/`) constitue une réintroduction d'un découpage par couche technique au sein du domaine.
 3. **Réalité métier déjà structurée dans le code** : Le barrel file `libs/domains/accounting/index.ts` regroupe et documente déjà les 36 tranches en **6 capacités métier distinctes** à travers ses commentaires et ses montages de routes :
    - `seasons` (10 tranches)
    - `config` / Catégories & Classes de comptes (8 tranches)
@@ -85,7 +85,7 @@ Lors de l'analyse, trois contradictions entre la documentation, les standards et
 
 1. **Contradiction entre `04-vsa.md` et le standard VSA Packmind** :
    - `docs/architecture/04-vsa.md` (règle 12) préconisait le rangement dans `commands/` et `queries/` pour les gros domaines.
-   - `.packmind/standards/vertical-slice-architecture-vsa-standards.md` exige un regroupement par fonctionnalité (Feature Slice) et proscrit les couches techniques.
+   - le standard VSA (`.packmind/standards/vertical-slice-architecture-vsa-standards.md` à l’époque, `.claude/rules/architecture.md` depuis le 03/10/2026) exige un regroupement par fonctionnalité (Feature Slice) et proscrit les couches techniques.
    - *Résolution* : `docs/architecture/04-vsa.md` et `docs/architecture/02-folder-structure.md` doivent être mis à jour pour entériner l'ADR-0003 et remplacer la mention `commands/queries` par le découpage en capacités métier.
 
 2. **Illusion de CQRS** :

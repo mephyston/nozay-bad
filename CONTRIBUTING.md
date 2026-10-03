@@ -20,10 +20,10 @@ Chaque domaine est structuré en **Vertical Slice Architecture (VSA)** : le code
 
 ### Emplacement
 Chaque cas d'usage vit dans son propre dossier sous le domaine concerné :
-- **Commandes (écriture / mutation)** : `libs/domains/<domaine>/commands/<nom-du-cas>/`
-- **Requêtes (lecture seule)** : `libs/domains/<domaine>/queries/<nom-du-cas>/`
+- **Cas général** : `libs/domains/<domaine>/<nom-du-cas>/`
+- **Gros domaine** : regroupé par **capacité métier**, `libs/domains/<domaine>/<capacité>/<nom-du-cas>/` (ex. `accounting/ledger/`, `accounting/invoices/`).
 
-> *Note : Pour les petits domaines comportant peu de cas d'usage, les tranches peuvent être placées directement à la racine du domaine (`libs/domains/<domaine>/<nom-du-cas>/`).*
+> *Jamais de découpage `commands/` / `queries/` : classer une tranche selon qu'elle lit ou écrit réintroduit une couche technique (ADR-0003).*
 
 ### Fichiers obligatoires par tranche
 
