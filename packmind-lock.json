@@ -7,7 +7,6 @@
     "agents_md",
     "packmind"
   ],
-  "installedAt": "2026-07-13T07:55:27.409Z",
   "targetId": "fe6ca8b2-e567-4358-b2f0-4dd0163632ce",
   "artifacts": {
     "user:standard:astrojs-development-standards": {
@@ -65,7 +64,7 @@
       "name": "Hono & Cloudflare Workers Development Standards",
       "type": "standard",
       "id": "3c38881a-7d1d-4583-b792-af167169961a",
-      "version": 1,
+      "version": 2,
       "spaceId": "360745b6-9369-4afc-b7a2-9720c9e50650",
       "packageIds": [
         "722953ee-3d8a-4f5d-b96f-27c9c1887995"
