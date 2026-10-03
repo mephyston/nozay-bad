@@ -6,7 +6,8 @@
  * l'exercice. La remise de l'article (`delivered`) ne touche ni au stock ni à la
  * compta : elle dit seulement que l'adhérent est reparti avec. Les deux issues fermées
  * sont `rejected` (le bureau refuse une demande) et `cancelled` (une commande validée
- * que le règlement n'a jamais suivie).
+ * que le règlement n'a jamais suivie, ou une demande que l'adhérent a retirée avant
+ * validation).
  *
  * Deux retours en arrière, un pas à la fois : `delivered` → `paid` quand on a coché la
  * mauvaise ligne, et `paid` → `awaiting_payment` quand on a encaissé la mauvaise
@@ -121,6 +122,12 @@ export class Order {
   canBeRejected(): boolean {
     return this.data.status === 'created';
   }
+
+  /** L'adhérent retire sa demande depuis son espace : seulement avant la validation. */
+  canBeWithdrawn(): boolean {
+    return this.data.status === 'created';
+  }
+
 
   /** Une commande validée puis jamais réglée : le stock réservé est rendu. */
   canBeCancelled(): boolean {

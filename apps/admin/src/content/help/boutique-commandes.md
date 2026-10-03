@@ -20,6 +20,8 @@ Une commande suit le parcours **nouvelle** → **validée, en attente de paiemen
 - **De l'adhérent**, depuis son espace ;
 - **Du bureau**, avec le bouton de saisie : choisissez l'adhérent, l'article, la quantité, le moyen de paiement et, le cas échéant, la date de paiement.
 
+L'adhérent peut **modifier** (taille, quantité, moyen de paiement) ou **annuler** sa commande depuis **Mes commandes**, tant que vous ne l'avez pas validée. Une commande qu'il annule rejoint la vue **Refusées ou annulées**. Une fois validée, il ne peut plus y toucher : c'est à vous de la corriger ou de l'annuler.
+
 Une commande est refusée à la saisie si :
 
 - la saison est clôturée ;

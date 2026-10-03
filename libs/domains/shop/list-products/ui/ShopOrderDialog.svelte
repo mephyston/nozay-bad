@@ -24,7 +24,9 @@
     activeSeasonId,
     paymentMethods = [],
     imageUrl,
-    onOrdered
+    onOrdered,
+    editing = null,
+    submit = submitOrder
   }: {
     /** La famille à commander ; `null` ferme la boîte. */
     family: ProductFamily | null;
@@ -38,6 +40,14 @@
     paymentMethods: PaymentMethodOption[];
     imageUrl: (key: string | null | undefined) => string | null;
     onOrdered: (confirmation: OrderConfirmation) => void;
+    /**
+     * La commande qu'on modifie, plutôt qu'en passer une nouvelle : la feuille s'ouvre
+     * sur son article, sa quantité et son moyen de paiement, et le pour-qui ne se
+     * choisit plus — une commande ne change pas d'adhérent depuis l'espace adhérent.
+     */
+    editing?: { productId: number; quantity: number; paymentMethod: string } | null;
+    /** L'envoi : une nouvelle commande par défaut, la modification quand `editing` est posé. */
+    submit?: typeof submitOrder;
   } = $props();
 
   let selectedId = $state<number | null>(null);
@@ -63,11 +73,21 @@
   $effect(() => {
     if (!family) return;
     const available = family.choices.filter((c) => !isOutOfStock(c));
+    errorMessage = null;
+    if (editing) {
+      selectedId = family.choices.some((c) => c.id === editing.productId) ? editing.productId : null;
+      quantity = editing.quantity;
+      paymentMethod = paymentMethods.some((pm) => pm.value === editing.paymentMethod)
+        ? editing.paymentMethod
+        : (paymentMethods[0]?.value ?? '');
+      return;
+    }
     selectedId = family.variants.length === 0 ? (available[0]?.id ?? null) : null;
     quantity = 1;
-    errorMessage = null;
     if (!paymentMethods.some((pm) => pm.value === paymentMethod)) paymentMethod = paymentMethods[0]?.value ?? '';
   });
+
+  const submitLabel = $derived(editing ? 'Enregistrer les modifications' : 'Valider la commande');
 
   const selected = $derived<Product | null>(family?.choices.find((c) => c.id === selectedId) ?? null);
   const maxQuantity = $derived(maxOrderableQuantity(selected));
@@ -111,7 +131,7 @@
       paymentMethodKind: method?.kind ?? null,
       transferReference: transferReference(productLabel(selected), member)
     };
-    const res = await submitOrder({
+    const res = await submit({
       selectedMemberId: memberId,
       selectedProduct: selected,
       selectedQuantity: quantity,
@@ -145,12 +165,12 @@
 <FormSheet
   bind:open={ouvert}
   {onOpenChange}
-  title={family?.product.name ?? 'Commander'}
+  title={family ? (editing ? `Modifier · ${family.product.name}` : family.product.name) : 'Commander'}
   description={family?.product.description || undefined}
   error={errorMessage}
   isSubmitting={submitting}
-  submitLabel="Valider la commande"
-  submittingLabel="Envoi de la commande…"
+  {submitLabel}
+  submittingLabel={editing ? 'Enregistrement…' : 'Envoi de la commande…'}
   onSubmit={(e) => {
     e.preventDefault();
     if (blockingReason) {
@@ -171,7 +191,7 @@
             <Package class="h-6 w-6 text-muted-foreground/50" />
           {/if}
         </div>
-        {#if member && members.length <= 1}
+        {#if member && (members.length <= 1 || editing)}
           <!-- Un seul adhérent au compte : il n'y a rien à choisir, on le rappelle. -->
           <div class="min-w-0 flex-1 rounded-xl border border-border bg-muted/30 px-3 py-2 text-xs">
             <span class="text-muted-foreground">Pour : </span>
@@ -180,7 +200,7 @@
         {/if}
       </div>
 
-      {#if members.length > 1}
+      {#if members.length > 1 && !editing}
         <!--
           Le foyer en compte plusieurs : on choisit ici pour qui l'on commande.
 
@@ -338,10 +358,10 @@
       data-testid="order-submit"
     >
       {#if submitting}
-        <span class="animate-pulse">Envoi de la commande...</span>
+        <span class="animate-pulse">{editing ? 'Enregistrement…' : 'Envoi de la commande...'}</span>
       {:else}
         <ShoppingBag class="h-4 w-4" />
-        Valider la commande
+        {submitLabel}
       {/if}
     </Button>
     </div>

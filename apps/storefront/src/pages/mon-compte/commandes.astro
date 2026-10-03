@@ -6,7 +6,9 @@ import MobileNav from '../../components/MobileNav.svelte';
 import { env } from 'cloudflare:workers';
 import { createApiClient } from '@nba/api-client';
 import { listSeasons, displaySeason } from '../../lib/season';
-import { chargerCompte, eur, dateFr, libelleDeStatut, classeDeStatut } from '../../lib/compte';
+import { chargerCompte, libelleDeStatut, classeDeStatut } from '../../lib/compte';
+import { websiteOrigin } from '../../lib/media';
+import { MemberOrders, type MemberOrderRow } from '@nba/shop-ui';
 
 /**
  * Mes commandes, sur leur propre page.
@@ -15,15 +17,70 @@ import { chargerCompte, eur, dateFr, libelleDeStatut, classeDeStatut } from '../
  * arrivait par une ancre qui devait déplier le bon `<details>`, et la boutique y
  * renvoyait par `#commandes`. Une rubrique qui a son adresse se partage, se met en
  * favori et se retrouve dans l'historique du navigateur.
+ *
+ * Une commande que le bureau n'a pas encore validée s'y modifie ou s'y annule.
  */
 const session = Astro.locals.session;
+const api = createApiClient(env);
+
+/*
+  Modifier ou annuler une commande : relayé à l'API, l'adhérent posé depuis la session.
+
+  L'identifiant reçu n'est qu'une indication — il doit appartenir au foyer de la
+  session, sinon refus. L'API vérifie ensuite que la commande appartient bien à cet
+  adhérent, et qu'elle n'est pas encore validée : la page ne décide de rien d'autre.
+*/
+if (Astro.request.method === 'POST') {
+  const json = (status: number, body: unknown) =>
+    new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
+  if (!session) return json(401, { success: false, error: 'Non authentifié.' });
+
+  let body: any;
+  try {
+    body = await Astro.request.json();
+  } catch {
+    return json(400, { success: false, error: 'Requête illisible.' });
+  }
+  const id = Number(body?.id);
+  const memberId = Number(body?.memberId);
+  if (!Number.isSafeInteger(id) || id <= 0) return json(400, { success: false, error: 'Commande inconnue.' });
+  if (!session.members.some((m) => m.id === memberId)) {
+    return json(403, { success: false, error: "Cet adhérent ne fait pas partie de votre compte." });
+  }
+
+  if (body.action === 'withdraw') {
+    return api.fetch(`http://localhost/shop/orders/${id}/withdraw`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ memberId })
+    });
+  }
+  if (body.action === 'amend') {
+    return api.fetch(`http://localhost/shop/orders/${id}/amend`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        memberId,
+        productId: Number(body.productId),
+        quantity: Number(body.quantity),
+        paymentMethod: String(body.paymentMethod ?? '')
+      })
+    });
+  }
+  return json(400, { success: false, error: 'Action inconnue.' });
+}
+
 const active = session?.members.find((m) => m.id === session.activeMemberId);
 
 let orders: any[] = [];
+let products: any[] = [];
+let paymentMethods: any[] = [];
+let activeSeasonId = '';
 if (active) {
   const season = displaySeason(await listSeasons(env), session?.seasonCode);
+  activeSeasonId = season?.code ?? '';
   const donnees = await chargerCompte(
-    createApiClient(env).fetch.bind(createApiClient(env)),
+    api.fetch.bind(api),
     {
       licence: active.licence,
       memberId: active.id,
@@ -35,7 +92,42 @@ if (active) {
     { commandes: true }
   );
   orders = donnees.orders;
+
+  // Le catalogue et les moyens de paiement ne servent qu'à modifier : inutiles sans commande à modifier.
+  if (orders.some((o: any) => o.order?.status === 'created')) {
+    try {
+      const [productsRes, methodsRes] = await Promise.all([
+        api.fetch('http://localhost/shop/products?active=true'),
+        api.fetch('http://localhost/accounting/payment-methods')
+      ]);
+      if (productsRes.ok) products = ((await productsRes.json()) as any).data || [];
+      if (methodsRes.ok) {
+        paymentMethods = (((await methodsRes.json()) as any).data || []).map((m: any) => ({
+          value: m.code,
+          label: m.label,
+          kind: m.kind
+        }));
+      }
+    } catch {
+      /* Sans catalogue, « Modifier » ne s'affiche pas ; l'annulation reste possible. */
+    }
+  }
 }
+
+const rows: MemberOrderRow[] = orders.map((o: any) => ({
+  id: o.order?.id,
+  memberId: o.order?.memberId,
+  productId: o.order?.productId,
+  productName: o.product?.name ?? 'Article',
+  quantity: o.order?.quantity ?? 1,
+  totalCents: o.order?.totalAmountCents ?? o.order?.totalAmount ?? 0,
+  paymentMethod: o.order?.paymentMethod ?? '',
+  status: o.order?.status ?? '',
+  createdAt: o.order?.createdAt ?? null,
+  rejectionReason: o.order?.rejectionReason ?? null,
+  statutLabel: libelleDeStatut(o.order?.status),
+  statutClasse: classeDeStatut(o.order?.status)
+}));
 ---
 
 <Layout title="Mes commandes">
@@ -47,35 +139,15 @@ if (active) {
         <p class="text-sm text-muted-foreground">Vos achats à la boutique du club et leur règlement.</p>
       </PageTitle>
 
-      {orders.length === 0 ? (
-        <p class="rounded-xl border border-border bg-card px-4 py-8 text-center text-sm text-muted-foreground">
-          Aucune commande pour le moment.
-        </p>
-      ) : (
-        <div class="divide-y divide-border overflow-hidden rounded-xl border border-border bg-card">
-          {orders.map((o: any) => (
-            <div class="flex items-center justify-between gap-3 px-4 py-3">
-              <div class="min-w-0">
-                <div class="truncate text-sm font-medium text-foreground">
-                  {o.product?.name ?? 'Article'} <span class="text-muted-foreground">×{o.order?.quantity ?? 1}</span>
-                </div>
-                <div class="text-xs text-muted-foreground">{dateFr(o.order?.createdAt)}</div>
-                {o.order?.status === 'rejected' && o.order?.rejectionReason && (
-                  <p class="mt-1 whitespace-pre-line text-xs text-destructive">
-                    Motif du refus : {o.order.rejectionReason}
-                  </p>
-                )}
-              </div>
-              <div class="flex shrink-0 items-center gap-3">
-                <span class="text-sm font-semibold text-foreground">{eur(o.order?.totalAmountCents ?? o.order?.totalAmount ?? 0)}</span>
-                <span class={`inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium ${classeDeStatut(o.order?.status)}`}>
-                  {libelleDeStatut(o.order?.status)}
-                </span>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+      <MemberOrders
+        client:load
+        orders={rows}
+        {products}
+        {paymentMethods}
+        member={active ?? null}
+        mediaOrigin={websiteOrigin}
+        {activeSeasonId}
+      />
     </div>
   </main>
 

@@ -19,6 +19,7 @@ Le domaine **Shop** gère le catalogue des produits (volants, maillots, cordages
 | **Motif de refus** | Explication facultative donnée par le bureau en refusant une commande, montrée à l'adhérent et reprise dans la notification. 500 caractères au plus. | `string` (`rejection_reason`) |
 | **Validation** | Acceptation de la demande par le bureau. Réserve le stock, n'écrit rien en comptabilité. | `Transition` (`created` → `awaiting_payment`) |
 | **Encaissement** | Enregistrement du règlement. Seul acte qui écrit une recette au grand livre. | `Transition` (`awaiting_payment` → `paid`) |
+| **Retrait** | Annulation d'une commande par l'adhérent lui-même, depuis son espace, tant qu'elle n'est pas validée. Aboutit à `cancelled`, sans mouvement de stock. | `Transition` (`created` → `cancelled`) |
 | **Remise** | Remise de l'article à l'adhérent. Sans effet sur le stock ni la comptabilité ; dit au bureau ce qui reste à distribuer. Se défait (`delivered` → `paid`). | `Transition` (`paid` → `delivered`) |
 | **Date de remise** | Date à laquelle l'article a été remis. | `date` (`delivered_at`) |
 | **Date de mise en attente** | Date à laquelle la commande est passée en attente de paiement. Point de départ des relances. | `date` (`awaiting_payment_since`) |

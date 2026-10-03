@@ -29,12 +29,12 @@ final dit au bureau ce qui reste à distribuer, sans effet sur le stock ni la co
 
 | Statut | Signification | Suite possible |
 |---|---|---|
-| `created` | Demande enregistrée, non traitée par le bureau. | `awaiting_payment`, `rejected` |
+| `created` | Demande enregistrée, non traitée par le bureau. | `awaiting_payment`, `rejected`, `cancelled` (retrait par l'adhérent) |
 | `awaiting_payment` | Demande acceptée, stock réservé, règlement attendu. | `paid`, `cancelled` |
 | `paid` | Règlement encaissé, recette écrite au grand livre ; article à remettre. | `delivered`, `awaiting_payment` (annulation de l'encaissement) |
 | `delivered` | Article remis à l'adhérent. | `paid` (annulation de la remise) |
 | `rejected` | Demande refusée avant validation. | — (terminal) |
-| `cancelled` | Commande validée puis jamais réglée. | — (terminal) |
+| `cancelled` | Commande validée puis jamais réglée, ou demande retirée par l'adhérent. | — (terminal) |
 
 Aucune autre transition n'est permise. Chaque transition est protégée par un verrou
 optimiste : si deux personnes agissent en même temps sur la même commande, la seconde
@@ -67,6 +67,23 @@ reçoit une erreur de conflit et rien n'est écrit deux fois.
    fin ôtés). Il est conservé sur la commande (`rejection_reason`), repris dans la
    notification et montré à l'adhérent dans « Mes commandes ». Sans motif, la
    notification renvoie l'adhérent vers le bureau.
+
+### 3.4 bis Modification et retrait par l'adhérent (`created`)
+1. Depuis « Mes commandes », l'adhérent **modifie** ou **annule** une commande **tant que
+   le bureau ne l'a pas validée** (`created`). Au-delà, les deux actions disparaissent :
+   le stock est réservé et le montant annoncé, c'est au bureau d'agir.
+2. La **modification** porte sur l'article (une autre déclinaison), la quantité et le
+   moyen de paiement. L'adhérent de la commande ne change jamais. Les contrôles sont
+   ceux de la création : stock disponible, déclinaison plutôt que produit parent,
+   moyen de paiement proposé. Le montant est recalculé sur le prix actuel.
+3. L'**annulation** passe la commande à `cancelled`, sans mouvement de stock ni écriture :
+   rien n'était engagé. Elle demande confirmation et ne notifie personne.
+4. La commande doit **appartenir à l'adhérent** : l'espace adhérent ne transmet qu'un
+   adhérent du foyer de la session, et l'API répond « commande introuvable » pour la
+   commande d'un autre, sans révéler qu'elle existe.
+5. Si le bureau valide ou refuse la commande au même moment, l'action de l'adhérent
+   échoue en conflit et rien n'est écrit.
+6. La saison doit être ouverte.
 
 ### 3.5 Remise (`paid` → `delivered`) et son annulation
 1. La remise n'est permise que sur une commande **payée** : on ne remet pas un article
@@ -135,6 +152,30 @@ Fonctionnalité: Cycle de vie et paiement d'une commande boutique
     Et le motif est conservé sur la commande
     Et l'adhérent reçoit une notification qui cite ce motif
     Et le motif s'affiche sous la commande dans « Mes commandes »
+
+  Scénario: L'adhérent modifie sa commande avant validation
+    Étant donné une commande créée de 1 unité de "Maillot Club Taille M" à 25,00 €
+    Quand l'adhérent la modifie pour 2 unités de "Maillot Club Taille L"
+    Alors la commande porte 2 unités de "Maillot Club Taille L" pour 50,00 €
+    Et elle reste au statut "créée"
+    Et le stock n'est pas touché
+
+  Scénario: L'adhérent annule sa commande avant validation
+    Étant donné une commande créée de 2 unités de "Boîte Volants Plumes"
+    Quand l'adhérent l'annule depuis « Mes commandes »
+    Alors la commande passe au statut "annulée"
+    Et le stock n'est pas touché
+
+  Scénario: Une commande validée ne se modifie plus depuis l'espace adhérent
+    Étant donné une commande en attente de paiement
+    Quand l'adhérent tente de la modifier ou de l'annuler
+    Alors l'opération est refusée
+    Et la commande reste inchangée
+
+  Scénario: La commande d'un autre adhérent est introuvable
+    Étant donné une commande créée appartenant à un autre adhérent
+    Quand l'adhérent tente de l'annuler
+    Alors l'opération est refusée avec le message "Commande introuvable"
 
   Scénario: Annulation d'une commande jamais réglée
     Étant donné une commande en attente de paiement de 2 unités de "Boîte Volants Plumes"

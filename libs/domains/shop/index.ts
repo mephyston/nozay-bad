@@ -13,6 +13,8 @@ import { cancelOrderRoute } from './cancel-order/route';
 import { unpayOrderRoute } from './unpay-order/route';
 import { deliverOrderRoute } from './deliver-order/route';
 import { undeliverOrderRoute } from './undeliver-order/route';
+import { amendOrderRoute } from './amend-order/route';
+import { withdrawOrderRoute } from './withdraw-order/route';
 import { updateOrderRoute } from './update-order/route';
 import { manageProductCategoriesRoute } from './manage-product-categories/route';
 
@@ -45,6 +47,8 @@ shopRouter.route('/', cancelOrderRoute);
 shopRouter.route('/', unpayOrderRoute);
 shopRouter.route('/', deliverOrderRoute);
 shopRouter.route('/', undeliverOrderRoute);
+shopRouter.route('/', amendOrderRoute);
+shopRouter.route('/', withdrawOrderRoute);
 shopRouter.route('/', updateOrderRoute);
 shopRouter.route('/', manageProductCategoriesRoute);
 

@@ -220,6 +220,11 @@ export const ROUTE_PERMISSIONS: RouteRule[] = [
   // mais c'est le même bureau qui suit la commande de bout en bout.
   { method: 'POST', path: '/shop/orders/:id/deliver', permission: 'shop:orders:approve', feature: 'shop' },
   { method: 'POST', path: '/shop/orders/:id/undeliver', permission: 'shop:orders:approve', feature: 'shop' },
+  // L'adhérent modifie ou annule sa commande tant qu'elle n'est pas validée : appelées par
+  // le storefront seul, qui pose `memberId` depuis le foyer de la session. L'API refuse
+  // toute commande qui n'appartient pas à cet adhérent, et ne rend que la commande.
+  { method: 'PUT', path: '/shop/orders/:id/amend', permission: 'shop:orders:write', service: true, feature: 'shop' },
+  { method: 'POST', path: '/shop/orders/:id/withdraw', permission: 'shop:orders:write', service: true, feature: 'shop' },
 
   // ── Notifications ──────────────────────────────────────────────────────────
   // Abonnement et préférences : gestes personnels d'un utilisateur sur son propre

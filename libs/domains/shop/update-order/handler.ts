@@ -1,7 +1,7 @@
 import { type Db, AppError } from '@nba/db';
 import { isSeasonClosed, membershipGrantsAccess } from '@nba/members-api';
 import { productDisplayName } from '../shared/product';
-import { Order, motifDeRefusCommande } from '../shared/order';
+import { Order, motifDeRefusCommande, type OrderStatus } from '../shared/order';
 import {
   ConcurrentModificationError,
   InsufficientStockError,
@@ -28,20 +28,46 @@ import type { UpdateOrderInput, UpdateOrderOutput } from './dto';
  *
  * Le montant se recalcule sur le prix **actuel** de l'article, comme à la création : la
  * commande n'a pas de prix figé à part.
+ *
+ * L'adhérent passe par ici aussi (`amend-order`), avec deux restrictions : la commande
+ * doit être **la sienne** (`ownerMemberId`) et **pas encore validée** (`statuses`).
  */
-export async function updateOrder(db: Db, id: number, body: UpdateOrderInput): Promise<UpdateOrderOutput> {
+export interface UpdateOrderOptions {
+  /** La commande doit appartenir à cet adhérent ; sinon, elle est introuvable. */
+  ownerMemberId?: number;
+  /** Les statuts où la correction est permise ; par défaut, tout ce qui n'est pas réglé. */
+  statuses?: readonly OrderStatus[];
+}
+
+export async function updateOrder(
+  db: Db,
+  id: number,
+  body: UpdateOrderInput,
+  options: UpdateOrderOptions = {}
+): Promise<UpdateOrderOutput> {
   const repo = new UpdateOrderRepository();
 
   // Phase 1 : Lecture (hors batch)
   const orderData = await repo.getOrderById(db, id);
-  if (!orderData) throw new OrderNotFoundError();
+  // La commande d'un autre foyer est « introuvable » : on ne dit pas qu'elle existe.
+  if (!orderData || (options.ownerMemberId !== undefined && orderData.memberId !== options.ownerMemberId)) {
+    throw new OrderNotFoundError();
+  }
   const order = new Order(orderData as any);
+
+  if (options.statuses && !options.statuses.includes(order.status)) {
+    throw new OrderInvalidOrProcessedError(
+      'Cette commande a déjà été traitée par le club : rapprochez-vous du bureau pour la modifier.'
+    );
+  }
 
   if (order.status !== 'created' && order.status !== 'awaiting_payment') {
     throw new OrderInvalidOrProcessedError(
       order.status === 'paid'
         ? "Cette commande est réglée : annulez d'abord l'encaissement pour la modifier."
-        : 'Une commande refusée ou annulée ne se modifie plus.'
+        : order.status === 'delivered'
+          ? "Cette commande est livrée : annulez d'abord la remise, puis l'encaissement, pour la modifier."
+          : 'Une commande refusée ou annulée ne se modifie plus.'
     );
   }
 
