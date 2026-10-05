@@ -2,22 +2,11 @@ import { type DbOrTx } from '@nba/db';
 import { listClubFunctions, CLUB_FUNCTION_LABELS } from '@nba/members-api';
 import { loadPlayerDirectory } from '../shared/members-lookup';
 import { normalizeLicence } from '../shared/ranking';
+import { averageElo, parMoyenneElo } from '../shared/elo';
 import { ListClubPlayersRepository } from './repository';
 import type { ClubPlayer, ListClubPlayersInput, ListClubPlayersOutput } from './dto';
 
 const repo = new ListClubPlayersRepository();
-
-/**
- * Moyenne des cotes CPPH connues d'un joueur.
- *
- * Sur les tableaux classés seulement : diviser par trois quoi qu'il arrive punirait le
- * joueur qui ne dispute que le simple, alors que sa cote y est ce qu'elle est.
- */
-function averageElo(values: Array<number | null | undefined>): number | null {
-  const known = values.filter((value): value is number => typeof value === 'number');
-  if (known.length === 0) return null;
-  return Math.round(known.reduce((sum, value) => sum + value, 0) / known.length);
-}
 
 /**
  * L'annuaire du club : qui est adhérent cette saison, et comment il est classé.
@@ -84,24 +73,8 @@ export async function listClubPlayers(
     };
   });
 
-  /*
-   * Du plus fort au plus faible, les non-classés à la fin.
-   *
-   * Ils ne sont pas « à zéro » : ils ne sont pas sur cette échelle du tout. Les ranger
-   * avec les cotes les plus basses les ferait lire comme les plus faibles joueurs du
-   * club, alors qu'ils n'ont simplement jamais disputé de compétition. Le nom départage
-   * à moyenne égale — et c'est le seul tri qui leur reste entre eux.
-   */
-  players.sort((a, b) => {
-    if (a.eloAverage !== b.eloAverage) {
-      if (a.eloAverage === null) return 1;
-      if (b.eloAverage === null) return -1;
-      return b.eloAverage - a.eloAverage;
-    }
-    return (
-      a.lastName.localeCompare(b.lastName, 'fr') || a.firstName.localeCompare(b.firstName, 'fr')
-    );
-  });
+  // Du plus fort au plus faible, les non-classés à la fin (cf. `parMoyenneElo`).
+  players.sort(parMoyenneElo);
 
   return { players, referenceEloDate };
 }

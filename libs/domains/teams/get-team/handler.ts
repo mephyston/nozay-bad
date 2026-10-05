@@ -4,6 +4,7 @@ import { CHAMPIONSHIP_RULES, getDivision, teamName } from '../shared/championshi
 import { loadPlayerDirectory, identityOf } from '../shared/members-lookup';
 import { checkEligibility, describeEligibility } from '../shared/eligibility';
 import { licencesHorsCategorie } from '../shared/roster-category';
+import { averageElo } from '../shared/elo';
 import { mondayOf } from '../shared/week';
 import { TeamNotFoundError, UnknownChampionshipError } from '../shared/errors';
 import type { PlayerRanking } from '../shared/player';
@@ -108,7 +109,8 @@ export async function getTeam(db: DbOrTx, id: number): Promise<GetTeamOutput> {
         eligible: verdict.eligible,
         eligibleDisciplines: verdict.disciplines,
         ineligibilityReason: verdict.reason,
-        hasRanking: Boolean(row)
+        hasRanking: Boolean(row),
+        eloAverage: averageElo([player.cpphSingles, player.cpphDoubles, player.cpphMixed])
       };
     })
     // Les joueurs à problème d'abord : c'est ce que le coach doit traiter.

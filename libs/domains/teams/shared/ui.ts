@@ -12,3 +12,4 @@ export { default as RankingsImporter } from '../import-rankings/ui/RankingsImpor
 export { default as ChampionshipRulesPanel } from '../list-championship-settings/ui/ChampionshipRulesPanel.svelte';
 export { default as ReferenceDatesPanel } from '../list-championship-settings/ui/ReferenceDatesPanel.svelte';
 export { default as RankingChip } from './ui/RankingChip.svelte';
+export { parMoyenneElo } from './elo';

@@ -1,5 +1,5 @@
 ---
-import { RankingChip } from '@nba/teams-ui';
+import { RankingChip, parMoyenneElo } from '@nba/teams-ui';
 import Layout from '../../../layouts/Layout.astro';
 import Header from '../../../components/Header.astro';
 import PageTitle from '../../../components/PageTitle.astro';
@@ -33,6 +33,10 @@ try {
 } catch {
   errorMsg = "Cette équipe n'est pas consultable pour le moment.";
 }
+
+// Du plus fort au plus faible en moyenne ELO, comme l'annuaire du club ; l'API, elle,
+// range l'effectif pour le bureau (les joueurs non éligibles d'abord).
+const effectif: any[] = [...(team?.roster ?? [])].sort(parMoyenneElo);
 
 const canCompose =
   Boolean(viewerLicence) &&
@@ -120,7 +124,7 @@ const frenchDate = (iso: string) =>
             <p class="text-sm text-muted-foreground">Aucun joueur déclaré dans l'effectif.</p>
           ) : (
             <ul class="divide-y text-sm">
-              {team.roster.map((p: any) => (
+              {effectif.map((p: any) => (
                 <li class="py-2 flex items-center justify-between gap-3">
                   {/*
                     Seule porte d'entrée vers la fiche d'un autre adhérent : il n'existe

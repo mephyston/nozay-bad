@@ -16,6 +16,8 @@ export interface RosterPlayer extends PlayerIdentity {
   ineligibilityReason: string | null;
   /** `false` : aucun classement connu à la date de référence. */
   hasRanking: boolean;
+  /** Moyenne des cotes CPPH classées, `null` sans cote : l'ordre de l'effectif côté adhérent. */
+  eloAverage: number | null;
 }
 
 /**
