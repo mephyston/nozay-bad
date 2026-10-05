@@ -39,6 +39,15 @@ describe('equilibrer — mixte', () => {
     expect(r.quotasRespected).toBe(true);
   });
 
+  it("laisse un joueur figé dans son équipe, et répartit les autres autour de lui", () => {
+    // Le plus fort, inscrit en équipe 2, y est figé : il y reste, contre l'intérêt du calcul.
+    const r = equilibrer('icd_mixte', teams, players, new Set(['h7']));
+    expect(r.assignment.get('h7')).toBe(2);
+    expect(r.moves.some((m) => m.licence === 'h7')).toBe(false);
+    // Les quotas tiennent toujours : il compte parmi les quatre garçons de l'équipe 2.
+    expect([compte(r, players, 1, 'H'), compte(r, players, 2, 'H')]).toEqual([4, 4]);
+  });
+
   it('ne propose aucun mouvement quand la répartition est déjà la meilleure', () => {
     const range = equilibrer('icd_mixte', teams, players);
     const deja = players.map((p) => ({ ...p, teamId: range.assignment.get(p.licence)! }));

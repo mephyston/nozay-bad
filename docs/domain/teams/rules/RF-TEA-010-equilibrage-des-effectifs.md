@@ -33,6 +33,13 @@ L'outil « Équilibrer les effectifs » propose une répartition complète. Le c
 
 Seuls l'éligibilité et l'appartenance à une seule équipe sont garanties en toute circonstance.
 
+### Les joueurs figés
+
+- Le coach peut **figer** un joueur d'un clic sur son cadenas : il reste dans son équipe actuelle, y compte pour les quotas et les plages, et la répartition s'organise autour de lui.
+- Le calcul est relancé à chaque joueur figé ou libéré.
+- Les joueurs figés sont mémorisés dans le navigateur, par saison et par championnat. C'est une commodité, pas une donnée : un autre appareil ne les connaît pas.
+- Figer un joueur peut empêcher l'équilibre garçons/filles. L'écran le signale alors, comme pour les plafonds de division.
+
 ### Ce qui est optimisé
 
 Le score d'une répartition, du plus important au moins important :
@@ -79,6 +86,13 @@ Fonctionnalité: Équilibrage des effectifs
     Étant donné un joueur R5 en championnat masculin et une équipe 2 en division 2, plafonnée à D7
     Quand le coach lance l'équilibrage
     Alors ce joueur reste en équipe 1
+
+  Scénario: Un joueur figé ne change pas d'équipe
+    Étant donné le meilleur joueur du vivier inscrit en équipe 2
+    Et figé par le coach
+    Quand le coach lance l'équilibrage
+    Alors ce joueur reste en équipe 2
+    Et les autres sont répartis autour de lui, quotas compris
 
   Scénario: Rien à proposer quand la répartition est déjà la meilleure
     Étant donné des effectifs déjà répartis au mieux

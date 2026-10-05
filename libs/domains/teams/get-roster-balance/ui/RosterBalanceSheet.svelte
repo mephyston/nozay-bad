@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Alert, Badge, Button, ChoiceField, FormField, ResponsiveSheet, toast, uiAlert } from '@nba/ui';
-  import { ArrowRight, Scale, TriangleAlert } from '@lucide/svelte';
+  import { ArrowRight, Lock, LockOpen, Scale, TriangleAlert } from '@lucide/svelte';
   import { CHAMPIONSHIPS, CHAMPIONSHIP_RULES, type Championship } from '../../shared/championship';
   import { equilibrer, type BalanceResult } from '../../shared/roster-balance';
   import { VERDICTS } from '../../shared/value-range-verdict';
@@ -38,6 +38,41 @@
   let pool = $state<GetRosterBalanceOutput | null>(null);
   let result = $state<BalanceResult | null>(null);
   let etat = $state<'repos' | 'calcul' | 'ecriture'>('repos');
+  /** Les joueurs que le coach ne veut pas voir bouger : ils restent dans leur équipe. */
+  let figes = $state<Set<string>>(new Set());
+
+  /*
+    Les joueurs figés sont mémorisés dans ce navigateur, par saison et par championnat :
+    une commodité, pas une donnée. Un stockage refusé (navigation privée) n'empêche rien.
+  */
+  const cleFiges = (c: Championship) => `equilibrage-figes:${seasonCode}:${c}`;
+  function lireFiges(c: Championship): Set<string> {
+    try {
+      return new Set(JSON.parse(localStorage.getItem(cleFiges(c)) ?? '[]') as string[]);
+    } catch {
+      return new Set();
+    }
+  }
+  function ecrireFiges(c: Championship, valeur: Set<string>) {
+    try {
+      localStorage.setItem(cleFiges(c), JSON.stringify([...valeur]));
+    } catch {
+      /* stockage indisponible : le choix vaut pour la session */
+    }
+  }
+
+  function recalculer() {
+    if (pool && pool.teams.length > 1) result = equilibrer(championship, pool.teams, pool.players, figes);
+  }
+
+  function basculer(licence: string) {
+    const suivant = new Set(figes);
+    if (suivant.has(licence)) suivant.delete(licence);
+    else suivant.add(licence);
+    figes = suivant;
+    ecrireFiges(championship, suivant);
+    recalculer();
+  }
 
   const equipes = $derived(pool && result ? vueEquilibrage(pool, result) : []);
   const nomDe = (licence: string) => {
@@ -55,9 +90,11 @@
       const payload = (await response.json()) as { data?: { pool: GetRosterBalanceOutput | null }; error?: string };
       if (!response.ok) throw new Error(payload.error || 'Le vivier est illisible.');
       pool = payload.data?.pool ?? null;
-      // Laisser l'écran afficher « Calcul… » avant les quelques centaines de millisecondes de calcul.
+      const inscrits = new Set(pool?.players.map((p) => p.licence) ?? []);
+      figes = new Set([...lireFiges(c)].filter((l) => inscrits.has(l)));
+      // Laisser l'écran afficher « Calcul… » avant les quelques dizaines de millisecondes de calcul.
       await new Promise((r) => setTimeout(r, 0));
-      if (pool && pool.teams.length > 1) result = equilibrer(c, pool.teams, pool.players);
+      recalculer();
     } catch (error) {
       uiAlert(error instanceof Error ? error.message : 'Le vivier est illisible.');
     } finally {
@@ -92,6 +129,24 @@
   }
 </script>
 
+<!--
+  Un vrai bouton, annoncé : figer un joueur relance le calcul autour de lui. Un joueur
+  qui part, une fois figé, reste dans son équipe actuelle.
+-->
+{#snippet cadenas(licence: string, nom: string)}
+  <button
+    type="button"
+    class="inline-flex size-6 shrink-0 items-center justify-center rounded-md hover:bg-accent {figes.has(licence) ? 'text-foreground' : 'text-muted-foreground/60'}"
+    aria-pressed={figes.has(licence)}
+    aria-label={figes.has(licence) ? `Libérer ${nom}` : `Figer ${nom} dans son équipe`}
+    title={figes.has(licence) ? 'Figé dans son équipe : cliquer pour le libérer' : "Figer dans son équipe actuelle"}
+    disabled={etat !== 'repos'}
+    onclick={() => basculer(licence)}
+  >
+    {#if figes.has(licence)}<Lock class="size-3.5" />{:else}<LockOpen class="size-3.5" />{/if}
+  </button>
+{/snippet}
+
 <ResponsiveSheet bind:open title="Équilibrer les effectifs" icon={Scale} description="Une répartition proposée pour la saison : les plus forts en tête, autant de garçons et de filles dans chaque équipe, le moins de chevauchement possible entre équipes voisines." size="lg">
   <div class="space-y-4">
     <FormField id="equilibrage-championnat" label="Championnat">
@@ -112,7 +167,7 @@
       <p class="text-xs text-muted-foreground">
         Classements au {pool.referenceEloDate ?? '—'} · {result.moves.length === 0
           ? 'les effectifs actuels sont déjà la meilleure répartition trouvée'
-          : `${result.moves.length} joueur(s) changent d'équipe`}.
+          : `${result.moves.length} joueur(s) changent d'équipe`}{figes.size > 0 ? ` · ${figes.size} figé(s)` : ''}. Le cadenas fige un joueur dans son équipe actuelle.
       </p>
       {#if pool.unknown.length > 0}
         <Alert.Root variant="warning">
@@ -155,13 +210,22 @@
           </div>
           <ul class="space-y-0.5 text-sm">
             {#each e.arrivent as a (a.joueur.licence)}
-              <li class="text-success">+ {nomJoueur(a.joueur)} <span class="text-xs text-muted-foreground">{classementsTexte(a.joueur)}{a.depuis ? ` · depuis ${a.depuis}` : ''}</span></li>
+              <li class="flex items-center gap-1 text-success">
+                {@render cadenas(a.joueur.licence, nomJoueur(a.joueur))}
+                + {nomJoueur(a.joueur)} <span class="text-xs text-muted-foreground">{classementsTexte(a.joueur)}{a.depuis ? ` · depuis ${a.depuis}` : ''}</span>
+              </li>
             {/each}
             {#each e.partent as d (d.joueur.licence)}
-              <li class="text-destructive">− {nomJoueur(d.joueur)} <span class="text-xs text-muted-foreground">vers {d.vers}</span></li>
+              <li class="flex items-center gap-1 text-destructive">
+                {@render cadenas(d.joueur.licence, nomJoueur(d.joueur))}
+                − {nomJoueur(d.joueur)} <span class="text-xs text-muted-foreground">vers {d.vers}</span>
+              </li>
             {/each}
             {#each e.restent as p (p.licence)}
-              <li class="text-muted-foreground">{nomJoueur(p)} <span class="text-xs">{classementsTexte(p)}</span></li>
+              <li class="flex items-center gap-1 text-muted-foreground">
+                {@render cadenas(p.licence, nomJoueur(p))}
+                {nomJoueur(p)} <span class="text-xs">{classementsTexte(p)}</span>
+              </li>
             {/each}
           </ul>
         </section>
