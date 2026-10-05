@@ -38,7 +38,7 @@ export interface MyFixture {
   venue: string | null;
   /** L'adhérent est-il aligné sur cette rencontre, et sur quelle ligne ? */
   selected: boolean;
-  /** « SH2 », « MX », ou `null` s'il n'est pas aligné. */
+  /** « SH2 », « DH et MX » s'il tient plusieurs lignes, ou `null` s'il n'est pas aligné. */
   slotLabel: string | null;
   /** La composition est-elle figée, ou encore en brouillon ? */
   lineupStatus: 'draft' | 'validated' | null;

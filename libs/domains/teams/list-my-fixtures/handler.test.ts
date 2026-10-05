@@ -7,6 +7,7 @@ import { saveTeam } from '../save-team/handler';
 import { saveTeamRoster } from '../save-team-roster/handler';
 import { saveChampionshipDays } from '../save-championship-days/handler';
 import { insertMemberFixture } from '@nba/members/test-fixtures';
+import { teamFixturesTable, lineupSlotsTable, championshipDaysTable } from '../shared/schema';
 
 const NOW = new Date('2026-10-01T10:00:00Z');
 const SEASON = '26-27';
@@ -53,6 +54,22 @@ describe('rencontres à venir d’un adhérent', () => {
     // Aucune composition saisie : à distinguer d'une composition qui ne retient pas
     // l'adhérent, car l'une se relance et l'autre se constate.
     expect(result?.lineupExists).toBe(false);
+  });
+
+  it('annonce toutes les lignes de l’adhérent, dans l’ordre de la feuille', async () => {
+    const team = await seed([{ number: 1, weekStart: '2026-11-02' }]);
+    const day = (await db.select().from(championshipDaysTable).all())[0];
+    const [fixture] = await db.insert(teamFixturesTable).values({ teamId: team.id, dayId: day.id, createdAt: NOW }).returning();
+    // Saisi le mixte d'abord : l'ordre d'enregistrement ne doit pas dicter l'affichage.
+    await db.insert(lineupSlotsTable).values([
+      { fixtureId: fixture.id, discipline: 'MX', position: 1, licence1: LICENCE, licence2: '07100000', updatedAt: NOW },
+      { fixtureId: fixture.id, discipline: 'DH', position: 1, licence1: '07100001', licence2: LICENCE, updatedAt: NOW }
+    ]);
+
+    const [result] = (await listMyFixtures(db, { licence: LICENCE, seasonCode: SEASON }, NOW)).fixtures;
+
+    expect(result?.selected).toBe(true);
+    expect(result?.slotLabel).toBe('DH et MX');
   });
 
   it('rend les journées à venir dans l’ordre, la plus proche en tête', async () => {

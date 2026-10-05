@@ -78,7 +78,12 @@ export async function listMyFixtures(
     const rules = CHAMPIONSHIP_RULES[team.championship];
     const division = getDivision(team.championship, team.division);
 
-    const slot = fixture ? (await repo.slotsOf(db, [fixture.id], licence))[0] : undefined;
+    // Toutes ses lignes, et non la première : aligné en DH et en MX, l'adhérent ne lisait
+    // que « DH ». Dans l'ordre de la feuille de match.
+    const slots = fixture ? await repo.slotsOf(db, [fixture.id], licence) : [];
+    const rang = (s: (typeof slots)[number]) =>
+      division?.format.findIndex((f) => f.discipline === s.discipline && f.position === s.position) ?? 0;
+    const lignes = division ? [...slots].sort((a, b) => rang(a) - rang(b)).map((s) => lineLabel(division.format, s.discipline, s.position)) : [];
     const lineupExists = fixture ? await repo.hasLineup(db, fixture.id) : false;
 
     withLineups.push({
@@ -95,9 +100,9 @@ export async function listMyFixtures(
       opponent: fixture?.opponent ?? null,
       home: fixture?.home ?? true,
       venue: fixture?.venue ?? null,
-      selected: Boolean(slot),
-      slotLabel: slot && division ? lineLabel(division.format, slot.discipline, slot.position) : null,
-      lineupStatus: slot?.status ?? null,
+      selected: slots.length > 0,
+      slotLabel: lignes.length > 0 ? lignes.join(' et ') : null,
+      lineupStatus: slots[0]?.status ?? null,
       lineupExists
     });
   }
