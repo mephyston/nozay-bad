@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Badge } from '@nba/ui';
+  import { Badge, CollapsibleSection } from '@nba/ui';
   import { CircleCheck, TriangleAlert, OctagonAlert } from '@lucide/svelte';
   import { valeurFr } from './day-values-row-model';
   import { VERDICTS, axeDesPlages, plageFr, surAxe, type EquipeAvecPlage } from './range-model';
@@ -16,17 +16,16 @@
 
   const axe = $derived(axeDesPlages(equipes));
   const ICONES = { safe: CircleCheck, overlap: TriangleAlert, conflict: OctagonAlert } as const;
+  /** Replié, le panneau dit encore combien d'équipes risquent de dépasser celle du dessus. */
+  const aSurveiller = $derived(equipes.filter((e) => e.rangeVerdict === 'overlap' || e.rangeVerdict === 'conflict').length);
 </script>
 
 {#if axe}
-  <section class="space-y-3 rounded-lg border p-4">
-    <div class="space-y-1">
-      <h2 class="text-sm font-semibold">Plages de valeur</h2>
-      <p class="text-xs text-muted-foreground">
-        De la compo la plus faible à la plus forte que l'effectif permet sur cette journée,
-        aux règles du championnat. Le point marque la valeur de la compo saisie.
-      </p>
-    </div>
+  <CollapsibleSection
+    title="Plages de valeur"
+    description="De la compo la plus faible à la plus forte que l'effectif permet sur cette journée, aux règles du championnat. Le point marque la valeur de la compo saisie."
+    badge={aSurveiller > 0 ? `${aSurveiller} à surveiller` : undefined}
+  >
 
     <ul class="space-y-3">
       {#each equipes as equipe (equipe.teamId)}
@@ -81,15 +80,5 @@
         </li>
       {/each}
     </ul>
-
-    <!--
-      La graduation de l'axe commun : sans légende, ses deux bornes se lisaient comme
-      deux valeurs de plus, sans rapport avec les équipes.
-    -->
-    <div class="flex items-baseline justify-between gap-2 border-t pt-1.5 text-[11px] text-muted-foreground">
-      <span class="tabular-nums">← {valeurFr(axe.min)}</span>
-      <span class="text-center">Échelle de valeur d'équipe, commune à toutes les barres</span>
-      <span class="tabular-nums">{valeurFr(axe.max)} →</span>
-    </div>
-  </section>
+  </CollapsibleSection>
 {/if}
