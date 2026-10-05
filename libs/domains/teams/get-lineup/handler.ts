@@ -270,6 +270,9 @@ export async function loadLineup(
         singles: player.singles,
         doubles: player.doubles,
         mixed: player.mixed,
+        cpphSingles: player.cpphSingles,
+        cpphDoubles: player.cpphDoubles,
+        cpphMixed: player.cpphMixed,
         inRoster: true,
         eligibleDisciplines: categoryAdmitted ? eligible : [],
         // Ne portent ici que les motifs valables sur **toutes** les lignes ; le refus

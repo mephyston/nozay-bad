@@ -3,6 +3,7 @@
   import { TriangleAlert, CircleCheck, Info } from '@lucide/svelte';
   import type { GetLineupOutput, LineupSlotView, LineupCandidate } from '../../get-lineup/dto';
   import { DISCIPLINE_RANKING } from '../../shared/ranking';
+  import { trierParClassement } from './candidate-order';
 
   let { initial }: { initial: GetLineupOutput } = $props();
 
@@ -42,8 +43,8 @@
   }
 
   /**
-   * Les joueurs proposés sur une ligne : genre compatible, effectif d'abord, liste
-   * plafonnée. Le club compte plus de deux cents adhérents, et tout rendre fige le
+   * Les joueurs proposés sur une ligne : genre compatible, triés par classement sur le
+   * tableau, liste plafonnée. Le club compte plus de deux cents adhérents, et tout rendre fige le
    * sélecteur à chaque frappe — au-delà d'une trentaine de noms on tape, on ne parcourt pas.
    */
   const MAX_SUGGESTIONS = 30;
@@ -66,8 +67,10 @@
     // mixte pour MX. Un joueur peut être admis sur l'un et pas sur l'autre.
     const ranked = DISCIPLINE_RANKING[slot.discipline];
 
-    const matching = view.candidates.filter(
-      (c) => c.gender === wanted && correspondA(query, c.lastName, c.firstName, c.licence)
+    // Du mieux classé au moins bien classé sur ce tableau : l'ordre où le capitaine les place.
+    const matching = trierParClassement(
+      view.candidates.filter((c) => c.gender === wanted && correspondA(query, c.lastName, c.firstName, c.licence)),
+      slot.discipline
     );
 
     const items = matching.slice(0, MAX_SUGGESTIONS).map((c) => {

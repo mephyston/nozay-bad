@@ -27,6 +27,10 @@ export interface LineupCandidate {
   singles: Ranking | null;
   doubles: Ranking | null;
   mixed: Ranking | null;
+  /** Cotes CPPH : départagent deux joueurs de même classement dans la liste du tableau. */
+  cpphSingles: number | null;
+  cpphDoubles: number | null;
+  cpphMixed: number | null;
   /** Fait partie de l'effectif déclaré. */
   inRoster: boolean;
   /**
