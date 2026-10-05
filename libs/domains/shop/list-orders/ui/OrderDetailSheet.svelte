@@ -1,13 +1,11 @@
 <script lang="ts">
-  import { Pencil, Undo2, X } from '@lucide/svelte';
-  import { Badge, Button, ResponsiveSheet } from '@nba/ui';
+  import { Badge, ResponsiveSheet } from '@nba/ui';
+  import OrderDetailActions from './OrderDetailActions.svelte';
   import type { OrderItem } from './orders-manager-types';
   import {
-    ACTION_LABELS,
     AUCUN_DROIT,
     ETAPE_LABELS,
     ETAPE_VARIANTS,
-    ICONES_PRIMAIRES,
     actionPermise,
     dateFr,
     enRetard,
@@ -57,7 +55,6 @@
 
   const ouverte = $derived(!!item && estOuverte(item));
   const etape = $derived(item && ouverte ? etapeOuverte(item) : null);
-  const IconePrimaire = $derived(ICONES_PRIMAIRES[etape ?? 'created']);
   const issue = $derived(item ? issueCommande(item) : null);
   const retard = $derived(item ? enRetard(item) : null);
   const ligne = $derived(item ? ligneCommande(item) : null);
@@ -73,12 +70,6 @@
         ? !(primairePermise || secondairePermise || corrigeable)
         : !(item?.order.status === 'delivered' && onUndeliver))
   );
-
-  function lancer(action?: (id: number) => void) {
-    if (!item || !action) return;
-    open = false;
-    action(item.order.id);
-  }
 </script>
 
 {#snippet rangee(label: string, valeur: string, selectable = false)}
@@ -156,57 +147,19 @@
   {/if}
 
   {#snippet footer()}
-    <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-      {#if ouverte && etape}
-        <!-- Une commande payée ne se corrige plus : sa recette est écrite. -->
-        {#if onEdit && corrigeable}
-          <Button
-            type="button"
-            variant="outline"
-            onclick={() => {
-              if (!item) return;
-              const courant = item;
-              open = false;
-              onEdit(courant);
-            }}
-            class="w-full sm:mr-auto sm:w-auto"
-          >
-            <Pencil class="size-4" />
-            Modifier
-          </Button>
-        {/if}
-        {#if secondairePermise}
-          <Button
-            type="button"
-            variant="outline"
-            onclick={() => lancer(onSecondary)}
-            class="w-full text-destructive sm:w-auto"
-          >
-            {#if etape === 'paid'}
-              <Undo2 class="size-4" />
-            {:else}
-              <X class="size-4" />
-            {/if}
-            {ACTION_LABELS[etape].secondaire}
-          </Button>
-        {/if}
-        {#if primairePermise}
-          <Button type="button" onclick={() => lancer(onPrimary)} class="w-full sm:w-auto">
-            <IconePrimaire class="size-4" />
-            {ACTION_LABELS[etape].primaire}
-          </Button>
-        {/if}
-      {:else if item?.order.status === 'delivered' && onUndeliver}
-        <Button
-          type="button"
-          variant="outline"
-          onclick={() => lancer(onUndeliver)}
-          class="w-full text-destructive sm:w-auto"
-        >
-          <Undo2 class="size-4" />
-          Annuler la remise
-        </Button>
-      {/if}
-    </div>
+    {#if item}
+      <OrderDetailActions
+        {item}
+        {etape}
+        {primairePermise}
+        {secondairePermise}
+        {corrigeable}
+        {onPrimary}
+        {onSecondary}
+        {onUndeliver}
+        {onEdit}
+        onFermer={() => (open = false)}
+      />
+    {/if}
   {/snippet}
 </ResponsiveSheet>
