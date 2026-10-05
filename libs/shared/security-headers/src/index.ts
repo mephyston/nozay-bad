@@ -95,3 +95,4 @@ export function applySecurityHeaders(input: Response, policy: SecurityPolicy): R
 
   return response;
 }
+export { securityTxt, securityTxtResponse } from './security-txt';

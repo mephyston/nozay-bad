@@ -30,7 +30,8 @@
   ],
   "vars": {
     "SITE_URL": "https://nozaybad.fr",
-    "APP_ENV": "production"
+    "APP_ENV": "production",
+    "SECURITY_CONTACT": "mailto:david@nozaybad.fr"
   },
   "services": [
     {
@@ -59,7 +60,8 @@
       ],
       "vars": {
         "SITE_URL": "https://staging-www.nozaybad.fr",
-        "APP_ENV": "staging"
+        "APP_ENV": "staging",
+        "SECURITY_CONTACT": "mailto:david@nozaybad.fr"
       },
       "services": [
         {
