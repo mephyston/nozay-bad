@@ -3,6 +3,7 @@
   import { Amount, Badge, DataTable, DataTableRowActions, DropdownMenu, RowActionItems, Table } from '@nba/ui';
   import type { Snippet } from 'svelte';
   import type { OrderItem, OrdersTab } from './orders-manager-types';
+  import type { DroitsCommande } from './orders-row-model';
   import OrdersList from './OrdersList.svelte';
   import {
     ETAPE_LABELS,
@@ -38,7 +39,8 @@
     onPrimary,
     onSecondary,
     onOuvrir,
-    onEdit
+    onEdit,
+    droits
   }: {
     orders?: OrderItem[];
     stage: OrdersTab;
@@ -50,6 +52,8 @@
     onOuvrir: (item: OrderItem) => void;
     /** Absent : pas de droit de modifier, l'action n'est pas offerte. */
     onEdit?: (item: OrderItem) => void;
+    /** Ce que l'utilisateur peut décider ou encaisser ; une action interdite n'est pas offerte. */
+    droits?: DroitsCommande;
   } = $props();
 
   /*
@@ -100,6 +104,7 @@
       {onPrimary}
       {onSecondary}
       {onOuvrir}
+      {droits}
       emptyTitle={copy.emptyTitle}
       emptyDescription={copy.emptyDescription}
     />
@@ -174,7 +179,7 @@
         <Amount cents={montantCents(item)} />
       </Table.Cell>
       <Table.Cell class="text-right relative">
-        {@const actions = actionsDeCommande(item, { verrouille, onPrimary, onSecondary, onEdit })}
+        {@const actions = actionsDeCommande(item, { verrouille, onPrimary, onSecondary, onEdit, droits })}
         {#if actions.length > 0}
           <DataTableRowActions>
             <DropdownMenu.Label>Actions</DropdownMenu.Label>

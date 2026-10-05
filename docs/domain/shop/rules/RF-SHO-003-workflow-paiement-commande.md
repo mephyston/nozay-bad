@@ -112,6 +112,19 @@ Une commande portant une **date de paiement** alors qu'elle n'est pas au statut 
 signale de l'argent reçu sans écriture correspondante : elle **bloque la clôture** de
 l'exercice.
 
+### 3.8 Qui fait quoi
+Deux droits se partagent le parcours :
+
+| Droit | Transitions | Rôles |
+|---|---|---|
+| `shop:orders:approve` | valider, refuser, annuler, livrer, annuler la remise | entraîneur, trésorier, présidence |
+| `shop:payments:write` | encaisser, annuler l'encaissement | trésorier |
+
+L'encaissement écrit une recette au grand livre, son annulation la retire : ce sont des
+actes comptables, réservés à la trésorerie. L'entraîneur valide donc les commandes de
+ses joueurs et leur remet l'article, mais seulement une fois que le trésorier a encaissé.
+L'écran n'offre pas une action que l'utilisateur n'a pas le droit d'accomplir.
+
 ---
 
 ## 4. Scénarios d'Acceptation (Gherkin)
@@ -228,4 +241,14 @@ Fonctionnalité: Cycle de vie et paiement d'une commande boutique
     Et une relance déjà envoyée il y a 2 jours
     Quand la relance hebdomadaire s'exécute à nouveau
     Alors aucune seconde notification n'est envoyée
+
+  Scénario: L'entraîneur valide et livre, sans encaisser
+    Étant donné un utilisateur portant le seul rôle entraîneur
+    Et une commande en attente de paiement
+    Quand il tente de l'encaisser
+    Alors l'opération est refusée faute de droit
+    Et la commande reste au statut "en attente de paiement"
+    Quand le trésorier l'encaisse
+    Et que l'entraîneur la livre
+    Alors la commande passe au statut "livrée"
 ```

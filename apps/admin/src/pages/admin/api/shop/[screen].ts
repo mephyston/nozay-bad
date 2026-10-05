@@ -12,6 +12,9 @@ import { currentSeasonCode, sortSeasons } from '../../../../lib/seasons';
 /** Transition d'une commande → segment d'URL de l'API. */
 const TRANSITIONS = ['validate', 'pay', 'reject', 'cancel', 'unpay', 'deliver', 'undeliver'] as const;
 
+/** Les transitions qui touchent au grand livre, réservées à la trésorerie. */
+const ENCAISSEMENT: ReadonlySet<string> = new Set(['pay', 'unpay']);
+
 export const ECRANS: Record<string, Ecran> = {
   orders: {
     feature: 'shop',
@@ -48,6 +51,7 @@ export const ECRANS: Record<string, Ecran> = {
         seasonName: courante?.name ? String(courante.name).replace('Saison ', '') : season,
         isClosed: Boolean(courante?.closed),
         canApprove: can(locals, 'shop:orders:approve'),
+        canPay: can(locals, 'shop:payments:write'),
         canWrite: can(locals, 'shop:orders:write')
       };
     },
@@ -56,7 +60,8 @@ export const ECRANS: Record<string, Ecran> = {
         TRANSITIONS.map((action) => [
           action,
           {
-            permission: 'shop:orders:approve' as const,
+            // Encaisser et défaire l'encaissement écrivent au grand livre : droit à part.
+            permission: ENCAISSEMENT.has(action) ? ('shop:payments:write' as const) : ('shop:orders:approve' as const),
             route: (data: any) => ({
               chemin: `/shop/orders/${identifiant(data.id, 'de commande')}/${action}`,
               method: 'POST',

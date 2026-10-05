@@ -2,6 +2,7 @@
   import GenreAdherent from './GenreAdherent.svelte';
   import { Badge, ListView, ListRow } from '@nba/ui';
   import type { OrderItem, OrdersTab } from './orders-manager-types';
+  import type { DroitsCommande } from './orders-row-model';
   import {
     ETAPES_OUVERTES,
     ETAPE_LABELS,
@@ -31,6 +32,7 @@
     onSecondary,
     onUndeliver,
     onOuvrir,
+    droits,
     emptyTitle,
     emptyDescription
   }: {
@@ -43,6 +45,7 @@
     onSecondary?: (id: number) => void;
     onUndeliver?: (id: number) => void;
     onOuvrir: (item: OrderItem) => void;
+    droits?: DroitsCommande;
     emptyTitle?: string;
     emptyDescription?: string;
   } = $props();
@@ -84,7 +87,7 @@
       value={l.valeur}
       valueTone={l.ton}
       valueCaption={l.legende}
-      actions={actionsDeCommande(item, { verrouille, onPrimary, onSecondary, onUndeliver })}
+      actions={actionsDeCommande(item, { verrouille, onPrimary, onSecondary, onUndeliver, droits })}
     >
       <!--
         Le snippet se déclare toujours : sous un `{#if}` il ne serait pas passé en

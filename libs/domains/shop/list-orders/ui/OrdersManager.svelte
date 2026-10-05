@@ -36,7 +36,9 @@
     initialAction = null,
     activeTab = $bindable('open'),
     paymentMethods = [],
-    canWrite = false
+    canWrite = false,
+    canApprove = false,
+    canPay = false
   }: {
     seasons: Season[];
     orders: OrderItem[];
@@ -49,7 +51,15 @@
     activeTab?: OrdersTab;
     /** `shop:orders:write` : créer une commande, et corriger une commande encore ouverte. */
     canWrite?: boolean;
+    /** `shop:orders:approve` : valider, refuser, annuler, livrer et défaire une remise. */
+    canApprove?: boolean;
+    /** `shop:payments:write` : encaisser et défaire un encaissement — la trésorerie seule. */
+    canPay?: boolean;
   } = $props();
+
+  const droits = $derived({ decider: canApprove, encaisser: canPay });
+  /** Défaire une remise relève de la même décision que livrer. */
+  const surAnnulationRemise = $derived(canApprove ? (id: number) => handleUndeliver(id) : undefined);
 
   const isClosed = $derived(seasons.find((s) => codeDeSaison(s) === seasonId)?.closed || false);
 
@@ -311,7 +321,7 @@
       vue={activeTab}
       {isClosed}
       toolbar={barreDOutils}
-      onUndeliver={handleUndeliver}
+      onUndeliver={surAnnulationRemise}
       onOuvrir={ouvrirFiche}
     />
   {:else}
@@ -324,6 +334,7 @@
       onSecondary={activeTab === 'open' ? handleOpenSecondary : TRANSITIONS[activeTab as EtapeOuverte][1]}
       onOuvrir={ouvrirFiche}
       onEdit={handleEdit}
+      {droits}
     />
   {/if}
 </div>
@@ -334,8 +345,9 @@
   verrouille={isClosed}
   onPrimary={handleOpenPrimary}
   onSecondary={handleOpenSecondary}
-  onUndeliver={handleUndeliver}
+  onUndeliver={surAnnulationRemise}
   onEdit={handleEdit}
+  {droits}
 />
 
 <RejectOrderSheet bind:open={refusOuvert} item={refusItem} onReject={refuser} />

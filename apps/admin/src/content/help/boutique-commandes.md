@@ -84,4 +84,4 @@ Refuser ouvre une feuille où saisir un **motif**, facultatif, de 500 caractère
 Une **commande portant une date de paiement mais non encaissée** empêche la clôture de l'exercice : la recette correspondante n'existe pas encore en comptabilité. Voir [Saisons comptables](/admin/help/gestion-saisons).
 
 > [!NOTE]
-> Consulter les commandes et les traiter sont deux droits distincts. Le secrétariat suit les commandes, le trésorier et la présidence les valident et les encaissent — parce qu'encaisser, c'est écrire une recette.
+> Consulter, traiter et encaisser les commandes sont trois droits distincts. Le secrétariat suit les commandes. L'entraîneur, le trésorier et la présidence les valident, les refusent, les annulent et les livrent. Seul le trésorier les encaisse et annule un encaissement — parce qu'encaisser, c'est écrire une recette. Les boutons **Encaisser** et **Annuler l'encaissement** n'apparaissent qu'à qui en a le droit.

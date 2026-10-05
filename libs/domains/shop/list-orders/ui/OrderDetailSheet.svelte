@@ -7,13 +7,15 @@
     ETAPE_LABELS,
     ETAPE_VARIANTS,
     ICONES_PRIMAIRES,
+    actionPermise,
     dateFr,
     enRetard,
     estOuverte,
     etapeOuverte,
     issueCommande,
     ligneCommande,
-    nomAdherent
+    nomAdherent,
+    type DroitsCommande
   } from './orders-row-model';
 
   /**
@@ -36,7 +38,8 @@
     onPrimary,
     onSecondary,
     onUndeliver,
-    onEdit
+    onEdit,
+    droits
   }: {
     open?: boolean;
     item?: OrderItem | null;
@@ -47,6 +50,8 @@
     onUndeliver?: (id: number) => void;
     /** Corriger la commande tant qu'elle est ouverte ; absent sans le droit de modifier. */
     onEdit?: (item: OrderItem) => void;
+    /** Une action que l'utilisateur n'a pas le droit d'accomplir n'a pas de bouton. */
+    droits?: DroitsCommande;
   } = $props();
 
   const ouverte = $derived(!!item && estOuverte(item));
@@ -56,8 +61,17 @@
   const retard = $derived(item ? enRetard(item) : null);
   const ligne = $derived(item ? ligneCommande(item) : null);
 
-  /** Une issue close sans retour possible n'a rien à proposer : pas de pied du tout. */
-  const sansActions = $derived(verrouille || (!ouverte && !(item?.order.status === 'delivered' && onUndeliver)));
+  const primairePermise = $derived(!!etape && actionPermise(etape, 'primaire', droits));
+  const secondairePermise = $derived(!!etape && actionPermise(etape, 'secondaire', droits));
+  const corrigeable = $derived(!!onEdit && !!etape && etape !== 'paid');
+
+  /** Rien à proposer — issue close sans retour, ou aucun droit sur l'étape : pas de pied du tout. */
+  const sansActions = $derived(
+    verrouille ||
+      (ouverte
+        ? !(primairePermise || secondairePermise || corrigeable)
+        : !(item?.order.status === 'delivered' && onUndeliver))
+  );
 
   function lancer(action?: (id: number) => void) {
     if (!item || !action) return;
@@ -144,7 +158,7 @@
     <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
       {#if ouverte && etape}
         <!-- Une commande payée ne se corrige plus : sa recette est écrite. -->
-        {#if onEdit && etape !== 'paid'}
+        {#if onEdit && corrigeable}
           <Button
             type="button"
             variant="outline"
@@ -160,23 +174,27 @@
             Modifier
           </Button>
         {/if}
-        <Button
-          type="button"
-          variant="outline"
-          onclick={() => lancer(onSecondary)}
-          class="w-full text-destructive sm:w-auto"
-        >
-          {#if etape === 'paid'}
-            <Undo2 class="size-4" />
-          {:else}
-            <X class="size-4" />
-          {/if}
-          {ACTION_LABELS[etape].secondaire}
-        </Button>
-        <Button type="button" onclick={() => lancer(onPrimary)} class="w-full sm:w-auto">
-          <IconePrimaire class="size-4" />
-          {ACTION_LABELS[etape].primaire}
-        </Button>
+        {#if secondairePermise}
+          <Button
+            type="button"
+            variant="outline"
+            onclick={() => lancer(onSecondary)}
+            class="w-full text-destructive sm:w-auto"
+          >
+            {#if etape === 'paid'}
+              <Undo2 class="size-4" />
+            {:else}
+              <X class="size-4" />
+            {/if}
+            {ACTION_LABELS[etape].secondaire}
+          </Button>
+        {/if}
+        {#if primairePermise}
+          <Button type="button" onclick={() => lancer(onPrimary)} class="w-full sm:w-auto">
+            <IconePrimaire class="size-4" />
+            {ACTION_LABELS[etape].primaire}
+          </Button>
+        {/if}
       {:else if item?.order.status === 'delivered' && onUndeliver}
         <Button
           type="button"

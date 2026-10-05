@@ -207,17 +207,18 @@ export const ROUTE_PERMISSIONS: RouteRule[] = [
   { method: 'DELETE', path: '/shop/product-categories/:id', permission: 'shop:categories:write', feature: 'shop' },
   { method: 'GET', path: '/shop/orders', permission: 'shop:orders:read', service: true, feature: 'shop' },
   { method: 'POST', path: '/shop/orders', permission: 'shop:orders:write', service: true, feature: 'shop' },
-  // Les transitions du workflow relèvent de la même décision de gestion.
   // Corriger une commande avant règlement : jamais depuis l'espace adhérent (pas de `service`).
   { method: 'PUT', path: '/shop/orders/:id', permission: 'shop:orders:write', feature: 'shop' },
+  // Valider, refuser, annuler : décisions de gestion, partagées par l'entraîneur et le bureau.
   { method: 'POST', path: '/shop/orders/:id/validate', permission: 'shop:orders:approve', feature: 'shop' },
-  { method: 'POST', path: '/shop/orders/:id/pay', permission: 'shop:orders:approve', feature: 'shop' },
   { method: 'POST', path: '/shop/orders/:id/reject', permission: 'shop:orders:approve', feature: 'shop' },
   { method: 'POST', path: '/shop/orders/:id/cancel', permission: 'shop:orders:approve', feature: 'shop' },
-  // Défaire un encaissement, c'est retirer une recette : le même droit que l'écrire.
-  { method: 'POST', path: '/shop/orders/:id/unpay', permission: 'shop:orders:approve', feature: 'shop' },
+  // Encaisser écrit une recette au grand livre, le défaire la retire : acte comptable,
+  // réservé à la trésorerie.
+  { method: 'POST', path: '/shop/orders/:id/pay', permission: 'shop:payments:write', feature: 'shop' },
+  { method: 'POST', path: '/shop/orders/:id/unpay', permission: 'shop:payments:write', feature: 'shop' },
   // Remettre l'article, ou défaire une remise cochée par erreur : sans effet comptable,
-  // mais c'est le même bureau qui suit la commande de bout en bout.
+  // c'est la même décision de gestion que la validation.
   { method: 'POST', path: '/shop/orders/:id/deliver', permission: 'shop:orders:approve', feature: 'shop' },
   { method: 'POST', path: '/shop/orders/:id/undeliver', permission: 'shop:orders:approve', feature: 'shop' },
   // L'adhérent modifie ou annule sa commande tant qu'elle n'est pas validée : appelées par

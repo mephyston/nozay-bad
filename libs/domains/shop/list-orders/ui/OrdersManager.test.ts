@@ -292,7 +292,7 @@ describe('OrdersManager Component', () => {
     document.body.appendChild(target);
     window.history.replaceState(null, '', '/admin/shop/orders?season=25-26&vue=closed&article=101');
 
-    const app = mount(OrdersManager, { target, props: { seasons, orders, seasonId: '25-26' } });
+    const app = mount(OrdersManager, { target, props: { canApprove: true, canPay: true, seasons, orders, seasonId: '25-26' } });
     flushSync();
 
     // Lu depuis l'URL : refusées ou annulées, restreintes aux volants — la refusée et l'annulée.
@@ -313,7 +313,7 @@ describe('OrdersManager Component', () => {
   it("signale le sexe de l'adhérent à côté de son nom", () => {
     const target = document.createElement('div');
     document.body.appendChild(target);
-    const app = mount(OrdersManager, { target, props: { seasons, orders, seasonId: '25-26' } });
+    const app = mount(OrdersManager, { target, props: { canApprove: true, canPay: true, seasons, orders, seasonId: '25-26' } });
     flushSync();
 
     const cellule = Array.from(target.querySelectorAll('tbody td')).find((td) =>
@@ -335,6 +335,8 @@ describe('OrdersManager Component', () => {
     mount(OrdersManager, {
       target,
       props: {
+        canApprove: true,
+        canPay: true,
         seasons,
         orders,
         seasonId: '25-26'
@@ -372,7 +374,7 @@ describe('OrdersManager Component', () => {
 
     mount(OrdersManager, {
       target,
-      props: { seasons, orders, seasonId: '25-26', activeTab: 'created' }
+      props: { canApprove: true, canPay: true, seasons, orders, seasonId: '25-26', activeTab: 'created' }
     });
     flushSync();
 
@@ -382,13 +384,27 @@ describe('OrdersManager Component', () => {
     expect(target.innerHTML).not.toContain('Garnier');
   });
 
+  it("n'offre à l'entraîneur ni l'encaissement ni son annulation", () => {
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+
+    mount(OrdersManager, {
+      target,
+      props: { canApprove: true, canPay: false, seasons, orders, seasonId: '25-26', activeTab: 'paid' }
+    });
+    flushSync();
+
+    // La commande payée se livre, mais l'encaissement reste à la trésorerie.
+    expect(libellesDeBalayage(target)).toEqual(['Livrer']);
+  });
+
   it('livre une commande payée depuis la vue « Payées »', async () => {
     const target = document.createElement('div');
     document.body.appendChild(target);
 
     mount(OrdersManager, {
       target,
-      props: { seasons, orders, seasonId: '25-26', activeTab: 'paid' }
+      props: { canApprove: true, canPay: true, seasons, orders, seasonId: '25-26', activeTab: 'paid' }
     });
     flushSync();
 
@@ -415,7 +431,7 @@ describe('OrdersManager Component', () => {
 
     mount(OrdersManager, {
       target,
-      props: { seasons, orders: orders.filter((o) => o.order.status === 'awaiting_payment'), seasonId: '25-26' }
+      props: { canApprove: true, canPay: true, seasons, orders: orders.filter((o) => o.order.status === 'awaiting_payment'), seasonId: '25-26' }
     });
     flushSync();
 
@@ -435,6 +451,8 @@ describe('OrdersManager Component', () => {
     mount(OrdersManager, {
       target,
       props: {
+        canApprove: true,
+        canPay: true,
         seasons,
         orders,
         seasonId: '25-26',
@@ -463,7 +481,7 @@ describe('OrdersManager Component', () => {
     // impraticable à piloter en jsdom : on monte directement sur la vue voulue.
     mount(OrdersManager, {
       target,
-      props: { seasons, orders, seasonId: '25-26', activeTab: 'delivered' }
+      props: { canApprove: true, canPay: true, seasons, orders, seasonId: '25-26', activeTab: 'delivered' }
     });
     flushSync();
 
@@ -487,7 +505,7 @@ describe('OrdersManager Component', () => {
 
     mount(OrdersManager, {
       target,
-      props: { seasons, orders, seasonId: '25-26', activeTab: 'closed' }
+      props: { canApprove: true, canPay: true, seasons, orders, seasonId: '25-26', activeTab: 'closed' }
     });
     flushSync();
 
@@ -511,7 +529,7 @@ describe('OrdersManager Component', () => {
 
     mount(OrdersManager, {
       target,
-      props: { seasons, orders, seasonId: '25-26', activeTab: 'delivered' }
+      props: { canApprove: true, canPay: true, seasons, orders, seasonId: '25-26', activeTab: 'delivered' }
     });
     flushSync();
 
@@ -533,7 +551,7 @@ describe('OrdersManager Component', () => {
 
     mount(OrdersManager, {
       target,
-      props: { seasons, orders, seasonId: '25-26', activeTab: 'paid' }
+      props: { canApprove: true, canPay: true, seasons, orders, seasonId: '25-26', activeTab: 'paid' }
     });
     flushSync();
 
@@ -557,7 +575,7 @@ describe('OrdersManager Component', () => {
 
     mount(OrdersManager, {
       target,
-      props: { seasons, orders, seasonId: '25-26' }
+      props: { canApprove: true, canPay: true, seasons, orders, seasonId: '25-26' }
     });
 
     openActions(target);
@@ -577,7 +595,7 @@ describe('OrdersManager Component', () => {
 
     mount(OrdersManager, {
       target,
-      props: { seasons, orders, seasonId: '25-26', activeTab: 'awaiting_payment' }
+      props: { canApprove: true, canPay: true, seasons, orders, seasonId: '25-26', activeTab: 'awaiting_payment' }
     });
     flushSync();
 
@@ -598,7 +616,7 @@ describe('OrdersManager Component', () => {
 
     mount(OrdersManager, {
       target,
-      props: { seasons, orders, seasonId: '25-26', activeTab: 'awaiting_payment' }
+      props: { canApprove: true, canPay: true, seasons, orders, seasonId: '25-26', activeTab: 'awaiting_payment' }
     });
     flushSync();
 
@@ -624,7 +642,7 @@ describe('OrdersManager Component', () => {
 
     const app = mount(OrdersManager, {
       target,
-      props: { seasons, orders, seasonId: '25-26' }
+      props: { canApprove: true, canPay: true, seasons, orders, seasonId: '25-26' }
     });
     const { uiConfirm } = await import('@nba/ui');
     vi.mocked(uiConfirm).mockClear();
@@ -669,6 +687,8 @@ describe('OrdersManager Component', () => {
     mount(OrdersManager, {
       target,
       props: {
+        canApprove: true,
+        canPay: true,
         seasons: seasonsClosed,
         orders,
         seasonId: '25-26'
@@ -689,7 +709,7 @@ describe('OrdersManager Component', () => {
 
     mount(OrdersManager, {
       target,
-      props: { seasons, orders, seasonId: '25-26', activeTab: 'created' }
+      props: { canApprove: true, canPay: true, seasons, orders, seasonId: '25-26', activeTab: 'created' }
     });
     flushSync();
 
@@ -705,6 +725,8 @@ describe('OrdersManager Component', () => {
     mount(OrdersManager, {
       target,
       props: {
+        canApprove: true,
+        canPay: true,
         seasons,
         orders: orders.filter((o) => o.order.status === 'awaiting_payment'),
         seasonId: '25-26'
@@ -728,7 +750,7 @@ describe('OrdersManager Component', () => {
 
     mount(OrdersManager, {
       target,
-      props: { seasons, orders, seasonId: '25-26', activeTab: 'delivered' }
+      props: { canApprove: true, canPay: true, seasons, orders, seasonId: '25-26', activeTab: 'delivered' }
     });
     flushSync();
 
@@ -744,7 +766,7 @@ describe('OrdersManager Component', () => {
 
     mount(OrdersManager, {
       target,
-      props: { seasons, orders, seasonId: '25-26', activeTab: 'awaiting_payment' }
+      props: { canApprove: true, canPay: true, seasons, orders, seasonId: '25-26', activeTab: 'awaiting_payment' }
     });
     flushSync();
 
@@ -784,7 +806,7 @@ describe('OrdersManager Component', () => {
 
     mount(OrdersManager, {
       target,
-      props: { seasons: saisonsRelais, orders, seasonId: '25-26' }
+      props: { canApprove: true, canPay: true, seasons: saisonsRelais, orders, seasonId: '25-26' }
     });
     flushSync();
 

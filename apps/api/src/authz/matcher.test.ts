@@ -73,6 +73,21 @@ describe('matchRule', () => {
   });
 });
 
+describe('commandes boutique — qui fait quoi', () => {
+  const droit = (action: string) => matchRule('POST', `/shop/orders/1/${action}`)?.permission;
+
+  it("réserve l'encaissement et son annulation au droit comptable", () => {
+    expect(droit('pay')).toBe('shop:payments:write');
+    expect(droit('unpay')).toBe('shop:payments:write');
+  });
+
+  it('laisse valider, refuser, annuler et livrer sous le droit de gestion', () => {
+    for (const action of ['validate', 'reject', 'cancel', 'deliver', 'undeliver']) {
+      expect(droit(action), action).toBe('shop:orders:approve');
+    }
+  });
+});
+
 describe('ROUTE_PERMISSIONS', () => {
   it('ne contient aucun doublon (method, path)', () => {
     // Le matcher lève au chargement en cas de doublon ; ce test le documente et

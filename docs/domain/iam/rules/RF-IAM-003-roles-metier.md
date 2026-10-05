@@ -22,9 +22,9 @@ Les droits s'attribuent par fonction dans l'association, pas permission par perm
 
 **La présidence n'écrit pas en comptabilité.** Elle dispose de la lecture intégrale et des actes de gouvernance : ouverture et clôture d'exercice, vote du budget, validation des notes de frais et des commandes, gestion des accès. Mais pas de la saisie comptable. C'est une séparation des tâches : le trésorier saisit, la présidence contrôle, et le grand livre reste imputable à une seule personne. Un club qui souhaite cumuler les deux fonctions ajoute une ligne (`...ACCOUNTING_FULL`) — et l'instantané de la matrice en fait un diff visible en revue.
 
-**Le trésorier encaisse les commandes.** Valider une commande écrit une recette au grand livre : c'est un acte comptable, pas une opération de boutique. Le secrétariat gère donc le catalogue et suit les commandes, sans pouvoir les encaisser.
+**Seul le trésorier encaisse les commandes.** Encaisser une commande écrit une recette au grand livre, annuler l'encaissement la retire : c'est un acte comptable, pas une opération de boutique (`shop:payments:write`). Ni la présidence, ni l'entraîneur, ni le secrétariat ne l'accomplissent. Valider, refuser, annuler ou livrer une commande (`shop:orders:approve`) sont en revanche des décisions de gestion, partagées par l'entraîneur, le trésorier et la présidence.
 
-**L'entraîneur équipe ses joueurs.** Il tient le catalogue de la boutique et passe des commandes pour les adhérents, dont il consulte le fichier sans pouvoir le modifier. Il ne valide pas les commandes : l'encaissement écrit une recette au grand livre et reste à la trésorerie. C'était déjà l'usage sous l'ancien modèle, où la permission `shop:products` portait la mention « (Coach) » sans qu'aucun rôle ne l'incarne.
+**L'entraîneur équipe ses joueurs.** Il tient le catalogue de la boutique et passe des commandes pour les adhérents, dont il consulte le fichier sans pouvoir le modifier. Il valide, refuse ou annule les commandes, et remet l'article une fois qu'elles sont payées ; l'encaissement, qui écrit une recette au grand livre, reste à la trésorerie. C'était déjà l'usage sous l'ancien modèle, où la permission `shop:products` portait la mention « (Coach) » sans qu'aucun rôle ne l'incarne.
 
 **La communication a son rôle.** Une notification part vers tous les téléphones du club ; le droit d'émission n'est jamais accordé implicitement. Il est attribué délibérément à la présidence, au secrétariat, et au rôle `communication`.
 
@@ -53,7 +53,8 @@ Les droits s'attribuent par fonction dans l'association, pas permission par perm
 | Notes de frais | | | | lecture | ✓ | lecture + validation | ✓ |
 | Boutique (catalogue) | | | ✓ | ✓ | lecture | lecture | ✓ |
 | Commandes (création) | | | ✓ | lecture | ✓ | lecture | ✓ |
-| Commandes (encaissement) | | | | | ✓ | ✓ | ✓ |
+| Commandes (validation, refus, remise) | | | ✓ | | ✓ | ✓ | ✓ |
+| Commandes (encaissement) | | | | | ✓ | | ✓ |
 | Notifications (émission) | | ✓ | | ✓ | lecture | ✓ | ✓ |
 | Site public — pages, actualités | | ✓ | lecture | rédaction | lecture | ✓ | ✓ |
 | Site public — médiathèque | | ✓ | | rédaction | | ✓ | ✓ |

@@ -45,6 +45,8 @@
         seasonId={d.season}
         paymentMethods={d.paymentMethods ?? []}
         canWrite={Boolean(d.canWrite)}
+        canApprove={Boolean(d.canApprove)}
+        canPay={Boolean(d.canPay)}
         initialAction={actionInitiale}
       />
     {/snippet}

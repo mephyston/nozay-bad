@@ -44,7 +44,7 @@ export const ROLE_DESCRIPTIONS: Record<Role, string> = {
   president: "Consultation de l'ensemble du club, actes de gouvernance (exercices, budget, validations) et gestion des accès.",
   tresorier: 'Comptabilité complète, notes de frais et encaissement des commandes.',
   secretaire: 'Fichier des adhérents, attestations, communication et catalogue boutique.',
-  coach: 'Catalogue et commandes de la boutique, consultation des adhérents.',
+  coach: 'Catalogue et commandes de la boutique (validation et remise, sans encaissement), consultation des adhérents.',
   communication:
     "Annonces, notifications aux adhérents et site public. Aucun accès aux finances ni au fichier des adhérents.",
   membre: "Socle attribué à un compte sans rôle : tableau de bord et centre d'aide uniquement."
@@ -113,6 +113,8 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'accounting:seasons:close',
     'accounting:budget:write',
     // Validations : elles engagent l'association, donc relèvent de la présidence.
+    // Valider une commande n'est pas l'encaisser : l'encaissement écrit au grand livre
+    // et reste à la trésorerie (`shop:payments:write`).
     'expenses:reports:approve',
     'shop:orders:approve',
     // Communication officielle du club.
@@ -171,10 +173,12 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'expenses:reports:read',
     'expenses:reports:write',
     'expenses:reports:approve',
-    // Valider une commande écrit une recette au grand livre : c'est un acte comptable.
+    // Encaisser une commande écrit une recette au grand livre : c'est un acte comptable,
+    // que seule la trésorerie accomplit. Elle suit aussi la commande de bout en bout.
     'shop:products:read',
     'shop:orders:read',
     'shop:orders:approve',
+    'shop:payments:write',
     'notifications:messages:read',
     // Consultation seule : la communication du club n'est pas du ressort de la trésorerie.
     'cms:pages:read',
@@ -246,6 +250,10 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'shop:categories:write',
     'shop:orders:read',
     'shop:orders:write',
+    // Il valide, refuse ou annule une commande, et remet l'article une fois réglé.
+    // Pas de `shop:payments:write` : l'encaissement écrit une recette au grand livre,
+    // c'est un acte comptable qui reste à la trésorerie.
+    'shop:orders:approve',
     // Consultation seule : l'entraîneur suit les annonces et le site sans les rédiger.
     'cms:pages:read',
     'cms:posts:read',
@@ -273,8 +281,6 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     // Les catégories de produits vivent dans les réglages : sans cette entrée, l'écran
     // existe mais aucun chemin du menu n'y mène.
     'settings:hub:read'
-    // Pas de `shop:orders:approve` : valider une commande écrit une recette au grand
-    // livre, c'est un acte comptable qui reste à la trésorerie.
   ],
 
   /**

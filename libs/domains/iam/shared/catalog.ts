@@ -47,7 +47,8 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   'shop:categories:write': 'Gérer les catégories de produits',
   'shop:orders:read': 'Consulter les commandes',
   'shop:orders:write': 'Créer et modifier une commande',
-  'shop:orders:approve': 'Valider et encaisser une commande',
+  'shop:orders:approve': 'Valider, refuser et livrer une commande',
+  'shop:payments:write': 'Encaisser une commande',
 
   'notifications:messages:read': "Consulter l'historique des notifications",
   'notifications:messages:send': 'Envoyer une notification au club',

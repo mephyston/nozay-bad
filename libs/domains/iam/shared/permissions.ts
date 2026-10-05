@@ -56,7 +56,11 @@ export const ALL_PERMISSIONS = [
   'shop:categories:write',
   'shop:orders:read',
   'shop:orders:write',
-  'shop:orders:approve',
+  'shop:orders:approve', // valider, refuser, annuler, livrer
+  // Encaisser une commande écrit une recette au grand livre, et défaire l'encaissement
+  // la retire : c'est un acte comptable, distinct de la décision de gestion qu'est la
+  // validation ou la remise de l'article.
+  'shop:payments:write',
 
   // — Notifications —
   'notifications:messages:read',

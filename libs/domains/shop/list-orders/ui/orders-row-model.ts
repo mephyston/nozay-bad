@@ -62,6 +62,29 @@ export const ACTION_LABELS: Record<EtapeOuverte, { primaire: string; secondaire:
   paid: { primaire: 'Livrer', secondaire: "Annuler l'encaissement" }
 };
 
+/**
+ * Les deux droits qui gouvernent les transitions. `decider` (`shop:orders:approve`) :
+ * valider, refuser, annuler, livrer. `encaisser` (`shop:payments:write`) : encaisser et
+ * défaire l'encaissement, qui écrivent au grand livre et restent à la trésorerie.
+ */
+export type DroitsCommande = { decider: boolean; encaisser: boolean };
+
+const TOUS_DROITS: DroitsCommande = { decider: true, encaisser: true };
+
+/** Le droit qu'exige chaque action de chaque étape. */
+const DROIT_REQUIS: Record<EtapeOuverte, Record<'primaire' | 'secondaire', keyof DroitsCommande>> = {
+  created: { primaire: 'decider', secondaire: 'decider' },
+  awaiting_payment: { primaire: 'encaisser', secondaire: 'decider' },
+  paid: { primaire: 'decider', secondaire: 'encaisser' }
+};
+
+/** L'action est-elle offerte à qui porte ces droits ? */
+export const actionPermise = (
+  etape: EtapeOuverte,
+  cote: 'primaire' | 'secondaire',
+  droits: DroitsCommande = TOUS_DROITS
+): boolean => droits[DROIT_REQUIS[etape][cote]];
+
 export const estOuverte = (item: OrderItem): boolean =>
   (ETAPES_OUVERTES as readonly string[]).includes(item.order.status);
 
@@ -169,6 +192,8 @@ export type TransitionsDeCommande = {
    * Offert au menu du tableau ; la liste au doigt le porte dans la fiche, pas au balayage.
    */
   onEdit?: (item: OrderItem) => void;
+  /** Ce que l'utilisateur a le droit de faire ; tout, par défaut. */
+  droits?: DroitsCommande;
 };
 
 /**
@@ -186,12 +211,12 @@ export type TransitionsDeCommande = {
  */
 export function actionsDeCommande(
   item: OrderItem,
-  { verrouille = false, onPrimary, onSecondary, onUndeliver, onEdit }: TransitionsDeCommande
+  { verrouille = false, onPrimary, onSecondary, onUndeliver, onEdit, droits = TOUS_DROITS }: TransitionsDeCommande
 ): SwipeAction<OrderItem>[] {
   if (verrouille) return [];
 
   if (item.order.status === 'delivered') {
-    if (!onUndeliver) return [];
+    if (!onUndeliver || !droits.decider) return [];
     return [
       {
         id: 'undeliver',
@@ -212,23 +237,27 @@ export function actionsDeCommande(
   const corriger: SwipeAction<OrderItem>[] = onEdit && etape !== 'paid'
     ? [{ id: 'modifier', label: 'Modifier', icon: Pencil, tone: 'neutral', run: (x) => onEdit(x) }]
     : [];
-  return [
-    {
-      id: 'primaire',
-      label: ACTION_LABELS[etape].primaire,
-      icon: ICONES_PRIMAIRES[etape],
-      tone: 'primary',
-      run: (x) => onPrimary(x.order.id)
-    },
-    {
-      id: 'secondaire',
-      label: ACTION_LABELS[etape].secondaire,
-      icon: etape === 'paid' ? Undo2 : X,
-      tone: 'destructive',
-      run: (x) => onSecondary(x.order.id)
-    },
-    ...corriger
-  ];
+  // Sans le droit d'encaisser, « Encaisser » disparaît : « Annuler » prend la tête, et
+  // pose sa question avant d'agir.
+  const primaire: SwipeAction<OrderItem>[] = actionPermise(etape, 'primaire', droits)
+    ? [{
+        id: 'primaire',
+        label: ACTION_LABELS[etape].primaire,
+        icon: ICONES_PRIMAIRES[etape],
+        tone: 'primary',
+        run: (x) => onPrimary(x.order.id)
+      }]
+    : [];
+  const secondaire: SwipeAction<OrderItem>[] = actionPermise(etape, 'secondaire', droits)
+    ? [{
+        id: 'secondaire',
+        label: ACTION_LABELS[etape].secondaire,
+        icon: etape === 'paid' ? Undo2 : X,
+        tone: 'destructive',
+        run: (x) => onSecondary(x.order.id)
+      }]
+    : [];
+  return [...primaire, ...secondaire, ...corriger];
 }
 
 /**

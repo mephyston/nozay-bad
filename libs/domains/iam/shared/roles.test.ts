@@ -104,7 +104,7 @@ describe('définition des rôles', () => {
     for (const p of [
       'members:members:read',
       'shop:products:read', 'shop:products:write', 'shop:categories:write',
-      'shop:orders:read', 'shop:orders:write',
+      'shop:orders:read', 'shop:orders:write', 'shop:orders:approve',
       'schedules:indiv:read', 'schedules:indiv:write'
     ]) {
       expect(coach, p).toContain(p);
@@ -112,7 +112,7 @@ describe('définition des rôles', () => {
     // Ce qu'on lui refuse : encaisser une commande écrit une recette au grand livre,
     // et le fichier des adhérents reste en lecture seule.
     for (const p of [
-      'shop:orders:approve',
+      'shop:payments:write',
       'members:members:write', 'members:members:import', 'members:members:export',
       'accounting:ledger:read', 'accounting:ledger:write',
       'expenses:reports:read', 'notifications:messages:send'
@@ -129,7 +129,8 @@ describe('définition des rôles', () => {
       'accounting:invoices:delete',
       'accounting:checks:write',
       'accounting:bank:reconcile',
-      'accounting:config:write'
+      'accounting:config:write',
+      'shop:payments:write'
     ];
     for (const permission of writes) {
       expect(ROLE_PERMISSIONS.president, permission).not.toContain(permission);

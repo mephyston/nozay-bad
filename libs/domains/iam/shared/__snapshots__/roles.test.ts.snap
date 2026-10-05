@@ -19,6 +19,7 @@ exports[`matrice des droits > correspond à l’instantané validé 1`] = `
     "schedules:slots:write",
     "settings:hub:read",
     "shop:categories:write",
+    "shop:orders:approve",
     "shop:orders:read",
     "shop:orders:write",
     "shop:products:read",
@@ -232,6 +233,7 @@ exports[`matrice des droits > correspond à l’instantané validé 1`] = `
     "shop:orders:approve",
     "shop:orders:read",
     "shop:orders:write",
+    "shop:payments:write",
     "shop:products:read",
     "shop:products:write",
     "teams:lineups:read",
@@ -285,6 +287,7 @@ exports[`matrice des droits > correspond à l’instantané validé 1`] = `
     "settings:hub:read",
     "shop:orders:approve",
     "shop:orders:read",
+    "shop:payments:write",
     "shop:products:read",
   ],
 }

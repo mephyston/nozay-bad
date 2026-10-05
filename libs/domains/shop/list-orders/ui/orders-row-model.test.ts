@@ -152,6 +152,38 @@ describe('actionsDeCommande — corriger une commande', () => {
   });
 });
 
+describe('actionsDeCommande — ce que chaque droit permet', () => {
+  const noop = () => {};
+  const labels = (item: OrderItem, droits: { decider: boolean; encaisser: boolean }) =>
+    actionsDeCommande(item, { onPrimary: noop, onSecondary: noop, onUndeliver: noop, droits }).map((a) => a.label);
+  const entraineur = { decider: true, encaisser: false };
+  const tresorerie = { decider: true, encaisser: true };
+  const lecture = { decider: false, encaisser: false };
+
+  it("laisse l'entraîneur valider, refuser, annuler et livrer, jamais encaisser", () => {
+    expect(labels(commande({ status: 'created' }), entraineur)).toEqual(['Valider', 'Refuser']);
+    expect(labels(commande({ status: 'awaiting_payment', awaitingPaymentSince: '2026-08-20' }), entraineur)).toEqual([
+      'Annuler'
+    ]);
+    expect(labels(commande({ status: 'paid' }), entraineur)).toEqual(['Livrer']);
+    expect(labels(commande({ status: 'delivered' }), entraineur)).toEqual(['Annuler la remise']);
+  });
+
+  it('réserve encaisser et défaire un encaissement à la trésorerie', () => {
+    expect(labels(commande({ status: 'awaiting_payment', awaitingPaymentSince: '2026-08-20' }), tresorerie)).toEqual([
+      'Encaisser',
+      'Annuler'
+    ]);
+    expect(labels(commande({ status: 'paid' }), tresorerie)).toEqual(['Livrer', "Annuler l'encaissement"]);
+  });
+
+  it("n'offre rien à qui ne fait que consulter", () => {
+    for (const status of ['created', 'awaiting_payment', 'paid', 'delivered'] as const) {
+      expect(labels(commande({ status }), lecture), status).toEqual([]);
+    }
+  });
+});
+
 describe('articlesCommandes — le filtre par article', () => {
   const commande = (id: number, product: Record<string, unknown>) =>
     ({ order: { id }, product }) as unknown as OrderItem;
