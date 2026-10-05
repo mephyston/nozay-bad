@@ -82,9 +82,14 @@
       {/each}
     </ul>
 
-    <div class="flex justify-between text-[11px] tabular-nums text-muted-foreground">
-      <span>{valeurFr(axe.min)}</span>
-      <span>{valeurFr(axe.max)}</span>
+    <!--
+      La graduation de l'axe commun : sans légende, ses deux bornes se lisaient comme
+      deux valeurs de plus, sans rapport avec les équipes.
+    -->
+    <div class="flex items-baseline justify-between gap-2 border-t pt-1.5 text-[11px] text-muted-foreground">
+      <span class="tabular-nums">← {valeurFr(axe.min)}</span>
+      <span class="text-center">Échelle de valeur d'équipe, commune à toutes les barres</span>
+      <span class="tabular-nums">{valeurFr(axe.max)} →</span>
     </div>
   </section>
 {/if}
