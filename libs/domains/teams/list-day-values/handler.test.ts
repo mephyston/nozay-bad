@@ -7,6 +7,7 @@ import { saveTeam } from '../save-team/handler';
 import { saveTeamStaff } from '../save-team-staff/handler';
 import { saveChampionshipDays } from '../save-championship-days/handler';
 import { saveLineup } from '../save-lineup/handler';
+import { saveTeamRoster } from '../save-team-roster/handler';
 import { playerRankingsTable } from '../shared/schema';
 import type { SaveLineupSlot } from '../save-lineup/dto';
 import { insertMemberFixture } from '@nba/members/test-fixtures';
@@ -123,6 +124,29 @@ describe('contrôle des valeurs par journée', () => {
 
     expect(second.delta).toBe(-2);
     expect(second.conform).toBe(true);
+  });
+
+  describe('plage de valeur', () => {
+    async function avecEffectifs(rankA: string, rankB: string) {
+      const teams = await seed(rankA, rankB);
+      await saveTeamRoster(db, { teamId: teams.one.id, licences: [...menA, ...womenA] }, NOW);
+      await saveTeamRoster(db, { teamId: teams.two.id, licences: [...menB, ...womenB] }, NOW);
+      return (await listDayValues(db, { seasonCode: SEASON, championship: 'icd_mixte', dayNumber: 1 })).teams;
+    }
+
+    it('borne chaque équipe par son effectif, sans attendre de composition', async () => {
+      // Tout l'effectif au même classement : la plage se resserre sur un point.
+      const [first, second] = await avecEffectifs('D7', 'D9');
+      expect(first.range).toEqual({ min: 6, max: 6 });
+      expect(second.range).toEqual({ min: 4, max: 4 });
+      expect(first.rangeVerdict).toBeNull();
+      expect(second.rangeVerdict).toBe('safe');
+    });
+
+    it("annonce le conflit quand même la compo la plus faible dépasse l'équipe du dessus", async () => {
+      const [, second] = await avecEffectifs('D9', 'D7');
+      expect(second.rangeVerdict).toBe('conflict');
+    });
   });
 
   it('ne conclut rien quand l’équipe du dessus n’a pas composé', async () => {

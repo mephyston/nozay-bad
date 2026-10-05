@@ -26,6 +26,18 @@ export interface DayTeamValue {
   captainName: string | null;
   captainLicence: string | null;
   issues: LineupIssue[];
+  /**
+   * La plus faible et la plus forte valeur que l'effectif permet de présenter ce jour-là,
+   * aux règles du championnat. `null` sans valeur d'équipe (vétérans) ou quand
+   * l'effectif ne suffit pas à remplir la rencontre.
+   */
+  range: { min: number; max: number } | null;
+  /**
+   * Ce que les deux plages disent face à l'équipe du dessus : `safe`, aucune compo ne
+   * peut la dépasser ; `overlap`, ça dépend des compos ; `conflict`, même la plus
+   * faible dépasse sa plus forte. `null` sans équipe du dessus ou sans plage.
+   */
+  rangeVerdict: 'safe' | 'overlap' | 'conflict' | null;
 }
 
 /** Un joueur aligné dans deux équipes du club la même semaine : l'infraction la plus coûteuse. */

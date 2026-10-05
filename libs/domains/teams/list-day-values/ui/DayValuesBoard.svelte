@@ -14,6 +14,7 @@
   } from '@nba/ui';
   import { CircleCheck, UsersRound, CircleHelp } from '@lucide/svelte';
   import DayValuesList from './DayValuesList.svelte';
+  import ValueRangesPanel from './ValueRangesPanel.svelte';
   import {
     erreursDe,
     etatDeComposition,
@@ -246,6 +247,10 @@
         </Table.Body>
       </Table.Root>
     </div>
+
+    {#if board.hasTeamValue}
+      <ValueRangesPanel equipes={board.teams} />
+    {/if}
 
     {#if anomalies.length > 0}
       <section class="space-y-3">

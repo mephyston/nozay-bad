@@ -4,6 +4,8 @@ import { CHAMPIONSHIP_RULES, teamName, type Championship } from '../shared/champ
 import { loadPlayerDirectory } from '../shared/members-lookup';
 import { loadLineup } from '../get-lineup/handler';
 import { createQueryCache, memo } from '../shared/query-cache';
+import { plageDeValeur } from '../shared/value-range';
+import { verdictDePlage } from '../shared/value-range-verdict';
 import { ChampionshipDayNotFoundError, UnknownChampionshipError } from '../shared/errors';
 import { ListDayValuesRepository } from './repository';
 import type { DayTeamValue, DuplicatePlayer, ListDayValuesOutput } from './dto';
@@ -91,10 +93,21 @@ export async function listDayValues(
         conform: delta === null ? null : delta <= 0,
         captainName: captain ? `${captain.firstName} ${captain.lastName}`.trim() : null,
         captainLicence: lineup.captainLicence,
-        issues: [...lineup.errors, ...lineup.warnings]
+        issues: [...lineup.errors, ...lineup.warnings],
+        // Sur l'effectif complet, joueurs déjà alignés ailleurs compris : c'est le potentiel
+        // de l'équipe, que la valeur saisie vient situer.
+        range: plageDeValeur(rules, lineup.slots, lineup.candidates),
+        rangeVerdict: null
       };
     })
   );
+
+  // L'équipe du dessus est celle que `loadLineup` désigne pour `W1` : la promotion
+  // masculine, hors hiérarchie, n'en a pas.
+  for (const row of rows) {
+    const upper = rows.find((r) => r.name === row.upperTeamName);
+    row.rangeVerdict = upper ? verdictDePlage(row.range, upper.range) : null;
+  }
 
   // ── Joueurs alignés deux fois dans la semaine ──
   const alignments = await repo.alignmentsInWeek(
