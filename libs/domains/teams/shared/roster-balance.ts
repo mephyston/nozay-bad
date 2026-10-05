@@ -55,16 +55,24 @@ const force = (p: PlayerRanking): number =>
     return s + (r === null ? -1 : cd91Points(r));
   }, 0);
 
+/** Les choix du coach, qui priment sur le calcul. */
+export interface BalanceConstraints {
+  /** Licence → l'équipe où le joueur doit être, qu'il y soit déjà ou non. */
+  figes?: ReadonlyMap<string, number>;
+  /** Licence → les équipes où le joueur ne doit pas être. */
+  interdits?: ReadonlyMap<string, ReadonlySet<number>>;
+}
+
 /**
- * `figes` : les joueurs que le coach ne veut pas voir changer d'équipe. Ils restent
- * dans leur équipe actuelle, y comptent pour les quotas et les plages, et la
- * répartition s'organise autour d'eux.
+ * Un joueur figé ne peut être que dans son équipe ; un joueur interdit d'une équipe
+ * n'y est jamais placé. Les deux comptent pour les quotas, et la répartition
+ * s'organise autour d'eux.
  */
 export function equilibrer(
   championship: Championship,
   teams: BalanceTeam[],
   players: BalancePlayer[],
-  figes: ReadonlySet<string> = new Set()
+  { figes = new Map(), interdits = new Map() }: BalanceConstraints = {}
 ): BalanceResult {
   const rules = CHAMPIONSHIP_RULES[championship];
   const ordre = [...teams].sort((a, b) => a.number - b.number);
@@ -78,9 +86,12 @@ export function equilibrer(
       const verdict = checkEligibility(division.get(t.id)!, rules.categories, p);
       if (verdict.eligible) parEquipe.set(t.id, verdict.disciplines);
     }
-    // Figé : sa seule équipe possible est la sienne, s'il y est admis.
-    const sienne = p.teamId !== null && figes.has(p.licence) ? parEquipe.get(p.teamId) : undefined;
-    admis.set(p.licence, figes.has(p.licence) ? new Map(sienne ? [[p.teamId!, sienne]] : []) : parEquipe);
+    // Interdit d'une équipe : elle sort de ses possibles. Figé : il ne lui reste que la
+    // sienne, s'il y est admis.
+    for (const t of interdits.get(p.licence) ?? []) parEquipe.delete(t);
+    const fige = figes.get(p.licence);
+    const sienne = fige !== undefined ? parEquipe.get(fige) : undefined;
+    admis.set(p.licence, fige !== undefined ? new Map(sienne ? [[fige, sienne]] : []) : parEquipe);
   }
   const placables = players.filter((p) => admis.get(p.licence)!.size > 0);
   const unplaced = players.filter((p) => admis.get(p.licence)!.size === 0).map((p) => p.licence);

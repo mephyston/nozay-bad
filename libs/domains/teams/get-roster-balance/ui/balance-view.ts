@@ -21,6 +21,8 @@ export interface EquipeEquilibree {
   restent: RosterBalancePlayer[];
   arrivent: Array<{ joueur: RosterBalancePlayer; depuis: string | null }>;
   partent: Array<{ joueur: RosterBalancePlayer; vers: string }>;
+  /** Les joueurs que le coach a interdits dans cette équipe : grisés, pour pouvoir revenir dessus. */
+  exclus: RosterBalancePlayer[];
 }
 
 export const plageTexte = (r: ValueRange | null | undefined): string =>
@@ -32,7 +34,11 @@ export const nomJoueur = (p: RosterBalancePlayer): string => `${p.lastName} ${p.
 export const classementsTexte = (p: RosterBalancePlayer): string =>
   [p.singles, p.doubles, p.mixed].map((r) => r ?? '—').join('/');
 
-export function vueEquilibrage(pool: GetRosterBalanceOutput, result: BalanceResult): EquipeEquilibree[] {
+export function vueEquilibrage(
+  pool: GetRosterBalanceOutput,
+  result: BalanceResult,
+  interdits: ReadonlyMap<string, ReadonlySet<number>> = new Map()
+): EquipeEquilibree[] {
   const nom = new Map(pool.teams.map((t) => [t.id, t.name]));
   const ordre = [...pool.teams].sort((a, b) => a.number - b.number);
   const parNom = (a: RosterBalancePlayer, b: RosterBalancePlayer) => nomJoueur(a).localeCompare(nomJoueur(b), 'fr');
@@ -54,7 +60,8 @@ export function vueEquilibrage(pool: GetRosterBalanceOutput, result: BalanceResu
       partent: pool.players
         .filter((p) => p.teamId === t.id && result.assignment.has(p.licence) && result.assignment.get(p.licence) !== t.id)
         .sort(parNom)
-        .map((joueur) => ({ joueur, vers: nom.get(result.assignment.get(joueur.licence)!) ?? '' }))
+        .map((joueur) => ({ joueur, vers: nom.get(result.assignment.get(joueur.licence)!) ?? '' })),
+      exclus: pool.players.filter((p) => interdits.get(p.licence)?.has(t.id)).sort(parNom)
     };
   });
 }

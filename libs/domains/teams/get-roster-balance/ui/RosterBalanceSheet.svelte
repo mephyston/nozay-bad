@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Alert, Badge, Button, ChoiceField, FormField, ResponsiveSheet, toast, uiAlert } from '@nba/ui';
-  import { ArrowRight, Lock, LockOpen, Scale, TriangleAlert } from '@lucide/svelte';
+  import { ArrowRight, Lock, LockOpen, Scale, TriangleAlert, X } from '@lucide/svelte';
   import { CHAMPIONSHIPS, CHAMPIONSHIP_RULES, type Championship } from '../../shared/championship';
   import { equilibrer, type BalanceResult } from '../../shared/roster-balance';
   import { VERDICTS } from '../../shared/value-range-verdict';
@@ -38,43 +38,66 @@
   let pool = $state<GetRosterBalanceOutput | null>(null);
   let result = $state<BalanceResult | null>(null);
   let etat = $state<'repos' | 'calcul' | 'ecriture'>('repos');
-  /** Les joueurs que le coach ne veut pas voir bouger : ils restent dans leur équipe. */
-  let figes = $state<Set<string>>(new Set());
+  /** Joueur → l'équipe où le coach le fige. */
+  let figes = $state<Map<string, number>>(new Map());
+  /** Joueur → les équipes que le coach lui interdit. */
+  let interdits = $state<Map<string, Set<number>>>(new Map());
 
   /*
-    Les joueurs figés sont mémorisés dans ce navigateur, par saison et par championnat :
+    Les choix du coach sont mémorisés dans ce navigateur, par saison et par championnat :
     une commodité, pas une donnée. Un stockage refusé (navigation privée) n'empêche rien.
   */
-  const cleFiges = (c: Championship) => `equilibrage-figes:${seasonCode}:${c}`;
-  function lireFiges(c: Championship): Set<string> {
+  const cle = (c: Championship) => `equilibrage-choix:${seasonCode}:${c}`;
+  function lireChoix(c: Championship, inscrits: Set<string>, equipesIds: Set<number>) {
     try {
-      return new Set(JSON.parse(localStorage.getItem(cleFiges(c)) ?? '[]') as string[]);
+      const brut = JSON.parse(localStorage.getItem(cle(c)) ?? '{}') as { figes?: [string, number][]; interdits?: [string, number[]][] };
+      figes = new Map((brut.figes ?? []).filter(([l, t]) => inscrits.has(l) && equipesIds.has(t)));
+      interdits = new Map(
+        (brut.interdits ?? []).filter(([l]) => inscrits.has(l)).map(([l, ts]) => [l, new Set(ts.filter((t) => equipesIds.has(t)))])
+      );
     } catch {
-      return new Set();
+      figes = new Map();
+      interdits = new Map();
     }
   }
-  function ecrireFiges(c: Championship, valeur: Set<string>) {
+  function ecrireChoix() {
     try {
-      localStorage.setItem(cleFiges(c), JSON.stringify([...valeur]));
+      localStorage.setItem(cle(championship), JSON.stringify({ figes: [...figes], interdits: [...interdits].map(([l, ts]) => [l, [...ts]]) }));
     } catch {
-      /* stockage indisponible : le choix vaut pour la session */
+      /* stockage indisponible : les choix valent pour la session */
     }
   }
 
   function recalculer() {
-    if (pool && pool.teams.length > 1) result = equilibrer(championship, pool.teams, pool.players, figes);
+    if (pool && pool.teams.length > 1) result = equilibrer(championship, pool.teams, pool.players, { figes, interdits });
   }
 
-  function basculer(licence: string) {
-    const suivant = new Set(figes);
-    if (suivant.has(licence)) suivant.delete(licence);
-    else suivant.add(licence);
+  /** Figer ce joueur dans cette équipe, ou le libérer s'il l'y était déjà. */
+  function figer(licence: string, teamId: number) {
+    const suivant = new Map(figes);
+    if (suivant.get(licence) === teamId) suivant.delete(licence);
+    else suivant.set(licence, teamId);
+    // On ne fige pas un joueur là où on vient de l'interdire.
+    const exclus = new Set(interdits.get(licence) ?? []);
+    exclus.delete(teamId);
+    interdits = new Map(interdits).set(licence, exclus);
     figes = suivant;
-    ecrireFiges(championship, suivant);
+    ecrireChoix();
     recalculer();
   }
 
-  const equipes = $derived(pool && result ? vueEquilibrage(pool, result) : []);
+  /** Interdire cette équipe à ce joueur, ou la lui rendre. */
+  function interdire(licence: string, teamId: number) {
+    const exclus = new Set(interdits.get(licence) ?? []);
+    if (exclus.has(teamId)) exclus.delete(teamId);
+    else exclus.add(teamId);
+    interdits = new Map(interdits).set(licence, exclus);
+    if (figes.get(licence) === teamId) figes = new Map([...figes].filter(([l]) => l !== licence));
+    ecrireChoix();
+    recalculer();
+  }
+
+  const equipes = $derived(pool && result ? vueEquilibrage(pool, result, interdits) : []);
   const nomDe = (licence: string) => {
     const p = pool?.players.find((x) => x.licence === licence);
     return p ? nomJoueur(p) : `Licence ${licence}`;
@@ -90,8 +113,7 @@
       const payload = (await response.json()) as { data?: { pool: GetRosterBalanceOutput | null }; error?: string };
       if (!response.ok) throw new Error(payload.error || 'Le vivier est illisible.');
       pool = payload.data?.pool ?? null;
-      const inscrits = new Set(pool?.players.map((p) => p.licence) ?? []);
-      figes = new Set([...lireFiges(c)].filter((l) => inscrits.has(l)));
+      lireChoix(c, new Set(pool?.players.map((p) => p.licence) ?? []), new Set(pool?.teams.map((t) => t.id) ?? []));
       // Laisser l'écran afficher « Calcul… » avant les quelques dizaines de millisecondes de calcul.
       await new Promise((r) => setTimeout(r, 0));
       recalculer();
@@ -130,20 +152,31 @@
 </script>
 
 <!--
-  Un vrai bouton, annoncé : figer un joueur relance le calcul autour de lui. Un joueur
-  qui part, une fois figé, reste dans son équipe actuelle.
+  Deux vrais boutons, annoncés. Le cadenas fige le joueur dans l'équipe de la carte où
+  on le voit ; la croix lui interdit cette équipe. Chacun relance le calcul.
 -->
-{#snippet cadenas(licence: string, nom: string)}
+{#snippet commandes(licence: string, nom: string, teamId: number)}
+  {@const fige = figes.get(licence) === teamId}
   <button
     type="button"
-    class="inline-flex size-6 shrink-0 items-center justify-center rounded-md hover:bg-accent {figes.has(licence) ? 'text-foreground' : 'text-muted-foreground/60'}"
-    aria-pressed={figes.has(licence)}
-    aria-label={figes.has(licence) ? `Libérer ${nom}` : `Figer ${nom} dans son équipe`}
-    title={figes.has(licence) ? 'Figé dans son équipe : cliquer pour le libérer' : "Figer dans son équipe actuelle"}
+    class="inline-flex size-6 shrink-0 items-center justify-center rounded-md hover:bg-accent {fige ? 'text-foreground' : 'text-muted-foreground/60'}"
+    aria-pressed={fige}
+    aria-label={fige ? `Libérer ${nom}` : `Figer ${nom} dans cette équipe`}
+    title={fige ? 'Figé dans cette équipe : cliquer pour le libérer' : 'Figer dans cette équipe'}
     disabled={etat !== 'repos'}
-    onclick={() => basculer(licence)}
+    onclick={() => figer(licence, teamId)}
   >
-    {#if figes.has(licence)}<Lock class="size-3.5" />{:else}<LockOpen class="size-3.5" />{/if}
+    {#if fige}<Lock class="size-3.5" />{:else}<LockOpen class="size-3.5" />{/if}
+  </button>
+  <button
+    type="button"
+    class="inline-flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground/60 hover:bg-accent hover:text-destructive"
+    aria-label={`Interdire cette équipe à ${nom}`}
+    title="Interdire cette équipe à ce joueur"
+    disabled={etat !== 'repos'}
+    onclick={() => interdire(licence, teamId)}
+  >
+    <X class="size-3.5" />
   </button>
 {/snippet}
 
@@ -167,7 +200,7 @@
       <p class="text-xs text-muted-foreground">
         Classements au {pool.referenceEloDate ?? '—'} · {result.moves.length === 0
           ? 'les effectifs actuels sont déjà la meilleure répartition trouvée'
-          : `${result.moves.length} joueur(s) changent d'équipe`}{figes.size > 0 ? ` · ${figes.size} figé(s)` : ''}. Le cadenas fige un joueur dans son équipe actuelle.
+          : `${result.moves.length} joueur(s) changent d'équipe`}{figes.size > 0 ? ` · ${figes.size} figé(s)` : ''}. Le cadenas fige un joueur dans l'équipe de la carte, la croix la lui interdit.
       </p>
       {#if pool.unknown.length > 0}
         <Alert.Root variant="warning">
@@ -211,20 +244,35 @@
           <ul class="space-y-0.5 text-sm">
             {#each e.arrivent as a (a.joueur.licence)}
               <li class="flex items-center gap-1 text-success">
-                {@render cadenas(a.joueur.licence, nomJoueur(a.joueur))}
+                {@render commandes(a.joueur.licence, nomJoueur(a.joueur), e.id)}
                 + {nomJoueur(a.joueur)} <span class="text-xs text-muted-foreground">{classementsTexte(a.joueur)}{a.depuis ? ` · depuis ${a.depuis}` : ''}</span>
               </li>
             {/each}
             {#each e.partent as d (d.joueur.licence)}
               <li class="flex items-center gap-1 text-destructive">
-                {@render cadenas(d.joueur.licence, nomJoueur(d.joueur))}
+                {@render commandes(d.joueur.licence, nomJoueur(d.joueur), e.id)}
                 − {nomJoueur(d.joueur)} <span class="text-xs text-muted-foreground">vers {d.vers}</span>
               </li>
             {/each}
             {#each e.restent as p (p.licence)}
               <li class="flex items-center gap-1 text-muted-foreground">
-                {@render cadenas(p.licence, nomJoueur(p))}
+                {@render commandes(p.licence, nomJoueur(p), e.id)}
                 {nomJoueur(p)} <span class="text-xs">{classementsTexte(p)}</span>
+              </li>
+            {/each}
+            {#each e.exclus as x (x.licence)}
+              <li class="flex items-center gap-1 text-muted-foreground/50">
+                <button
+                  type="button"
+                  class="inline-flex size-6 shrink-0 items-center justify-center rounded-md hover:bg-accent"
+                  aria-label={`Autoriser de nouveau ${nomJoueur(x)} dans cette équipe`}
+                  title="Interdit dans cette équipe : cliquer pour l'autoriser de nouveau"
+                  disabled={etat !== 'repos'}
+                  onclick={() => interdire(x.licence, e.id)}
+                >
+                  <X class="size-3.5" />
+                </button>
+                <span class="line-through">{nomJoueur(x)}</span> <span class="text-xs">interdit ici</span>
               </li>
             {/each}
           </ul>

@@ -33,12 +33,20 @@ L'outil « Équilibrer les effectifs » propose une répartition complète. Le c
 
 Seuls l'éligibilité et l'appartenance à une seule équipe sont garanties en toute circonstance.
 
-### Les joueurs figés
+### Les choix du coach : figer, interdire
 
-- Le coach peut **figer** un joueur d'un clic sur son cadenas : il reste dans son équipe actuelle, y compte pour les quotas et les plages, et la répartition s'organise autour de lui.
-- Le calcul est relancé à chaque joueur figé ou libéré.
-- Les joueurs figés sont mémorisés dans le navigateur, par saison et par championnat. C'est une commodité, pas une donnée : un autre appareil ne les connaît pas.
-- Figer un joueur peut empêcher l'équilibre garçons/filles. L'écran le signale alors, comme pour les plafonds de division.
+Dans la carte de chaque équipe, chaque joueur porte deux commandes :
+
+- **le cadenas** fige le joueur **dans cette équipe**, qu'il y soit déjà ou que la proposition l'y amène. Il n'en bouge plus ;
+- **la croix** lui **interdit cette équipe** : il n'y est plus jamais placé. Il reste affiché grisé dans la carte, marqué « interdit ici », et un clic sur la croix le réautorise.
+
+Les deux s'appliquent ainsi :
+
+- Le calcul est relancé à chaque choix. Figés et interdits comptent pour les quotas, et la répartition s'organise autour d'eux.
+- Figer un joueur dans une équipe lève l'interdiction de cette équipe, et l'interdire lève le cadenas.
+- Un joueur interdit de toutes les équipes où il est admis n'est plus placé : il reste où il est, et l'écran le signale comme les non placés.
+- Les choix sont mémorisés dans le navigateur, par saison et par championnat. C'est une commodité, pas une donnée : un autre appareil ne les connaît pas.
+- Des choix qui rendent impossible l'équilibre garçons/filles sont signalés, comme les plafonds de division.
 
 ### Ce qui est optimisé
 
@@ -93,6 +101,18 @@ Fonctionnalité: Équilibrage des effectifs
     Quand le coach lance l'équilibrage
     Alors ce joueur reste en équipe 2
     Et les autres sont répartis autour de lui, quotas compris
+
+  Scénario: Un joueur figé dans une autre équipe que la sienne y va
+    Étant donné le plus faible joueur, inscrit en équipe 1
+    Et figé par le coach en équipe 1
+    Quand le coach lance l'équilibrage
+    Alors il reste en équipe 1
+
+  Scénario: Une équipe interdite n'est jamais proposée
+    Étant donné le meilleur joueur du vivier
+    Et l'équipe 1 qui lui est interdite
+    Quand le coach lance l'équilibrage
+    Alors il est placé en équipe 2, et les quotas tiennent
 
   Scénario: Rien à proposer quand la répartition est déjà la meilleure
     Étant donné des effectifs déjà répartis au mieux

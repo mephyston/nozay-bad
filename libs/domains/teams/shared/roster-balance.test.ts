@@ -41,10 +41,23 @@ describe('equilibrer — mixte', () => {
 
   it("laisse un joueur figé dans son équipe, et répartit les autres autour de lui", () => {
     // Le plus fort, inscrit en équipe 2, y est figé : il y reste, contre l'intérêt du calcul.
-    const r = equilibrer('icd_mixte', teams, players, new Set(['h7']));
+    const r = equilibrer('icd_mixte', teams, players, { figes: new Map([['h7', 2]]) });
     expect(r.assignment.get('h7')).toBe(2);
     expect(r.moves.some((m) => m.licence === 'h7')).toBe(false);
     // Les quotas tiennent toujours : il compte parmi les quatre garçons de l'équipe 2.
+    expect([compte(r, players, 1, 'H'), compte(r, players, 2, 'H')]).toEqual([4, 4]);
+  });
+
+  it("fige un joueur dans une autre équipe que la sienne, si le coach le veut", () => {
+    // Le plus faible, inscrit en équipe 1, figé en équipe 1 : il y reste malgré son niveau.
+    const r = equilibrer('icd_mixte', teams, players, { figes: new Map([['h0', 1]]) });
+    expect(r.assignment.get('h0')).toBe(1);
+  });
+
+  it("n'affecte jamais un joueur à une équipe qui lui est interdite", () => {
+    // Le plus fort, interdit d'équipe 1, finit en équipe 2.
+    const r = equilibrer('icd_mixte', teams, players, { interdits: new Map([['h7', new Set([1])]]) });
+    expect(r.assignment.get('h7')).toBe(2);
     expect([compte(r, players, 1, 'H'), compte(r, players, 2, 'H')]).toEqual([4, 4]);
   });
 
