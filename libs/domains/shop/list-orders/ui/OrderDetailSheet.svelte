@@ -4,6 +4,7 @@
   import type { OrderItem } from './orders-manager-types';
   import {
     ACTION_LABELS,
+    AUCUN_DROIT,
     ETAPE_LABELS,
     ETAPE_VARIANTS,
     ICONES_PRIMAIRES,
@@ -39,7 +40,7 @@
     onSecondary,
     onUndeliver,
     onEdit,
-    droits
+    droits = AUCUN_DROIT
   }: {
     open?: boolean;
     item?: OrderItem | null;

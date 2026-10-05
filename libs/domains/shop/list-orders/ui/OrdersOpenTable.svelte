@@ -6,6 +6,7 @@
   import type { DroitsCommande } from './orders-row-model';
   import OrdersList from './OrdersList.svelte';
   import {
+    AUCUN_DROIT,
     ETAPE_LABELS,
     ETAPE_VARIANTS,
     actionsDeCommande,
@@ -40,7 +41,7 @@
     onSecondary,
     onOuvrir,
     onEdit,
-    droits
+    droits = AUCUN_DROIT
   }: {
     orders?: OrderItem[];
     stage: OrdersTab;

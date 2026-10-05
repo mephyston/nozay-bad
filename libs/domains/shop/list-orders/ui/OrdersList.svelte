@@ -4,6 +4,7 @@
   import type { OrderItem, OrdersTab } from './orders-manager-types';
   import type { DroitsCommande } from './orders-row-model';
   import {
+    AUCUN_DROIT,
     ETAPES_OUVERTES,
     ETAPE_LABELS,
     actionsDeCommande,
@@ -32,7 +33,7 @@
     onSecondary,
     onUndeliver,
     onOuvrir,
-    droits,
+    droits = AUCUN_DROIT,
     emptyTitle,
     emptyDescription
   }: {

@@ -5,7 +5,7 @@
   import type { Snippet } from 'svelte';
   import type { OrderItem, OrdersTab } from './orders-manager-types';
   import OrdersList from './OrdersList.svelte';
-  import { actionsDeCommande, dateFr, montantCents } from './orders-row-model';
+  import { actionsDeCommande, AUCUN_DROIT, dateFr, montantCents, type DroitsCommande } from './orders-row-model';
 
   /**
    * Une seule action ici, et sur les seules commandes livrées : annuler la remise.
@@ -22,7 +22,8 @@
     isClosed = false,
     toolbar: barreDOutils,
     onUndeliver,
-    onOuvrir
+    onOuvrir,
+    droits = AUCUN_DROIT
   }: {
     historyOrders?: OrderItem[];
     /** `delivered` ou `closed` : la vue d'issues que la table montre. */
@@ -32,6 +33,8 @@
     toolbar?: Snippet;
     onUndeliver?: (id: number) => void;
     onOuvrir: (item: OrderItem) => void;
+    /** Annuler une remise relève de `decider` ; sans lui, l'historique se lit seulement. */
+    droits?: DroitsCommande;
   } = $props();
 
   /*
@@ -65,6 +68,7 @@
       {verrouille}
       {onUndeliver}
       {onOuvrir}
+      {droits}
       emptyTitle={copy.emptyTitle}
       emptyDescription={copy.emptyDescription}
     />
@@ -154,7 +158,7 @@
         {/if}
       </Table.Cell>
       <Table.Cell class="text-right relative">
-        {@const actions = actionsDeCommande(item, { verrouille, onUndeliver })}
+        {@const actions = actionsDeCommande(item, { verrouille, onUndeliver, droits })}
         {#if actions.length > 0}
           <DataTableRowActions>
             <DropdownMenu.Label>Actions</DropdownMenu.Label>

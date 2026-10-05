@@ -69,7 +69,11 @@ export const ACTION_LABELS: Record<EtapeOuverte, { primaire: string; secondaire:
  */
 export type DroitsCommande = { decider: boolean; encaisser: boolean };
 
-const TOUS_DROITS: DroitsCommande = { decider: true, encaisser: true };
+/**
+ * Le défaut des écrans qui ne reçoivent pas de droits : aucune action. Un oubli de
+ * l'appelant doit masquer des boutons, jamais en offrir que l'API refuserait.
+ */
+export const AUCUN_DROIT: DroitsCommande = { decider: false, encaisser: false };
 
 /** Le droit qu'exige chaque action de chaque étape. */
 const DROIT_REQUIS: Record<EtapeOuverte, Record<'primaire' | 'secondaire', keyof DroitsCommande>> = {
@@ -82,7 +86,7 @@ const DROIT_REQUIS: Record<EtapeOuverte, Record<'primaire' | 'secondaire', keyof
 export const actionPermise = (
   etape: EtapeOuverte,
   cote: 'primaire' | 'secondaire',
-  droits: DroitsCommande = TOUS_DROITS
+  droits: DroitsCommande
 ): boolean => droits[DROIT_REQUIS[etape][cote]];
 
 export const estOuverte = (item: OrderItem): boolean =>
@@ -192,8 +196,8 @@ export type TransitionsDeCommande = {
    * Offert au menu du tableau ; la liste au doigt le porte dans la fiche, pas au balayage.
    */
   onEdit?: (item: OrderItem) => void;
-  /** Ce que l'utilisateur a le droit de faire ; tout, par défaut. */
-  droits?: DroitsCommande;
+  /** Ce que l'utilisateur a le droit de faire ; obligatoire, pour qu'aucun écran ne l'oublie. */
+  droits: DroitsCommande;
 };
 
 /**
@@ -211,7 +215,7 @@ export type TransitionsDeCommande = {
  */
 export function actionsDeCommande(
   item: OrderItem,
-  { verrouille = false, onPrimary, onSecondary, onUndeliver, onEdit, droits = TOUS_DROITS }: TransitionsDeCommande
+  { verrouille = false, onPrimary, onSecondary, onUndeliver, onEdit, droits }: TransitionsDeCommande
 ): SwipeAction<OrderItem>[] {
   if (verrouille) return [];
 

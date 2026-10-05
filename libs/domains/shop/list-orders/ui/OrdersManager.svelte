@@ -323,6 +323,7 @@
       toolbar={barreDOutils}
       onUndeliver={surAnnulationRemise}
       onOuvrir={ouvrirFiche}
+      {droits}
     />
   {:else}
     <OrdersOpenTable

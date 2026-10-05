@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import type { OrderItem } from './orders-manager-types';
 import {
+  AUCUN_DROIT,
+  actionPermise,
   articlesCommandes,
   commandesCsv,
   ACTION_LABELS,
@@ -132,7 +134,13 @@ describe('orders-row-model', () => {
 describe('actionsDeCommande — corriger une commande', () => {
   const noop = () => {};
   const ids = (item: OrderItem, onEdit?: (i: OrderItem) => void) =>
-    actionsDeCommande(item, { onPrimary: noop, onSecondary: noop, onUndeliver: noop, onEdit }).map((a) => a.id);
+    actionsDeCommande(item, {
+      onPrimary: noop,
+      onSecondary: noop,
+      onUndeliver: noop,
+      onEdit,
+      droits: { decider: true, encaisser: true }
+    }).map((a) => a.id);
 
   it('offre « Modifier » en dernier sur une commande ouverte : le balayage long reste réversible', () => {
     expect(ids(commande({ status: 'created' }), noop)).toEqual(['primaire', 'secondaire', 'modifier']);
@@ -181,6 +189,12 @@ describe('actionsDeCommande — ce que chaque droit permet', () => {
     for (const status of ['created', 'awaiting_payment', 'paid', 'delivered'] as const) {
       expect(labels(commande({ status }), lecture), status).toEqual([]);
     }
+  });
+
+  it("n'offre rien non plus à un écran qui n'a pas reçu de droits", () => {
+    // Un oubli de l'appelant masque des boutons ; il n'en fait jamais apparaître que l'API refuserait.
+    expect(lecture).toEqual(AUCUN_DROIT);
+    expect(actionPermise('awaiting_payment', 'primaire', AUCUN_DROIT)).toBe(false);
   });
 });
 
