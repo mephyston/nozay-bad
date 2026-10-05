@@ -419,6 +419,11 @@ export const ROUTE_PERMISSIONS: RouteRule[] = [
   // détail d'import n'ont rien d'un annuaire.
   { method: 'GET', path: '/teams/players', permission: 'teams:teams:read', service: true, feature: 'teams' },
   { method: 'GET', path: '/teams/players/:licence', permission: 'teams:teams:read', service: true, feature: 'teams' },
+  // Outil d'équilibrage de début de saison : le vivier d'un championnat, et la
+  // répartition complète écrite d'un bloc. Avant `/teams/:id`, qui capturerait sinon
+  // « roster-balance » comme un identifiant d'équipe.
+  { method: 'GET', path: '/teams/roster-balance', permission: 'teams:teams:read', feature: 'teams' },
+  { method: 'PUT', path: '/teams/rosters', permission: 'teams:teams:write', feature: 'teams' },
   { method: 'GET', path: '/teams/:id', permission: 'teams:teams:read', service: true, feature: 'teams' },
   { method: 'DELETE', path: '/teams/:id', permission: 'teams:teams:delete', feature: 'teams' },
   { method: 'PUT', path: '/teams/:id/staff', permission: 'teams:teams:write', feature: 'teams' },

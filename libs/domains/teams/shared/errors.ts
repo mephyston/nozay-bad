@@ -81,3 +81,11 @@ export class InvalidLineupError extends AppError {
     this.name = 'InvalidLineupError';
   }
 }
+
+/** 422 : une répartition qui oublie une équipe, en invente une, ou inscrit deux fois un joueur. */
+export class InvalidRostersError extends AppError {
+  constructor(message: string) {
+    super(message, 422);
+    this.name = 'InvalidRostersError';
+  }
+}

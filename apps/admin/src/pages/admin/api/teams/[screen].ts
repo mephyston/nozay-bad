@@ -299,6 +299,35 @@ export const ECRANS: Record<string, Ecran> = {
     }
   },
 
+  /*
+    L'outil d'équilibrage de début de saison : le vivier d'un championnat, réparti
+    dans le navigateur, puis écrit d'un bloc. La lecture n'exige que le droit de voir
+    les équipes ; seule l'application de la répartition demande celui de les modifier.
+  */
+  equilibrage: {
+    feature: 'teams',
+    permission: 'teams:teams:read',
+    charger: async (lire, locals, params) => {
+      const { seasonCode, errorMsg } = await saison(locals, params);
+      const championship = championnat(params);
+      if (!seasonCode) return { seasonCode, championship, pool: null, errorMsg };
+      const pool = await lire(
+        `/teams/roster-balance?seasonCode=${encodeURIComponent(seasonCode)}&championship=${championship}`
+      );
+      return { seasonCode, championship, pool: pool ?? null, canWrite: can(locals, 'teams:teams:write'), errorMsg };
+    },
+    ecritures: {
+      'save-championship-rosters': {
+        permission: 'teams:teams:write',
+        route: (data) => ({
+          chemin: '/teams/rosters',
+          method: 'PUT',
+          body: { seasonCode: exigeSaison(data), championship: data.championship, rosters: data.rosters }
+        })
+      }
+    }
+  },
+
   reglements: {
     feature: 'teams',
     permission: 'teams:rankings:read',

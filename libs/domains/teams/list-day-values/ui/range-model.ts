@@ -7,7 +7,8 @@ import { valeurFr } from './day-values-row-model';
  * barres voisines qui se lit, pas leurs chiffres. La valeur saisie s'y pose en point.
  */
 
-export type Verdict = 'safe' | 'overlap' | 'conflict';
+export { VERDICTS, type Verdict } from '../../shared/value-range-verdict';
+import type { Verdict } from '../../shared/value-range-verdict';
 
 export type EquipeAvecPlage = {
   teamId: number;
@@ -16,25 +17,6 @@ export type EquipeAvecPlage = {
   upperTeamName: string | null;
   range: { min: number; max: number } | null;
   rangeVerdict: Verdict | null;
-};
-
-/** Le libellé, la variante de badge et l'explication de chaque verdict ; jamais la couleur seule. */
-export const VERDICTS: Record<Verdict, { texte: string; variante: 'success' | 'warning' | 'destructive'; aide: (dessus: string) => string }> = {
-  safe: {
-    texte: 'Aucun risque',
-    variante: 'success',
-    aide: (dessus) => `Même sa compo la plus forte reste sous la plus faible de ${dessus}.`
-  },
-  overlap: {
-    texte: 'Selon les compos',
-    variante: 'warning',
-    aide: (dessus) => `Les deux plages se chevauchent : le dépassement de ${dessus} dépend des compos du jour.`
-  },
-  conflict: {
-    texte: 'Dépassement inévitable',
-    variante: 'destructive',
-    aide: (dessus) => `Même sa compo la plus faible dépasse la plus forte de ${dessus} : les effectifs sont à revoir.`
-  }
 };
 
 /** Les bornes de l'axe : toutes les plages et valeurs saisies, avec une marge pour les points en bord. */

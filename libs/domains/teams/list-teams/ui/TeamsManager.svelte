@@ -14,7 +14,7 @@
     correspondA,
     type SwipeAction
   } from '@nba/ui';
-  import { Trophy, Plus, CalendarDays } from '@lucide/svelte';
+  import { Trophy, Plus, CalendarDays, Scale } from '@lucide/svelte';
   import TeamsList from './TeamsList.svelte';
   import {
     detailDEquipe,
@@ -26,6 +26,7 @@
   import TeamRosterSheet from '../../get-team/ui/TeamRosterSheet.svelte';
   import TeamFixturesSheet from '../../save-fixture/ui/TeamFixturesSheet.svelte';
   import ChampionshipDaysSheet from '../../save-championship-days/ui/ChampionshipDaysSheet.svelte';
+  import RosterBalanceSheet from '../../get-roster-balance/ui/RosterBalanceSheet.svelte';
   import type { TeamListItem } from '../dto';
   import type { GetTeamOutput } from '../../get-team/dto';
   import type { ChampionshipDayItem } from '../../list-championship-days/dto';
@@ -67,6 +68,7 @@
   let fixturesOpen = $state(false);
   let detail = $state<GetTeamOutput | null>(null);
   let daysOpen = $state(false);
+  let balanceOpen = $state(false);
 
   const filtered = $derived(
     teams.filter((team) => correspondA(search, team.name, team.championshipLabel, team.divisionLabel))
@@ -155,6 +157,7 @@
       actions.push({ id: 'creer', label: 'Créer une équipe', icon: Plus, run: () => openCreate() });
     }
     actions.push({ id: 'journees', label: 'Journées du championnat', icon: CalendarDays, run: () => (daysOpen = true) });
+    actions.push({ id: 'equilibrer', label: 'Équilibrer les effectifs', icon: Scale, run: () => (balanceOpen = true) });
     return dockDePage.declarerActions(actions, { icon: Plus, label: 'Gestes du championnat' });
   });
 
@@ -181,6 +184,9 @@
         <!-- Sur téléphone, ces deux gestes vivent dans la barre du bas. -->
         <Button variant="outline" onclick={() => (daysOpen = true)} class="hidden md:inline-flex">
           <CalendarDays class="w-4 h-4" /> Journées
+        </Button>
+        <Button variant="outline" onclick={() => (balanceOpen = true)} class="hidden md:inline-flex">
+          <Scale class="w-4 h-4" /> Équilibrer
         </Button>
         {#if canWrite}
           <Button onclick={openCreate} class="hidden md:inline-flex">
@@ -277,3 +283,4 @@
   {canWrite}
   onSaved={() => reload()}
 />
+<RosterBalanceSheet bind:open={balanceOpen} {seasonCode} championship={daysChampionship} {canWrite} onSaved={() => reload()} />
