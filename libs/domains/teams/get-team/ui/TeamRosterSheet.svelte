@@ -74,7 +74,9 @@
 
   const captainItems = $derived(withSelected(suggest(captainQuery), captain));
   const viceItems = $derived(withSelected(suggest(viceQuery), viceCaptain));
-  const addableItems = $derived(suggest(addQuery, roster));
+  /** Ceux que le championnat n'admet pas (un senior en vétérans) ne sont pas proposés à l'ajout. */
+  const horsCategorie = $derived(new Set(detail?.outOfCategoryLicences ?? []));
+  const addableItems = $derived(suggest(addQuery, [...roster, ...horsCategorie]));
 
   function label(licence: string): string {
     const member = byLicence.get(licence);
@@ -124,6 +126,11 @@
       if (result?.rejected?.length > 0) {
         toast.warning(
           `${result.rejected.length} licence(s) écartée(s) : absentes du référentiel des adhérents.`
+        );
+      }
+      if (result?.outOfCategory?.length > 0) {
+        toast.warning(
+          `${result.outOfCategory.length} joueur(s) retiré(s) de l'effectif : catégorie d'âge non admise dans ce championnat.`
         );
       }
       open = false;
@@ -263,7 +270,11 @@
                   </div>
                 </div>
                 <div class="flex items-center gap-2 shrink-0">
-                  {#if player && !player.eligible}
+                  {#if horsCategorie.has(licence)}
+                    <Badge variant="destructive" title="Ce championnat n'admet pas sa catégorie d'âge : il sera retiré à l'enregistrement.">
+                      Hors catégorie
+                    </Badge>
+                  {:else if player && !player.eligible}
                     <Badge variant="destructive" title={player.ineligibilityReason ?? ''}>
                       Non éligible
                     </Badge>

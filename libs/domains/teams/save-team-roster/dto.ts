@@ -9,4 +9,6 @@ export interface SaveTeamRosterOutput {
   count: number;
   /** Licences écartées parce qu'absentes du référentiel des adhérents. */
   rejected: string[];
+  /** Licences écartées parce que le championnat n'admet pas leur catégorie d'âge. */
+  outOfCategory: string[];
 }

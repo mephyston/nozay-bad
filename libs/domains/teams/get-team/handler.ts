@@ -3,6 +3,7 @@ import { getClubSettings } from '@nba/club/settings';
 import { CHAMPIONSHIP_RULES, getDivision, teamName } from '../shared/championship';
 import { loadPlayerDirectory, identityOf } from '../shared/members-lookup';
 import { checkEligibility, describeEligibility } from '../shared/eligibility';
+import { licencesHorsCategorie } from '../shared/roster-category';
 import { mondayOf } from '../shared/week';
 import { TeamNotFoundError, UnknownChampionshipError } from '../shared/errors';
 import type { PlayerRanking } from '../shared/player';
@@ -199,6 +200,7 @@ export async function getTeam(db: DbOrTx, id: number): Promise<GetTeamOutput> {
     captain: identityOf(directory, captainLicence),
     viceCaptain: identityOf(directory, viceCaptainLicence),
     roster,
+    outOfCategoryLicences: licencesHorsCategorie(rules.categories, directory, team.seasonCode),
     calendar,
     referenceEloDate,
     referenceOrigin,

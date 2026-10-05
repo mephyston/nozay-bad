@@ -15,6 +15,9 @@ const force = (c: LineupCandidate, discipline: Discipline): number => {
  * C'est l'ordre dans lequel le capitaine place ses joueurs (art. 6.2.2) : le premier de
  * la liste va en SH1, le suivant en SH2. À classement égal, la cote CPPH départage, puis
  * le nom. Un joueur sans cote passe après ceux qui en ont une.
+ *
+ * L'effectif seul est proposé (`inRoster` toujours vrai) : le tri n'a donc pas à le
+ * placer devant d'autres candidats. S'il en revenait, il faudrait l'ajouter en tête.
  */
 export function trierParClassement(candidates: readonly LineupCandidate[], discipline: Discipline): LineupCandidate[] {
   const ranked = DISCIPLINE_RANKING[discipline];

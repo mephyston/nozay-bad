@@ -80,6 +80,8 @@ export interface GetTeamOutput {
   captain: PlayerIdentity | null;
   viceCaptain: PlayerIdentity | null;
   roster: RosterPlayer[];
+  /** Adhérents de la saison que ce championnat n'admet pas dans l'effectif (catégorie d'âge). */
+  outOfCategoryLicences: string[];
   calendar: TeamCalendarDay[];
   /** Date des classements utilisés pour ce rendu. */
   referenceEloDate: string | null;
