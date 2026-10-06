@@ -62,7 +62,7 @@ describe('MemberOrders', () => {
     const target = monter([
       ligne({ id: 1 }),
       ligne({ id: 2, status: 'awaiting_payment', statutLabel: 'À régler' }),
-      ligne({ id: 3, status: 'paid', statutLabel: 'Payée, à retirer' })
+      ligne({ id: 3, status: 'paid', statutLabel: 'Payée' })
     ]);
 
     const lignes = Array.from(target.querySelectorAll('[data-testid="member-orders"] > div'));

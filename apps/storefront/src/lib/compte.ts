@@ -17,8 +17,9 @@ export const dateFr = (v: unknown) => {
 export const STATUT_LABEL: Record<string, string> = {
   created: 'En attente de validation',
   awaiting_payment: 'À régler',
-  // Réglée, l'article reste à prendre au club : c'est ce que l'adhérent doit savoir.
-  paid: 'Payée, à retirer',
+  // Réglée ne veut pas dire disponible : un article commandé (maillot) peut ne pas être encore
+  // arrivé au club. « Livrée » dira quand il a été remis.
+  paid: 'Payée',
   delivered: 'Livrée',
   rejected: 'Refusée',
   cancelled: 'Annulée'
