@@ -54,7 +54,7 @@
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "semantic-release": "^25.0.9",
-    "sharp": "^0.35.4",
+    "sharp": "^0.35.5",
     "storybook": "^10.5.10",
     "svelte-eslint-parser": "^1.8.1",
     "typescript": "^6.0.3",
@@ -74,9 +74,9 @@
     },
     "miniflare": {
       "undici": "^7.29.1",
-      "sharp": "^0.35.4"
+      "sharp": "^0.35.5"
     },
-    "sharp": "^0.35.4",
+    "sharp": "^0.35.5",
     "@esbuild-kit/core-utils": {
       "esbuild": "^0.25.12"
     },
@@ -99,7 +99,8 @@
     },
     "nx": {
       "brace-expansion": "^5.0.12"
-    }
+    },
+    "source-map-js": "^1.2.2"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^14.3.3",
