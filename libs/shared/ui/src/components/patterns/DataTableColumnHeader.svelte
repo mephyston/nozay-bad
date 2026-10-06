@@ -23,7 +23,7 @@
     <Button
       variant="ghost"
       size="sm"
-      class="-ml-4 h-8 data-[state=open]:bg-accent"
+      class="-mx-3 h-8 data-[state=open]:bg-accent"
       onclick={onSort}
     >
       <span>{title}</span>

@@ -1,10 +1,20 @@
 <script lang="ts">
   import GenreAdherent from './GenreAdherent.svelte';
-  import { Amount, Badge, DataTable, DataTableRowActions, DropdownMenu, RowActionItems, Table } from '@nba/ui';
+  import {
+    Amount,
+    Badge,
+    DataTable,
+    DataTableColumnHeader,
+    DataTableRowActions,
+    DropdownMenu,
+    RowActionItems,
+    Table
+  } from '@nba/ui';
   import type { Snippet } from 'svelte';
   import type { OrderItem, OrdersTab } from './orders-manager-types';
   import type { DroitsCommande } from './orders-row-model';
   import OrdersList from './OrdersList.svelte';
+  import { basculerTri, sensDe, trierCommandes, type ColonneTri, type Tri } from './orders-sort';
   import {
     AUCUN_DROIT,
     ETAPE_LABELS,
@@ -64,6 +74,11 @@
   */
   const verrouille = $derived(isClosed);
 
+  // Le tri ne vaut que pour la table : la liste au doigt garde ses sections par étape.
+  let tri = $state<Tri>(null);
+  const lignes = $derived(trierCommandes(orders, tri));
+  const trier = (colonne: ColonneTri) => (tri = basculerTri(tri, colonne));
+
   const copy = $derived(
     stage === 'created'
       ? {
@@ -88,7 +103,7 @@
 </script>
 
 <DataTable
-  data={orders}
+  data={lignes}
   mobileSpacing="list"
   emptyTitle={copy.emptyTitle}
   emptyDescription={copy.emptyDescription}
@@ -112,18 +127,27 @@
   {/snippet}
 
   {#snippet header()}
-    <Table.Head>Date</Table.Head>
-    <Table.Head>Adhérent</Table.Head>
-    <Table.Head>Produit</Table.Head>
-    <Table.Head class="text-center">Qté</Table.Head>
+    {#snippet entete(titre: string, colonne: ColonneTri, classe = '')}
+      <DataTableColumnHeader
+        title={titre}
+        sortable
+        sortDirection={sensDe(tri, colonne)}
+        onSort={() => trier(colonne)}
+        class={classe}
+      />
+    {/snippet}
+    {@render entete('Date', 'date')}
+    {@render entete('Adhérent', 'adherent')}
+    {@render entete('Produit', 'produit')}
+    {@render entete('Qté', 'quantite', 'text-center')}
     {#if stage === 'open'}
-      <Table.Head>Statut</Table.Head>
+      {@render entete('Statut', 'statut')}
     {/if}
     {#if stage === 'open' || stage === 'awaiting_payment'}
-      <Table.Head>En attente depuis</Table.Head>
+      {@render entete('En attente depuis', 'attente')}
     {/if}
-    <Table.Head>Règlement</Table.Head>
-    <Table.Head class="text-right">Montant</Table.Head>
+    {@render entete('Règlement', 'reglement')}
+    {@render entete('Montant', 'montant', 'text-right')}
     <Table.Head class="text-right">Actions</Table.Head>
   {/snippet}
 

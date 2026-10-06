@@ -11,6 +11,8 @@ export interface Order {
   totalAmount: number;
   /** Le code d'un moyen de paiement du club : ils sont des données, pas une liste figée. */
   paymentMethod: string;
+  /** Son libellé dans la configuration du club, servi avec la commande. */
+  paymentMethodLabel?: string | null;
   status: OrderStatus;
   awaitingPaymentSince: string | null;
   /** Date de remise de l'article, une fois la commande livrée. */

@@ -1,10 +1,20 @@
 <script lang="ts">
   import GenreAdherent from './GenreAdherent.svelte';
   import { Ban, PackageCheck, X } from '@lucide/svelte';
-  import { Amount, Badge, DataTable, DataTableRowActions, DropdownMenu, RowActionItems, Table } from '@nba/ui';
+  import {
+    Amount,
+    Badge,
+    DataTable,
+    DataTableColumnHeader,
+    DataTableRowActions,
+    DropdownMenu,
+    RowActionItems,
+    Table
+  } from '@nba/ui';
   import type { Snippet } from 'svelte';
   import type { OrderItem, OrdersTab } from './orders-manager-types';
   import OrdersList from './OrdersList.svelte';
+  import { basculerTri, sensDe, trierCommandes, type ColonneTri, type Tri } from './orders-sort';
   import { actionsDeCommande, AUCUN_DROIT, dateFr, montantCents, type DroitsCommande } from './orders-row-model';
 
   /**
@@ -44,6 +54,11 @@
   */
   const verrouille = $derived(isClosed);
 
+  // Le tri ne vaut que pour la table : la liste au doigt garde l'ordre servi.
+  let tri = $state<Tri>(null);
+  const lignes = $derived(trierCommandes(historyOrders, tri));
+  const trier = (colonne: ColonneTri) => (tri = basculerTri(tri, colonne));
+
   const copy = $derived(
     vue === 'closed'
       ? { emptyTitle: 'Aucune commande refusée ou annulée', emptyDescription: 'Aucune demande refusée ni commande annulée sur la saison.' }
@@ -52,7 +67,7 @@
 </script>
 
 <DataTable
-  data={historyOrders}
+  data={lignes}
   mobileSpacing="list"
   emptyTitle={copy.emptyTitle}
   emptyDescription={copy.emptyDescription}
@@ -75,13 +90,22 @@
   {/snippet}
 
   {#snippet header()}
-    <Table.Head>Date</Table.Head>
-    <Table.Head>Adhérent</Table.Head>
-    <Table.Head>Article</Table.Head>
-    <Table.Head class="text-center">Quantité</Table.Head>
-    <Table.Head>Paiement</Table.Head>
-    <Table.Head class="text-right">Total</Table.Head>
-    <Table.Head class="text-center">Statut</Table.Head>
+    {#snippet entete(titre: string, colonne: ColonneTri, classe = '')}
+      <DataTableColumnHeader
+        title={titre}
+        sortable
+        sortDirection={sensDe(tri, colonne)}
+        onSort={() => trier(colonne)}
+        class={classe}
+      />
+    {/snippet}
+    {@render entete('Date', 'date')}
+    {@render entete('Adhérent', 'adherent')}
+    {@render entete('Article', 'produit')}
+    {@render entete('Quantité', 'quantite', 'text-center')}
+    {@render entete('Paiement', 'reglement')}
+    {@render entete('Total', 'montant', 'text-right')}
+    {@render entete('Statut', 'statut', 'text-center')}
     <Table.Head class="w-12"><span class="sr-only">Actions</span></Table.Head>
   {/snippet}
 
