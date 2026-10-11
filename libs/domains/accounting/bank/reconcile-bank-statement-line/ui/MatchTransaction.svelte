@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Check, Search, Target } from '@lucide/svelte';
-  import { Button, Input, Table, Amount, Badge, FormField, SearchableCombobox, correspondA } from '@nba/ui';
+  import { Button, Input, Amount, Badge, FormField, SearchableCombobox, correspondA } from '@nba/ui';
   import type { GLTransaction, Member } from './reconciliation-types';
 
   let {
@@ -49,26 +49,36 @@
     recherche. Le menu maison qui vivait ici se dépliait sous un bouton, avec un champ de
     recherche que le clavier recouvrait, et tronquait la liste à cinquante noms.
   */
+  const TYPES: Record<GLTransaction['type'], string> = { recette: 'Recette', depense: 'Dépense', transfert: 'Virement' };
+  const dateCourte = (iso: string) => (iso || '').split('-').reverse().join('/');
+
   const memberOptions = $derived([
     { value: '', label: 'Aucun lien adhérent' },
     ...sortedMembers.map((m) => ({ value: String(m.id), label: `${m.lastName} ${m.firstName}`, hint: m.licence || undefined }))
   ]);
 </script>
 
+<!--
+  Des lignes, pas un tableau : les cellules du tableau du design system ne passent pas à la
+  ligne, et un libellé d'achat boutique (« Achat boutique - NOM Prénom - Maillot homme — L x1 »)
+  poussait la colonne « Action » hors du panneau. Le libellé passe désormais à la ligne ; le
+  montant et le bouton gardent leur place à droite, quelle que soit sa longueur.
+-->
 {#snippet entryRows(entries: GLTransaction[])}
-  {#each entries as gt (gt.id)}
-    <Table.Row>
-      <Table.Cell>{gt.date}</Table.Cell>
-      <Table.Cell class="font-medium">{gt.description}</Table.Cell>
-      <Table.Cell>{gt.type}</Table.Cell>
-      <Table.Cell class="font-semibold"><Amount cents={Math.abs(gt.amount)} /></Table.Cell>
-      <Table.Cell>
-        <Button size="sm" onclick={() => onMatch(gt.id)} disabled={isClosed || isSubmitting}>
+  <ul class="divide-y divide-border/60">
+    {#each entries as gt (gt.id)}
+      <li class="flex items-center gap-3 px-3 py-2">
+        <div class="min-w-0 flex-1">
+          <p class="font-medium break-words">{gt.description}</p>
+          <p class="text-muted-foreground">{dateCourte(gt.date)} · {TYPES[gt.type] ?? gt.type}</p>
+        </div>
+        <Amount cents={Math.abs(gt.amount)} class="shrink-0 font-semibold" />
+        <Button size="sm" class="shrink-0" onclick={() => onMatch(gt.id)} disabled={isClosed || isSubmitting}>
           <Check class="w-3 h-3 mr-1" /> Associer
         </Button>
-      </Table.Cell>
-    </Table.Row>
-  {/each}
+      </li>
+    {/each}
+  </ul>
 {/snippet}
 
 <div class="space-y-4">
@@ -94,18 +104,7 @@
       </p>
     {:else}
       <div class="max-h-60 overflow-y-auto border border-success/30 bg-success/5 rounded-lg text-xs">
-        <Table.Root>
-          <Table.Header>
-            <Table.Row>
-              <Table.Head>Date</Table.Head>
-              <Table.Head>Description</Table.Head>
-              <Table.Head>Type</Table.Head>
-              <Table.Head>Montant</Table.Head>
-              <Table.Head>Action</Table.Head>
-            </Table.Row>
-          </Table.Header>
-          <Table.Body>{@render entryRows(suggestions)}</Table.Body>
-        </Table.Root>
+        {@render entryRows(suggestions)}
       </div>
     {/if}
   </div>
@@ -130,18 +129,7 @@
 
     {#if searched.length > 0}
       <div class="max-h-60 overflow-y-auto border border-border rounded-lg text-xs">
-        <Table.Root>
-          <Table.Header>
-            <Table.Row>
-              <Table.Head>Date</Table.Head>
-              <Table.Head>Description</Table.Head>
-              <Table.Head>Type</Table.Head>
-              <Table.Head>Montant</Table.Head>
-              <Table.Head>Action</Table.Head>
-            </Table.Row>
-          </Table.Header>
-          <Table.Body>{@render entryRows(searched)}</Table.Body>
-        </Table.Root>
+        {@render entryRows(searched)}
       </div>
     {:else if search.trim()}
       <p class="text-center py-4 text-xs text-muted-foreground italic">
