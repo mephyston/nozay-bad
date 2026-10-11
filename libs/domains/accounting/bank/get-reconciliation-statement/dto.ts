@@ -25,6 +25,11 @@ export type UnpointedEntry = {
    * 26-27 datée par erreur de 25-26 (110,00 € d'écart le 08/09/2026, qu'aucune ligne ne nommait).
    */
   beforeSeason: boolean;
+  /**
+   * Pointée sur une ligne de relevé postérieure à l'arrêté : la banque ne l'avait pas encore
+   * vue à cette date. Absent pour une écriture que rien ne pointe.
+   */
+  pointedOn?: string;
 };
 
 /** Une ligne de relevé qu'aucune écriture ne porte. */
@@ -34,6 +39,12 @@ export type UnrecordedBankLine = {
   name: string;
   amountCents: number;
   status: string;
+  /**
+   * Rapprochée par des écritures datées après l'arrêté (la plus tardive) : la ligne est en
+   * banque, pas encore dans les livres à cette date. `amountCents` ne porte alors que ces
+   * écritures-là. Absent pour une ligne que rien ne rapproche.
+   */
+  bookedOn?: string;
 };
 
 export type GetReconciliationStatementOutput = {

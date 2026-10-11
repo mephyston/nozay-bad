@@ -32,6 +32,8 @@ La liste de gauche répartit les lignes en trois onglets — **En attente**, **R
 
 Une ligne est marquée **Rapprochée** dès que le total des écritures qui lui sont rattachées atteint son montant. Tant qu'il reste un écart, elle demeure en attente et vous pouvez continuer à la ventiler.
 
+Dans l'état de rapprochement, un pointage compte à la **date de la ligne de relevé**. Une ligne du 9 associée à une écriture datée du 10 figure, pour un arrêté au 9, parmi les *lignes de relevé non comptabilisées* : la banque l'a vue, les livres pas encore à cette date. Ce décalage n'est pas un écart et disparaît au relevé suivant. Pour l'éviter, datez l'écriture du jour du relevé.
+
 ### Rattacher un adhérent
 
 Le champ *adhérent* du panneau lie l'écriture à un dossier. Si l'écriture est imputée à la catégorie d'**adhésion**, le montant est en plus **reporté sur la cotisation de l'adhérent** : son montant reçu augmente et son solde diminue.

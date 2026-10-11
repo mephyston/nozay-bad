@@ -30,6 +30,9 @@ export interface ReconciliationStatementView {
     signedAmountCents: number;
     status: string;
     paymentMethodId: number | null;
+    beforeSeason?: boolean;
+    /** Pointée sur une ligne de relevé postérieure à l'arrêté. */
+    pointedOn?: string;
   }[];
   unpointedEntriesTotalCents: number;
   unrecordedBankLines: {
@@ -38,6 +41,8 @@ export interface ReconciliationStatementView {
     name: string;
     amountCents: number;
     status: string;
+    /** Rapprochée par des écritures datées après l'arrêté (la plus tardive). */
+    bookedOn?: string;
   }[];
   unrecordedBankLinesTotalCents: number;
   expectedBankBalanceCents: number;

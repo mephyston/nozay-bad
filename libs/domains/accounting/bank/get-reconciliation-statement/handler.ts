@@ -14,6 +14,7 @@ import {
   UnpointedEntry,
   UnrecordedBankLine
 } from './dto';
+import { lignesComptabiliseesApresArrete, pointeeApresArrete } from './pointing-date';
 
 /**
  * L'état de rapprochement bancaire d'un compte, à une date d'arrêté.
@@ -71,14 +72,15 @@ export async function getReconciliationStatement(
     ? await repo.getUnpointedEntriesBefore(db, [account.id], ouverture.computedFrom, season.startDate)
     : [];
   const entries = await repo.getEntriesForPeriod(db, season.startDate, asOfDate);
+  const entriesPointedAhead = await repo.getEntriesPointedAhead(db, season.startDate, asOfDate);
   const bankLines = await repo.getUnreconciledBankLines(db, account.id, season.startDate, asOfDate);
   const statement = (await repo.getLatestBankStatementBalance(db, account.id, asOfDate)) ?? null;
   const lastBankLineDate = (await repo.getLatestBankLineDate(db, account.id)) ?? null;
   const pointableAccountIds = new Set((await repo.getAccountsWithStatements(db)).map((a) => a.id));
 
   return buildStatement({
-    account, season, asOfDate, initialBalanceCents, entries, priorUnpointedEntries, bankLines, statement,
-    lastBankLineDate, pointableAccountIds,
+    account, season, asOfDate, initialBalanceCents, entries, entriesPointedAhead, priorUnpointedEntries, bankLines,
+    statement, lastBankLineDate, pointableAccountIds,
     openingBalanceProvisional: ouverture.provisional
   });
 }
@@ -90,6 +92,11 @@ interface StatementInputs {
   initialBalanceCents: number;
   /** Toutes les écritures de la période — le tri par compte est l'affaire du calcul. */
   entries: any[];
+  /**
+   * Les écritures datées après l'arrêté et pointées sur une ligne d'avant. Le tableau peut en
+   * contenir d'autres : le calcul ne retient que celles-là (cf. `pointing-date.ts`).
+   */
+  entriesPointedAhead: any[];
   /**
    * Les écritures non pointées antérieures à l'ouverture mais comprises dans l'à-nouveau
    * reconstitué. Vide quand l'à-nouveau est figé : le report d'une clôture fait foi tel quel.
@@ -115,8 +122,8 @@ interface StatementInputs {
  */
 function buildStatement(inputs: StatementInputs): GetReconciliationStatementOutput {
   const {
-    account, season, asOfDate, initialBalanceCents, entries, priorUnpointedEntries, bankLines, statement,
-    lastBankLineDate, openingBalanceProvisional, pointableAccountIds
+    account, season, asOfDate, initialBalanceCents, entries, entriesPointedAhead, priorUnpointedEntries, bankLines,
+    statement, lastBankLineDate, openingBalanceProvisional, pointableAccountIds
   } = inputs;
 
   const balance = computeAccountBalance(account, initialBalanceCents, entries);
@@ -134,7 +141,8 @@ function buildStatement(inputs: StatementInputs): GetReconciliationStatementOutp
   let unpointedEntriesTotalCents = 0;
   const collecte = (source: any[], beforeSeason: boolean) => {
     for (const entry of source) {
-      if (entry.bankStatementLineId !== null && entry.bankStatementLineId !== undefined) continue;
+      const pointeePlusTard = pointeeApresArrete(entry, asOfDate);
+      if (entry.bankStatementLineId != null && !pointeePlusTard) continue;
       const signedAmountCents = signedEntryAmountCents(entry, account);
       if (signedAmountCents === 0) continue;
 
@@ -146,20 +154,24 @@ function buildStatement(inputs: StatementInputs): GetReconciliationStatementOutp
         signedAmountCents,
         status: entry.status ?? 'cleared',
         paymentMethodId: entry.paymentMethodId ?? null,
-        beforeSeason
+        beforeSeason,
+        ...(pointeePlusTard ? { pointedOn: entry.bankLineDate } : {})
       });
     }
   };
   collecte(priorUnpointedEntries, true);
   collecte(entries, false);
 
-  const unrecordedBankLines: UnrecordedBankLine[] = bankLines.map((line: any) => ({
-    id: line.id,
-    date: line.date,
-    name: line.name,
-    amountCents: line.amountCents ?? 0,
-    status: line.status ?? 'pending'
-  }));
+  const unrecordedBankLines: UnrecordedBankLine[] = [
+    ...bankLines.map((line: any) => ({
+      id: line.id,
+      date: line.date,
+      name: line.name,
+      amountCents: line.amountCents ?? 0,
+      status: line.status ?? 'pending'
+    })),
+    ...lignesComptabiliseesApresArrete(entriesPointedAhead, account, { startDate: season.startDate, asOfDate })
+  ];
   const unrecordedBankLinesTotalCents = unrecordedBankLines.reduce((sum, l) => sum + l.amountCents, 0);
 
   /*
@@ -271,9 +283,10 @@ export async function getReconciliationStatements(
    */
   const maxAsOfDate = [...asOfDates.values()].reduce((max, d) => (d > max ? d : max), season.startDate);
 
-  const [ouverture, allEntries, bankLinesByAccount, balancesByAccount, lastLineDates] = await Promise.all([
+  const [ouverture, allEntries, entriesAheadOfMax, bankLinesByAccount, balancesByAccount, lastLineDates] = await Promise.all([
     repo.getOpeningBalances(db, season, accountIds),
     repo.getEntriesForPeriod(db, season.startDate, maxAsOfDate),
+    repo.getEntriesPointedAhead(db, season.startDate, maxAsOfDate),
     repo.getUnreconciledBankLinesForAccounts(db, accountIds, season.startDate, maxAsOfDate),
     repo.getBankStatementBalancesForAccounts(db, accountIds),
     repo.getLatestBankLineDates(db, accountIds)
@@ -306,6 +319,11 @@ export async function getReconciliationStatements(
       asOfDate,
       initialBalanceCents: ouverture.byAccountId.get(account.id) ?? 0,
       entries,
+      // Un arrêté antérieur à la borne commune trouve ses écritures « d'après » dans les deux
+      // lectures : celles d'avant la borne sont déjà dans `allEntries`.
+      entriesPointedAhead: maxAsOfDate === asOfDate
+        ? entriesAheadOfMax
+        : [...allEntries.filter((e: any) => e.date > asOfDate && e.bankStatementLineId != null), ...entriesAheadOfMax],
       priorUnpointedEntries,
       bankLines,
       statement,

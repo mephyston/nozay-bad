@@ -38,6 +38,7 @@ function mockRepo(over: Record<string, any> = {}) {
     getAccountByCode: vi.fn().mockResolvedValue(ACCOUNT),
     getOpeningBalances: vi.fn().mockResolvedValue({ byAccountId: new Map(), provisional: false }),
     getEntriesForPeriod: vi.fn().mockResolvedValue([]),
+    getEntriesPointedAhead: vi.fn().mockResolvedValue([]),
     getUnpointedEntriesBefore: vi.fn().mockResolvedValue([]),
     getUnreconciledBankLines: vi.fn().mockResolvedValue([]),
     getLatestBankStatementBalance: vi.fn().mockResolvedValue(undefined),
@@ -165,6 +166,54 @@ describe('getReconciliationStatement', () => {
 
     expect(repo.getUnpointedEntriesBefore).not.toHaveBeenCalled();
     expect(result.unpointedEntries).toEqual([expect.objectContaining({ id: 5, beforeSeason: false })]);
+  });
+
+  /*
+   * Cas réel du 12/10/2026, 131,50 €. Arrêté au 09/10 ; des lignes du 07 au 09/10 rapprochées
+   * par des écritures saisies le 10 et le 11. La ligne n'était plus « non comptabilisée » et
+   * ses écritures étaient hors période : l'écart portait leur montant sans le nommer.
+   */
+  it("compte une ligne rapprochée par des écritures postérieures à l'arrêté comme non comptabilisée", async () => {
+    const repo = mockRepo({
+      getOpeningBalances: vi.fn().mockResolvedValue({ byAccountId: new Map([[1, 100_000]]), provisional: false }),
+      getEntriesPointedAhead: vi.fn().mockResolvedValue([
+        entry({ id: 1129, amountCents: 1_000, date: '2026-10-10', bankStatementLineId: 3873, bankLineDate: '2026-10-09', bankLineName: 'VIR RECU TETEVUIDE' }),
+        entry({ id: 1142, amountCents: 3_000, date: '2026-10-10', bankStatementLineId: 3873, bankLineDate: '2026-10-09', bankLineName: 'VIR RECU TETEVUIDE' }),
+        entry({ id: 1126, amountCents: 3_150, date: '2026-10-10', bankStatementLineId: 3872, bankLineDate: '2026-10-09', bankLineName: 'VIR RECU DOUX' })
+      ]),
+      getLatestBankStatementBalance: vi.fn().mockResolvedValue({ date: '2026-10-09', balanceCents: 107_150 })
+    });
+    vi.mocked(getSeasonFromDb).mockResolvedValue({ id: 2, code: '26-27', startDate: '2026-09-01', endDate: '2027-08-31' } as any);
+
+    const result = await getReconciliationStatement(db, { accountCode: 'current', seasonId: '26-27', date: '2026-10-09' });
+
+    expect(repo.getEntriesPointedAhead).toHaveBeenCalledWith(db, '2026-09-01', '2026-10-09');
+    // Le solde des livres reste celui de l'arrêté : les écritures du 10 n'y sont pas.
+    expect(result.book.grossCents).toBe(100_000);
+    expect(result.unrecordedBankLines).toEqual([
+      expect.objectContaining({ id: 3873, date: '2026-10-09', amountCents: 4_000, status: 'reconciled', bookedOn: '2026-10-10' }),
+      expect.objectContaining({ id: 3872, amountCents: 3_150, bookedOn: '2026-10-10' })
+    ]);
+    expect(result.gapCents).toBe(0);
+  });
+
+  it("compte une écriture pointée sur une ligne postérieure à l'arrêté comme non pointée", async () => {
+    mockRepo({
+      getOpeningBalances: vi.fn().mockResolvedValue({ byAccountId: new Map([[1, 100_000]]), provisional: false }),
+      getEntriesForPeriod: vi.fn().mockResolvedValue([
+        entry({ id: 1, amountCents: 2_000, date: '2025-10-30', bankStatementLineId: 9, bankLineDate: '2025-11-02' }),
+        entry({ id: 2, amountCents: 500, date: '2025-10-30', bankStatementLineId: 8, bankLineDate: '2025-10-31' })
+      ]),
+      getLatestBankStatementBalance: vi.fn().mockResolvedValue({ date: '2025-10-31', balanceCents: 100_500 })
+    });
+
+    const result = await getReconciliationStatement(db, { accountCode: 'current', seasonId: '25-26', date: '2025-10-31' });
+
+    expect(result.unpointedEntries).toEqual([
+      expect.objectContaining({ id: 1, signedAmountCents: 2_000, pointedOn: '2025-11-02' })
+    ]);
+    expect(result.unpointedEntries[0]).not.toHaveProperty('beforeSeason', true);
+    expect(result.gapCents).toBe(0);
   });
 
   it("explique par une ligne de relevé non comptabilisée l'écart inverse", async () => {
@@ -496,6 +545,40 @@ describe('getReconciliationStatements', () => {
 
     expect(savings.asOfDate).toBe('2025-12-31');
     expect(savings.statement).toBeNull();
+  });
+
+  it("retrouve, pour un arrêté antérieur à la borne commune, les écritures d'après dans les deux lectures", async () => {
+    mockRepo({
+      getAccountsWithStatements: vi.fn().mockResolvedValue([
+        { id: 1, code: 'current', label: 'Compte Courant' },
+        { id: 2, code: 'savings', label: 'Compte Livret' }
+      ]),
+      getLatestBankStatementDates: vi.fn().mockResolvedValue(new Map([[1, '2025-10-31'], [2, '2025-12-31']])),
+      getOpeningBalances: vi.fn().mockResolvedValue({ byAccountId: new Map([[1, 0], [2, 0]]), provisional: false }),
+      // Avant la borne commune : lue avec la période, mais postérieure à l'arrêté du courant.
+      getEntriesForPeriod: vi.fn().mockResolvedValue([
+        entry({ id: 1, accountId: 1, amountCents: 700, date: '2025-11-03', bankStatementLineId: 5, bankLineDate: '2025-10-30' }),
+        // Pointée sur une ligne d'avant l'ouverture : l'à-nouveau en répond, pas la période.
+        entry({ id: 3, accountId: 1, amountCents: 400, date: '2025-11-04', bankStatementLineId: 4, bankLineDate: '2025-08-29' })
+      ]),
+      // Après la borne commune.
+      getEntriesPointedAhead: vi.fn().mockResolvedValue([
+        entry({ id: 2, accountId: 1, amountCents: 300, date: '2026-01-04', bankStatementLineId: 5, bankLineDate: '2025-10-30' })
+      ]),
+      getUnreconciledBankLinesForAccounts: vi.fn().mockResolvedValue(new Map([[1, []], [2, []]])),
+      getBankStatementBalancesForAccounts: vi.fn().mockResolvedValue(new Map([
+        [1, [{ date: '2025-10-31', balanceCents: 1_000 }]],
+        [2, []]
+      ]))
+    });
+
+    const [current] = await getReconciliationStatements(db, { seasonId: '25-26' });
+
+    expect(current.book.grossCents).toBe(0);
+    expect(current.unrecordedBankLines).toEqual([
+      expect.objectContaining({ id: 5, amountCents: 1_000, bookedOn: '2026-01-04' })
+    ]);
+    expect(current.gapCents).toBe(0);
   });
 
   it("impose la date d'arrêté demandée à tous les comptes", async () => {

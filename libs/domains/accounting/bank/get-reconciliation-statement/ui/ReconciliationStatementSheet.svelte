@@ -104,6 +104,17 @@
               <Amount cents={statement.unrecordedBankLinesTotalCents} showSign />
             </div>
 
+            <!--
+              Un pointage vaut à la date du relevé : une ligne rapprochée par des écritures saisies
+              après l'arrêté est en banque sans être encore dans les livres à cette date.
+            -->
+            {#if statement.unrecordedBankLines.some((l) => l.bookedOn)}
+              <p class="text-xs text-muted-foreground">
+                Dont {statement.unrecordedBankLines.filter((l) => l.bookedOn).length} rapprochée(s) par des
+                écritures datées après le {formatDate(statement.asOfDate)}.
+              </p>
+            {/if}
+
             <div class="flex items-baseline justify-between gap-4 border-t border-border pt-2 font-semibold">
               <span>Solde bancaire attendu</span>
               <Amount cents={statement.expectedBankBalanceCents} />
@@ -196,6 +207,9 @@
                       <span class="truncate">{entry.description}</span>
                       {#if entry.beforeSeason}
                         <Badge variant="secondary" size="xs" class="shrink-0">à-nouveau</Badge>
+                      {/if}
+                      {#if entry.pointedOn}
+                        <Badge variant="secondary" size="xs" class="shrink-0">relevé du {formatDate(entry.pointedOn)}</Badge>
                       {/if}
                     </span>
                     <Amount cents={entry.signedAmountCents} showSign class="shrink-0" />

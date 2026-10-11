@@ -1,6 +1,6 @@
 import { listAccountsWithStatements } from '../../config/queries';
 import { type DbOrTx } from '@nba/db';
-import { and, desc, eq, gte, inArray, isNull, lt, lte, ne, sql } from 'drizzle-orm';
+import { and, desc, eq, getTableColumns, gt, gte, inArray, isNull, lt, lte, ne, sql } from 'drizzle-orm';
 import { resolveOpeningBalances, type OpeningBalances } from '../../shared/opening-balances';
 import {
   accountsTable,
@@ -8,6 +8,13 @@ import {
   bankStatementLinesTable,
   ledgerEntriesTable
 } from '../../shared/schema';
+
+/** L'écriture, avec la date et le libellé de la ligne qui la pointe : le pointage vaut à cette date. */
+const ENTREE_ET_LIGNE = {
+  ...getTableColumns(ledgerEntriesTable),
+  bankLineDate: bankStatementLinesTable.date,
+  bankLineName: bankStatementLinesTable.name
+};
 
 export class GetReconciliationStatementRepository {
   async getAccountByCode(db: DbOrTx, code: string): Promise<{ id: number; code: string; label: string } | undefined> {
@@ -49,9 +56,26 @@ export class GetReconciliationStatementRepository {
    * demande de l'avoir sous la main.
    */
   async getEntriesForPeriod(db: DbOrTx, startDate: string, asOfDate: string): Promise<any[]> {
-    return db.select()
+    return db.select(ENTREE_ET_LIGNE)
       .from(ledgerEntriesTable)
+      .leftJoin(bankStatementLinesTable, eq(ledgerEntriesTable.bankStatementLineId, bankStatementLinesTable.id))
       .where(and(gte(ledgerEntriesTable.date, startDate), lte(ledgerEntriesTable.date, asOfDate)))
+      .all();
+  }
+
+  /**
+   * Les écritures datées après l'arrêté mais pointées sur une ligne de la période : la ligne
+   * est en banque à l'arrêté, l'écriture pas encore dans les livres (cf. `pointing-date.ts`).
+   */
+  async getEntriesPointedAhead(db: DbOrTx, startDate: string, asOfDate: string): Promise<any[]> {
+    return db.select(ENTREE_ET_LIGNE)
+      .from(ledgerEntriesTable)
+      .innerJoin(bankStatementLinesTable, eq(ledgerEntriesTable.bankStatementLineId, bankStatementLinesTable.id))
+      .where(and(
+        gt(ledgerEntriesTable.date, asOfDate),
+        gte(bankStatementLinesTable.date, startDate),
+        lte(bankStatementLinesTable.date, asOfDate)
+      ))
       .all();
   }
 
