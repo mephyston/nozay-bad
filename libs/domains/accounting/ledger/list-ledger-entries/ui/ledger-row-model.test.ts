@@ -141,7 +141,7 @@ describe('ledger-row-model', () => {
     expect(onDelete).toHaveBeenCalledWith(42);
   });
   describe('grouperVentilations', () => {
-    it('réunit les écritures consécutives d’une même ligne de relevé', () => {
+    it('réunit les écritures voisines d’une même ligne de relevé', () => {
       const lignes = grouperVentilations([
         ecriture({ id: 1, bankStatementLineId: 77, amount: 3000, runningBalanceCents: 10000 }),
         ecriture({ id: 2, bankStatementLineId: 77, amount: 2000 }),
@@ -158,6 +158,29 @@ describe('ledger-row-model', () => {
       // La liste descend dans le temps : le groupe porte le solde de sa première ligne.
       expect(groupe.runningBalanceCents).toBe(10000);
       expect(estVentilation(lignes[1])).toBe(false);
+    });
+
+    it('réunit une ventilation séparée par une écriture tierce, et recale le solde enjambé', () => {
+      // Le 10/10/2026 : l'encaissement d'un maillot (1129), associé ensuite à un virement de
+      // 50 € ventilé avec une raclette et une cotisation, et le maillot d'un autre adhérent
+      // (1130) intercalé entre les deux par son numéro.
+      const lignes = grouperVentilations([
+        ecriture({ id: 1142, bankStatementLineId: 3873, amount: 3000, runningBalanceCents: 100000 }),
+        ecriture({ id: 1141, bankStatementLineId: 3873, amount: 1000, runningBalanceCents: 97000 }),
+        ecriture({ id: 1130, bankStatementLineId: 3868, amount: 1000, runningBalanceCents: 96000 }),
+        ecriture({ id: 1129, bankStatementLineId: 3873, amount: 1000, runningBalanceCents: 95000 }),
+        ecriture({ id: 1128, amount: 1000, runningBalanceCents: 94000 })
+      ]);
+
+      expect(lignes.map((l) => l.id)).toEqual(['group-3873', 1130, 1128]);
+      const groupe = lignes[0];
+      if (!estVentilation(groupe)) throw new Error('groupe attendu');
+      expect(groupe.children.map((c) => c.id)).toEqual([1142, 1141, 1129]);
+      expect(groupe.amountCents).toBe(5000);
+      expect(groupe.runningBalanceCents).toBe(100000);
+      // 1130 se lit sous le groupe entier : son solde ne compte plus le maillot remonté.
+      expect((lignes[1] as Transaction).runningBalanceCents).toBe(95000);
+      expect((lignes[2] as Transaction).runningBalanceCents).toBe(94000);
     });
 
     it("défait un groupe d'une seule ligne : ce n'est pas une ventilation", () => {

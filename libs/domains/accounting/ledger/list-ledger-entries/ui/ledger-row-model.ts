@@ -202,59 +202,64 @@ export type OperationVentilee = {
 export type LigneDeJournal = Transaction | OperationVentilee;
 
 /**
- * Regroupe les écritures consécutives qui partagent une ligne de relevé.
+ * Regroupe les écritures qui partagent une ligne de relevé, où qu'elles soient dans la liste.
  *
- * Consécutives seulement : la liste est triée par date, et deux ventilations d'une même
- * ligne ne peuvent pas être séparées par une écriture tierce. Un groupe d'une seule
- * ligne n'en est pas un — il se défait, sinon le journal afficherait un repli pour une
- * écriture ordinaire.
+ * Le groupe prend la place de sa ventilation la plus récente. Il ne suffit pas de réunir des
+ * voisines : une écriture née avant le rapprochement (l'encaissement d'une commande, associé
+ * ensuite au virement) garde son numéro, et une écriture tierce du même jour s'intercale —
+ * le 10/10/2026, un virement de 50 € ventilé en trois s'affichait en un groupe de deux et une
+ * ligne isolée. Un groupe d'une seule écriture n'en est pas un : il se défait.
+ *
+ * Remonter les ventilations plus anciennes jusqu'au groupe décale le solde progressif des
+ * lignes qu'elles enjambent : chacune perd le montant des ventilations remontées au-dessus
+ * d'elle, pour que le solde se lise toujours d'une ligne à la suivante.
  */
 export function grouperVentilations(transactions: Transaction[]): LigneDeJournal[] {
-  const brut: LigneDeJournal[] = [];
-  let courant: OperationVentilee | null = null;
+  const parLigne = new Map<number, number[]>();
+  transactions.forEach((tx, i) => {
+    if (!tx.bankStatementLineId) return;
+    const indices = parLigne.get(tx.bankStatementLineId) ?? [];
+    indices.push(i);
+    parLigne.set(tx.bankStatementLineId, indices);
+  });
 
-  for (const tx of transactions) {
-    const signe = montantSigneCents(tx);
-
-    if (!tx.bankStatementLineId) {
-      if (courant) {
-        brut.push(courant);
-        courant = null;
-      }
-      brut.push(tx);
-      continue;
+  const remonte = new Array<number>(transactions.length).fill(0);
+  for (const indices of parLigne.values()) {
+    for (const j of indices.slice(1)) {
+      const signe = montantSigneCents(transactions[j]);
+      for (let i = indices[0] + 1; i < j; i++) remonte[i] -= signe;
     }
+  }
+  const soldeAffiche = (i: number) => {
+    const solde = transactions[i].runningBalanceCents;
+    return solde === undefined ? undefined : solde + remonte[i];
+  };
 
-    if (courant && courant.bankStatementLineId === tx.bankStatementLineId) {
-      courant.children.push(tx);
-      courant.amountCents += signe;
-      continue;
+  const lignes: LigneDeJournal[] = [];
+  transactions.forEach((tx, i) => {
+    const indices = tx.bankStatementLineId ? parLigne.get(tx.bankStatementLineId)! : [i];
+    if (indices[0] !== i) return;
+    if (indices.length === 1) {
+      lignes.push(remonte[i] ? { ...tx, runningBalanceCents: soldeAffiche(i) } : tx);
+      return;
     }
-
-    if (courant) brut.push(courant);
-    courant = {
+    const children = indices.map((j) => transactions[j]);
+    const net = children.reduce((somme, enfant) => somme + montantSigneCents(enfant), 0);
+    lignes.push({
       isGroup: true,
       id: `group-${tx.bankStatementLineId}`,
       date: tx.date,
-      type: tx.type,
-      amountCents: signe,
-      // La liste descend dans le temps : la première ligne du groupe en porte le solde.
-      runningBalanceCents: tx.runningBalanceCents,
-      bankStatementLineId: tx.bankStatementLineId,
+      type: net >= 0 ? 'recette' : 'depense',
+      amountCents: Math.abs(net),
+      // La liste descend dans le temps : la ventilation la plus récente porte le solde.
+      runningBalanceCents: soldeAffiche(i),
+      bankStatementLineId: tx.bankStatementLineId!,
       description: 'Opération ventilée',
       reference: tx.reference || '',
-      children: [tx]
-    };
-  }
-  if (courant) brut.push(courant);
-
-  return brut.map((item) => {
-    if (!('isGroup' in item) || !item.isGroup) return item;
-    if (item.children.length === 1) return item.children[0];
-    item.type = item.amountCents >= 0 ? 'recette' : 'depense';
-    item.amountCents = Math.abs(item.amountCents);
-    return item;
+      children
+    });
   });
+  return lignes;
 }
 
 export const estVentilation = (item: LigneDeJournal): item is OperationVentilee =>
