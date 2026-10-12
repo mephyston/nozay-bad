@@ -36,13 +36,13 @@ Un paiement Labaz, Pass'Sport ou ticket loisir n'est pas de l'argent en banque :
 2. ici, un compte par dispositif (« Labaz », « Pass'Sport », « Tickets loisir »), nature **Bons et chèques tiers**, classe 511 ;
 3. sur chaque moyen de paiement du dispositif, **compte crédité** = son compte, état de l'écriture **Encaissé aussitôt** (le paiement est validé ; c'est le remboursement qui est à venir).
 
-L'écran du compte propose alors trois gestes, et rien d'autre :
+L'écran du compte propose les trois boutons de tous les comptes, avec le dispositif et son moyen de paiement déjà choisis :
 
 | Ce qui se passe | Geste | Ce que l'application écrit |
 |---|---|---|
-| Un adhérent paie par code, QR code ou chèque | **Paiement d'un adhérent validé** | Une recette à la date du paiement, sur le compte du dispositif, **rattachée à l'adhérent** |
-| L'organisme rembourse | **Remboursement de l'organisme reçu en banque** | Un virement du compte du dispositif vers la banque, du montant reçu — à pointer sur la ligne de relevé |
-| Commission, paiement refusé ou périmé | **Commission ou paiement refusé** | Une dépense sur le compte du dispositif |
+| Un adhérent paie par code, QR code ou chèque | **Recette** | Une recette à la date du paiement, sur le compte du dispositif, **rattachée à l'adhérent** |
+| L'organisme rembourse | **Virement**, vers la banque | Un virement du compte du dispositif vers la banque, du montant reçu — à pointer sur la ligne de relevé |
+| Commission, paiement refusé ou périmé | **Dépense** | Une dépense sur le compte du dispositif |
 
 Rattachez chaque paiement à l'adhérent qui l'a fait, un paiement par écriture : c'est ce rattachement qui fait apparaître le règlement sur sa fiche et dans son attestation. Le remboursement de l'organisme, lui, ne concerne plus les adhérents — il arrive en bloc et ne se rattache à personne.
 

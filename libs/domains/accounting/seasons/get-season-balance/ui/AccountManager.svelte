@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { AccountEntry, CategoryOption, ScreenAccount, Season } from './account-types';
-  import { accountActions, prefillAction, showsMemberAdvances, type AccountAction } from './account-actions';
+  import { accountActions, prefillAction, refundActionFor, showsMemberAdvances, type AccountAction } from './account-actions';
+  import { indicationDeSaisie } from './account-hints';
   import { pendingMemberAdvances, type PendingAdvance } from './member-advances';
   import AccountStatsCards from './AccountStatsCards.svelte';
   import AccountHistoryTable from './AccountHistoryTable.svelte';
@@ -84,7 +85,7 @@
   const advances = $derived(
     showsMemberAdvances(account.kind ?? 'bank') ? pendingMemberAdvances(memberAdvanceEntries, accounts, today) : null
   );
-  const refundAction = $derived(actions.find((a) => a.refundsPendingAdvance));
+  const refundAction = $derived(refundActionFor(account.kind ?? 'bank'));
   /** Le porte-monnaie du club, nommé par son libellé : l'écran ne connaît plus « Badnet ». */
   const walletLabel = $derived(
     account.kind === 'wallet' ? account.label : (accounts.find((a) => a.kind === 'wallet')?.label ?? 'le porte-monnaie')
@@ -152,8 +153,16 @@
    */
   const seasonForForm = (date: string) => String(seasonForDate(seasons, date)?.id ?? currentSeason?.id ?? seasonId);
 
+  /** L'explication du cas en cours ; elle suit les comptes que le trésorier choisit. */
+  const indication = $derived(indicationDeSaisie(showPanel, account, formAccountId, destinationAccountId, accounts));
+
   function startAction(action: AccountAction, pending?: PendingAdvance) {
-    applyValues(prefillAction(action, { today, targetSeasonId: seasonForForm(today), self: account, accounts, paymentMethods, pending: pending ?? null }));
+    const values = prefillAction(action, { today, targetSeasonId: seasonForForm(today), self: account, accounts, paymentMethods, pending: pending ?? null });
+    // Un virement sans libellé reçoit celui de son cas : « Dépôt des espèces en banque »…
+    if (values.showPanel === 'transfert' && !values.description) {
+      values.description = indicationDeSaisie('transfert', account, values.formAccountId, values.destinationAccountId, accounts)?.libelle ?? '';
+    }
+    applyValues(values);
   }
 
   function refund(advance: PendingAdvance) {
@@ -253,6 +262,7 @@
     {paymentMethods}
     {members}
     {activeCategories}
+    indication={editingId === null ? indication?.texte : undefined}
     bind:isSubmitting
     bind:errorMsg
     onSubmit={handleSubmit}

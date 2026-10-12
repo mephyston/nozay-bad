@@ -90,8 +90,9 @@ describe('AccountManager', () => {
       seasons: [{ id: '25-26', name: 'Saison 2025-2026', active: false, closed: true }],
       transactions: [entry({ id: 1 })]
     });
-    const newBtn = Array.from(target.querySelectorAll('button')).find((b) => /Nouveau/.test(b.textContent || ''));
-    expect(newBtn?.hasAttribute('disabled')).toBe(true);
+    const gestes = Array.from(target.querySelectorAll('button')).filter((b) => /^(Recette|Dépense|Virement)$/.test(b.textContent?.trim() || ''));
+    expect(gestes).toHaveLength(3);
+    expect(gestes.every((b) => b.hasAttribute('disabled'))).toBe(true);
     expect(rowMenuTrigger()).toBeUndefined();
   });
 

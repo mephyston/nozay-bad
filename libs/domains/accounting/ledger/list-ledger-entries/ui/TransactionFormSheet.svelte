@@ -29,6 +29,7 @@
     paymentMethods = [],
     members = [],
     activeCategories = [],
+    indication,
     isSubmitting = $bindable(false),
     errorMsg = $bindable(''),
     onSubmit
@@ -53,6 +54,8 @@
     /** Recette rendue : enregistrée en négatif, elle diminue la recette de sa catégorie. */
     refund?: boolean;
     seasons?: Season[];
+    /** Ce que l'écran d'un compte explique du cas en cours (dépôt, remboursement de l'organisme…). */
+    indication?: string;
     /** Les comptes de trésorerie, lus de la base : un sélecteur par compte, quel qu'en soit le nombre. */
     accounts?: AccountLike[];
     /** Les moyens de paiement actifs du club (configuration), `{ code, label }`. */
@@ -169,6 +172,10 @@
   submittingLabel="Enregistrement…"
   {onSubmit}
 >
+  {#if indication}
+    <p class="rounded-lg bg-muted/50 px-3 py-2 text-sm text-muted-foreground">{indication}</p>
+  {/if}
+
   <!--
     Le remboursement d'une recette — le trop-perçu d'une cotisation rendu à l'adhérente.
     Ni charge ni recette nouvelle : la recette de la catégorie diminue d'autant. Le montant

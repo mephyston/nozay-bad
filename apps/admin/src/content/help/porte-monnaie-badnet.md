@@ -7,7 +7,7 @@ order: 4
 
 Le club détient un **porte-monnaie prépayé chez Badnet**, la plateforme d'inscription aux tournois. L'argent en est retirable vers la banque à tout moment : c'est une caisse dématérialisée, un **compte de disponibilités** (classe 517), au même titre que le compte courant, le livret ou la caisse.
 
-Il a son écran, **Comptabilité → Badnet**, construit comme celui de la [Caisse](/admin/help/caisse) : les soldes de la saison, l'historique des mouvements, et un bouton **Nouveau** qui propose les gestes du compte, déjà câblés. Vous n'y entrez que le montant, la date et le nom.
+Il a son écran, **Comptabilité → Badnet**, construit comme celui de la [Caisse](/admin/help/caisse) : les soldes de la saison, l'historique des mouvements, et les trois boutons de tous les comptes : **Recette**, **Dépense** et **Virement**, avec le porte-monnaie déjà choisi. Une phrase en tête du formulaire dit de quel cas il s'agit — choisir la banque comme destination d'un virement, c'est un rapatriement, et l'écran le nomme.
 
 ## L'argent d'une adhérente qui transite
 
@@ -17,24 +17,24 @@ L'application la porte sur un compte d'attente, **« Fonds reçus pour le compte
 
 Les deux gestes sont deux virements internes, chacun à sa vraie date :
 
-| Geste réel | Bouton | Virement écrit |
+| Geste réel | Où | Virement écrit |
 | --- | --- | --- |
-| Son virement arrive sur le compte courant | **Virement reçu d'une adhérente** | Fonds reçus des adhérents → Compte Courant, à son nom |
-| Vous créditez son porte-monnaie depuis celui du club | **Crédit du porte-monnaie Badnet d'une adhérente** | Porte-monnaie Badnet → Fonds reçus des adhérents, à son nom |
+| Son virement arrive sur le compte courant | [Rapprochement](/admin/help/rapprochement-bancaire), nature **Avance d'un adhérent** | Fonds reçus des adhérents → Compte Courant, à son nom |
+| Vous créditez son porte-monnaie depuis celui du club | Encart des avances, bouton **Créditer son porte-monnaie** | Porte-monnaie Badnet → Fonds reçus des adhérents, à son nom |
 
 L'encart **Avances d'adhérents en attente** liste les virements reçus que rien n'a encore rendus, avec leur ancienneté, sur tous les exercices non clôturés. Le bouton **Créditer son Badnet** d'une ligne pré-remplit le second virement depuis la première : c'est ce qui les apparie. Chaque virement se rattache à l'exercice de sa date : une avance reçue fin août se crédite en septembre sur le nouvel exercice, sans rien à choisir. Rendez l'argent dans le mois, pour que la liste ne s'allonge pas.
 
 > [!TIP]
-> Au [rapprochement bancaire](/admin/help/rapprochement-bancaire), une ligne au crédit du compte courant porte un bouton **Adhérente** : il crée le virement reçu et pointe la ligne en un geste. Vous n'avez plus qu'à revenir sur l'écran Badnet pour le rembourser.
+> Au [rapprochement bancaire](/admin/help/rapprochement-bancaire), choisir la nature **Avance d'un adhérent** crée le virement reçu et pointe la ligne en un geste. Vous n'avez plus qu'à revenir sur l'écran Badnet pour le rendre.
 
 ## Les mouvements du porte-monnaie du club
 
 | Geste réel | Bouton | Nature |
 | --- | --- | --- |
-| Vous rechargez le porte-monnaie depuis la banque | **Recharge du porte-monnaie** | Virement Compte Courant → Badnet, hors résultat |
-| Vous rapatriez en banque les inscriptions encaissées après un tournoi du club | **Rapatriement en banque** | Virement Badnet → Compte Courant, hors résultat |
-| Les participants à un tournoi du club ont payé leurs inscriptions | **Inscriptions encaissées** | Recette, catégorie Tournois. Une écriture par tournoi suffit, avec le total et le nombre d'inscrits |
-| Le club inscrit ses joueurs ou ses équipes, ou Badnet prélève une commission | **Inscription payée ou commission** | Dépense, catégorie Championnats, Tournois ou Frais de fonctionnement |
+| Vous rechargez le porte-monnaie depuis la banque | **Virement**, de Compte Courant vers Badnet | Hors résultat |
+| Vous rapatriez en banque les inscriptions encaissées après un tournoi du club | **Virement**, de Badnet vers Compte Courant | Hors résultat |
+| Les participants à un tournoi du club ont payé leurs inscriptions | **Recette** | Catégorie Tournois. Une écriture par tournoi suffit, avec le total et le nombre d'inscrits |
+| Le club inscrit ses joueurs ou ses équipes, ou Badnet prélève une commission | **Dépense** | Catégorie Championnats, Tournois ou Frais de fonctionnement |
 
 Toujours en brut : les droits encaissés en recette, la commission en dépense, jamais compensés.
 

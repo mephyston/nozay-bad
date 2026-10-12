@@ -21,7 +21,6 @@ export type ActionAccountRef = string;
 export interface AccountAction {
   key: string;
   label: string;
-  hint?: string;
   panel: 'recette' | 'depense' | 'transfert';
   /** Compte débité (jambe source) d'un virement, ou compte de la recette / dépense. `'*'` = au choix. */
   source: ActionAccountRef;
@@ -44,21 +43,15 @@ export const THIRD_PARTY = '*third_party';
 
 export type AccountKindLike = 'bank' | 'cash' | 'wallet' | 'voucher' | 'third_party';
 
-const MEMBER_RECEIVED: AccountAction = {
-  key: 'member-received',
-  label: "Virement reçu d'une adhérente",
-  hint: "Elle a viré sur le compte courant pour que le club crédite son porte-monnaie. Hors résultat : c'est de l'argent à lui rendre.",
-  panel: 'transfert',
-  source: THIRD_PARTY,
-  destination: MAIN_BANK,
-  paymentKind: 'internal',
-  descriptionTemplate: 'Reçu de '
-};
-
+/*
+ * Rendre une avance : depuis le porte-monnaie du club vers celui de l'adhérente, pour l'argent
+ * qu'elle a viré au club. Ce geste n'est pas au menu : il part de l'encart des avances en
+ * attente, pré-rempli de la ligne choisie. Le virement reçu, lui, se saisit au rapprochement
+ * (nature « Avance d'un adhérent »), là où il apparaît.
+ */
 const MEMBER_REFUND: AccountAction = {
   key: 'member-refund',
   label: "Crédit du porte-monnaie d'une adhérente",
-  hint: "Depuis le porte-monnaie du club vers le sien, pour l'argent qu'elle a viré : la dette est éteinte.",
   panel: 'transfert',
   source: '*wallet',
   destination: THIRD_PARTY,
@@ -67,55 +60,49 @@ const MEMBER_REFUND: AccountAction = {
   refundsPendingAdvance: true
 };
 
-const CATALOGUE: Record<AccountKindLike, AccountAction[]> = {
-  /*
-   * La caisse reçoit bien plus que la buvette : une cotisation réglée en espèces y entre
-   * aussi, et c'est le rattachement à l'adhérent qui la fait compter pour son dossier.
-   */
-  cash: [
-    { key: 'cash-in', label: 'Espèces reçues', hint: "Cotisation, buvette, tournoi… payés en espèces : une recette. Quand c'est un adhérent qui paie, rattachez-le, c'est ce qui fait apparaître le règlement sur sa fiche.", panel: 'recette', source: SELF, paymentKind: 'cash' },
-    { key: 'cash-out', label: 'Dépense payée en espèces', hint: 'Un achat réglé avec les espèces de la caisse.', panel: 'depense', source: SELF, paymentKind: 'cash' },
-    { key: 'deposit', label: "Dépôt d'espèces en banque", hint: 'Les espèces quittent la caisse pour le compte bancaire. Hors résultat.', panel: 'transfert', source: SELF, destination: MAIN_BANK, paymentKind: 'internal', descriptionTemplate: 'Dépôt des espèces en banque' }
-  ],
-  wallet: [
-    MEMBER_RECEIVED,
-    { ...MEMBER_REFUND, source: SELF },
-    { key: 'topup', label: 'Recharge du porte-monnaie depuis la banque', hint: 'Le club alimente son porte-monnaie chez la plateforme. Hors résultat.', panel: 'transfert', source: MAIN_BANK, destination: SELF, paymentKind: 'internal', descriptionTemplate: 'Recharge du porte-monnaie' },
-    { key: 'withdraw', label: 'Rapatriement du porte-monnaie vers la banque', hint: 'Après un tournoi du club, les inscriptions encaissées reviennent sur le compte bancaire. Hors résultat.', panel: 'transfert', source: SELF, destination: MAIN_BANK, paymentKind: 'internal', descriptionTemplate: 'Rapatriement vers la banque' },
-    { key: 'fee-in', label: 'Inscriptions encaissées (tournoi du club)', hint: 'Une recette, catégorie Tournois. Une écriture par tournoi suffit.', panel: 'recette', source: SELF, paymentKind: 'transfer', descriptionTemplate: 'Inscriptions tournoi ' },
-    { key: 'fee-out', label: "Inscription payée ou commission de la plateforme", hint: "Une dépense : l'inscription d'une équipe à un tournoi, ou la commission prélevée par la plateforme.", panel: 'depense', source: SELF, paymentKind: 'transfer' }
-  ],
-  /*
-   * Les bons et chèques tiers (Labaz, Pass'Sport, tickets loisir…) ne sont pas un
-   * porte-monnaie : le club n'y verse rien et ne paie rien avec. L'adhérent présente un code
-   * ou un QR code que le trésorier valide sur le site de l'organisme — ou remet un chèque
-   * papier — et l'organisme rembourse le club plus tard, en un virement pour un lot de
-   * paiements. Trois gestes, pas un de plus : le paiement validé est une recette à la date
-   * où l'adhérent paie, rattachée à lui ; le remboursement est un virement vers la banque,
-   * hors résultat ; la commission ou le paiement refusé, une dépense. Le solde du compte est
-   * ce que l'organisme doit encore.
-   */
-  voucher: [
-    { key: 'voucher-in', label: "Paiement d'un adhérent validé", hint: "Il a payé avec un code ou QR code (Labaz, Pass'Sport, ticket loisir…) que vous avez validé chez l'organisme, ou remis un chèque papier. Une recette à la date du paiement, catégorie de la cotisation ou de l'achat, rattachée à l'adhérent. Le remboursement viendra plus tard.", panel: 'recette', source: SELF, paymentKind: 'voucher' },
-    { key: 'voucher-refund', label: "Remboursement de l'organisme reçu en banque", hint: "L'organisme a viré au club le remboursement des paiements validés : le montant reçu passe sur le compte bancaire. Hors résultat.", panel: 'transfert', source: SELF, destination: MAIN_BANK, paymentKind: 'internal', descriptionTemplate: 'Remboursement ' },
-    { key: 'voucher-fee', label: 'Commission ou paiement refusé', hint: "Ce que l'organisme retient (commission) ou ne rembourse pas (code refusé, périmé) : une dépense, catégorie Frais de fonctionnement.", panel: 'depense', source: SELF, paymentKind: 'voucher' }
-  ],
-  third_party: [MEMBER_RECEIVED, MEMBER_REFUND],
-  bank: [
-    { key: 'in', label: 'Entrée', panel: 'recette', source: SELF, paymentKind: 'transfer' },
-    { key: 'out', label: 'Sortie', panel: 'depense', source: SELF, paymentKind: 'transfer' },
-    { key: 'transfer-in', label: 'Virement depuis un autre compte', panel: 'transfert', source: '*', destination: SELF, paymentKind: 'internal' },
-    { key: 'transfer-out', label: 'Virement vers un autre compte', panel: 'transfert', source: SELF, destination: '*', paymentKind: 'internal' }
-  ]
+/** Le moyen de paiement que la nature du compte impose à une recette ou une dépense. */
+const PAIEMENT: Record<AccountKindLike, AccountAction['paymentKind']> = {
+  bank: 'transfer',
+  cash: 'cash',
+  wallet: 'transfer',
+  voucher: 'voucher',
+  third_party: 'transfer'
 };
 
+/**
+ * Les trois mêmes gestes sur tous les comptes : recette, dépense, virement.
+ *
+ * Chaque nature de compte avait son menu de gestes métier — six pour un porte-monnaie, dont
+ * deux qui ne le concernaient pas —, chacun suivi d'un paragraphe à lire avant de savoir quel
+ * formulaire il ouvrait. Le vocabulaire est désormais celui du grand livre et du
+ * rapprochement ; ce qui est propre au compte (le moyen de paiement, le compte d'en face par
+ * défaut) est pré-rempli, et l'explication s'affiche dans le formulaire, au moment où elle
+ * sert (`account-hints.ts`).
+ *
+ * Le compte d'attente des adhérents n'a pas de menu : on n'y saisit rien à la main.
+ */
 export function accountActions(kind: AccountKindLike | string): AccountAction[] {
-  return CATALOGUE[kind as AccountKindLike] ?? CATALOGUE.bank;
+  if (kind === 'third_party') return [];
+  const paiement = PAIEMENT[kind as AccountKindLike] ?? 'transfer';
+  return [
+    { key: 'recette', label: 'Recette', panel: 'recette', source: SELF, paymentKind: paiement },
+    { key: 'depense', label: 'Dépense', panel: 'depense', source: SELF, paymentKind: paiement },
+    // Le virement le plus courant d'un compte sans relevé repart vers la banque : dépôt,
+    // rapatriement, remboursement de l'organisme. Le formulaire laisse inverser.
+    { key: 'virement', label: 'Virement', panel: 'transfert', source: SELF, destination: kind === 'bank' ? '*' : MAIN_BANK, paymentKind: 'internal' }
+  ];
+}
+
+/** Le geste qui rend une avance en attente, sur les comptes qui affichent l'encart. */
+export function refundActionFor(kind: AccountKindLike | string): AccountAction | null {
+  if (kind === 'wallet') return { ...MEMBER_REFUND, source: SELF };
+  if (kind === 'third_party') return MEMBER_REFUND;
+  return null;
 }
 
 /** Vrai si l'écran de ce compte doit montrer les avances des adhérents en attente. */
 export function showsMemberAdvances(kind: AccountKindLike | string): boolean {
-  return accountActions(kind).some((a) => a.refundsPendingAdvance);
+  return refundActionFor(kind) !== null;
 }
 
 export interface PrefillContext {

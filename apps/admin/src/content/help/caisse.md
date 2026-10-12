@@ -15,7 +15,7 @@ En dessous, l'historique des mouvements, filtrable par recherche libre sur le li
 
 ## Enregistrer un mouvement
 
-Le bouton **Nouveau** propose les trois gestes de la caisse : **Espèces reçues** (une recette : une cotisation, une vente à la buvette, une inscription), **Dépense payée en espèces** (un achat de boissons, par exemple) et **Dépôt d'espèces en banque** (voir plus bas). Chacun ouvre le formulaire du grand livre avec le compte et le mode de règlement déjà choisis ; il reste le montant, la date, la catégorie et la description.
+Trois boutons, les mêmes sur tous les comptes : **Recette** (une cotisation, une vente à la buvette, une inscription payées en espèces), **Dépense** (un achat de boissons, par exemple) et **Virement** (le dépôt en banque, voir plus bas). Chacun ouvre le formulaire du grand livre avec la caisse et le règlement en espèces déjà choisis ; il reste le montant, la date, la catégorie et la description. Une phrase en tête du formulaire rappelle ce qu'il faut savoir du cas.
 
 Quand c'est un adhérent qui paie — une cotisation, une inscription —, choisissez-le dans le champ **Adhérent** : c'est ce rattachement qui fait apparaître le règlement sur sa fiche et dans son attestation. Une vente à la buvette reste une recette générale, sans adhérent. Le formulaire ne propose que les adhésions de l'exercice d'affectation : une cotisation de rentrée encaissée en août se rattache à l'adhésion de la saison qui commence, pas à celle de l'année écoulée.
 
@@ -23,7 +23,7 @@ La caisse s'appelle comme vous voulez : son libellé se change dans *Paramètres
 
 ## Déposer les espèces en banque
 
-Un dépôt d'espèces n'est ni une recette ni une dépense : c'est un **virement interne**. Le bouton **Nouveau → Dépôt en banque** l'ouvre avec les deux comptes déjà choisis :
+Un dépôt d'espèces n'est ni une recette ni une dépense : c'est un **virement interne**. Le bouton **Virement** l'ouvre avec les deux comptes déjà choisis, et le libellé « Dépôt des espèces en banque » :
 
 - **Compte source** : Caisse
 - **Compte destinataire** : Compte Courant

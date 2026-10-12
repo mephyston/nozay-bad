@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Plus } from '@lucide/svelte';
+  import { ArrowLeftRight, Minus, Plus } from '@lucide/svelte';
   import {
     Button,
     Badge,
@@ -47,7 +47,7 @@
     seasons?: Season[];
     /** Les comptes, pour nommer l'autre bout d'un virement. */
     accounts?: AccountLike[];
-    /** Les gestes pré-câblés de ce compte : le bouton « Nouveau » les propose. */
+    /** Recette, dépense, virement : les trois gestes du compte, pré-remplis. */
     catalogue?: AccountAction[];
     /** Rouvre le mouvement dans le formulaire ; un virement s'y rouvre entier. */
     onEdit?: (tx: AccountEntry) => void;
@@ -70,18 +70,17 @@
     softNavigate(`${window.location.pathname}?${params.toString()}`);
   }
 
-  /*
-    Les gestes pré-câblés du compte descendent dans la barre du bas. Ils vivaient
-    derrière un bouton « Nouveau » posé en haut d'une barre d'outils qui défile, et dont
-    le menu portait pour chacun une phrase d'explication — celle-ci reste, mais dans la
-    feuille d'actions, où il y a la place de la lire.
-  */
+  /** Une icône par geste : le signe de l'argent qui entre, qui sort, qui change de compte. */
+  const ICONES = { recette: Plus, depense: Minus, virement: ArrowLeftRight } as const;
+  const iconeDe = (a: AccountAction) => ICONES[a.key as keyof typeof ICONES] ?? Plus;
+
+  // Au téléphone, les gestes vivent dans la barre du bas, comme ailleurs dans l'admin.
   $effect(() => {
     if (isClosed || !canWrite || !onAction || catalogue.length === 0) return;
     const liste: SwipeAction[] = catalogue.map((a) => ({
       id: a.key,
       label: a.label,
-      icon: Plus,
+      icon: iconeDe(a),
       run: () => onAction(a)
     }));
     return dockDePage.declarerActions(liste, { icon: Plus, label: 'Nouveau mouvement' });
@@ -132,26 +131,18 @@
           {#snippet actions()}
             <!-- Sur téléphone, ces gestes vivent dans la barre du bas. -->
             {#if onAction && catalogue.length > 0}
-              <DropdownMenu.Root>
-                <DropdownMenu.Trigger asChild>
-                  {#snippet child({ props })}
-                    <Button {...props} disabled={isClosed || !canWrite} class="hidden h-9 shrink-0 items-center gap-1.5 text-xs font-semibold md:flex">
-                      <Plus class="w-4 h-4" />
-                      Nouveau
-                    </Button>
-                  {/snippet}
-                </DropdownMenu.Trigger>
-                <DropdownMenu.Content align="end" class="w-80">
-                  {#each catalogue as action (action.key)}
-                    <DropdownMenu.Item onclick={() => onAction(action)} class="flex flex-col items-start gap-0.5">
-                      <span class="font-medium">{action.label}</span>
-                      {#if action.hint}
-                        <span class="text-xs text-muted-foreground whitespace-normal">{action.hint}</span>
-                      {/if}
-                    </DropdownMenu.Item>
-                  {/each}
-                </DropdownMenu.Content>
-              </DropdownMenu.Root>
+              {#each catalogue as action (action.key)}
+                {@const Icone = iconeDe(action)}
+                <Button
+                  variant={action.key === 'recette' ? 'default' : 'outline'}
+                  disabled={isClosed || !canWrite}
+                  class="hidden h-9 shrink-0 items-center gap-1.5 text-xs font-semibold md:flex"
+                  onclick={() => onAction(action)}
+                >
+                  <Icone class="h-4 w-4" />
+                  {action.label}
+                </Button>
+              {/each}
             {/if}
           {/snippet}
         </DataTableToolbar>

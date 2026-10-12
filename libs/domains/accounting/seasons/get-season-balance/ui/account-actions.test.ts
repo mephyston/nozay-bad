@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { accountActions, prefillAction, resolveAccountRef, resolvePaymentKind, showsMemberAdvances } from './account-actions';
+import { accountActions, prefillAction, refundActionFor, resolveAccountRef, resolvePaymentKind, showsMemberAdvances } from './account-actions';
+import { indicationDeSaisie } from './account-hints';
 
 const ACCOUNTS = [
   { id: 1, code: 'current', label: 'Compte Courant', kind: 'bank' },
@@ -25,35 +26,25 @@ const ctxFor = (code: string) => ({
 });
 
 describe('accountActions', () => {
-  it('pré-câble les gestes par nature de compte : porte-monnaie, caisse et compte d’attente', () => {
-    expect(accountActions('wallet').map((a) => a.key)).toEqual(['member-received', 'member-refund', 'topup', 'withdraw', 'fee-in', 'fee-out']);
-    expect(accountActions('cash').map((a) => a.key)).toEqual(['cash-in', 'cash-out', 'deposit']);
-    expect(accountActions('third_party').map((a) => a.key)).toEqual(['member-received', 'member-refund']);
+  it('donne les trois mêmes gestes à tous les comptes : recette, dépense, virement', () => {
+    for (const kind of ['bank', 'cash', 'wallet', 'voucher', 'paypal']) {
+      expect(accountActions(kind).map((a) => a.label)).toEqual(['Recette', 'Dépense', 'Virement']);
+    }
+    // On ne saisit rien à la main sur le compte d'attente des adhérents.
+    expect(accountActions('third_party')).toEqual([]);
+  });
+
+  it("garde le crédit du porte-monnaie d'une adhérente hors du menu, pour l'encart des avances", () => {
+    expect(accountActions('wallet').some((a) => a.refundsPendingAdvance)).toBe(false);
+    expect(refundActionFor('wallet')?.refundsPendingAdvance).toBe(true);
+    expect(refundActionFor('cash')).toBeNull();
     expect(showsMemberAdvances('wallet')).toBe(true);
-    expect(showsMemberAdvances('cash')).toBe(false);
-  });
-
-  it('donne à un compte bancaire — ou à une nature inconnue — entrée, sortie et virements', () => {
-    expect(accountActions('bank').map((a) => a.key)).toEqual(['in', 'out', 'transfer-in', 'transfer-out']);
-    expect(accountActions('paypal').map((a) => a.key)).toEqual(['in', 'out', 'transfer-in', 'transfer-out']);
-  });
-
-  it("pré-remplit un virement reçu d'une adhérente : du compte d'attente vers la banque, par le moyen interne", () => {
-    const values = prefillAction(accountActions('wallet')[0], ctxFor('badnet'));
-    expect(values).toMatchObject({
-      showPanel: 'transfert',
-      formAccountId: 'member_advances',
-      destinationAccountId: 'current',
-      paymentMethod: 'interne',
-      description: 'Reçu de ',
-      date: '2026-09-06',
-      targetSeasonId: '7'
-    });
+    expect(showsMemberAdvances('third_party')).toBe(true);
+    expect(showsMemberAdvances('voucher')).toBe(false);
   });
 
   it('pré-remplit un remboursement depuis l’avance en attente choisie, montant et libellé compris', () => {
-    const refund = accountActions('wallet').find((a) => a.key === 'member-refund')!;
-    const values = prefillAction(refund, { ...ctxFor('badnet'), pending: { description: 'Reçu de Mme Dupont', reference: 'VIR-77', amountCents: 2500 } });
+    const values = prefillAction(refundActionFor('wallet')!, { ...ctxFor('badnet'), pending: { description: 'Reçu de Mme Dupont', reference: 'VIR-77', amountCents: 2500 } });
     expect(values).toMatchObject({
       formAccountId: 'badnet',
       destinationAccountId: 'member_advances',
@@ -63,15 +54,19 @@ describe('accountActions', () => {
     });
   });
 
-  it('les gestes de caisse retiennent le moyen « espèces » actif, quel que soit son code', () => {
-    const values = prefillAction(accountActions('cash')[0], ctxFor('buvette'));
-    expect(values).toMatchObject({ showPanel: 'recette', formAccountId: 'buvette', paymentMethod: 'esp' });
+  it('retient le moyen de paiement de la nature du compte : espèces pour la caisse, le bon de CE compte', () => {
+    expect(prefillAction(accountActions('cash')[0], ctxFor('buvette'))).toMatchObject({ showPanel: 'recette', formAccountId: 'buvette', paymentMethod: 'esp' });
+    expect(prefillAction(accountActions('voucher')[1], ctxFor('pass_sport'))).toMatchObject({ showPanel: 'depense', paymentMethod: 'bon_pass_sport' });
+    expect(prefillAction(accountActions('wallet')[0], ctxFor('badnet')).paymentMethod).toBe('vir');
   });
 
-  it("propose un autre compte que le sien pour un virement « au choix »", () => {
-    const values = prefillAction(accountActions('bank').find((a) => a.key === 'transfer-out')!, ctxFor('current'));
-    expect(values.formAccountId).toBe('current');
-    expect(values.destinationAccountId).toBe('buvette');
+  it("propose la banque comme destination d'un virement, et un autre compte depuis la banque", () => {
+    expect(prefillAction(accountActions('voucher')[2], ctxFor('labaz'))).toMatchObject({
+      showPanel: 'transfert', formAccountId: 'labaz', destinationAccountId: 'current', paymentMethod: 'interne'
+    });
+    const depuisLaBanque = prefillAction(accountActions('bank')[2], ctxFor('current'));
+    expect(depuisLaBanque.formAccountId).toBe('current');
+    expect(depuisLaBanque.destinationAccountId).toBe('buvette');
   });
 
   it("retombe sur « au choix » quand le club n'a pas de compte de la nature demandée, sans inventer de code", () => {
@@ -80,16 +75,23 @@ describe('accountActions', () => {
     expect(resolvePaymentKind('cash', [{ code: 'vir', kind: 'transfer' }])).toBe('vir');
     expect(resolvePaymentKind('cash', [])).toBe('');
   });
+});
 
-  it('donne aux bons et chèques tiers leurs trois gestes, sans avances d’adhérents', () => {
-    expect(accountActions('voucher').map((a) => a.key)).toEqual(['voucher-in', 'voucher-refund', 'voucher-fee']);
-    expect(showsMemberAdvances('voucher')).toBe(false);
+describe('indicationDeSaisie', () => {
+  const compte = (code: string) => ACCOUNTS.find((a) => a.code === code)!;
+
+  it('nomme le virement selon les deux comptes choisis, et propose son libellé', () => {
+    expect(indicationDeSaisie('transfert', compte('labaz'), 'labaz', 'current', ACCOUNTS)).toMatchObject({ libelle: 'Remboursement Bons Labaz' });
+    expect(indicationDeSaisie('transfert', compte('buvette'), 'buvette', 'current', ACCOUNTS)?.libelle).toBe('Dépôt des espèces en banque');
+    expect(indicationDeSaisie('transfert', compte('badnet'), 'badnet', 'current', ACCOUNTS)?.libelle).toBe('Rapatriement vers la banque');
+    // Inversé par le trésorier : la phrase suit.
+    expect(indicationDeSaisie('transfert', compte('badnet'), 'current', 'badnet', ACCOUNTS)?.libelle).toBe('Recharge du porte-monnaie');
+    expect(indicationDeSaisie('transfert', compte('labaz'), 'labaz', 'buvette', ACCOUNTS)?.libelle).toBeUndefined();
   });
 
-  it("un bon reçu retient le moyen de paiement qui crédite CE compte, pas le premier bon venu", () => {
-    const recu = prefillAction(accountActions('voucher')[0], ctxFor('pass_sport'));
-    expect(recu).toMatchObject({ showPanel: 'recette', formAccountId: 'pass_sport', paymentMethod: 'bon_pass_sport' });
-    const rembourse = prefillAction(accountActions('voucher')[1], ctxFor('labaz'));
-    expect(rembourse).toMatchObject({ showPanel: 'transfert', formAccountId: 'labaz', destinationAccountId: 'current', paymentMethod: 'interne', description: 'Remboursement ' });
+  it("explique la recette et la dépense d'un compte de bons, et se tait pour la banque", () => {
+    expect(indicationDeSaisie('recette', compte('labaz'), 'labaz', '', ACCOUNTS)?.texte).toContain('rattachez-le');
+    expect(indicationDeSaisie('depense', compte('labaz'), 'labaz', '', ACCOUNTS)?.texte).toContain('commission');
+    expect(indicationDeSaisie('recette', compte('current'), 'current', '', ACCOUNTS)).toBeNull();
   });
 });
