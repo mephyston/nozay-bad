@@ -33,7 +33,8 @@
     toolbar: barreDOutils,
     onUndeliver,
     onOuvrir,
-    droits = AUCUN_DROIT
+    droits = AUCUN_DROIT,
+    tri = $bindable(null)
   }: {
     historyOrders?: OrderItem[];
     /** `delivered` ou `closed` : la vue d'issues que la table montre. */
@@ -45,6 +46,8 @@
     onOuvrir: (item: OrderItem) => void;
     /** Annuler une remise relève de `decider` ; sans lui, l'historique se lit seulement. */
     droits?: DroitsCommande;
+    /** Le tri des colonnes, tenu par l'écran pour survivre au rechargement. */
+    tri?: Tri;
   } = $props();
 
   /*
@@ -55,7 +58,6 @@
   const verrouille = $derived(isClosed);
 
   // Le tri ne vaut que pour la table : la liste au doigt garde l'ordre servi.
-  let tri = $state<Tri>(null);
   const lignes = $derived(trierCommandes(historyOrders, tri));
   const trier = (colonne: ColonneTri) => (tri = basculerTri(tri, colonne));
 

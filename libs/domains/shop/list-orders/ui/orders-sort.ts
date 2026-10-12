@@ -12,6 +12,24 @@ export type ColonneTri = 'date' | 'adherent' | 'produit' | 'quantite' | 'statut'
 
 export type Tri = { colonne: ColonneTri; sens: 'asc' | 'desc' } | null;
 
+const COLONNES: readonly ColonneTri[] = ['date', 'adherent', 'produit', 'quantite', 'statut', 'attente', 'reglement', 'montant'];
+
+/**
+ * Le tri tel qu'il s'écrit dans l'URL : `produit`, ou `-produit` en décroissant.
+ *
+ * Il y vit avec les autres critères de l'écran : chaque décision recharge la page, et un
+ * tri gardé en mémoire repartait à zéro à chaque commande validée ou encaissée.
+ */
+export const triVersUrl = (tri: Tri): string => (tri ? `${tri.sens === 'desc' ? '-' : ''}${tri.colonne}` : '');
+
+/** L'inverse de `triVersUrl` ; une valeur inconnue donne l'ordre servi par l'API. */
+export function triDepuisUrl(valeur: string | null): Tri {
+  if (!valeur) return null;
+  const sens = valeur.startsWith('-') ? 'desc' : 'asc';
+  const colonne = valeur.replace(/^-/, '') as ColonneTri;
+  return COLONNES.includes(colonne) ? { colonne, sens } : null;
+}
+
 /** Le tri après un clic sur `colonne`. */
 export const basculerTri = (tri: Tri, colonne: ColonneTri): Tri =>
   tri?.colonne === colonne

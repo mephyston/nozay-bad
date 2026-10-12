@@ -20,6 +20,8 @@
     etapeOuverte,
     type EtapeOuverte
   } from './orders-row-model';
+  import { triDepuisUrl, triVersUrl, type Tri } from './orders-sort';
+  import { oublierDefilement, rendreDefilement, retenirDefilement } from './orders-scroll';
   import OrdersOpenTable from './OrdersOpenTable.svelte';
   import OrdersHistoryTable from './OrdersHistoryTable.svelte';
   import OrdersToolbar from './OrdersToolbar.svelte';
@@ -82,6 +84,8 @@
   let searchTerm = $state(parametresInitiaux.get('q') ?? '');
   /** Identifiant du produit parent ; vide pour tous les articles. */
   let articleChoisi = $state(parametresInitiaux.get('article') ?? '');
+  /** Le tri des colonnes de la table ; la liste au doigt garde ses sections. */
+  let tri = $state<Tri>(triDepuisUrl(parametresInitiaux.get('tri')));
 
   $effect(() => {
     if (typeof window === 'undefined') return;
@@ -91,6 +95,7 @@
     poser('vue', activeTab, 'open');
     poser('q', searchTerm.trim());
     poser('article', articleChoisi);
+    poser('tri', triVersUrl(tri));
     const qs = params.toString();
     const cible = qs ? `${window.location.pathname}?${qs}` : window.location.pathname;
     if (cible !== `${window.location.pathname}${window.location.search}`) {
@@ -116,6 +121,7 @@
   let refusOuvert = $state(false);
 
   onMount(() => {
+    rendreDefilement();
     const handleOpenNewOrder = () => (isCreateSheetOpen = true);
     window.addEventListener('open-new-order', handleOpenNewOrder);
     return () => window.removeEventListener('open-new-order', handleOpenNewOrder);
@@ -215,7 +221,9 @@
     if (processingId !== null || isClosed) return;
     processingId = orderId;
 
+    retenirDefilement();
     const res = await action(orderId);
+    if (!res.success) oublierDefilement();
     if (!res.success && res.error) await uiAlert(res.error);
     processingId = null;
   }
@@ -235,7 +243,9 @@
   /** Le refus d'API s'affiche dans la feuille, qui reste ouverte. */
   async function refuser(orderId: number, reason: string): Promise<string | null> {
     processingId = orderId;
+    retenirDefilement();
     const res = await rejectOrder(orderId, reason);
+    if (!res.success) oublierDefilement();
     processingId = null;
     return res.success ? null : (res.error ?? 'Erreur lors du refus');
   }
@@ -321,6 +331,7 @@
       vue={activeTab}
       {isClosed}
       toolbar={barreDOutils}
+      bind:tri
       onUndeliver={surAnnulationRemise}
       onOuvrir={ouvrirFiche}
       {droits}
@@ -331,6 +342,7 @@
       stage={activeTab}
       {isClosed}
       toolbar={barreDOutils}
+      bind:tri
       onPrimary={activeTab === 'open' ? handleOpenPrimary : TRANSITIONS[activeTab as EtapeOuverte][0]}
       onSecondary={activeTab === 'open' ? handleOpenSecondary : TRANSITIONS[activeTab as EtapeOuverte][1]}
       onOuvrir={ouvrirFiche}

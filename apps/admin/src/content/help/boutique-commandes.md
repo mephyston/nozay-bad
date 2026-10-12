@@ -7,7 +7,7 @@ order: 2
 
 **Boutique → Commandes** s'ouvre sur les commandes **en cours** : les **nouvelles**, celles **en attente de paiement** et celles **payées** dont l'article reste à remettre, ensemble, chacune avec son statut et ses actions. Le sélecteur de vue suit les états du parcours — **Nouvelles**, **Validées, en attente de paiement**, **Payées**, **Livrées** — et réunit à part les **refusées ou annulées**. La recherche porte sur l'adhérent, sa licence, le produit, le moyen de paiement et le montant.
 
-Le filtre **Article** isole un produit avec toutes ses déclinaisons : choisir « Maillot du club » montre les commandes de toutes les tailles, pour suivre une opération d'un bout à l'autre. La vue, l'article et la recherche restent appliqués après chaque validation, encaissement ou refus, et se retrouvent dans l'adresse de la page : un lien copié rouvre la même sélection.
+Le filtre **Article** isole un produit avec toutes ses déclinaisons : choisir « Maillot du club » montre les commandes de toutes les tailles, pour suivre une opération d'un bout à l'autre. La vue, l'article, la recherche et le tri des colonnes restent appliqués après chaque validation, encaissement ou refus, et la liste reste à l'endroit où vous l'aviez laissée. Ils se retrouvent dans l'adresse de la page : un lien copié rouvre la même sélection.
 
 Le bouton **Exporter** (dans la barre du bas sur téléphone) télécharge en CSV les commandes **affichées** : nom, prénom, email, article avec sa taille, quantité, montant, statut et date. Il suit les filtres en cours : filtrez l'article « Maillot du club », exportez, et vous obtenez la liste de l'opération, à ouvrir dans un tableur.
 

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { OrderItem } from './orders-manager-types';
-import { basculerTri, sensDe, trierCommandes } from './orders-sort';
+import { basculerTri, sensDe, trierCommandes, triDepuisUrl, triVersUrl } from './orders-sort';
 
 function commande(id: number, order: Partial<OrderItem['order']> = {}, item: Partial<OrderItem> = {}): OrderItem {
   return {
@@ -91,5 +91,16 @@ describe('trierCommandes', () => {
       commande(3, { status: 'awaiting_payment' })
     ];
     expect(ids(trierCommandes(items, { colonne: 'statut', sens: 'asc' }))).toEqual([2, 3, 1]);
+  });
+
+  it("s'écrit dans l'URL et s'en relit, pour survivre au rechargement d'une décision", () => {
+    expect(triVersUrl({ colonne: 'produit', sens: 'asc' })).toBe('produit');
+    expect(triVersUrl({ colonne: 'montant', sens: 'desc' })).toBe('-montant');
+    expect(triVersUrl(null)).toBe('');
+    expect(triDepuisUrl('produit')).toEqual({ colonne: 'produit', sens: 'asc' });
+    expect(triDepuisUrl('-montant')).toEqual({ colonne: 'montant', sens: 'desc' });
+    // Un lien bricolé retombe sur l'ordre servi par l'API.
+    expect(triDepuisUrl('-inconnue')).toBeNull();
+    expect(triDepuisUrl(null)).toBeNull();
   });
 });

@@ -51,7 +51,8 @@
     onSecondary,
     onOuvrir,
     onEdit,
-    droits = AUCUN_DROIT
+    droits = AUCUN_DROIT,
+    tri = $bindable(null)
   }: {
     orders?: OrderItem[];
     stage: OrdersTab;
@@ -65,6 +66,8 @@
     onEdit?: (item: OrderItem) => void;
     /** Ce que l'utilisateur peut décider ou encaisser ; une action interdite n'est pas offerte. */
     droits?: DroitsCommande;
+    /** Le tri des colonnes, tenu par l'écran pour survivre au rechargement. */
+    tri?: Tri;
   } = $props();
 
   /*
@@ -75,7 +78,6 @@
   const verrouille = $derived(isClosed);
 
   // Le tri ne vaut que pour la table : la liste au doigt garde ses sections par étape.
-  let tri = $state<Tri>(null);
   const lignes = $derived(trierCommandes(orders, tri));
   const trier = (colonne: ColonneTri) => (tri = basculerTri(tri, colonne));
 
