@@ -16,6 +16,7 @@
   } from './ledger-navigation';
   import { toAccountOptions, type AccountLike } from '../../../shared/account-labels';
   import type { MemberLike } from './member-options';
+  import { saisonDeSaisie } from './entry-season';
 
   let {
     transactions = [],
@@ -167,7 +168,7 @@
     appliquer(
       newValuesFor(type, {
         mainAccountId,
-        seasonId: selectedSeason,
+        seasonId: saisonDeSaisie(seasons, selectedSeason, new Date().toISOString().split('T')[0]),
         accounts: activeAccounts,
         paymentMethods
       })

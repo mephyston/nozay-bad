@@ -4,6 +4,7 @@
   import type { Season, Category } from './ledger-types';
   import { toAccountOptions, type AccountLike } from '../../../shared/account-labels';
   import { membersForSeason, toMemberItems, type MemberLike } from './member-options';
+  import { saisonsDeSaisie } from './entry-season';
 
   let {
     open = $bindable(false),
@@ -69,7 +70,7 @@
 
   const seasonItems = $derived(
     seasons.length > 0
-      ? toSeasonOptions(seasons, { value: 'id' })
+      ? toSeasonOptions(saisonsDeSaisie(seasons, targetSeasonId), { value: 'id' })
       : [{ label: 'Saison 2025-2026', value: '25-26' }]
   );
   const categoryItems = $derived(activeCategories.map((cat) => ({ label: cat.name, value: String(cat.id) })));

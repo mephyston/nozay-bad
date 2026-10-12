@@ -20,7 +20,7 @@ Trois boutons ouvrent le même formulaire, avec des champs adaptés : **recette*
 |---|---|
 | Montant | En euros, strictement positif |
 | Date | La date de l'opération |
-| Saison d'affectation | L'exercice auquel rattacher l'écriture |
+| Saison d'affectation | L'exercice auquel rattacher l'écriture. Une nouvelle saisie part sur l'exercice en cours, même si le grand livre affiche une autre saison ; les saisons clôturées ne sont pas proposées |
 | Catégorie | Obligatoire pour une recette ou une dépense |
 | Compte financier | L'un des comptes de trésorerie du club (banque, caisse, porte-monnaie, bons) |
 | Comptes source et destinataire | Pour un virement interne, obligatoirement différents |
