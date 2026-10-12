@@ -85,15 +85,20 @@ export class AnalyzeBankStatementLinesRepository {
     });
   }
 
-  async getActiveProducts(db: DbOrTx): Promise<any[]> {
-    try {
-      return await db.all(sql`
-        SELECT id, name, category, price, stock, active, created_at as createdAt 
-        FROM products WHERE active = 1
-      `);
-    } catch {
-      return [];
-    }
+  /**
+   * Le catalogue de la boutique, avec la catégorie comptable de chaque produit.
+   *
+   * La requête lisait `category` et `price`, colonnes disparues avec le catalogue par
+   * catégories : elle échouait, le `catch` rendait une liste vide, et l'analyse n'a plus vu un
+   * seul produit — ni pour le prompt, ni pour reconnaître un montant. Plus de `catch` : une
+   * requête cassée doit se voir.
+   */
+  async getActiveProducts(db: DbOrTx): Promise<{ name: string; priceCents: number; accountingCategoryId: number }[]> {
+    return db.all(sql`
+      SELECT p.name AS name, p.price_cents AS priceCents, pc.accounting_category_id AS accountingCategoryId
+      FROM products p JOIN product_categories pc ON pc.id = p.product_category_id
+      WHERE p.active = 1 AND p.price_cents > 0
+    `);
   }
 
   /** Relit un lot de lignes, une fois leurs suggestions écrites. */

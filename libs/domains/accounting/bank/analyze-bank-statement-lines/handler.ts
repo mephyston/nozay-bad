@@ -2,8 +2,9 @@ import { clubNameVariants, getClubSettings } from '@nba/club/settings';
 import { type Db } from '@nba/db';
 import { AnalyzeBankStatementLinesRepository } from './repository';
 import { cleanName } from '../../shared/helpers';
-import { resolveCategoryMap, resolveProductAccountingCategory } from '../../shared/category';
+import { resolveCategoryMap } from '../../shared/category';
 import { pickMemberCandidate } from './member-match';
+import { categorieImposee } from './keyword-rules';
 import { isFutureSeason, isInAdvanceWindow, seasonInText } from './season-reference';
 import type {
   AnalyzeBankStatementLinesInput,
@@ -66,10 +67,9 @@ export async function analyzeBankStatementLines(db: Db, ai: any, input: AnalyzeB
 
   const activeProducts = await repo.getActiveProducts(db);
 
-  const productsPrompt = activeProducts.map(p => {
-    const accCat = resolveProductAccountingCategory(p.category, categories);
-    return `- Produit : "${p.name}" | Prix : ${(p.price / 100).toFixed(2)} EUR | Catégorie Comptable associée : ${accCat}`;
-  }).join('\n');
+  const productsPrompt = activeProducts.map(p =>
+    `- Produit : "${p.name}" | Prix : ${(p.priceCents / 100).toFixed(2)} EUR | Catégorie Comptable associée : ${p.accountingCategoryId}`
+  ).join('\n');
 
   const categoriesPrompt = categories.map(c =>
     `- ID: ${c.id} (${c.adminLabel} / ${c.adherentLabel})`
@@ -118,14 +118,14 @@ export async function analyzeBankStatementLines(db: Db, ai: any, input: AnalyzeB
     const txAmount = tx.amountCents ?? 0;
     let suggestedCategory = txAmount < 0 ? catMap.fonctionnement : catMap.adhesions;
     const absAmount = Math.abs(txAmount);
-    const matchingProduct = activeProducts.find(p => {
-      if (p.price === absAmount) return true;
-      if (p.category === 'shuttlecock' && absAmount % p.price === 0 && absAmount <= p.price * 4) return true;
-      if (p.category === 'string' && absAmount % p.price === 0 && absAmount <= p.price * 4) return true;
-      return false;
-    });
+    // Volants et cordages s'achètent par lots : 2 boîtes, 2 cordages. Le reste à l'unité.
+    const parLots = [catMap.volants, catMap.cordage];
+    const matchingProduct = activeProducts.find(p =>
+      p.priceCents === absAmount ||
+      (parLots.includes(p.accountingCategoryId) && absAmount % p.priceCents === 0 && absAmount <= p.priceCents * 4)
+    );
     if (matchingProduct) {
-      suggestedCategory = resolveProductAccountingCategory(matchingProduct.category, categories);
+      suggestedCategory = matchingProduct.accountingCategoryId;
     }
 
     const textToLower = `${tx.name} ${tx.memo || ''}`.toLowerCase();
@@ -225,6 +225,10 @@ export async function analyzeBankStatementLines(db: Db, ai: any, input: AnalyzeB
     } else if (textToLower.includes('versement express')) {
       suggestedCategory = catMap.adhesions;
     }
+
+    // Un mot qui ne laisse pas de doute (maillot, ligue) l'emporte sur l'heuristique comme sur le modèle.
+    const imposee = looksLikeInternalTransfer ? null : categorieImposee(`${tx.name} ${tx.memo || ''}`, categories);
+    if (imposee !== null) suggestedCategory = imposee;
 
     /*
      * Cotisation encaissée pour la saison suivante : produit constaté d'avance.
@@ -373,7 +377,7 @@ Renvoie STRICTEMENT un objet JSON sous la forme suivante :
           const parsed = JSON.parse(jsonMatch[0]);
           suggestionResult = {
             kind: suggestionResult.kind,
-            category: parsed.category ? Number(parsed.category) : suggestedCategory,
+            category: imposee ?? (parsed.category ? Number(parsed.category) : suggestedCategory),
             // Un adhérent, et un seul, nommé par ses propres prénom et nom : c'est une
             // lecture, pas une hypothèse, et le modèle n'a pas à la défaire. Dès que
             // deux adhérents sont nommés, il reprend la main — le motif se lit mieux

@@ -103,36 +103,3 @@ export function resolveCategoryMap(categories: CategoryLike[]): CategoryMap {
     fonctionnement: findId(['fonctionnement', 'administratif', 'bureau'], 'fonctionnement')
   };
 }
-
-export function resolveProductAccountingCategory(
-  productCategory: string,
-  categories: CategoryLike[]
-): number {
-  let matched: CategoryLike | undefined;
-
-  if (productCategory === 'shuttlecock') {
-    matched = categories.find(c =>
-      (c.adminLabel || '').toLowerCase().includes('volant') ||
-      (c.adherentLabel || '').toLowerCase().includes('volant')
-    );
-  } else if (productCategory === 'string') {
-    matched = categories.find(c =>
-      (c.adminLabel || '').toLowerCase().includes('cordage') ||
-      (c.adherentLabel || '').toLowerCase().includes('cordage')
-    );
-  } else {
-    matched = categories.find(c =>
-      (c.adminLabel || '').toLowerCase().includes('matériel') ||
-      (c.adminLabel || '').toLowerCase().includes('materiel') ||
-      (c.adherentLabel || '').toLowerCase().includes('matériel') ||
-      (c.adherentLabel || '').toLowerCase().includes('materiel')
-    );
-  }
-
-  if (matched) {
-    return matched.id;
-  }
-
-  console.warn(`[resolveProductAccountingCategory] Fallback: Aucune catégorie comptable trouvée pour le produit "${productCategory}".`);
-  return categories[0]?.id ?? 1;
-}
