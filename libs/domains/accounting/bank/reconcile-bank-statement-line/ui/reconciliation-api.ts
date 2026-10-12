@@ -150,7 +150,9 @@ export async function apiCreateAndMatchSingle(
    * part en recette **négative** dans sa catégorie — une diminution de produit, pas une charge.
    * Le cumul signé du rapprochement la compte bien au débit de la ligne.
    */
-  refund = false
+  refund = false,
+  /** La facture que l'écriture règle : le serveur la passe à « payée » dans le même lot. */
+  invoiceId: number | null = null
 ): Promise<ReconcileOutcome> {
   const btAmt = (bt as any).amountCents ?? bt.amount ?? 0;
   const rawAccountId = bt.accountId;
@@ -160,6 +162,7 @@ export async function apiCreateAndMatchSingle(
       action: 'create',
       btId: bt.id,
       memberId,
+      invoiceId,
       transaction: {
         seasonId: targetSeasonId,
         type: btAmt < 0 && !isRefund ? 'depense' : 'recette',

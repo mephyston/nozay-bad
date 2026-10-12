@@ -138,7 +138,7 @@ export function createReconciliationActions(s: ReconciliationStateFields) {
       s.category = rows[0].category;
       s.amountToLink = rows[0].amount;
     }
-    s.activeRightTab = 'manual';
+    s.nature = 'facture';
     toast.info(`${chosen.length} facture${chosen.length > 1 ? 's' : ''} reprise${chosen.length > 1 ? 's' : ''} : relisez l'écriture avant de valider.`);
   }
 
@@ -218,7 +218,10 @@ export function createReconciliationActions(s: ReconciliationStateFields) {
         outcome = await apiCreateAndMatchSplit(targetBt, memId, s.targetSeasonId, s.splits, s.accrualType, s.accrualNote);
       } else {
         if (!s.category) throw new Error("La catégorie comptable reste à choisir.");
-        outcome = await apiCreateAndMatchSingle(targetBt, memId, s.targetSeasonId, s.category, s.amountToLink, s.accrualType, s.accrualNote, s.isRefund);
+        // Une facture reprise seule se règle par l'écriture simple : son identifiant ne partait
+        // pas, et la facture restait « envoyée » alors que l'écriture existait.
+        const invoiceId = s.nature === 'facture' ? (s.splits[0]?.invoiceId ?? null) : null;
+        outcome = await apiCreateAndMatchSingle(targetBt, memId, s.targetSeasonId, s.category, s.amountToLink, s.accrualType, s.accrualNote, s.isRefund, invoiceId);
       }
       settle(outcome, 'Écriture créée et rapprochée avec succès !', targetBt.id);
     } catch (err: any) { 

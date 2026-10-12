@@ -24,6 +24,14 @@ function expandRow(target: HTMLElement, label: string) {
   flushSync();
 }
 
+/** Choisir la nature de la ligne ouverte : « Qu'est-ce que cette ligne ? ». */
+function choisirNature(target: HTMLElement, nature: string) {
+  const radio = target.querySelector(`[data-nature="${nature}"] input`) as HTMLInputElement;
+  if (!radio) throw new Error(`Nature non proposée : ${nature}`);
+  radio.click();
+  flushSync();
+}
+
 /** La sélection multiple est un mode, pas l'état par défaut : les cases s'obtiennent. */
 function enableMultiSelect(target: HTMLElement) {
   const btn = Array.from(target.querySelectorAll('button')).find(
@@ -294,6 +302,9 @@ describe('BankStatementReconciliation Component', () => {
 
     // Cliquer sur le bouton de la transaction pour l'activer dans le panneau droit
     expandRow(target, 'IONOS');
+    // Une écriture existe : la ligne s'ouvre sur « Déjà saisie ». On choisit la saisie.
+    expect((target.querySelector('[data-nature="pointer"] input') as HTMLInputElement).checked).toBe(true);
+    choisirNature(target, 'saisie');
 
     // Focus sur l'input de recherche adhérent pour ouvrir le dropdown
     // Par identifiant, et non par placeholder : celui-ci est une formulation, qui change.
@@ -346,12 +357,9 @@ describe('BankStatementReconciliation Component', () => {
 
     expandRow(target, 'VIR RECU 12345');
 
-    // Cliquer sur l'onglet "Écritures existantes" pour afficher les écritures
-    // du grand livre susceptibles de correspondre (les déjà rapprochées sont exclues)
-    const sugTabBtn = Array.from(target.querySelectorAll('button')).find(b => b.textContent?.includes('Pointer une écriture')) as HTMLButtonElement;
-    expect(sugTabBtn).toBeDefined();
-    sugTabBtn.click();
-    flushSync();
+    // La nature « Déjà saisie » liste les écritures du grand livre susceptibles de correspondre
+    // (les déjà rapprochées sont exclues).
+    choisirNature(target, 'pointer');
 
     expect(target.innerHTML).not.toContain('Volants Clement');
     /* Le message d'état vide dit enfin vrai : la liste est bornée aux candidats à ±7 jours,
@@ -389,16 +397,12 @@ describe('BankStatementReconciliation Component', () => {
     // Select the bank transaction
     expandRow(target, 'VIR RECU 12345');
 
-    // Le bloc « Reprendre une facture impayée » vit désormais dans l'onglet de saisie, replié.
+    // Les factures impayées sont le formulaire de la nature « Règlement de facture ».
     await new Promise(resolve => setTimeout(resolve, 50));
     flushSync();
 
-    const invoicesToggle = Array.from(target.querySelectorAll('button')).find(
-      b => b.textContent?.includes('Reprendre une facture impayée')
-    ) as HTMLButtonElement;
-    expect(invoicesToggle).not.toBeNull();
-    invoicesToggle.click();
-    flushSync();
+    // Une facture au montant exact : la ligne s'ouvre sur « Règlement de facture ».
+    choisirNature(target, 'facture');
 
     expect(target.innerHTML).toContain('Client Test');
     expect(target.innerHTML).toContain('FAC-2026-0001');
@@ -500,12 +504,8 @@ describe('BankStatementReconciliation Component', () => {
     await new Promise(resolve => setTimeout(resolve, 50));
     flushSync();
 
-    const invoicesToggle = Array.from(target.querySelectorAll('button')).find(
-      b => b.textContent?.includes('Reprendre une facture impayée')
-    ) as HTMLButtonElement;
-    expect(invoicesToggle).not.toBeNull();
-    invoicesToggle.click();
-    flushSync();
+    // Une facture au montant exact : la ligne s'ouvre sur « Règlement de facture ».
+    choisirNature(target, 'facture');
 
     expect(target.innerHTML).toContain('FAC-2026-0001');
     expect(target.innerHTML).toContain('FAC-2026-0002');
@@ -575,11 +575,8 @@ describe('BankStatementReconciliation Component', () => {
     // Select the bank transaction
     expandRow(target, 'DIVERS SPLIT');
 
-    // Active right tab is 'manual' by default, but click it to be sure
-    const manualTabBtn = Array.from(target.querySelectorAll('button')).find(b => b.textContent?.includes('Saisir / ventiler')) as HTMLButtonElement;
-    expect(manualTabBtn).not.toBeNull();
-    manualTabBtn.click();
-    flushSync();
+    // Sans proposition, la ligne s'ouvre sur la saisie : on la choisit tout de même, pour être sûr.
+    choisirNature(target, 'saisie');
 
     // « Ventiler » est désormais un interrupteur : un réglage qui dure, pas un déclencheur.
     const ventilerBtn = target.querySelector('#split-mode') as HTMLButtonElement;
@@ -752,15 +749,15 @@ describe('BankStatementReconciliation Component', () => {
     // Les deux lignes sont dans la file, et aucune n'est dépliée.
     expect(target.innerHTML).toContain('TX ONE PENDING');
     expect(target.innerHTML).toContain('TX TWO PENDING');
-    expect(target.innerHTML).not.toContain('Saisir / ventiler');
+    expect(target.innerHTML).not.toContain("Qu'est-ce que cette ligne ?");
     expect(setItem).not.toHaveBeenCalledWith('reconcile_active_bt_id', expect.anything());
 
     // Une ligne s'ouvre en place, et se referme, sans jamais toucher au stockage de session.
     expandRow(target, 'TX ONE PENDING');
-    expect(target.innerHTML).toContain('Saisir / ventiler');
+    expect(target.innerHTML).toContain("Qu'est-ce que cette ligne ?");
 
     expandRow(target, 'TX ONE PENDING');
-    expect(target.innerHTML).not.toContain('Saisir / ventiler');
+    expect(target.innerHTML).not.toContain("Qu'est-ce que cette ligne ?");
     expect(setItem).not.toHaveBeenCalledWith('reconcile_active_bt_id', expect.anything());
     vi.unstubAllGlobals();
   });
@@ -963,7 +960,7 @@ describe('BankStatementReconciliation Component', () => {
     /* L'encart violet a disparu : c'est le bouton du formulaire qui enregistre, et il enregistre
        par définition ce que le formulaire affiche — corrections comprises. */
     const validate = Array.from(target.querySelectorAll('button')).find(b =>
-      b.textContent?.includes('Créer et rapprocher')
+      b.textContent?.includes('Enregistrer la')
     ) as HTMLButtonElement;
     expect(validate).not.toBeNull();
     validate.click();
@@ -1056,7 +1053,7 @@ describe('BankStatementReconciliation Component', () => {
     expect(target.innerHTML).toContain('Saison 26-27');
 
     // …et le formulaire de création n'est plus proposé.
-    expect(target.innerHTML).not.toContain('Créer et rapprocher une nouvelle écriture');
+    expect(target.innerHTML).not.toContain("Qu'est-ce que cette ligne ?");
   });
 
   it("transmet l'exercice de rattachement de l'écriture", async () => {
@@ -1099,7 +1096,7 @@ describe('BankStatementReconciliation Component', () => {
     expandRow(target, 'VIR INST RE 672885352540');
 
     const validate = Array.from(target.querySelectorAll('button')).find(b =>
-      b.textContent?.includes('Créer et rapprocher')
+      b.textContent?.includes('Enregistrer la')
     ) as HTMLButtonElement;
     expect(validate).not.toBeNull();
     validate.click();
@@ -1176,7 +1173,7 @@ describe('BankStatementReconciliation Component', () => {
     expect(target.textContent).toContain("se rattache à l'exercice qui suit l'encaissement");
 
     const validate = Array.from(target.querySelectorAll('button')).find(b =>
-      b.textContent?.includes('Créer et rapprocher')
+      b.textContent?.includes('Enregistrer la')
     ) as HTMLButtonElement;
     expect(validate).not.toBeNull();
     validate.click();

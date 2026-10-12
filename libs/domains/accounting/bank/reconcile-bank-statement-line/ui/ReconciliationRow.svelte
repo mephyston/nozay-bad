@@ -1,10 +1,9 @@
 <script lang="ts">
-  import { Check, ChevronDown, Link2, Sparkles, Pencil, HandCoins, ArrowLeftRight } from '@lucide/svelte';
-  import MemberTransferDialog from './MemberTransferDialog.svelte';
-  import InternalTransferDialog from './InternalTransferDialog.svelte';
+  import { Check, ChevronDown, Link2, Sparkles, ArrowLeftRight } from '@lucide/svelte';
   import { Amount, Badge, Button } from '@nba/ui';
   import { accrualLabel } from '../../../shared/accrual-labels';
   import { parseSuggestion, isOneClickValidatable } from './reconciliation-suggestion';
+  import { etiquetteDeProposition, type NatureDeLigne } from './reconciliation-natures';
   import type { ReconciliationState, BankStatementLine } from './reconciliation.svelte';
 
   /* Prop renommée : déclarée `state`, elle capturerait la rune `$state`. */
@@ -61,32 +60,19 @@
   const canValidateInOneClick = $derived(isOneClickValidatable(sug) && !hasExistingEntry);
 
   /*
-   * Une ligne au crédit du compte courant peut être le virement d'une adhérente qui alimente son
-   * porte-monnaie Badnet par le club. Ce n'est pas une recette : le bouton crée le virement
-   * interne depuis le compte d'attente et pointe la ligne, en un geste.
+   * Le virement entre deux comptes du club devient le geste proposé quand l'analyse l'a reconnu
+   * et qu'un compte d'en face existe. Il ouvre la ligne sur sa nature : il reste un compte à
+   * choisir. L'avance d'un adhérent, elle, ne s'offre plus sur la ligne — c'était un bouton
+   * « Adhérente » sur chaque crédit, pour un geste rare : c'est une nature du panneau.
    */
-  const canBeMemberTransfer = $derived(
-    line.status === 'pending' && cents > 0 && !!reconState.thirdPartyAccount && reconState.isBankLine(line)
-  );
-  let showMemberTransfer = $state(false);
+  const contexte = $derived(reconState.contexteDeNature(line));
+  const isTransferPrimary = $derived(contexte.virementPossible && sug?.kind === 'internal-transfer' && !hasExistingEntry);
+  const etiquette = $derived(etiquetteDeProposition(line, contexte));
 
-  /*
-   * Un mouvement entre deux comptes du club se saisit d'ici, depuis l'une ou l'autre de ses
-   * lignes : le bouton crée le virement et pointe la jambe de ce compte — et celle d'en face
-   * quand sa ligne est là. Il n'y a rien à choisir tant qu'il n'existe pas d'autre compte.
-   */
-  const canBeInternalTransfer = $derived(
-    line.status === 'pending' && cents !== 0 && reconState.transferCounterpartsFor(line).length > 0
-  );
-  /* Il devient le geste principal quand l'analyse a reconnu un virement ; sinon il reste discret,
-     réduit à son icône : la colonne d'actions a une largeur fixe et déjà trois boutons. */
-  const isTransferPrimary = $derived(canBeInternalTransfer && sug?.kind === 'internal-transfer' && !hasExistingEntry);
-  let showInternalTransfer = $state(false);
-
-  /** Ouvrir la ligne mène là où se trouve la décision : pointer, ou saisir. */
-  function openOn(tab: 'manual' | 'ledger') {
-    reconState.activeRightTab = tab;
+  /** Ouvrir la ligne sur une nature donnée : pointer, le virement, ou celle que l'écran propose. */
+  function openOn(nature?: NatureDeLigne) {
     reconState.selectedTx = line;
+    if (nature) reconState.choisirNature(nature);
   }
 
   const categoryName = $derived(
@@ -98,7 +84,7 @@
       reconState.selectedTx = null;
       return;
     }
-    openOn(hasExistingEntry ? 'ledger' : 'manual');
+    openOn();
   }
 </script>
 
@@ -161,6 +147,10 @@
 
     <!-- Volet droit : la proposition, modifiable. -->
     <div class="flex min-w-0 flex-col justify-center gap-1 md:w-[34%]">
+      <!-- La nature proposée, en étiquette : c'est elle que « Traiter » présélectionnera. -->
+      {#if etiquette}
+        <Badge variant="secondary" size="xs" class="self-start" data-testid="nature-proposee">{etiquette}</Badge>
+      {/if}
       {#if line.status === 'reconciled'}
         <Badge variant="success" size="xs" class="self-start">Rapprochée</Badge>
       {:else if hasExistingEntry}
@@ -176,9 +166,8 @@
           {matchingEntries[0].date} · {matchingEntries[0].description}
         </span>
       {:else if sug?.kind === 'internal-transfer'}
-        <span class="text-xs font-medium text-foreground">Virement interne</span>
         <span class="text-[11px] text-muted-foreground">
-          {canBeInternalTransfer ? 'Le bouton « Virement » l\'écrit en deux jambes.' : 'À saisir au grand livre, en deux jambes.'}
+          {contexte.virementPossible ? 'Deux écritures, une par compte : rien ne pèse sur le résultat.' : 'Virement interne, à saisir au grand livre en deux jambes.'}
         </span>
       {:else if sug}
         <div class="flex flex-wrap items-center gap-1.5">
@@ -198,13 +187,20 @@
             {accrualLabel(sug.accrualType)}{sug.targetSeason ? ` — ${sug.targetSeason}` : ''}
           </Badge>
         {/if}
+      {:else if etiquette}
+        <!-- Sans analyse, l'étiquette vient du montant : une facture impayée tombe juste. -->
+        <span class="text-[11px] text-muted-foreground">Proposée d'après le montant.</span>
       {:else}
         <span class="text-xs italic text-muted-foreground">Aucune proposition — à saisir</span>
       {/if}
     </div>
 
-    <!-- Une seule action par défaut ; le reste est discret. Largeur fixe, pour que les boutons
-         tombent au même endroit d'une ligne à l'autre. -->
+    <!--
+      Au plus deux boutons : le geste que la proposition désigne, et « Traiter », qui ouvre la
+      ligne sur le choix de sa nature. Les gestes rares — l'avance d'un adhérent, un virement que
+      l'analyse n'a pas reconnu — vivent dans ce choix, et non sur chaque ligne de la file.
+      Largeur fixe, pour que les boutons tombent au même endroit d'une ligne à l'autre.
+    -->
     <div class="flex shrink-0 items-center justify-end gap-1 md:w-[13.5rem]">
       {#if line.status === 'pending'}
         {#if hasExistingEntry}
@@ -220,10 +216,22 @@
             class="h-8 gap-1.5 text-xs"
             title="Pointer contre une écriture existante"
             disabled={reconState.isClosed || reconState.isSubmitting}
-            onclick={() => openOn('ledger')}
+            onclick={() => openOn('pointer')}
           >
             <Link2 class="h-3.5 w-3.5" />
             <span class="hidden sm:inline">Pointer</span>
+          </Button>
+        {:else if isTransferPrimary}
+          <Button
+            size="sm"
+            class="h-8 gap-1.5 text-xs"
+            data-action="internal-transfer"
+            title="Virement entre deux comptes du club"
+            disabled={reconState.isClosed || reconState.isSubmitting}
+            onclick={() => openOn('virement')}
+          >
+            <ArrowLeftRight class="h-3.5 w-3.5" />
+            <span class="hidden sm:inline">Virement</span>
           </Button>
         {:else if canValidateInOneClick}
           <Button
@@ -238,50 +246,18 @@
           </Button>
         {/if}
 
-        {#if canBeInternalTransfer}
-          <Button
-            size="sm"
-            variant={isTransferPrimary ? 'default' : 'ghost'}
-            class="h-8 gap-1.5 text-xs"
-            data-action="internal-transfer"
-            title="Virement entre deux comptes du club"
-            disabled={reconState.isClosed || reconState.isSubmitting}
-            onclick={() => (showInternalTransfer = true)}
-          >
-            <ArrowLeftRight class="h-3.5 w-3.5" />
-            <span class={isTransferPrimary ? 'hidden sm:inline' : 'sr-only'}>Virement</span>
-          </Button>
-        {/if}
-
-        {#if canBeMemberTransfer}
-          <Button
-            size="sm"
-            variant="ghost"
-            class="h-8 gap-1.5 text-xs"
-            data-action="member-transfer"
-            title="Virement reçu d'une adhérente pour son porte-monnaie"
-            disabled={reconState.isClosed || reconState.isSubmitting}
-            onclick={() => (showMemberTransfer = true)}
-          >
-            <HandCoins class="h-3.5 w-3.5" />
-            <span class="hidden sm:inline">Adhérente</span>
-          </Button>
-        {/if}
-
         <Button
           size="sm"
-          variant="ghost"
+          variant="outline"
           class="h-8 gap-1.5 text-xs"
           data-action="expand"
-          title={isExpanded ? 'Replier' : 'Modifier / compléter'}
+          title={isExpanded ? 'Replier' : 'Traiter cette ligne'}
           onclick={toggleExpand}
         >
           {#if isExpanded}
             <ChevronDown class="h-3.5 w-3.5" />
-          {:else}
-            <Pencil class="h-3.5 w-3.5" />
           {/if}
-          <span class="hidden lg:inline">{isExpanded ? 'Replier' : 'Modifier'}</span>
+          <span>{isExpanded ? 'Replier' : 'Traiter'}</span>
         </Button>
 
       {:else}
@@ -304,21 +280,3 @@
     </div>
   {/if}
 </div>
-
-{#if canBeMemberTransfer}
-  <MemberTransferDialog
-    bind:open={showMemberTransfer}
-    {line}
-    isSubmitting={reconState.isSubmitting}
-    onConfirm={(description) => reconState.handleMemberTransfer(line, description)}
-  />
-{/if}
-
-{#if canBeInternalTransfer}
-  <InternalTransferDialog
-    bind:open={showInternalTransfer}
-    state={reconState}
-    {line}
-    onConfirm={(accountId, description) => reconState.handleInternalTransfer(line, accountId, description)}
-  />
-{/if}

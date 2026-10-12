@@ -13,42 +13,36 @@
   */
   let { state: reconState = $bindable(), selectedTx }: { state: ReconciliationState; selectedTx: BankStatementLine } = $props();
 
-  /* Replié par défaut : la plupart des lignes de relevé ne règlent aucune facture, et l'écran
-     n'a pas à leur imposer la liste des impayées. */
-  let isOpen = $state(false);
-
   const selectedCount = $derived(reconState.selectedInvoiceIds.size);
   const hasInvoices = $derived(reconState.unpaidInvoices.length > 0);
   const matchesExactly = $derived(Math.abs(reconState.selectedSum - Math.abs(selectedTx.amount)) <= 10);
 </script>
 
-<div class="mb-4 rounded-lg border border-border bg-muted/20">
-  <button
-    type="button"
-    class="w-full flex items-center justify-between p-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider rounded-lg {hasInvoices ? 'hover:bg-muted/40 cursor-pointer' : 'opacity-60 cursor-default'}"
-    disabled={!hasInvoices}
-    onclick={() => (isOpen = !isOpen)}
-  >
+<!--
+  Le bloc n'est plus replié en haut de la saisie : il est le formulaire de la nature
+  « Règlement de facture », que l'on choisit en sachant qu'une facture est en jeu.
+-->
+<div class="rounded-lg border border-border bg-muted/20">
+  <div class="flex items-center justify-between gap-2 p-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
     <span class="flex items-center gap-2">
       <FileText class="h-3.5 w-3.5" />
       <span>
         {#if hasInvoices}
-          Reprendre une facture impayée ({reconState.unpaidInvoices.length})
+          Factures en attente de règlement ({reconState.unpaidInvoices.length})
         {:else}
           Aucune facture impayée sur cet exercice
         {/if}
       </span>
-      {#if reconState.matchingInvoices.length > 0}
-        <Badge variant="success" size="xs">
-          <Sparkles class="h-3 w-3" />
-          <span>{reconState.matchingInvoices.length} au montant exact</span>
-        </Badge>
-      {/if}
     </span>
-    <span class="text-base leading-none">{hasInvoices ? (isOpen ? '−' : '+') : ''}</span>
-  </button>
+    {#if reconState.matchingInvoices.length > 0}
+      <Badge variant="success" size="xs">
+        <Sparkles class="h-3 w-3" />
+        <span>{reconState.matchingInvoices.length} au montant exact</span>
+      </Badge>
+    {/if}
+  </div>
 
-  {#if isOpen && hasInvoices}
+  {#if hasInvoices}
     <div class="p-3 pt-0 space-y-3">
       <!--
         Choisir une facture ne rapproche rien : cela remplit le formulaire ci-dessous.
@@ -60,7 +54,7 @@
         part par facture, que la comptable relit et corrige avant de valider.
       -->
       <p class="text-[11px] text-muted-foreground italic">
-        La sélection remplit l'écriture ci-dessous — une part par facture. Rien n'est enregistré
+        La sélection remplit l'écriture de règlement — une part par facture. Rien n'est enregistré
         avant votre validation.
       </p>
 

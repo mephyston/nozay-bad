@@ -175,8 +175,8 @@ export interface ReconciliationStateFields {
   selectedTx: BankStatementLine | null;
   selectedInvoiceIds: Set<number>;
   unpaidInvoices: Invoice[];
-  /** Onglet du panneau : saisir/ventiler, ou pointer une écriture existante. */
-  activeRightTab: 'manual' | 'ledger';
+  /** Ce qu'est la ligne ouverte : saisie, pointage, facture, remboursement, virement, avance. */
+  nature: import('./reconciliation-natures').NatureDeLigne;
   selectedSum: number;
   remainingAmount: number;
   splits: SplitRow[];

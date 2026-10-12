@@ -10,7 +10,6 @@ const CATEGORIES = [
 const ETAT = {
   ecrituresExistantes: [] as { date: string; description: string }[],
   virementPossible: false,
-  adherentePossible: false,
   categories: CATEGORIES,
   isClosed: false
 };
@@ -82,7 +81,7 @@ describe('propositionDe', () => {
       virementPossible: true
     });
     expect(possible.texte).toBe('Virement interne');
-    expect(possible.precision).toContain('deux jambes');
+    expect(possible.precision).toContain('une par compte');
 
     const impossible = propositionDe(ligne(avecSuggestion({ kind: 'internal-transfer' })), ETAT);
     expect(impossible.precision).toContain('grand livre');
@@ -122,7 +121,6 @@ describe('gestesDeLigne', () => {
     onValider: vi.fn(),
     onPointer: vi.fn(),
     onVirement: vi.fn(),
-    onAdherente: vi.fn(),
     onOuvrir: vi.fn()
   };
 
@@ -136,13 +134,24 @@ describe('gestesDeLigne', () => {
     expect(actions.map((a) => a.id)).not.toContain('valider');
   });
 
-  it('propose les gestes de virement, puis le chemin vers la fiche', () => {
-    const actions = gestesDeLigne(
+  it('propose au plus le geste reconnu, puis « Traiter »', () => {
+    const virement = gestesDeLigne(
       ligne(avecSuggestion({ kind: 'internal-transfer' })),
-      { ...ETAT, virementPossible: true, adherentePossible: true },
+      { ...ETAT, virementPossible: true },
       gestes
     );
-    expect(actions.map((a) => a.label)).toEqual(['Virement', 'Adhérente', 'Modifier']);
+    expect(virement.map((a) => a.label)).toEqual(['Virement', 'Traiter']);
+    // Un virement possible mais non reconnu ne s'offre pas sur la ligne : c'est une nature du panneau.
+    expect(gestesDeLigne(ligne(), { ...ETAT, virementPossible: true }, gestes).map((a) => a.label)).toEqual(['Traiter']);
+  });
+
+  it("préfixe la proposition de la nature que « Traiter » présélectionnera", () => {
+    const l = ligneDeReleve(ligne(avecSuggestion({ category: 7 })), { ...ETAT, etiquette: 'Recette' });
+    expect(l.sousTitre).toBe('Recette · Cotisations');
+    // Une étiquette sans analyse — la facture au montant exact — ne se contredit pas.
+    const facture = ligneDeReleve(ligne(), { ...ETAT, etiquette: 'Règlement de facture' });
+    expect(facture.sousTitre).toBe('Règlement de facture');
+    expect(facture.precision).toBe("Proposée d'après le montant");
   });
 
   it("n'offre que la consultation sur une ligne déjà rapprochée", () => {

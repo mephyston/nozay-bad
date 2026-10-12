@@ -1,4 +1,4 @@
-import { ArrowLeftRight, Check, HandCoins, Link2, Pencil } from '@lucide/svelte';
+import { ArrowLeftRight, Check, Link2, SquarePen } from '@lucide/svelte';
 import { formatAmount, type SwipeAction, type Tone } from '@nba/ui';
 import { accrualLabel } from '../../../shared/accrual-labels';
 import { isOneClickValidatable, parseSuggestion } from './reconciliation-suggestion';
@@ -18,8 +18,8 @@ export type EtatDeLigne = {
   ecrituresExistantes: { date: string; description: string }[];
   /** La ligne peut s'écrire en virement entre deux comptes du club. */
   virementPossible: boolean;
-  /** La ligne peut être le virement d'une adhérente vers son porte-monnaie. */
-  adherentePossible: boolean;
+  /** La nature que l'écran présélectionnera, en étiquette ; rien sans proposition. */
+  etiquette?: string | null;
   categories: { id: string; name: string }[];
   isClosed: boolean;
 };
@@ -58,7 +58,7 @@ export function propositionDe(
     return {
       texte: 'Virement interne',
       precision: etat.virementPossible
-        ? "Le geste « Virement » l'écrit en deux jambes."
+        ? 'Deux écritures, une par compte : rien ne pèse sur le résultat.'
         : 'À saisir au grand livre, en deux jambes.',
       ton: 'primary'
     };
@@ -79,6 +79,11 @@ export function propositionDe(
       precision: [qui, cutoff].filter(Boolean).join(' · ') || undefined,
       ton: 'primary'
     };
+  }
+
+  // Sans analyse, une nature peut venir du montant seul : une facture impayée qui tombe juste.
+  if (etat.etiquette) {
+    return { texte: etat.etiquette, precision: "Proposée d'après le montant", ton: 'primary' };
   }
 
   return { texte: 'Aucune proposition — à saisir', ton: 'muted' };
@@ -106,7 +111,9 @@ export function ligneDeReleve(line: BankStatementLine, etat: EtatDeLigne): Ligne
   const proposition = propositionDe(line, etat);
   return {
     titre: line.name,
-    sousTitre: proposition.texte,
+    // L'étiquette dit la nature que « Traiter » présélectionnera ; le texte, ce qu'elle porte.
+    sousTitre:
+      etat.etiquette && etat.etiquette !== proposition.texte ? `${etat.etiquette} · ${proposition.texte}` : proposition.texte,
     precision: proposition.precision,
     valeur: formatAmount(cents, { showSign: true }),
     ton: cents < 0 ? 'destructive' : cents > 0 ? 'success' : 'muted',
@@ -119,19 +126,20 @@ export type GestesDeLigne = {
   onValider?: (line: BankStatementLine) => void;
   onPointer?: (line: BankStatementLine) => void;
   onVirement?: (line: BankStatementLine) => void;
-  onAdherente?: (line: BankStatementLine) => void;
   onOuvrir?: (line: BankStatementLine) => void;
 };
 
 /**
- * Ce qu'on peut faire d'une ligne, dans l'ordre.
+ * Ce qu'on peut faire d'une ligne, dans l'ordre : au plus le geste proposé, puis « Traiter ».
  *
- * La première est celle qu'un balayage long exécute, et c'est la décision courante :
- * pointer l'écriture qui existe, ou valider la proposition. Toutes sont réversibles —
- * une association se défait — ce qui est la condition pour qu'un geste ample les porte.
+ * Le premier est celui qu'un balayage long exécute, et c'est la décision courante : pointer
+ * l'écriture qui existe, ouvrir le virement que l'analyse a reconnu, ou valider la proposition.
+ * Toutes sont réversibles — une association se défait — ce qui est la condition pour qu'un geste
+ * ample les porte.
  *
- * « Modifier » vient en dernier et ouvre la fiche : c'est le chemin de ce qui ne se
- * décide pas d'un geste.
+ * « Virement » et « Adhérente » s'offraient sur chaque ligne qui pouvait l'être, soit presque
+ * toutes : quatre gestes au balayage, dont deux rares. Ils vivent désormais dans le choix de la
+ * nature, que « Traiter » ouvre.
  */
 export function gestesDeLigne(
   line: BankStatementLine,
@@ -142,24 +150,21 @@ export function gestesDeLigne(
 
   const liste: SwipeAction<BankStatementLine>[] = [];
   const enAttente = line.status === 'pending';
+  const sug = parseSuggestion(line);
 
   if (enAttente && etat.ecrituresExistantes.length > 0 && gestes.onPointer) {
     liste.push({ id: 'pointer', label: 'Pointer', icon: Link2, tone: 'primary', run: gestes.onPointer });
-  } else if (enAttente && isOneClickValidatable(parseSuggestion(line)) && gestes.onValider) {
+  } else if (enAttente && sug?.kind === 'internal-transfer' && etat.virementPossible && gestes.onVirement) {
+    liste.push({ id: 'virement', label: 'Virement', icon: ArrowLeftRight, tone: 'primary', run: gestes.onVirement });
+  } else if (enAttente && isOneClickValidatable(sug) && gestes.onValider) {
     liste.push({ id: 'valider', label: 'Valider', icon: Check, tone: 'primary', run: gestes.onValider });
   }
 
-  if (enAttente && etat.virementPossible && gestes.onVirement) {
-    liste.push({ id: 'virement', label: 'Virement', icon: ArrowLeftRight, run: gestes.onVirement });
-  }
-  if (enAttente && etat.adherentePossible && gestes.onAdherente) {
-    liste.push({ id: 'adherente', label: 'Adhérente', icon: HandCoins, run: gestes.onAdherente });
-  }
   if (gestes.onOuvrir) {
     liste.push({
-      id: 'modifier',
-      label: enAttente ? 'Modifier' : 'Voir le détail',
-      icon: Pencil,
+      id: 'traiter',
+      label: enAttente ? 'Traiter' : 'Voir le détail',
+      icon: SquarePen,
       run: gestes.onOuvrir
     });
   }

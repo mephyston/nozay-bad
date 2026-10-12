@@ -13,7 +13,8 @@ Toujours chargée. Référence : `CONTRIBUTING.md` §8.
 - Messages en français, Conventional Commits avec portée : `feat(shop): …`, `fix(members): …`, `chore(deps): …`. Le sujet décrit l'effet pour l'utilisateur, pas le code. semantic-release en tire version et notes.
 - Plusieurs personnes et sessions travaillent en parallèle sur le même dépôt : une branche peut être fusionnée, supprimée ou changée sous vos pieds. **Garder la branche dans la commande même du commit**, avec un vrai garde et non un simple affichage :
   `[ "$(git branch --show-current)" = main ] && git add <fichiers> && git commit …`
-- Ne jamais `git add -A` dans un arbre partagé : nommer les fichiers. Ne jamais `reset --hard`, `stash` nu ou `push --force` dans un arbre où quelqu'un d'autre travaille.
+- Ne jamais `git add -A` dans un arbre partagé : nommer les fichiers.
+- Nommer ses fichiers ne suffit pas : `git commit` emporte **tout l'index**, y compris un `git mv` ou un `git rm` qu'une autre session y a posé. Relire `git diff --cached --stat` avant chaque commit. Ne jamais `reset --hard`, `stash` nu ou `push --force` dans un arbre où quelqu'un d'autre travaille.
 - Un travail isolé se fait dans un worktree (`.claude/worktrees/`, cf. `.worktreeinclude`), pas en changeant la branche de l'arbre principal.
 
 ## Hooks git (`.githooks/`, activés par `npm install`)

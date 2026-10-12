@@ -344,15 +344,90 @@ describe("pointer avant créer", () => {
     expect(btn(target, 'Valider')).not.toBeUndefined();
   });
 
-  it("ouvre la ligne sur l'onglet de pointage, et non sur la saisie", () => {
+  it("ouvre la ligne sur « Déjà saisie », et non sur la saisie", () => {
     const target = render([bankLine(withSuggestion)], { glTransactions: [entry()] });
 
     btn(target, 'Pointer').click();
     flushSync();
 
-    // L'onglet « Pointer une écriture » est actif, et l'écriture candidate est listée.
+    // La nature « Déjà saisie » est choisie, et l'écriture candidate est listée.
+    expect((target.querySelector('[data-nature="pointer"] input') as HTMLInputElement).checked).toBe(true);
     expect(target.innerHTML).toContain('Correspondances au même montant');
     expect(target.innerHTML).toContain('Licence Paul Madrange');
+  });
+});
+
+describe('la nature de la ligne', () => {
+  const accounts = [
+    { id: 1, code: 'current', label: 'Compte courant', kind: 'bank', active: true },
+    { id: 2, code: 'livret', label: 'Livret A', kind: 'bank', active: true },
+    { id: 5, code: 'member_advances', label: 'Avances des adhérents', kind: 'third_party', active: true }
+  ];
+  const natures = (target: HTMLElement) =>
+    Array.from(target.querySelectorAll('[data-nature]')).map((n) => n.getAttribute('data-nature'));
+  const ouvrir = (target: HTMLElement) => {
+    (target.querySelector('[data-action="expand"]') as HTMLButtonElement).click();
+    flushSync();
+  };
+  const choisir = (target: HTMLElement, nature: string) => {
+    (target.querySelector(`[data-nature="${nature}"] input`) as HTMLInputElement).click();
+    flushSync();
+  };
+
+  it("n'offre sur la ligne que le geste proposé et « Traiter » — plus d'« Adhérente » ni de « Virement » secondaire", () => {
+    const target = render([line()], { accounts });
+
+    expect(btn(target, 'Adhérente')).toBeUndefined();
+    expect(btn(target, 'Virement')).toBeUndefined();
+    expect(btn(target, 'Traiter')).not.toBeUndefined();
+  });
+
+  it("propose l'avance d'un adhérent au crédit, le remboursement au débit", () => {
+    const credit = render([line()], { accounts });
+    ouvrir(credit);
+    expect(natures(credit)).toEqual(['saisie', 'pointer', 'virement', 'avance']);
+    unmount(component);
+
+    const debit = render([line({ amount: -9500, name: 'VIR PETIT EMMA REMB' })], { accounts });
+    ouvrir(debit);
+    expect(natures(debit)).toEqual(['saisie', 'pointer', 'remboursement', 'virement']);
+  });
+
+  it("ouvre le virement reconnu sur sa nature, avec son formulaire en place et non un dialogue", () => {
+    const target = render(
+      [line({ amount: -50000, name: 'VIR VERS LIVRET A', aiSuggestions: JSON.stringify({ kind: 'internal-transfer' }) })],
+      { accounts }
+    );
+
+    btn(target, 'Virement').click();
+    flushSync();
+
+    expect((target.querySelector('[data-nature="virement"] input') as HTMLInputElement).checked).toBe(true);
+    expect(target.querySelector('[data-testid="internal-transfer-form"]')).not.toBeNull();
+    // L'ancien dialogue « Virement interne » et son « Enregistrer et pointer » ont disparu.
+    expect(document.body.textContent).not.toContain('Enregistrer et pointer');
+  });
+
+  it("saisit l'avance d'un adhérent en place, le libellé repris de la banque", () => {
+    const target = render([line()], { accounts });
+    ouvrir(target);
+    choisir(target, 'avance');
+
+    const libelle = target.querySelector('#member-advance-description') as HTMLInputElement;
+    expect(libelle.value).toBe('Reçu de VIR DUPONT JEAN');
+    expect(btn(target, "Enregistrer l'avance")).not.toBeUndefined();
+  });
+
+  it("fait du remboursement une nature : plus d'interrupteur, ni de ventilation, et un bouton qui le dit", () => {
+    const target = render([line({ amount: -9500, name: 'VIR PETIT EMMA REMB' })], { accounts });
+    ouvrir(target);
+    expect(btn(target, 'Enregistrer la dépense')).not.toBeUndefined();
+
+    choisir(target, 'remboursement');
+
+    expect(target.querySelector('#refund-mode')).toBeNull();
+    expect(target.querySelector('#split-mode')).toBeNull();
+    expect(btn(target, 'Enregistrer le remboursement')).not.toBeUndefined();
   });
 });
 

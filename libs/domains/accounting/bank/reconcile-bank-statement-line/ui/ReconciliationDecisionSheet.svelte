@@ -1,16 +1,16 @@
 <script lang="ts">
-  import { ArrowLeftRight, Check, HandCoins, Link2 } from '@lucide/svelte';
+  import { Check } from '@lucide/svelte';
   import { Badge, Button, ResponsiveSheet } from '@nba/ui';
   import ReconciliationRowDetail from './ReconciliationRowDetail.svelte';
   import { ligneDeReleve, propositionDe, type EtatDeLigne } from './reconciliation-row-model';
-  import { isOneClickValidatable, parseSuggestion } from './reconciliation-suggestion';
+  import { libelleDEnregistrement, naturesDeLigne, parLeFormulaire } from './reconciliation-natures';
   import type { ReconciliationState, BankStatementLine } from './reconciliation.svelte';
 
   /**
    * La décision, au doigt.
    *
    * Le dépliage en place convient à un écran large : la ligne s'ouvre sous elle-même et
-   * l'on garde la file en contexte. Sur un téléphone, ce formulaire — deux onglets, une
+   * l’on garde la file en contexte. Sur un téléphone, ce formulaire — le choix de la nature, une
    * ventilation, un choix d'adhérent — occupe déjà plus que la hauteur visible, et
    * s'ouvre au milieu d'une liste qu'on vient de faire défiler.
    *
@@ -21,15 +21,11 @@
    */
   let {
     state: reconState = $bindable(),
-    etat,
-    onVirement,
-    onAdherente
+    etat
   }: {
     state: ReconciliationState;
-    /** Ce que l'écran sait de la ligne ouverte : écritures existantes, gestes possibles. */
+    /** Ce que l'écran sait de la ligne ouverte : écritures existantes, proposition. */
     etat: (line: BankStatementLine) => EtatDeLigne;
-    onVirement: (line: BankStatementLine) => void;
-    onAdherente: (line: BankStatementLine) => void;
   } = $props();
 
   const line = $derived(reconState.selectedTx);
@@ -38,10 +34,13 @@
   const proposition = $derived(line && contexte ? propositionDe(line, contexte) : null);
 
   const enAttente = $derived(line?.status === 'pending');
-  const peutPointer = $derived(!!enAttente && (contexte?.ecrituresExistantes.length ?? 0) > 0);
-  const peutValider = $derived(
-    !!enAttente && !peutPointer && !!line && isOneClickValidatable(parseSuggestion(line))
-  );
+  /* La nature affichée, et non la nature retenue : celle-ci peut ne plus être offerte (la
+     dernière facture vient d'être payée), et le panneau retombe alors sur la saisie. */
+  const nature = $derived.by(() => {
+    if (!line || !enAttente) return reconState.nature;
+    const offertes = naturesDeLigne(line, reconState.contexteDeNature(line));
+    return offertes.some((o) => o.nature === reconState.nature) ? reconState.nature : 'saisie';
+  });
   const verrouille = $derived(reconState.isClosed || reconState.isSubmitting);
 
   /*
@@ -58,7 +57,9 @@
   );
   const validationPossible = $derived(
     !!enAttente &&
-      reconState.activeRightTab === 'manual' &&
+      parLeFormulaire(nature) &&
+      // Une facture se reprend d'abord : avant, le formulaire n'a rien à enregistrer.
+      !(nature === 'facture' && reconState.splits.length === 0) &&
       !verrouille &&
       !(reconState.isSplitMode && sommeDesParts !== reconState.remainingAmount)
   );
@@ -71,9 +72,18 @@
     Deux effets se renvoyaient la valeur l'un à l'autre : la feuille se rouvrait dans la
     même passe, et ni le bouton de fermeture ni Échap n'en venaient à bout.
   */
-  let ouvert = $state(!!reconState.selectedTx);
+  /*
+    La feuille est celle du téléphone. Au bureau, la ligne se déplie en place ; la feuille
+    s'ouvrait pourtant par-dessus, puisque l'état partagé est le même et qu'elle est portée
+    hors du bloc qui la masque au-delà de 768 px : deux formulaires montés à la fois, aux
+    identifiants de champ en double. Sans `matchMedia` (jsdom), elle s'ouvre comme avant.
+  */
+  const auTelephone = () =>
+    typeof window === 'undefined' || !window.matchMedia || window.matchMedia('(max-width: 767px)').matches;
+
+  let ouvert = $state(!!reconState.selectedTx && auTelephone());
   $effect(() => {
-    ouvert = !!reconState.selectedTx;
+    ouvert = !!reconState.selectedTx && auTelephone();
   });
 
   const compte = $derived(
@@ -82,13 +92,18 @@
 </script>
 
 {#snippet headerTrailing()}
-  {#if enAttente && reconState.activeRightTab === 'manual'}
+  <!--
+    Le virement et l'avance portent leur propre bouton, sous leurs deux champs ; le pointage se
+    fait écriture par écriture. Seules les natures qui passent par le formulaire de saisie — long,
+    et que le clavier logiciel recouvre — gardent leur validation dans la barre de navigation.
+  -->
+  {#if enAttente && line && parLeFormulaire(nature)}
     <Button
       type="button"
       disabled={!validationPossible}
       onclick={() => reconState.handleCreateAndMatch()}
       class="size-11 rounded-full p-0"
-      aria-label={reconState.isSplitMode ? 'Enregistrer la ventilation' : 'Créer et rapprocher'}
+      aria-label={libelleDEnregistrement(nature, line, reconState.isSplitMode)}
     >
       <Check class="size-5" />
     </Button>
@@ -113,7 +128,7 @@
   detents={[0.6, 0.95]}
   {headerTrailing}
   size="lg"
-  footerHidden={!enAttente}
+  footerHidden
 >
   {#if line && ligne && proposition}
     <div class="space-y-5">
@@ -151,53 +166,4 @@
     </div>
   {/if}
 
-  <!--
-    Les gestes sont **nommés** ici, alors que le balayage les offre par leur seule icône.
-    C'est le second chemin, celui qu'on prend quand on veut lire avant de décider.
-
-    Côte à côte, et non empilés : une ligne peut en proposer trois — encaisser, virement,
-    adhérente — soit, pleine largeur, cent cinquante pixels de pied sur un écran qui en
-    manque. Les intitulés sont donc courts ; la proposition qu'ils tranchent se lit
-    juste au-dessus, ils n'ont pas à la répéter.
-  -->
-  {#snippet footer()}
-    <div class="flex flex-row items-center justify-end gap-2">
-      {#if line && contexte?.adherentePossible}
-        <Button
-          type="button"
-          variant="outline"
-          disabled={verrouille}
-          class="min-w-0 flex-1 gap-1.5 sm:flex-none"
-          onclick={() => onAdherente(line)}
-        >
-          <HandCoins class="size-4 shrink-0" />
-          <span class="truncate">Adhérente</span>
-        </Button>
-      {/if}
-      {#if line && contexte?.virementPossible}
-        <Button
-          type="button"
-          variant="outline"
-          disabled={verrouille}
-          class="min-w-0 flex-1 gap-1.5 sm:flex-none"
-          onclick={() => onVirement(line)}
-        >
-          <ArrowLeftRight class="size-4 shrink-0" />
-          <span class="truncate">Virement</span>
-        </Button>
-      {/if}
-      {#if line && peutPointer}
-        <!-- Pointer n'est pas créer : le geste mène à la liste des écritures qui correspondent. -->
-        <Button
-          type="button"
-          disabled={verrouille}
-          class="min-w-0 flex-1 gap-1.5 sm:flex-none"
-          onclick={() => (reconState.activeRightTab = 'ledger')}
-        >
-          <Link2 class="size-4 shrink-0" />
-          <span class="truncate">Pointer</span>
-        </Button>
-      {/if}
-    </div>
-  {/snippet}
 </ResponsiveSheet>

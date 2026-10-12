@@ -1,9 +1,8 @@
 <script lang="ts">
   import { Badge, Button, ListView, ListRow } from '@nba/ui';
-  import MemberTransferDialog from './MemberTransferDialog.svelte';
-  import InternalTransferDialog from './InternalTransferDialog.svelte';
   import ReconciliationDecisionSheet from './ReconciliationDecisionSheet.svelte';
   import { gestesDeLigne, ligneDeReleve, type EtatDeLigne } from './reconciliation-row-model';
+  import { etiquetteDeProposition, type NatureDeLigne } from './reconciliation-natures';
   import type { ReconciliationState, BankStatementLine } from './reconciliation.svelte';
 
   /**
@@ -27,61 +26,30 @@
 
   /** Ce que l'écran sait d'une ligne, rassemblé une fois pour le modèle. */
   function etatDe(line: BankStatementLine): EtatDeLigne {
-    const cents = (line as { amountCents?: number }).amountCents ?? line.amount ?? 0;
+    const contexte = reconState.contexteDeNature(line);
     return {
       ecrituresExistantes: line.status === 'pending' ? reconState.getSuggestions(line) : [],
-      virementPossible:
-        line.status === 'pending' && cents !== 0 && reconState.transferCounterpartsFor(line).length > 0,
-      adherentePossible:
-        line.status === 'pending' &&
-        cents > 0 &&
-        !!reconState.thirdPartyAccount &&
-        reconState.isBankLine(line),
+      virementPossible: contexte.virementPossible,
+      etiquette: etiquetteDeProposition(line, contexte),
       categories: reconState.categories,
       isClosed: reconState.isClosed
     };
   }
 
   /*
-    Les deux dialogues vivent ici, une fois, et non par rangée : la file en compte
-    plusieurs dizaines, et chacune en montait deux.
+    Les dialogues « Virement » et « Adhérente » ne vivent plus ici : ce sont des natures de la
+    ligne, choisies dans la feuille. Un geste qui les vise ouvre la feuille dessus.
   */
-  let ligneVirement = $state<BankStatementLine | null>(null);
-  let virementOuvert = $state(false);
-  let ligneAdherente = $state<BankStatementLine | null>(null);
-  let adherenteOuvert = $state(false);
-
-  /* Les dialogues referment eux-mêmes leur liaison ; la ligne s'efface à leur suite. */
-  $effect(() => {
-    if (!virementOuvert) ligneVirement = null;
-  });
-  $effect(() => {
-    if (!adherenteOuvert) ligneAdherente = null;
-  });
-
-  const ouvrirVirement = (line: BankStatementLine) => {
-    reconState.selectedTx = null;
-    ligneVirement = line;
-    virementOuvert = true;
-  };
-  const ouvrirAdherente = (line: BankStatementLine) => {
-    reconState.selectedTx = null;
-    ligneAdherente = line;
-    adherenteOuvert = true;
+  const ouvrirSur = (nature?: NatureDeLigne) => (line: BankStatementLine) => {
+    reconState.selectedTx = line;
+    if (nature) reconState.choisirNature(nature);
   };
 
   const gestes = {
     onValider: (line: BankStatementLine) => reconState.validateSuggestion(line),
-    onPointer: (line: BankStatementLine) => {
-      reconState.activeRightTab = 'ledger';
-      reconState.selectedTx = line;
-    },
-    onVirement: ouvrirVirement,
-    onAdherente: ouvrirAdherente,
-    onOuvrir: (line: BankStatementLine) => {
-      reconState.activeRightTab = etatDe(line).ecrituresExistantes.length > 0 ? 'ledger' : 'manual';
-      reconState.selectedTx = line;
-    }
+    onPointer: ouvrirSur('pointer'),
+    onVirement: ouvrirSur('virement'),
+    onOuvrir: ouvrirSur()
   };
 
   /**
@@ -156,27 +124,4 @@
   </div>
 {/if}
 
-<ReconciliationDecisionSheet
-  bind:state={reconState}
-  etat={etatDe}
-  onVirement={ouvrirVirement}
-  onAdherente={ouvrirAdherente}
-/>
-
-{#if ligneAdherente}
-  <MemberTransferDialog
-    bind:open={adherenteOuvert}
-    line={ligneAdherente}
-    isSubmitting={reconState.isSubmitting}
-    onConfirm={(description) => reconState.handleMemberTransfer(ligneAdherente!, description)}
-  />
-{/if}
-
-{#if ligneVirement}
-  <InternalTransferDialog
-    bind:open={virementOuvert}
-    state={reconState}
-    line={ligneVirement}
-    onConfirm={(accountId, description) => reconState.handleInternalTransfer(ligneVirement!, accountId, description)}
-  />
-{/if}
+<ReconciliationDecisionSheet bind:state={reconState} etat={etatDe} />

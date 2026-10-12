@@ -488,13 +488,24 @@ describe('createReconciliationState logic unit tests', () => {
       expect(state.splits[0].amount).toBe(150);
     });
 
-    it("bascule sur l'onglet de saisie et n'écrit rien", () => {
+    it('envoie la facture avec l’écriture simple, pour que le serveur la passe à « payée »', async () => {
       const state = stateWithInvoices([invoice()]);
-      state.activeRightTab = 'ledger';
+      vi.mocked(globalThis.fetch).mockResolvedValue({ ok: true, json: async () => ({ line: null, entries: [] }) } as any);
+
+      state.prefillFromInvoices([101]);
+      await state.handleCreateAndMatch();
+
+      const appel = vi.mocked(globalThis.fetch).mock.calls.find(([, init]: any) => String(init?.body).includes('"action":"create"'));
+      expect(JSON.parse((appel![1] as any).body)).toMatchObject({ action: 'create', invoiceId: 101 });
+    });
+
+    it("reste sur la nature « Règlement de facture » et n'écrit rien", () => {
+      const state = stateWithInvoices([invoice()]);
+      state.nature = 'pointer';
 
       state.prefillFromInvoices([101]);
 
-      expect(state.activeRightTab).toBe('manual');
+      expect(state.nature).toBe('facture');
       expect(vi.mocked(globalThis.fetch)).not.toHaveBeenCalledWith(
         '/admin/api/accounting/reconciliation',
         expect.objectContaining({ body: expect.stringContaining('"action":"create"') })

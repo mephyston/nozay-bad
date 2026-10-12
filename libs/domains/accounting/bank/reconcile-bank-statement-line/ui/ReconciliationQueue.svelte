@@ -217,7 +217,7 @@
   -->
   {#if rows.length > 0 && reconState.view === 'queue'}
     <div class="hidden lg:flex items-center gap-3 px-4 py-1.5 border-b border-border/60 bg-muted/10 text-[11px] text-muted-foreground">
-      {#each [['↑ ↓', 'naviguer'], ['Entrée', 'valider'], ['E', 'modifier'], ['/', 'rechercher']] as [k, label]}
+      {#each [['↑ ↓', 'naviguer'], ['Entrée', 'valider'], ['E', 'traiter'], ['/', 'rechercher']] as [k, label]}
         <span class="flex items-center gap-1">
           <kbd class="rounded border border-border bg-background px-1 py-px font-mono text-[10px]">{k}</kbd>
           <span>{label}</span>

@@ -9,6 +9,7 @@ export * from './reconciliation-suggestion';
 import { createReconciliationActions } from './reconciliation-actions';
 import { correspondA } from '@nba/ui';
 import { coverageCents, remainingToReconcileCents } from '../../../shared/bank-statement-line';
+import { natureProposee, type ContexteDeNature, type NatureDeLigne } from './reconciliation-natures';
 
 /**
  * L'état de l'écran de rapprochement.
@@ -58,6 +59,28 @@ export class ReconciliationStore {
     );
 
   /**
+   * Ce qu'il faut savoir d'une ligne pour en proposer la nature : la file, la feuille et le
+   * panneau déplié lisent tous le même, pour présélectionner la même chose.
+   */
+  contexteDeNature = (line: BankStatementLine): ContexteDeNature => {
+    const cents = (line as any).amountCents ?? line.amount ?? 0;
+    const enAttente = line.status === 'pending';
+    return {
+      ecrituresExistantes: enAttente ? this.getSuggestions(line).length : 0,
+      facturesImpayees: this.unpaidInvoices.length,
+      facturesAuMontant: cents > 0 ? this.unpaidInvoices.filter((inv) => inv.totalAmount === cents).length : 0,
+      virementPossible: enAttente && cents !== 0 && this.transferCounterpartsFor(line).length > 0,
+      avancePossible: enAttente && cents > 0 && !!this.thirdPartyAccount && this.isBankLine(line)
+    };
+  };
+
+  /** Choisir une nature ; le remboursement est une recette rendue, et le formulaire le sait. */
+  choisirNature = (nature: NatureDeLigne) => {
+    this.nature = nature;
+    this.isRefund = nature === 'remboursement';
+  };
+
+  /**
    * La ligne de relevé qui, sur le compte d'en face, répond à celle-ci.
    *
    * Un virement courant↔livret laisse une ligne sur chaque relevé : même montant, sens opposé,
@@ -100,7 +123,8 @@ export class ReconciliationStore {
   */
   view = $state<'queue' | 'history'>('queue');
   unpaidInvoices = $state<Invoice[]>([]);
-  activeRightTab = $state<'manual' | 'ledger'>('manual');
+  /** Ce qu'est la ligne ouverte : elle décide du formulaire affiché sous le choix. */
+  nature = $state<NatureDeLigne>('saisie');
 
   category = $state('1');
   selectedMemberId = $state('');
@@ -362,7 +386,8 @@ export class ReconciliationStore {
       if (this.selectedTx) {
         this.amountToLink = parseFloat((this.remainingAmount / 100).toFixed(2));
         this.memberSearchQuery = ''; this.categorySearchQuery = '';
-        this.selectedInvoiceIds = new Set(); this.isSplitMode = false; this.splits = []; this.isRefund = false;
+        this.selectedInvoiceIds = new Set(); this.isSplitMode = false; this.splits = [];
+        // `isRefund` suit la nature, que l'ouverture d'une ligne choisit (plus bas) : pas de remise à zéro ici.
       }
     });
 
@@ -379,6 +404,10 @@ export class ReconciliationStore {
       if (this.selectedTx) {
         const key = `${this.selectedTx.id}:${this.selectedTx.aiSuggestions ?? ''}`;
         if (key !== this.lastPrefilledKey) {
+          // Une autre ligne s'ouvre sur sa propre nature ; une nouvelle analyse de la même la garde.
+          if (Number(this.lastPrefilledKey?.split(':')[0]) !== this.selectedTx.id) {
+            this.choisirNature(natureProposee(this.selectedTx, this.contexteDeNature(this.selectedTx)));
+          }
           this.lastPrefilledKey = key;
           this.prefillFromSuggestion(this.selectedTx);
         }

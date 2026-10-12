@@ -13,7 +13,8 @@
     isSubmitting = false,
     handleCreateAndMatch,
     isSplitMode = $bindable(false),
-    isRefund = $bindable(false),
+    isRefund = false,
+    libelleBouton = 'Créer et rapprocher',
     splits = $bindable([]),
     addSplitRow,
     removeSplitRow,
@@ -47,8 +48,10 @@
      */
     handleCreateAndMatch: () => void;
     isSplitMode: boolean;
-    /** Ligne au débit : de l'argent rendu sur une recette, et non une dépense. */
+    /** Ligne au débit : de l'argent rendu sur une recette, et non une dépense. La nature en décide. */
     isRefund?: boolean;
+    /** Ce que fait le bouton qui enregistre, dit par la nature choisie : « Enregistrer la recette »… */
+    libelleBouton?: string;
     splits: { category: string; amount: number }[];
     addSplitRow: () => void;
     removeSplitRow: (idx: number) => void;
@@ -210,15 +213,16 @@
 </script>
 
 <div class="space-y-4">
-  <h4 class="text-sm font-semibold text-foreground">Créer et rapprocher une nouvelle écriture</h4>
-
   <!--
     Un interrupteur, et non un bouton.
 
     « Ventiler » ne déclenche rien : il change la forme du formulaire, et cet état dure.
     Un bouton dont l'intitulé bascule entre « Ventiler » et « Annuler la ventilation »
     demande de lire pour savoir où l'on en est ; un interrupteur le montre.
+
+    Un remboursement n'a qu'une imputation : la recette qu'il diminue. Pas de ventilation.
   -->
+  {#if !isRefund}
   <SwitchField
     id="split-mode"
     label="Ventiler sur plusieurs catégories"
@@ -234,20 +238,6 @@
       }
     }}
   />
-
-  <!--
-    Une sortie d'argent qui n'est pas une dépense : le trop-perçu d'une cotisation rendu à
-    l'adhérente. Saisie en dépense, elle gonflait recettes et charges du même montant ; en
-    recette négative, la recette de la catégorie diminue et rien d'autre ne bouge. Une seule
-    imputation : la ventilation reste réservée aux dépenses et recettes ordinaires.
-  -->
-  {#if selectedTx && selectedTx.amount < 0 && !isSplitMode}
-    <SwitchField
-      id="refund-mode"
-      label="Remboursement d'une recette"
-      hint="Trop-perçu rendu (cotisation payée deux fois…) : la recette de la catégorie diminue, aucune charge n'est créée."
-      bind:checked={isRefund}
-    />
   {/if}
 
   <!--
@@ -455,7 +445,7 @@
         Enregistrer la ventilation
       {:else}
         <span class="flex items-center justify-center gap-1.5">
-          <span>Créer et rapprocher</span>
+          <span>{libelleBouton}</span>
           <Amount cents={remainingAmount} />
         </span>
       {/if}

@@ -21,14 +21,28 @@ Ce n'est qu'une proposition : rien n'est enregistré tant que vous n'avez pas va
 
 ## 3. Traiter une ligne
 
-La liste de gauche répartit les lignes en trois onglets — **En attente**, **Rapprochées**, **Ignorées** — avec une recherche libre. Sélectionner une ligne ouvre à droite un panneau proposant trois façons de la traiter :
+La liste de gauche répartit les lignes en trois onglets — **En attente**, **Rapprochées**, **Ignorées** — avec une recherche libre. Sous le libellé de chaque ligne, la **proposition** s'affiche avec sa nature en étiquette (« Recette », « Déjà saisie », « Virement entre nos comptes »…).
 
-- **Saisir écriture** — créer l'écriture correspondante (type, catégorie, montant, date, libellé, adhérent). Une même ligne bancaire peut être **ventilée en plusieurs écritures** : ajoutez des lignes de répartition tant que le montant n'est pas soldé.
-- **Associer** — rattacher la ligne à une écriture **déjà saisie** dans le grand livre (un chèque enregistré, une jambe de virement interne, une note de frais validée…).
+Chaque ligne porte au plus deux boutons :
+
+- le **geste proposé**, quand il y en a un : **Pointer** une écriture qui existe déjà, **Valider** la proposition de l'analyse, ou **Virement** quand l'analyse a reconnu un virement entre deux comptes du club ;
+- **Traiter**, qui ouvre la ligne. Au téléphone, un appui sur la ligne fait la même chose, et le balayage offre les deux mêmes gestes.
+
+Une ligne ouverte pose une seule question : **« Qu'est-ce que cette ligne ? »**. La nature proposée est déjà cochée, marquée *Proposée*. Le formulaire qui suit dépend de la réponse :
+
+| Nature | Pour | Ce qui est enregistré |
+|---|---|---|
+| **Recette** / **Dépense** | Une entrée ou une sortie à imputer à une catégorie | L'écriture, éventuellement **ventilée** en plusieurs parts (un adhérent par part) tant que le montant n'est pas soldé |
+| **Déjà saisie** | Une opération que les livres portent déjà : chèque enregistré, commande encaissée, note de frais validée… | Rien de nouveau : la ligne est associée à l'écriture existante. Le nombre entre parenthèses compte les écritures au même montant, à ±7 jours |
+| **Règlement de facture** (crédit) | Le paiement d'une ou plusieurs **factures en attente de règlement** | Les factures choisies remplissent l'écriture, une part par facture, que vous relisez avant d'enregistrer. Elles passent au statut *Payée* |
+| **Remboursement d'une recette** (débit) | De l'argent rendu : trop-perçu d'une cotisation, article remboursé | Une recette négative dans sa catégorie : la recette diminue, aucune charge n'est créée. Une seule imputation |
+| **Virement entre nos comptes** | De l'argent qui passe d'un compte du club à un autre | Les deux écritures, une par compte, hors résultat. Voir ci-dessous |
+| **Avance d'un adhérent** (crédit, compte bancaire) | Un adhérent a viré au club pour alimenter son porte-monnaie | Un virement depuis le compte d'attente des adhérents : l'argent lui reste dû. Son porte-monnaie se crédite ensuite depuis l'écran du porte-monnaie |
+
+Le bouton d'enregistrement dit ce qu'il fait : « Enregistrer la recette », « Enregistrer le virement », « Enregistrer l'avance »…
 
 > [!IMPORTANT]
-> Un virement entre deux comptes du club apparaît sur **les deux relevés**. Le bouton **Virement** de la ligne le saisit en un geste : choisissez le compte d'en face, il écrit les deux écritures — une par compte — et pointe la ligne. Si le relevé de l'autre compte porte la ligne qui répond (même montant, sens opposé, à quelques jours près), elle est pointée en même temps ; sinon, associez-la depuis cet autre compte. Le [grand livre](/admin/help/grand-livre) reste possible. N'associer qu'une des deux lignes laisse un écart que rien n'explique, et l'écran vous le signale.
-- **Associer facture** — rattacher la ligne à une ou plusieurs **factures en attente de règlement**. Les factures concernées passent automatiquement au statut *Payée*.
+> Un virement entre deux comptes du club apparaît sur **les deux relevés**. La nature **Virement entre nos comptes** le saisit en un geste : choisissez le compte d'en face, elle écrit les deux écritures — une par compte — et pointe la ligne. Si le relevé de l'autre compte porte la ligne qui répond (même montant, sens opposé, à quelques jours près), elle est pointée en même temps ; sinon, associez-la depuis cet autre compte. Le [grand livre](/admin/help/grand-livre) reste possible. N'associer qu'une des deux lignes laisse un écart que rien n'explique, et l'écran vous le signale.
 
 Une ligne est marquée **Rapprochée** dès que le total des écritures qui lui sont rattachées atteint son montant. Tant qu'il reste un écart, elle demeure en attente et vous pouvez continuer à la ventiler.
 
