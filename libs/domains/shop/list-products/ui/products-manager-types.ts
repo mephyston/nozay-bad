@@ -12,6 +12,8 @@ export interface Product {
   stock: number;
   trackStock?: boolean;
   active: boolean;
+  /** Proposé dans la boutique des adhérents ; éteint, seul le bureau le commande. */
+  storefront?: boolean;
   parentId?: number | null;
   variantLabel?: string | null;
   variantCount?: number;

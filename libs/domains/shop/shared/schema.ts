@@ -19,6 +19,8 @@ export const productsTable = sqliteTable('products', {
   stock: integer('stock').notNull().default(0),
   trackStock: integer('track_stock', { mode: 'boolean' }).notNull().default(false),
   active: integer('active', { mode: 'boolean' }).notNull().default(true),
+  /** Proposé dans la boutique des adhérents ; éteint, seul le bureau le commande. */
+  storefront: integer('storefront', { mode: 'boolean' }).notNull().default(true),
   /*
     Une déclinaison est un produit rattaché à un parent et distingué par un libellé
     (« L », « 12 ans »). Elle garde son prix, son stock et son état — c'est elle que la

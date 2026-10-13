@@ -1,6 +1,7 @@
 import { type Db, AppError } from '@nba/db';
 import { isSeasonClosed, membershipGrantsAccess } from '@nba/members-api';
 import { productDisplayName } from '../shared/product';
+import { motifArticleIndisponible } from '../shared/availability';
 import { Order, motifDeRefusCommande, type OrderStatus } from '../shared/order';
 import {
   ConcurrentModificationError,
@@ -37,6 +38,8 @@ export interface UpdateOrderOptions {
   ownerMemberId?: number;
   /** Les statuts où la correction est permise ; par défaut, tout ce qui n'est pas réglé. */
   statuses?: readonly OrderStatus[];
+  /** Correction par l'adhérent : un article réservé au bureau ne lui est pas proposé. */
+  storefront?: boolean;
 }
 
 export async function updateOrder(
@@ -87,12 +90,11 @@ export async function updateOrder(
 
   const product = await repo.getProductById(db, body.productId);
   if (!product) throw new ProductNotFoundError();
-  if (await repo.hasVariants(db, product.id)) {
-    throw new AppError(`« ${productDisplayName(product)} » se décline : choisissez l'une de ses déclinaisons.`, 400);
-  }
-  if (product.id !== order.productId && product.active === false) {
-    throw new AppError(`« ${productDisplayName(product)} » n'est plus proposé.`, 400);
-  }
+  const indisponible = await motifArticleIndisponible(db, product, {
+    storefront: options.storefront,
+    dejaCommande: product.id === order.productId
+  });
+  if (indisponible) throw new AppError(indisponible, 400);
 
   const paymentMethod = await repo.getPaymentMethodByCode(db, body.paymentMethod);
   if (!paymentMethod) throw new AppError(`Le moyen de paiement '${body.paymentMethod}' n'existe pas.`, 400);

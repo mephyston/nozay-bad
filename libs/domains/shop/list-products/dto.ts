@@ -1,4 +1,9 @@
-export interface ListProductsInput { productCategoryId?: number; active?: boolean }
+export interface ListProductsInput {
+  productCategoryId?: number;
+  active?: boolean;
+  /** Vrai : la vitrine des adhérents, sans ce qui est réservé au bureau. */
+  storefront?: boolean;
+}
 
 /** Un produit tel que les écrans le lisent : la ligne, plus ce qui se déduit d'elle. */
 export interface ListedProduct {
@@ -14,6 +19,8 @@ export interface ListedProduct {
   stock: number;
   trackStock: boolean;
   active: boolean;
+  /** Proposé dans la boutique des adhérents ; éteint, seul le bureau le commande. */
+  storefront: boolean;
   parentId: number | null;
   variantLabel: string | null;
   /** Déclinaisons rattachées, actives ou non : un produit qui en a ne se commande pas lui-même. */

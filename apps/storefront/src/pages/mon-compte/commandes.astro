@@ -97,7 +97,7 @@ if (active) {
   if (orders.some((o: any) => o.order?.status === 'created')) {
     try {
       const [productsRes, methodsRes] = await Promise.all([
-        api.fetch('http://localhost/shop/products?active=true'),
+        api.fetch('http://localhost/shop/products?active=true&storefront=true'),
         api.fetch('http://localhost/accounting/payment-methods')
       ]);
       if (productsRes.ok) products = ((await productsRes.json()) as any).data || [];

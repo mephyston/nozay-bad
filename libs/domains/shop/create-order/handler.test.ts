@@ -123,4 +123,42 @@ describe('createOrder handler (Eligibility & Validation)', () => {
     const order = await createOrder(db, { seasonId, memberId, productId, quantity: 1, paymentMethod: paymentMethodCode });
     expect(order.status).toBe('created');
   });
+
+  /*
+    `active` retire un article de partout, `storefront` de la seule boutique des
+    adhérents : le bureau peut encore le commander pour quelqu'un. Une déclinaison suit
+    son parent sur les deux.
+  */
+  it("refuse un article inactif, et une déclinaison dont le parent est inactif", async () => {
+    await db.update(productsTable).set({ active: false }).run();
+    await expect(createOrder(db, { seasonId, memberId, productId, quantity: 1, paymentMethod: paymentMethodCode })).rejects.toThrow("n'est plus proposé");
+
+    const parent = await db.select().from(productsTable).get();
+    const taille = await db.insert(productsTable).values({
+      name: parent.name, productCategoryId: parent.productCategoryId, priceCents: 1500, parentId: parent.id, variantLabel: 'M', createdAt: new Date()
+    }).returning().get();
+    await expect(createOrder(db, { seasonId, memberId, productId: taille.id, quantity: 1, paymentMethod: paymentMethodCode })).rejects.toThrow("n'est plus proposé");
+  });
+
+  it("refuse un parent à déclinaisons : c'est une taille qu'on commande", async () => {
+    const parent = await db.select().from(productsTable).get();
+    await db.insert(productsTable).values({
+      name: parent.name, productCategoryId: parent.productCategoryId, priceCents: 1500, parentId: parent.id, variantLabel: 'M', createdAt: new Date()
+    }).run();
+    await expect(createOrder(db, { seasonId, memberId, productId, quantity: 1, paymentMethod: paymentMethodCode })).rejects.toThrow('se décline');
+  });
+
+  it("refuse à la boutique un article réservé au bureau, que le bureau commande encore", async () => {
+    await db.update(productsTable).set({ storefront: false }).run();
+    const parent = await db.select().from(productsTable).get();
+    const taille = await db.insert(productsTable).values({
+      name: parent.name, productCategoryId: parent.productCategoryId, priceCents: 1500, parentId: parent.id, variantLabel: 'M', createdAt: new Date()
+    }).returning().get();
+
+    await expect(
+      createOrder(db, { seasonId, memberId, productId: taille.id, quantity: 1, paymentMethod: paymentMethodCode }, { storefront: true })
+    ).rejects.toThrow("n'est pas proposé dans la boutique");
+    const order = await createOrder(db, { seasonId, memberId, productId: taille.id, quantity: 1, paymentMethod: paymentMethodCode });
+    expect(order.status).toBe('created');
+  });
 });

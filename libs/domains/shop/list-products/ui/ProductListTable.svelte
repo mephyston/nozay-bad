@@ -206,6 +206,9 @@
       <span class="text-muted-foreground">Inactif</span>
     {/if}
   </Button>
+  {#if product.active && product.storefront === false}
+    <Badge variant="outline" size="xs" title="Absent de la boutique des adhérents : seul le bureau le commande.">Hors boutique</Badge>
+  {/if}
 {/snippet}
 
 {#snippet menuComplet(product: Product)}
@@ -272,6 +275,8 @@
           {#snippet badge()}
             {#if !product.active}
               <Badge variant="outline" size="xs">Inactif</Badge>
+            {:else if product.storefront === false}
+              <Badge variant="outline" size="xs">Hors boutique</Badge>
             {/if}
           {/snippet}
         </ListRow>

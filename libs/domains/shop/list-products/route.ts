@@ -21,14 +21,14 @@ listProductsRoute.get(
     if (!c.env || !c.env.DB) {
       return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
     }
-    const { productCategoryId, active: activeStr } = c.req.valid('query');
+    const { productCategoryId, active: activeStr, storefront } = c.req.valid('query');
     const db = createDb(c.env.DB);
 
     let active: boolean | undefined = undefined;
     if (activeStr === 'true') active = true;
     else if (activeStr === 'false') active = false;
 
-    const products = await listProducts(db, { productCategoryId, active });
+    const products = await listProducts(db, { productCategoryId, active, storefront: storefront === 'true' || undefined });
     return c.json({ success: true, data: products });
   }
 );

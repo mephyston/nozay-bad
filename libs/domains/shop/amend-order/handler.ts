@@ -13,5 +13,5 @@ import type { AmendOrderInput, AmendOrderOutput } from './dto';
  * on reprend le code ; seul le propriétaire ne change jamais.
  */
 export async function amendOrder(db: Db, id: number, body: AmendOrderInput): Promise<AmendOrderOutput> {
-  return updateOrder(db, id, body, { ownerMemberId: body.memberId, statuses: ['created'] });
+  return updateOrder(db, id, body, { ownerMemberId: body.memberId, statuses: ['created'], storefront: true });
 }

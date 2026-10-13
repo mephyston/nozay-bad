@@ -20,6 +20,8 @@ export interface ProductFormValues {
   variantLabel: string;
   price: string;
   active: boolean;
+  /** Proposé dans la boutique des adhérents. */
+  storefront: boolean;
   trackStock: boolean;
   stock: string;
   /** Image choisie dans le formulaire, déposée après l'enregistrement de la fiche. */
@@ -70,6 +72,7 @@ export async function submitProduct(values: ProductFormValues): Promise<void> {
     stock: values.trackStock ? parseInt(values.stock) || 0 : 0,
     trackStock: values.trackStock,
     active: values.active,
+    storefront: values.storefront,
     parentId: variant ? values.parentId : null,
     variantLabel: variant ? values.variantLabel.trim() : null
   };

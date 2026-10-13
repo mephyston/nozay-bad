@@ -1381,6 +1381,9 @@
           "active": {
             "type": "boolean"
           },
+          "storefront": {
+            "type": "boolean"
+          },
           "description": {
             "anyOf": [
               {
@@ -1439,6 +1442,9 @@
             "type": "boolean"
           },
           "active": {
+            "type": "boolean"
+          },
+          "storefront": {
             "type": "boolean"
           },
           "description": {

@@ -120,7 +120,7 @@ searchRouter.get('/search', async (c) => {
     remember('posts', () => listSearchablePosts(db)),
     features.events ? remember('events', () => listEvents(db)) : none<Awaited<ReturnType<typeof listEvents>>[number]>(),
     !publicOnly && features.teams && seasonCode ? remember(`teams:${seasonCode}`, () => listTeams(db, seasonCode).then((out) => out.teams)) : none<Awaited<ReturnType<typeof listTeams>>['teams'][number]>(),
-    !publicOnly && features.shop ? remember('products', () => listProducts(db, { active: true })) : none<Awaited<ReturnType<typeof listProducts>>[number]>()
+    !publicOnly && features.shop ? remember('products', () => listProducts(db, { active: true, storefront: true })) : none<Awaited<ReturnType<typeof listProducts>>[number]>()
   ]);
 
   const data: SearchOutput = {

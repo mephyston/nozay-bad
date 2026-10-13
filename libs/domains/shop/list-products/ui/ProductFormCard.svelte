@@ -145,9 +145,23 @@
   </FormField>
 {/if}
 
+<!--
+  Deux interrupteurs, comme pour les moyens de paiement : « actif » retire l'article de
+  partout, « boutique » de la seule vitrine des adhérents — le bureau peut encore le
+  commander pour quelqu'un. Sans objet sur un article inactif, le second disparaît.
+-->
 <SwitchField
   id="active"
-  label={isVariant ? 'Déclinaison proposée aux adhérents' : 'Produit actif'}
-  hint={isVariant ? undefined : 'Visible par les adhérents dans la boutique.'}
+  label={isVariant ? 'Déclinaison active' : 'Produit actif'}
+  hint="Inactif, il ne se commande plus, ni dans la boutique ni par le bureau."
   bind:checked={values.active}
 />
+
+{#if values.active}
+  <SwitchField
+    id="storefront"
+    label="Visible dans la boutique des adhérents"
+    hint="Éteint, seul le bureau peut le commander pour un adhérent."
+    bind:checked={values.storefront}
+  />
+{/if}

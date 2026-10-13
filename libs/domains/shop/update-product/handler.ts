@@ -22,6 +22,7 @@ export async function updateProduct(db: Db, id: UpdateProductId, body: UpdatePro
   if (body.stock !== undefined) values.stock = body.stock;
   if (body.trackStock !== undefined) values.trackStock = body.trackStock;
   if (body.active !== undefined) values.active = body.active;
+  if (body.storefront !== undefined) values.storefront = body.storefront;
 
   // Le rattachement demandé, sinon celui en place.
   const parentId = body.parentId === undefined ? current.parentId : body.parentId;

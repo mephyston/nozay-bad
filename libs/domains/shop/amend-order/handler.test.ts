@@ -107,4 +107,15 @@ describe('amendOrder (l’adhérent modifie sa commande)', () => {
     const unchanged = await db.select().from(ordersTable).where(eq(ordersTable.id, order.id)).get();
     expect(unchanged).toMatchObject({ memberId, quantity: 1 });
   });
+
+  it("refuse de passer sur un article réservé au bureau, mais garde celui déjà commandé", async () => {
+    const m = await seedProduct({ stock: 5, trackStock: false });
+    const l = await seedProduct({ name: 'Maillot — L', stock: 5, trackStock: false });
+    await db.update(productsTable).set({ storefront: false }).run();
+    const order = await seedOrder(m.id, { quantity: 1, status: 'created' });
+
+    await expect(amendOrder(db, order.id, body(l.id, 1))).rejects.toThrow("n'est pas proposé dans la boutique");
+    const updated = await amendOrder(db, order.id, body(m.id, 2));
+    expect(updated.quantity).toBe(2);
+  });
 });

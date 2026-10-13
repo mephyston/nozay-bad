@@ -21,6 +21,11 @@ Permettre au bureau de tenir un catalogue lisible — un maillot en neuf tailles
 4. Un produit qui a des déclinaisons — actives ou non — **ne se commande pas lui-même** : ce sont ses déclinaisons que la commande référence. Partout où une commande est lue (historique, notifications, libellé comptable), le produit s'affiche sous son nom composé : « Maillot du club — L ».
 5. Désactiver le parent retire toutes ses déclinaisons de la boutique ; les déclinaisons sont triées dans l'ordre naturel de leurs libellés (XS, S, M, L… ; 10 ans avant 12 ans).
 
+### Disponibilité
+9. Un produit porte deux interrupteurs, comme un moyen de paiement : **actif** le retire de partout — boutique des adhérents comme commande saisie par le bureau ; **visible dans la boutique** le retire de la seule boutique des adhérents, le bureau pouvant encore le commander pour quelqu'un (« hors boutique »).
+10. Une déclinaison suit son parent sur les deux : elle n'est commandable que si elle **et** son parent le sont.
+11. La règle est vérifiée par l'API à la création et à la modification d'une commande, et non par les seuls écrans : un adhérent ne commande pas un article hors boutique par une requête forgée. Corriger la quantité ou le règlement d'une commande ne bute pas sur un article retiré depuis.
+
 ### Catégorie et image
 6. La catégorie d'un produit se modifie à tout moment ; le changement suit sur ses déclinaisons.
 7. L'image est déposée réduite (800 px, WebP quand le service d'images est disponible, sinon l'original), sous une clé adressée par le contenu de la médiathèque, et servie par le site public. Retirer l'image ne supprime pas l'objet : un autre produit peut le partager.
@@ -58,6 +63,17 @@ Fonctionnalité: Déclinaisons et suppression d'un produit
     Quand un adhérent la commande depuis la boutique
     Alors la commande référence la déclinaison
     Et son historique affiche "Maillot du club — L"
+
+  Scénario: Article réservé au bureau
+    Étant donné une déclinaison "M" du produit "Maillot interclubs" rendu invisible dans la boutique
+    Quand un adhérent tente de la commander depuis la boutique
+    Alors la commande est refusée : l'article n'est pas proposé dans la boutique
+    Mais le bureau peut la commander pour cet adhérent depuis l'administration
+
+  Scénario: Déclinaison d'un parent inactif
+    Étant donné un produit "Ancien maillot" inactif avec une déclinaison "M" active
+    Quand le bureau tente de commander "Ancien maillot — M"
+    Alors la commande est refusée : l'article n'est plus proposé
 
   Scénario: Suppression d'un produit jamais commandé
     Étant donné un produit "Maillot homme L" créé par erreur dans "Volants", sans commande

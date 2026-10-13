@@ -18,11 +18,12 @@ order: 1
 | **Prix** | En euros |
 | **Gérer le stock** | À cocher pour suivre une quantité ; sinon l'article reste toujours disponible |
 | **Quantité en stock** | Visible uniquement si le suivi de stock est activé |
-| **Produit actif** | Un produit inactif disparaît du catalogue des adhérents, avec toutes ses déclinaisons |
+| **Produit actif** | Un produit inactif ne se commande plus du tout — ni par les adhérents, ni par le bureau —, avec toutes ses déclinaisons |
+| **Visible dans la boutique des adhérents** | Éteint, le produit disparaît de la boutique des adhérents mais reste proposé quand le bureau crée ou modifie une commande pour quelqu'un. La liste le signale « Hors boutique » |
 
 ## Les déclinaisons
 
-Un produit qui existe en plusieurs tailles, couleurs ou contenances se crée **une fois**, puis se décline : chaque déclinaison a son libellé (« L », « 12 ans », « Rouge »), son prix, son stock et sa disponibilité. Nom, catégorie, description et image sont ceux du produit et se modifient sur sa fiche.
+Un produit qui existe en plusieurs tailles, couleurs ou contenances se crée **une fois**, puis se décline : chaque déclinaison a son libellé (« L », « 12 ans », « Rouge »), son prix, son stock et sa disponibilité. Une déclinaison n'est proposée que si son produit l'est aussi : réactiver une taille ne suffit pas tant que le produit lui-même est inactif ou hors boutique. Nom, catégorie, description et image sont ceux du produit et se modifient sur sa fiche.
 
 - Depuis la liste, **⋯ → Ajouter une déclinaison** sur le produit ouvre une fiche déjà rattachée.
 - Un produit existant se rattache à un autre par le champ **Déclinaison de** de sa fiche ; le laisser sur « Aucun » le détache.

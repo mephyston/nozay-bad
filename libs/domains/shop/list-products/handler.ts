@@ -11,8 +11,8 @@ import { ListProductsInput, ListProductsOutput } from "./dto";
  * naturel de leurs libellés (XS avant S, 10 ans avant 12 ans) — les écrans n'ont
  * plus qu'à regrouper.
  *
- * Demandés actifs, les produits dont le parent est inactif sont retirés avec lui :
- * désactiver un maillot doit retirer toutes ses tailles de la vitrine.
+ * Demandés actifs (ou visibles en boutique), les produits dont le parent ne l'est pas
+ * sont retirés avec lui : désactiver un maillot doit retirer toutes ses tailles.
  */
 export async function listProducts(db: Db, filters: ListProductsInput): Promise<ListProductsOutput> {
   const repo = new ListProductsRepository();
@@ -24,13 +24,14 @@ export async function listProducts(db: Db, filters: ListProductsInput): Promise<
     categoryLabel: p.categoryLabel ?? 'Autre',
     trackStock: Boolean(p.trackStock),
     active: Boolean(p.active),
+    storefront: Boolean(p.storefront),
     price: p.priceCents,
     priceCents: p.priceCents,
     ordersCount: Number(p.ordersCount ?? 0),
     variantCount: Number(p.variantCount ?? 0)
   }));
 
-  const visible = filters.active === true
+  const visible = filters.active === true || filters.storefront === true
     ? listed.filter((p) => p.parentId === null || listed.some((parent) => parent.id === p.parentId))
     : listed;
 

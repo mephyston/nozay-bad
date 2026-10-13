@@ -86,7 +86,7 @@ let paymentMethods: { value: string; label: string; kind: 'transfer' | 'cheque' 
 let errorMsg = '';
 
 try {
-  const productsRes = await apiService.fetch('http://localhost/shop/products?active=true');
+  const productsRes = await apiService.fetch('http://localhost/shop/products?active=true&storefront=true');
   if (productsRes.ok) {
     const json = await productsRes.json() as any;
     products = json.data || [];

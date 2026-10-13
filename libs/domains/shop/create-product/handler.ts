@@ -20,6 +20,7 @@ export async function createProduct(db: Db, body: CreateProductInput): Promise<C
     stock: body.stock ?? 0,
     trackStock: body.trackStock ?? false,
     active: body.active !== false,
+    storefront: body.storefront !== false,
     description: parent ? null : (body.description?.trim() || null),
     parentId: parent?.id ?? null,
     variantLabel: parent ? requireVariantLabel(body.variantLabel) : null,

@@ -8,6 +8,8 @@ export interface CreateProductInput {
   stock?: number;
   trackStock?: boolean;
   active?: boolean;
+  /** Faux : réservé au bureau, absent de la boutique des adhérents. */
+  storefront?: boolean;
   description?: string | null;
   /** Rattache le produit créé comme déclinaison de celui-ci ; `variantLabel` devient obligatoire. */
   parentId?: number | null;

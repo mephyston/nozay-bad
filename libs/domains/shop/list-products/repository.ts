@@ -4,10 +4,11 @@ import { productsTable, productCategoriesTable } from '../shared/schema';
 import { ordersCountSql, variantCountSql } from '../shared/variants';
 
 export class ListProductsRepository {
-  async list(db: DbOrTx, filters: { productCategoryId?: number; active?: boolean }) {
+  async list(db: DbOrTx, filters: { productCategoryId?: number; active?: boolean; storefront?: boolean }) {
     const conditions = [];
     if (filters.productCategoryId) conditions.push(eq(productsTable.productCategoryId, filters.productCategoryId));
     if (filters.active !== undefined) conditions.push(eq(productsTable.active, filters.active));
+    if (filters.storefront) conditions.push(eq(productsTable.storefront, true));
 
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
     return db
@@ -19,6 +20,7 @@ export class ListProductsRepository {
         stock: productsTable.stock,
         trackStock: productsTable.trackStock,
         active: productsTable.active,
+        storefront: productsTable.storefront,
         parentId: productsTable.parentId,
         variantLabel: productsTable.variantLabel,
         description: productsTable.description,

@@ -9,6 +9,8 @@ export interface UpdateProductInput {
   stock?: number;
   trackStock?: boolean;
   active?: boolean;
+  /** Faux : réservé au bureau, absent de la boutique des adhérents. */
+  storefront?: boolean;
   description?: string | null;
   /** `null` détache une déclinaison, qui redevient un produit à part entière. */
   parentId?: number | null;

@@ -3,6 +3,7 @@ import { CreateOrderRepository } from './repository';
 import { ProductNotFoundError, SeasonClosedError, MemberNotFoundError, MemberNotEligibleError } from '../shared/errors';
 import { isSeasonClosed, membershipGrantsAccess } from '@nba/members-api';
 import { motifDeRefusCommande } from '../shared/order';
+import { motifArticleIndisponible } from '../shared/availability';
 import { CreateOrderInput, CreateOrderOutput } from "./dto";
 import { AppError } from '@nba/db';
 
@@ -42,6 +43,9 @@ export async function createOrder(db: Db, body: CreateOrderInput, context: Creat
   if (!product) {
     throw new ProductNotFoundError();
   }
+  // Retiré du catalogue, décliné, ou réservé au bureau quand l'adhérent commande lui-même.
+  const indisponible = await motifArticleIndisponible(db, product, { storefront: context.storefront });
+  if (indisponible) throw new AppError(indisponible, 400);
 
   if (product.trackStock && product.stock < body.quantity) {
     throw new AppError("Désolé, il n'y a plus assez de stock disponible pour cet article.", 400);

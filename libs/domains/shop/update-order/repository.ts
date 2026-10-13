@@ -14,17 +14,6 @@ export class UpdateOrderRepository {
     return db.select().from(productsTable).where(eq(productsTable.id, id)).get();
   }
 
-  /** Un parent à déclinaisons ne se commande pas : c'est l'une d'elles que la commande vise. */
-  async hasVariants(db: DbOrTx, productId: number): Promise<boolean> {
-    const row = await db
-      .select({ id: productsTable.id })
-      .from(productsTable)
-      .where(eq(productsTable.parentId, productId))
-      .limit(1)
-      .get();
-    return !!row;
-  }
-
   async getMemberById(db: DbOrTx, id: number): Promise<any> {
     return getMemberById(db, id);
   }
