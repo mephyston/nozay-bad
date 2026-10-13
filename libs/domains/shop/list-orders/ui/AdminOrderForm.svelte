@@ -2,7 +2,7 @@
   import { ShoppingBag } from '@lucide/svelte';
   import { FormField, FormSheet, SearchableCombobox, submitForm } from '@nba/ui';
   import type { Member, Product } from '../../list-products/ui/catalog-types';
-  import { isOutOfStock, productLabel, type PaymentMethodOption } from '../../list-products/ui/catalog-types';
+  import { isOrderable, isOutOfStock, productLabel, type PaymentMethodOption } from '../../list-products/ui/catalog-types';
   import ShopCatalogProductSelect from '../../list-products/ui/ShopCatalogProductSelect.svelte';
   import ShopCatalogSummary from '../../list-products/ui/ShopCatalogSummary.svelte';
   import type { OrderItem } from './orders-manager-types';
@@ -44,7 +44,6 @@
   const enEdition = $derived(commande !== null);
 
   let selectedMemberId = $state<string | number | undefined>(undefined);
-  let selectedCategory = $state<number>(0);
   let selectedProductId = $state<number | null>(null);
   let selectedQuantity = $state<number>(1);
   let selectedPaymentMethod = $state<string>('');
@@ -57,9 +56,12 @@
     }
   });
 
-  const filteredProducts = $derived(
-    selectedCategory === 0 ? products : products.filter((p) => p.productCategoryId === selectedCategory)
-  );
+  /*
+    Tout le catalogue, sans filtre de catégorie. La correction d'une commande s'ouvrait
+    sur la catégorie de l'article commandé, sans aucun champ pour en changer : une
+    commande de cordage ne pouvait plus devenir une commande de maillot.
+  */
+  const filteredProducts = $derived(products);
   /*
     Ce qu'une commande en attente de paiement a déjà retiré du stock lui reste acquis : sur
     son propre article, sa quantité s'ajoute au disponible. Le produit rendu ici porte ce
@@ -76,15 +78,13 @@
   });
 
   /*
-    Pré-remplissage, à chaque commande qu'on ouvre. La catégorie reprend celle de l'article
-    commandé, pour que la liste d'articles le contienne ; faute de le retrouver (article
-    retiré du catalogue), elle s'ouvre sur « toutes ».
+    Pré-remplissage, à chaque commande qu'on ouvre. Un article retiré du catalogue depuis
+    n'est plus dans la liste : le premier article proposé le remplace.
   */
   $effect(() => {
     if (!open || !commande) return;
     const o = commande.order;
     selectedMemberId = o.memberId;
-    selectedCategory = products.find((p) => p.id === o.productId)?.productCategoryId ?? 0;
     selectedProductId = o.productId;
     selectedQuantity = o.quantity;
     selectedPaymentMethod = o.paymentMethod;
@@ -111,13 +111,13 @@
       .map((m) => ({ label: `${m.lastName.toUpperCase()} ${m.firstName}`, hint: m.licence, value: m.id }))
   );
 
+  // Le repli vise un article commandable : un parent à déclinaisons n'est pas dans la liste.
   $effect(() => {
-    if (filteredProducts.length > 0) {
-      const currentId = selectedProductId !== null ? Number(selectedProductId) : null;
-      if (currentId === null || !filteredProducts.some((p) => p.id === currentId)) {
-        selectedProductId = filteredProducts[0].id;
-      }
-    } else selectedProductId = null;
+    const commandables = filteredProducts.filter(isOrderable);
+    const currentId = selectedProductId !== null ? Number(selectedProductId) : null;
+    if (currentId === null || !commandables.some((p) => p.id === currentId)) {
+      selectedProductId = commandables[0]?.id ?? null;
+    }
   });
 
   $effect(() => {
@@ -243,7 +243,6 @@
   <ShopCatalogProductSelect
     {paymentMethods}
     bind:selectedPaymentMethod
-    bind:selectedCategory
     bind:selectedProductId
     bind:selectedQuantity
     {filteredProducts}
