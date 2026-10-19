@@ -15,11 +15,16 @@ export class ExpensesState {
   editAmountStr = $state('');
   isSaving = $state(false);
 
+  /*
+    `String()` : malgré le type, l'API rend `seasonId` et `category` en entiers. Recopié
+    tel quel, l'identifiant de saison repartait en nombre si l'on ne touchait pas au
+    sélecteur, et `PUT /expenses/:id` (qui veut une chaîne) refusait toute modification.
+  */
   startEdit(exp: Expense) {
     this.editingId = exp.id;
     this.editDescription = exp.description;
-    this.editCategory = exp.category;
-    this.editSeasonId = exp.seasonId;
+    this.editCategory = String(exp.category);
+    this.editSeasonId = String(exp.seasonId);
     this.editAmountStr = (exp.amount / 100).toFixed(2);
   }
 }
