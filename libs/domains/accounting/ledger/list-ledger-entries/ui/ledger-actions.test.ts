@@ -207,6 +207,18 @@ describe('submitTransaction, recette remboursée', () => {
     expect(posted()).toMatchObject({ type: 'depense', amount: 10_000 });
   });
 
+  it("garde l'adhérent d'une dépense modifiée : celui que rembourse une note de frais", async () => {
+    await submitTransaction({ ...base, showPanel: 'depense', refund: false, editingId: 8 });
+    expect(posted().updates).toMatchObject({ type: 'depense', memberId: 42 });
+  });
+
+  it("ne rattache pas un virement à un adhérent", async () => {
+    await submitTransaction({
+      ...base, showPanel: 'transfert', editingId: null, destinationAccountId: 'badnet', paymentMethod: 'virement_interne'
+    });
+    expect(posted().memberId ?? null).toBeNull();
+  });
+
   it('se rouvre en remboursement, montant saisi en positif', () => {
     const v = editValuesFor(
       {
