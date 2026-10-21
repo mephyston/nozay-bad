@@ -154,7 +154,7 @@ jobs:
         run: npm ci
 
       - name: Derive appropriate SHAs for affected commands
-        uses: nrwl/nx-set-shas@afb73a62d26e41464e9254689e1fd6122ee683c1 # v5.0.1
+        uses: nrwl/nx-set-shas@e602fada7ad5987b0f7b1905e7a99ea1c661514c # v5.1.0
         with:
           # L'action prend le dernier run vert de la branche nommée ici. Sur un tronc
           # unique il n'y a qu'un candidat : `main`, aussi bien pour un push que pour le
@@ -359,7 +359,7 @@ jobs:
             vite-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-
 
       - name: Derive appropriate SHAs for affected commands
-        uses: nrwl/nx-set-shas@afb73a62d26e41464e9254689e1fd6122ee683c1 # v5.0.1
+        uses: nrwl/nx-set-shas@e602fada7ad5987b0f7b1905e7a99ea1c661514c # v5.1.0
         with:
           # L'action prend le dernier run vert de la branche nommée ici. Sur un tronc
           # unique il n'y a qu'un candidat : `main`, aussi bien pour un push que pour le
