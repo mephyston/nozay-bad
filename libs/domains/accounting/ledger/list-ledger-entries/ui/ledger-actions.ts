@@ -149,9 +149,17 @@ export function editValuesFor(
   };
 }
 
-/** L'adhésion telle que l'API l'attend : un nombre, ou `null` pour une écriture générale. */
+/**
+ * L'adhésion telle que l'API l'attend : un nombre, ou `null` pour une écriture générale.
+ *
+ * Une dépense aussi : le remboursement d'une note de frais porte l'adhérent qu'il rembourse.
+ * Réservé aux recettes, le champ disparaissait du formulaire, et modifier cette dépense —
+ * pour la passer au compte d'attente, par exemple — envoyait `null` et défaisait le
+ * rattachement posé à la validation de la note. Les paiements d'un adhérent ne lisent que
+ * ses recettes : sa fiche et son attestation n'en sont pas changées.
+ */
 function memberIdFor(params: TransactionFormValues): number | null {
-  if (params.showPanel !== 'recette' || !params.memberId) return null;
+  if (params.showPanel === 'transfert' || !params.memberId) return null;
   const id = Number(params.memberId);
   return Number.isInteger(id) && id > 0 ? id : null;
 }

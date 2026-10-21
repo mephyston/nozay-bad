@@ -252,23 +252,25 @@
   {/if}
 
   <!--
-    L'adhérent qui paie. Au doigt, `SearchableCombobox` ouvre l'écran de choix plein
-    cadre, avec sa recherche — l'autocomplétion en place qui vivait ici déroulait un
-    panneau que le clavier recouvrait aussitôt.
+    L'adhérent qui paie, ou celui qu'on rembourse. Au doigt, `SearchableCombobox` ouvre
+    l'écran de choix plein cadre, avec sa recherche — l'autocomplétion en place qui vivait
+    ici déroulait un panneau que le clavier recouvrait aussitôt.
   -->
-  {#if showPanel === 'recette' && members.length > 0}
+  {#if showPanel !== 'transfert' && members.length > 0}
     <FormField
       id="member-select"
       label="Adhérent (optionnel)"
       hint={memberDroppedBySeason
         ? "L'adhérent choisi relevait d'un autre exercice : à choisir de nouveau dans celui-ci."
-        : "C'est ce rattachement qui fait apparaître le règlement sur sa fiche et son attestation."}
+        : showPanel === 'recette'
+          ? "C'est ce rattachement qui fait apparaître le règlement sur sa fiche et son attestation."
+          : "L'adhérent remboursé, par exemple pour une note de frais."}
     >
       <SearchableCombobox
         id="member-select"
         items={memberOptions}
         bind:value={memberId}
-        placeholder="Aucun adhérent (recette générale)"
+        placeholder={showPanel === 'recette' ? 'Aucun adhérent (recette générale)' : 'Aucun adhérent (dépense générale)'}
         searchPlaceholder="Nom ou licence…"
         emptyText="Aucun adhérent trouvé."
         onValueChange={() => (memberDroppedBySeason = false)}

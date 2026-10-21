@@ -38,6 +38,14 @@ export function accountLabelOf(
   return value === null || value === undefined ? '?' : String(value);
 }
 
+/**
+ * La valeur « tous les comptes » du filtre du grand livre.
+ *
+ * Le relais (`apps/admin/.../accounting/[screen].ts`) la reconnaît sous la même chaîne : il
+ * ne borne alors l'API à aucun compte et ne demande pas de solde progressif.
+ */
+export const TOUS_LES_COMPTES = 'all';
+
 /** Les options d'un sélecteur de compte. La valeur est le **code**, ce que l'API attend. */
 export function toAccountOptions(accounts: readonly AccountLike[]): { value: string; label: string }[] {
   return accounts.map((a) => ({ value: a.code, label: a.label || a.code }));

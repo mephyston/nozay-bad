@@ -109,9 +109,11 @@ export function ligneEcriture(
     categories?: { id: string; name: string }[];
     /** Faux quand la liste est filtrée : le solde progressif n'a alors plus de sens. */
     showBalance?: boolean;
+    /** Vrai quand la liste mêle tous les comptes : la ligne nomme alors le sien. */
+    showAccount?: boolean;
   } = {}
 ): LigneEcriture {
-  const { accounts = [], categories = [], showBalance = true } = options;
+  const { accounts = [], categories = [], showBalance = true, showAccount = false } = options;
   const cents = montantSigneCents(tx);
 
   const contexte =
@@ -122,10 +124,12 @@ export function ligneEcriture(
       : tx.category
         ? (categories.find((c) => c.id === String(tx.category))?.name ?? String(tx.category))
         : 'Sans catégorie';
+  // Un virement nomme déjà ses deux comptes.
+  const compte = showAccount && tx.type !== 'transfert' ? ` · ${accountLabelOf(accounts, tx.accountId)}` : '';
 
   return {
     titre: tx.description,
-    sousTitre: `${jourEtMois(tx.date)} · ${contexte}`,
+    sousTitre: `${jourEtMois(tx.date)} · ${contexte}${compte}`,
     valeur: formatAmount(cents, { showSign: true }),
     ton: tonDuMontant(cents),
     legende:
