@@ -64,6 +64,12 @@ updates:
       default-days: 7
     commit-message:
       prefix: "chore(ci)"
+    ignore:
+      # >= 7 : la v8 échoue à publier la release GitHub (`invalid content-length header`
+      # à l'envoi du SBOM joint), et v2.78.1 comme v2.78.2 sont restées en brouillon.
+      # Retenue en v6 jusqu'à une version qui publie de nouveau, essayée à la main.
+      - dependency-name: "cycjimmy/semantic-release-action"
+        versions: [">= 7"]
     groups:
       actions:
         patterns: ["*"]
