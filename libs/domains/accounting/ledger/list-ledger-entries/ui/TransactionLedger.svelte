@@ -14,7 +14,7 @@
     restaurerPosition,
     retenirPosition
   } from './ledger-navigation';
-  import { toAccountOptions, type AccountLike } from '../../../shared/account-labels';
+  import { TOUS_LES_COMPTES, toAccountOptions, type AccountLike } from '../../../shared/account-labels';
   import type { MemberLike } from './member-options';
   import { saisonDeSaisie } from './entry-season';
 
@@ -67,6 +67,9 @@
     }
   });
 
+  /** Toutes les écritures, quel que soit leur compte : la vue des liens du compte de résultat. */
+  const tousLesComptes = $derived(accountId === TOUS_LES_COMPTES);
+
   let filteredCategory = $state<string | null>(null);
   let filteredClassCode = $state<string | null>(null);
   let filteredAccrual = $state<string | null>(null);
@@ -81,7 +84,8 @@
    * suite continue : les soldes restent.
    */
   const continuous = $derived(
-    !searchQuery && !filteredCategory && !filteredClassCode && !filteredAccrual && !filteredType && !unreconciledChequesOnly
+    !tousLesComptes &&
+      !searchQuery && !filteredCategory && !filteredClassCode && !filteredAccrual && !filteredType && !unreconciledChequesOnly
   );
 
   onMount(() => {
@@ -228,7 +232,7 @@
   const accounts = $derived<AccountLike[]>(
     balances.map((b) => ({ id: b.id, code: b.accountId, label: b.label ?? b.accountId }))
   );
-  const accountItems = $derived(toAccountOptions(accounts));
+  const accountItems = $derived([{ value: TOUS_LES_COMPTES, label: 'Tous les comptes' }, ...toAccountOptions(accounts)]);
 </script>
 
 <div class="space-y-6">
@@ -241,6 +245,7 @@
     {activeCategories}
     {isClosed}
     showBalance={continuous}
+    showAccount={tousLesComptes}
     selectedSeasonId={currentSeasonNumericId}
     onStartEdit={startEdit}
     onDelete={handleDelete}

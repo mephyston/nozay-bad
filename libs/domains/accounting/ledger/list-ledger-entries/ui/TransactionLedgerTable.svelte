@@ -38,6 +38,7 @@
     activeCategories = [],
     isClosed,
     showBalance = true,
+    showAccount = false,
     selectedSeasonId,
     onStartEdit,
     onDelete,
@@ -52,6 +53,8 @@
     isClosed: boolean;
     /** Faux quand la liste est filtrée : le solde progressif et les soldes de fin de mois disparaissent. */
     showBalance?: boolean;
+    /** Vrai quand la liste mêle tous les comptes : chaque écriture dit alors le sien. */
+    showAccount?: boolean;
     selectedSeasonId?: number | string;
     onStartEdit: (tx: Transaction, e: MouseEvent) => void;
     onDelete: (id: number) => void;
@@ -173,6 +176,9 @@
         <div class="text-xs text-muted-foreground italic truncate mt-0.5" title={tx.reference}>Réf: {tx.reference}</div>
       {/if}
       <div class="flex flex-wrap gap-1.5 mt-1">
+        {#if showAccount && tx.type !== 'transfert'}
+          <Badge variant="outline" size="xs" shape="square">{accountLabelOf(accounts, tx.accountId)}</Badge>
+        {/if}
         {#if tx.memberName}
           <a
             href={`/admin/members/${tx.memberLicence}`}
@@ -237,6 +243,7 @@
       {activeCategories}
       {isClosed}
       {showBalance}
+      {showAccount}
       {selectedSeasonId}
       bind:expandedGroups
       onToggleGroup={toggleGroup}

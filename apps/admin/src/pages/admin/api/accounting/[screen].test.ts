@@ -219,6 +219,24 @@ describe('comptabilité — le grand livre', () => {
     expect(appel).toContain('unreconciledCheques=true');
   });
 
+  /*
+    Les liens du compte de résultat ouvrent une catégorie sur tous les comptes : bornés au
+    compte principal, ils taisaient les recettes passées au compte d'attente.
+  */
+  it('lit tous les comptes, sans solde progressif, quand le compte vaut « all »', async () => {
+    const d = await donnees(await lire('ledger', '?category=adhesions&type=recette&accountId=all'));
+    const appel = appels.find((a) => a.url.includes('/accounting/transactions?'))!.url;
+    expect(appel).not.toContain('accountId=');
+    expect(appel).toContain('runningBalance=0');
+    expect(d.accountId).toBe('all');
+  });
+
+  it('borne la page suivante au compte principal quand l’URL n’en nomme aucun', async () => {
+    await lire('ledger-page', '?page=2');
+    const appel = appels.find((a) => a.url.includes('/accounting/transactions?'))!.url;
+    expect(appel).toMatch(/accountId=\w+/);
+  });
+
   it('n’envoie pas les filtres vides', async () => {
     await lire('ledger', '?category=&search=');
     const appel = appels.find((a) => a.url.includes('/accounting/transactions?'))!.url;

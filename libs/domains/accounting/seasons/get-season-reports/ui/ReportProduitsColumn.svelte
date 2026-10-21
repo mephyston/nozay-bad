@@ -3,6 +3,7 @@
   import type { ReportData, Season, DbCategory, AccountClass } from './report-types';
   import { formatAmount, formatDelta, getPreviousSeasonId } from './report-utils';
   import { UNCLASSIFIED_CLASS_CODE } from './report-calculations';
+  import { TOUS_LES_COMPTES } from '../../../shared/account-labels';
 
   let {
     mode,
@@ -75,7 +76,7 @@
                 -->
                 <span class="text-foreground/90" title="Catégories sans classe de compte de ce côté, et écritures sans catégorie. À rattacher depuis Réglages › Comptabilité.">{pc.label}</span>
               {:else}
-                <a href="/admin/accounting?season={selectedSeason}&classCode={pc.code}" class="hover:underline hover:text-primary transition-colors cursor-pointer text-foreground/90 print:no-underline" title="Voir les écritures dans le grand livre">{pc.label}</a>
+                <a href="/admin/accounting?season={selectedSeason}&classCode={pc.code}&accountId={TOUS_LES_COMPTES}" class="hover:underline hover:text-primary transition-colors cursor-pointer text-foreground/90 print:no-underline" title="Voir les écritures dans le grand livre">{pc.label}</a>
               {/if}
               <div class="flex gap-8 font-outfit tabular-nums">
                 <span class="w-20 text-right">{formatAmount(getClassSumRealise(pc.code, 'recette', mode))}</span>
@@ -91,7 +92,7 @@
               {#each getClassCategories(pc.code, 'recette') as cat}
                 {#if mode === 'previsionnel' || getCatTotal(cat.id.toString(), 'recette', mode) > 0 || (editableBudget[`${cat.id}_recette`] || 0) > 0}
                   <div class="flex justify-between items-center py-0.5 text-[11px] {getCatTotal(cat.id.toString(), 'recette', mode) === 0 && (editableBudget[`${cat.id}_recette`] || 0) === 0 ? 'print:hidden' : ''}">
-                    <a href="/admin/accounting?season={selectedSeason}&category={cat.id}&type=recette" class="font-sans text-muted-foreground hover:underline hover:text-primary transition-colors cursor-pointer print:no-underline" title="Voir les écritures de cette catégorie dans le grand livre">• {cat.adminLabel}</a>
+                    <a href="/admin/accounting?season={selectedSeason}&category={cat.id}&type=recette&accountId={TOUS_LES_COMPTES}" class="font-sans text-muted-foreground hover:underline hover:text-primary transition-colors cursor-pointer print:no-underline" title="Voir les écritures de cette catégorie dans le grand livre">• {cat.adminLabel}</a>
                     <div class="flex gap-8 items-center font-outfit tabular-nums">
                       <span class="w-20 text-right">{formatAmount(getCatTotal(cat.id.toString(), 'recette', mode))}</span>
                       {#if mode === 'previsionnel' && !isClosed}

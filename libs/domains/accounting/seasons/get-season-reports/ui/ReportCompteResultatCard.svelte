@@ -7,6 +7,7 @@
   import ReportProduitsColumn from './ReportProduitsColumn.svelte';
   import ReportAIAnalysis from './ReportAIAnalysis.svelte';
   import { formatAmount } from './report-utils';
+  import { TOUS_LES_COMPTES } from '../../../shared/account-labels';
 
   // Sur écran étroit (< xl) : la 2e colonne montre soit le prévisionnel, soit
   // l'écart (les deux sont visibles simultanément à partir de xl).
@@ -138,9 +139,13 @@
    * Le lien d'une régularisation cible les seules écritures du motif : le grand livre filtre
    * par catégorie ET par motif, sans quoi « Adhésions » ouvrirait toutes les cotisations de
    * l'exercice pour y chercher celles encaissées d'avance.
+   *
+   * Sur tous les comptes, comme les liens des deux colonnes : le compte de résultat compte
+   * une catégorie quel que soit le compte de l'écriture, le grand livre doit en faire autant.
+   * Borné d'office au compte principal, il taisait les recettes passées au compte d'attente.
    */
   const ecrituresRegularisees = (categoryId: number, type: 'recette' | 'depense', accrual: string) =>
-    `/admin/accounting?season=${encodeURIComponent(selectedSeason)}&category=${categoryId}&type=${type}&accrual=${accrual}`;
+    `/admin/accounting?season=${encodeURIComponent(selectedSeason)}&category=${categoryId}&type=${type}&accrual=${accrual}&accountId=${TOUS_LES_COMPTES}`;
 </script>
 
 <Card.Root class="print-container">

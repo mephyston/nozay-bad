@@ -30,6 +30,7 @@
     activeCategories = [],
     isClosed = false,
     showBalance = true,
+    showAccount = false,
     selectedSeasonId,
     expandedGroups = $bindable({}),
     onToggleGroup,
@@ -42,6 +43,8 @@
     activeCategories?: { id: string; code: string; name: string }[];
     isClosed?: boolean;
     showBalance?: boolean;
+    /** Vrai quand la liste mêle tous les comptes. */
+    showAccount?: boolean;
     selectedSeasonId?: number | string;
     expandedGroups?: Record<number, boolean>;
     onToggleGroup: (bankLineId: number) => void;
@@ -155,7 +158,8 @@
       {@const l = ligneEcriture(tx, {
         accounts,
         categories: activeCategories,
-        showBalance: showBalance && !entree.enfant
+        showBalance: showBalance && !entree.enfant,
+        showAccount
       })}
       {@const marque = signalement(tx, selectedSeasonId)}
       <!-- `tx-mobile-<id>` : la cible du retour depuis le rapprochement. -->

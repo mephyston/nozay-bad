@@ -79,6 +79,13 @@ describe('ledger-row-model', () => {
     expect(ligneEcriture(recu, { accounts: COMPTES }).sousTitre).toBe('12/09 · Caisse → Compte courant');
   });
 
+  it('nomme le compte de l’écriture quand la liste mêle tous les comptes, pas celui d’un virement', () => {
+    expect(ligneEcriture(ecriture({ accountId: 2 }), { accounts: COMPTES, categories: CATEGORIES, showAccount: true }).sousTitre)
+      .toBe('12/09 · Cotisations · Caisse');
+    const emis = ecriture({ type: 'transfert', transferLeg: 'source', accountId: 1, counterpartAccountId: 2, category: null });
+    expect(ligneEcriture(emis, { accounts: COMPTES, showAccount: true }).sousTitre).toBe('12/09 · Compte courant → Caisse');
+  });
+
   it('retire le solde progressif dès que la liste est filtrée', () => {
     const tx = ecriture({ runningBalanceCents: 123456 });
     expect(ligneEcriture(tx, { showBalance: false }).legende).toBeUndefined();

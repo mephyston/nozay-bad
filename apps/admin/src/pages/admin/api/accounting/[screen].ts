@@ -123,6 +123,26 @@ const RAPPORT_VIDE = () => ({
   }[]
 });
 
+/**
+ * Le compte que le grand livre montre d'office : le premier compte bancaire actif, et non
+ * un code écrit ici.
+ */
+const comptePrincipalDe = (comptes: any[]): string =>
+  comptes.find((c) => c.kind === 'bank' && c.active !== false)?.code ?? comptes[0]?.code ?? '';
+
+/**
+ * Le compte visé par une lecture du grand livre, ou tous (`all`, cf. `TOUS_LES_COMPTES`).
+ *
+ * Tous : l'API n'est alors bornée à aucun compte, et le solde progressif — celui d'UN
+ * compte — n'est pas demandé. C'est la vue des liens du compte de résultat : une catégorie
+ * s'y lit sur tous les comptes, sans quoi une recette passée au compte d'attente
+ * disparaissait de la catégorie qu'elle alimente pourtant.
+ */
+function viserCompte(requete: URLSearchParams, compte: string): void {
+  if (compte === 'all') requete.set('runningBalance', '0');
+  else if (compte) requete.set('accountId', compte);
+}
+
 /** Classe 4 du plan comptable : un compte de tiers, dont le solde est une dette et non de la trésorerie. */
 const estCompteDeTiers = (compte: any) => /^4/.test(String(compte.classCode ?? ''));
 
@@ -152,7 +172,14 @@ export const ECRANS: Record<string, Ecran> = {
         page: params.get('page') || '1',
         limit: params.get('limit') || '20'
       });
-      if (params.get('accountId')) requete.set('accountId', params.get('accountId')!);
+      /*
+        Sans compte dans l'URL, l'écran montre le compte principal : la suite doit le viser
+        aussi. Transmettre l'absence telle quelle demandait tous les comptes à l'API, et
+        « Afficher les suivants » mêlait à la page du compte courant celles des autres.
+      */
+      const compteDemande =
+        params.get('accountId') || comptePrincipalDe(((await lire('/accounting/accounts')) ?? []) as any[]);
+      viserCompte(requete, compteDemande);
       for (const cle of ['category', 'classCode', 'type', 'search', 'month', 'accrual'] as const) {
         const valeur = params.get(cle);
         if (valeur) requete.set(cle, valeur);
@@ -185,14 +212,14 @@ export const ECRANS: Record<string, Ecran> = {
         lire('/accounting/accounts').then((r: any) => r ?? []),
         lire('/accounting/payment-methods?offered=admin').then((r: any) => r ?? [])
       ]);
-      const comptePrincipal = comptes.find((c) => c.kind === 'bank' && c.active !== false)?.code ?? comptes[0]?.code ?? '';
+      const comptePrincipal = comptePrincipalDe(comptes);
       const compteDemande = params.get('accountId') || comptePrincipal;
       const requete = new URLSearchParams({
         season: saisonnier.seasonId,
         page: params.get('page') || '1',
-        limit: params.get('limit') || '20',
-        accountId: compteDemande
+        limit: params.get('limit') || '20'
       });
+      viserCompte(requete, compteDemande);
       for (const cle of ['category', 'classCode', 'type', 'search', 'month', 'accrual'] as const) {
         const valeur = params.get(cle);
         if (valeur) requete.set(cle, valeur);
