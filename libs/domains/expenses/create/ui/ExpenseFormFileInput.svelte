@@ -77,7 +77,7 @@
           <img src={photoUrl} alt="Aperçu du justificatif" class="max-h-40 rounded-lg shadow-md border border-border object-contain" />
         {/if}
         <span class="text-xs text-muted-foreground font-semibold">
-          Justificatif chargé{#if allege} · {enKo(allege.avant)} → {enKo(allege.apres)}{:else} · {enKo(poidsDataUrl(photoUrl))}{/if}
+          Justificatif chargé{#if allege} · {enKo(allege.avant)} → {enKo(allege.apres)}{:else if photoUrl.startsWith('data:')} · {enKo(poidsDataUrl(photoUrl))}{/if}
         </span>
       </div>
     {:else}

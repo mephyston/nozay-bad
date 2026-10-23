@@ -19,7 +19,7 @@ Une note comporte : le **demandeur**, une **catégorie de dépense**, un **monta
 Une note en attente peut être :
 
 - **Consultée** — le justificatif s'ouvre en grand (un PDF s'ouvre dans le lecteur du navigateur) ;
-- **Modifiée** — montant, catégorie, description, demandeur, saison d'affectation ;
+- **Modifiée** — montant, catégorie, description, demandeur, saison d'affectation, et le **justificatif** (cliquer sur la zone du justificatif pour choisir une autre photo ou un PDF) ;
 - **Validée** ou **refusée**.
 
 **La validation crée l'écriture de dépense** dans le grand livre, libellée « Remboursement frais – *demandeur* – *description* », rattachée à l'adhérent et imputée à la catégorie choisie. Le remboursement effectif (le virement) apparaîtra ensuite sur le relevé bancaire et se rattachera à cette écriture lors du [rapprochement bancaire](/admin/help/rapprochement-bancaire).

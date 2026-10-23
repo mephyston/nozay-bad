@@ -10,6 +10,7 @@ export async function saveExpenseEdit(id: number, updates: {
   category: string;
   seasonId: string;
   amount: number;
+  photoUrl?: string;
 }): Promise<string> {
   const res = await fetch(RELAIS, {
     method: 'POST',

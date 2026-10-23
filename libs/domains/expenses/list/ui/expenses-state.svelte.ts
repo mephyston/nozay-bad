@@ -13,6 +13,9 @@ export class ExpensesState {
   editCategory = $state('');
   editSeasonId = $state('');
   editAmountStr = $state('');
+  /** Le justificatif tel qu'à l'ouverture : on ne le renvoie que s'il a été remplacé. */
+  editPhotoOrigine: string | null = null;
+  editPhotoUrl = $state<string | null>(null);
   isSaving = $state(false);
 
   /*
@@ -26,5 +29,7 @@ export class ExpensesState {
     this.editCategory = String(exp.category);
     this.editSeasonId = String(exp.seasonId);
     this.editAmountStr = (exp.amount / 100).toFixed(2);
+    this.editPhotoOrigine = exp.photoUrl;
+    this.editPhotoUrl = exp.photoUrl;
   }
 }

@@ -60,7 +60,11 @@
         description: viewState.editDescription,
         category: viewState.editCategory,
         seasonId: viewState.editSeasonId,
-        amount: Math.round(parseFloat(viewState.editAmountStr) * 100)
+        amount: Math.round(parseFloat(viewState.editAmountStr) * 100),
+        // Quelques centaines de Ko : renvoyés seulement s'ils ont changé.
+        ...(viewState.editPhotoUrl && viewState.editPhotoUrl !== viewState.editPhotoOrigine
+          ? { photoUrl: viewState.editPhotoUrl }
+          : {})
       }),
       success: (message) => message,
       close: () => { viewState.editingId = null; },
@@ -199,6 +203,7 @@
   bind:editCategory={viewState.editCategory}
   bind:editSeasonId={viewState.editSeasonId}
   bind:editAmountStr={viewState.editAmountStr}
+  bind:editPhotoUrl={viewState.editPhotoUrl}
   isSaving={viewState.isSaving}
   {categoriesList}
   {seasons}

@@ -1,7 +1,8 @@
 <script lang="ts">
   import { Edit2, Eye } from '@lucide/svelte';
-  import { Button, FormField, FormSheet, Input, SearchableCombobox, Textarea, toSeasonOptions } from '@nba/ui';
+  import { Button, FormField, FormSheet, Input, SearchableCombobox, Textarea, toSeasonOptions, uiAlert } from '@nba/ui';
   import type { Expense, Season, CategoryOption } from './expenses-types';
+  import ExpenseFormFileInput from '../../create/ui/ExpenseFormFileInput.svelte';
 
   /**
    * Modifier une note de frais.
@@ -19,6 +20,7 @@
     editCategory = $bindable(''),
     editSeasonId = $bindable(''),
     editAmountStr = $bindable(''),
+    editPhotoUrl = $bindable(null),
     isSaving = false,
     categoriesList = [],
     seasons = [],
@@ -32,6 +34,8 @@
     editCategory?: string;
     editSeasonId?: string;
     editAmountStr?: string;
+    /** Le justificatif affiché ; un nouveau fichier le remplace à l'enregistrement. */
+    editPhotoUrl?: string | null;
     isSaving?: boolean;
     categoriesList?: CategoryOption[];
     seasons?: Season[];
@@ -40,6 +44,8 @@
     /** Appelée quand la feuille se referme, d'où qu'en vienne l'ordre. */
     onClose?: () => void;
   } = $props();
+
+  let fileInput = $state<HTMLInputElement | null>(null);
 
   function soumettre(e: Event) {
     e.preventDefault();
@@ -84,13 +90,12 @@
     <Input id="edit-amount" type="number" step="0.01" min="0.01" bind:value={editAmountStr} required class="tabular-nums" />
   </FormField>
 
-  {#if expense?.photoUrl}
-    <div class="flex items-center justify-between rounded-lg border border-border bg-muted/40 px-3 py-2">
-      <span class="text-xs font-semibold text-muted-foreground">Justificatif chargé</span>
-      <Button variant="ghost" size="sm" class="gap-1 text-xs font-bold text-primary" onclick={() => onSelectPhoto(expense.photoUrl!)}>
-        <Eye class="size-3.5" />
-        Visualiser
-      </Button>
-    </div>
+  <!-- Un clic sur la zone choisit un autre fichier : photo ou PDF. -->
+  <ExpenseFormFileInput bind:photoUrl={editPhotoUrl} bind:fileInput onError={(msg) => uiAlert(msg)} />
+  {#if editPhotoUrl}
+    <Button variant="ghost" size="sm" class="gap-1 self-end text-xs font-bold text-primary" onclick={() => onSelectPhoto(editPhotoUrl!)}>
+      <Eye class="size-3.5" />
+      Visualiser
+    </Button>
   {/if}
 </FormSheet>

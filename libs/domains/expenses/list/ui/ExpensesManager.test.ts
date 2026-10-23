@@ -167,4 +167,47 @@ describe('ExpensesManager Component', () => {
     // Et la ligne du tableau n'a pas été remplacée par un formulaire.
     expect(target.querySelector('tbody textarea')).toBeNull();
   });
+
+  describe('remplacement du justificatif', () => {
+    /** Ouvre la feuille de modification de la note et rend son dialogue. */
+    async function ouvrirModification() {
+      const target = document.createElement('div');
+      document.body.appendChild(target);
+      mount(ExpensesManager, { target, props: { expenses, seasonId: '25-26', seasons, categories } });
+      flushSync();
+      (Array.from(target.querySelectorAll('[data-swipe-track] button'))
+        .find((b) => b.textContent?.trim() === 'Modifier') as HTMLButtonElement).click();
+      flushSync();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      return document.querySelector('[role="dialog"]')!;
+    }
+
+    const enregistrer = async (dialogue: Element) => {
+      dialogue.querySelector('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+      await vi.waitFor(() => expect(globalThis.fetch).toHaveBeenCalled());
+      return JSON.parse((globalThis.fetch as any).mock.calls[0][1].body);
+    };
+
+    afterEach(() => document.body.replaceChildren());
+
+    it('envoie le nouveau justificatif, PDF compris', async () => {
+      const dialogue = await ouvrirModification();
+      const fichier = dialogue.querySelector<HTMLInputElement>('#receipt');
+      expect(fichier, 'la feuille doit proposer de changer le justificatif').not.toBeNull();
+      Object.defineProperty(fichier, 'files', {
+        value: [new File([new Uint8Array(20)], 'facture.pdf', { type: 'application/pdf' })]
+      });
+      fichier!.dispatchEvent(new Event('change', { bubbles: true }));
+      await vi.waitFor(() => expect(dialogue.textContent).toContain('facture.pdf'));
+
+      const corps = await enregistrer(dialogue);
+      expect(corps.action).toBe('update');
+      expect(corps.updates.photoUrl.startsWith('data:application/pdf;base64,')).toBe(true);
+    });
+
+    it("ne renvoie pas le justificatif quand il n'a pas changé", async () => {
+      const corps = await enregistrer(await ouvrirModification());
+      expect(corps.updates).not.toHaveProperty('photoUrl');
+    });
+  });
 });
