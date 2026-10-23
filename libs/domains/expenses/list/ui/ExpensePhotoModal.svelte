@@ -1,12 +1,27 @@
 <script lang="ts">
-  import { Image as ImageIcon, X } from '@lucide/svelte';
-  import { Button, Card } from '@nba/ui';
+  import { Image as ImageIcon, X, FileText, ExternalLink } from '@lucide/svelte';
+  import { Button, Card, openDocument } from '@nba/ui';
+  import { estJustificatifPdf, justificatifEnBlob } from '../../shared/justificatif';
 
   let {
     selectedPhoto = $bindable(null)
   }: {
     selectedPhoto: string | null;
   } = $props();
+
+  /*
+    Un PDF ne s'affiche pas ici : la CSP de l'admin interdit de le cadrer. On l'ouvre
+    dans le lecteur du navigateur, depuis une adresse `blob:` libérée à la fermeture.
+  */
+  let adressePdf = $derived(
+    selectedPhoto && estJustificatifPdf(selectedPhoto) ? URL.createObjectURL(justificatifEnBlob(selectedPhoto)) : null
+  );
+  $effect(() => {
+    const adresse = adressePdf;
+    return () => {
+      if (adresse) URL.revokeObjectURL(adresse);
+    };
+  });
 </script>
 
 {#if selectedPhoto}
@@ -27,7 +42,18 @@
         </Button>
       </Card.Header>
       <Card.Content class="p-6 overflow-y-auto flex items-center justify-center bg-muted/10 flex-1">
-        <img src={selectedPhoto} alt="Justificatif de dépense" class="max-w-full max-h-[50vh] rounded-lg shadow-md object-contain border border-border" />
+        {#if adressePdf}
+          <div class="flex flex-col items-center gap-3 py-6 text-center">
+            <FileText class="h-14 w-14 text-primary" />
+            <span class="text-sm font-semibold text-foreground">Justificatif au format PDF</span>
+            <Button onclick={() => openDocument(adressePdf!)} class="gap-2">
+              <ExternalLink class="h-4 w-4" />
+              Ouvrir le PDF
+            </Button>
+          </div>
+        {:else}
+          <img src={selectedPhoto} alt="Justificatif de dépense" class="max-w-full max-h-[50vh] rounded-lg shadow-md object-contain border border-border" />
+        {/if}
       </Card.Content>
       <Card.Footer class="border-t border-border px-5 py-3.5 flex justify-end bg-muted/20">
         <Button

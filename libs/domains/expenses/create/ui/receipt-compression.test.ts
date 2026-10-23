@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { poidsDataUrl, BUDGET_OCTETS } from './receipt-compression';
+import { poidsDataUrl, BUDGET_OCTETS, compresserJustificatif } from './receipt-compression';
+import { estJustificatifPdf, justificatifEnBlob } from '../../shared/justificatif';
 
 /**
  * Le poids d'une adresse `data:`.
@@ -45,5 +46,47 @@ describe('poids d’une adresse data:', () => {
 
   it('annonce un budget cohérent avec le stockage', () => {
     expect(BUDGET_OCTETS).toBe(800 * 1024);
+  });
+});
+
+/**
+ * Un PDF n'est pas retouché : une facture reçue par courriel part telle quelle, et n'est
+ * refusée que si elle dépasse le budget.
+ */
+describe('justificatif PDF', () => {
+  const pdf = (octets: number, type = 'application/pdf', nom = 'facture.pdf') =>
+    new File([new Uint8Array(octets).fill(37)], nom, { type });
+
+  it('part tel quel, typé en PDF', async () => {
+    const { dataUrl, octets } = await compresserJustificatif(pdf(1000));
+    expect(dataUrl.startsWith('data:application/pdf;base64,')).toBe(true);
+    expect(octets).toBe(1000);
+    expect(estJustificatifPdf(dataUrl)).toBe(true);
+  });
+
+  it("est reconnu à l'extension quand le système ne le type pas", async () => {
+    const { dataUrl } = await compresserJustificatif(pdf(10, '', 'FACTURE.PDF'));
+    expect(estJustificatifPdf(dataUrl)).toBe(true);
+  });
+
+  it('est refusé au-delà du budget, avec son poids', async () => {
+    await expect(compresserJustificatif(pdf(2048), 1024)).rejects.toThrow(/PDF est trop lourd \(2 Ko, limite 1 Ko\)/);
+  });
+
+  it('se reconstitue en PDF pour être ouvert', async () => {
+    const { dataUrl } = await compresserJustificatif(pdf(300));
+    const blob = justificatifEnBlob(dataUrl);
+    expect(blob.type).toBe('application/pdf');
+    // jsdom n'a pas `Blob.arrayBuffer` : la taille suffit à voir le base64 décodé.
+    expect(blob.size).toBe(300);
+  });
+
+  it("n'est pas pris pour une photo", () => {
+    expect(estJustificatifPdf('data:image/webp;base64,AAAA')).toBe(false);
+    expect(estJustificatifPdf(null)).toBe(false);
+  });
+
+  it('refuse un autre type de fichier en le nommant', async () => {
+    await expect(compresserJustificatif(pdf(10, 'text/plain', 'a.txt'))).rejects.toThrow(/ni une image ni un PDF \(text\/plain\)/);
   });
 });

@@ -12,13 +12,13 @@ Une **note de frais** est une demande de remboursement pour un achat effectué p
 - **De l'adhérent** — depuis son espace, s'il y a été **autorisé** depuis sa fiche. Voir [Fiche d'un adhérent](/admin/help/fiche-adherent).
 - **Du bureau** — le bouton de saisie permet d'enregistrer une note au nom d'un adhérent, avec le même formulaire.
 
-Une note comporte : le **demandeur**, une **catégorie de dépense**, un **montant**, une **description**, et un **justificatif** photographié. Le justificatif est limité à **800 Ko** ; les catégories marquées « masquée pour les notes de frais » n'apparaissent pas dans la liste proposée.
+Une note comporte : le **demandeur**, une **catégorie de dépense**, un **montant**, une **description**, et un **justificatif** : une photo (allégée automatiquement) ou un **PDF**, limité à **800 Ko** ; les catégories marquées « masquée pour les notes de frais » n'apparaissent pas dans la liste proposée.
 
 ## Traiter une demande
 
 Une note en attente peut être :
 
-- **Consultée** — le justificatif s'ouvre en grand ;
+- **Consultée** — le justificatif s'ouvre en grand (un PDF s'ouvre dans le lecteur du navigateur) ;
 - **Modifiée** — montant, catégorie, description, demandeur, saison d'affectation ;
 - **Validée** ou **refusée**.
 

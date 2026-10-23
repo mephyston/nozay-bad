@@ -17,7 +17,7 @@ export async function submitExpenseReport(params: {
   }
 
   if (!params.photoUrl) {
-    return { success: false, error: "Une photo du justificatif est obligatoire pour le remboursement." };
+    return { success: false, error: "Le justificatif (photo ou PDF) est obligatoire pour le remboursement." };
   }
 
   try {

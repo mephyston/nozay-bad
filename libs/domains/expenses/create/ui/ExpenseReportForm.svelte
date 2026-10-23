@@ -7,6 +7,7 @@
   import ExpenseFormMemberSelect from './ExpenseFormMemberSelect.svelte';
   import ExpenseFormDetails from './ExpenseFormDetails.svelte';
   import ExpenseFormFileInput from './ExpenseFormFileInput.svelte';
+  import ExpenseFormConfirmation from './ExpenseFormConfirmation.svelte';
 
   const { activeSeasonId, members = [], categories = [], lockToMembers = false, initialMemberId = '' }: Props = $props();
 
@@ -26,7 +27,7 @@
   let debounceTimeout: any;
 
   let submitting = $state(false);
-  let successMsg = $state<string | null>(null);
+  let envoi = $state<{ message: string; montant: string; motif: string } | null>(null);
   let errorMsg = $state<string | null>(null);
 
   const visibleCategories = $derived(categories.filter(c => !c.hideInExpenses).map(c => ({ value: c.id, label: c.adherentLabel })));
@@ -114,12 +115,16 @@
 
   async function handleSubmit(e: SubmitEvent) {
     e.preventDefault();
-    errorMsg = null; successMsg = null; submitting = true;
+    errorMsg = null; envoi = null; submitting = true;
     const res = await submitExpenseReport({ activeSeasonId, description, category, amountStr, photoUrl, emitterName, selectedMemberId });
     submitting = false;
 
     if (res.success) {
-      successMsg = res.message || null;
+      envoi = {
+        message: res.message || '',
+        montant: `${parseFloat(amountStr).toFixed(2).replace('.', ',')} €`,
+        motif: description.trim()
+      };
       emitterName = ''; selectedMemberId = ''; lastSelectedMember = null; memberSearchQuery = '';
       category = visibleCategories[0]?.value || 'fonctionnement_administratif';
       description = ''; amountStr = ''; photoUrl = null;
@@ -140,13 +145,10 @@
   </Card.Header>
 
   <Card.Content class="p-4 sm:p-6">
+    {#if envoi}
+      <ExpenseFormConfirmation {...envoi} onNouvelle={() => (envoi = null)} />
+    {:else}
     <form onsubmit={handleSubmit} class="space-y-3 sm:space-y-5">
-      {#if successMsg}
-        <Alert.Root variant="success" class="p-4 text-sm rounded-xl flex items-start gap-2.5">
-          <CheckCircle class="w-5 h-5 shrink-0 mt-0.5" />
-        <Alert.Description><span>{successMsg}</span></Alert.Description>
-        </Alert.Root>
-      {/if}
 
       {#if errorMsg}
         <Alert.Root variant="destructive" class="p-4 text-sm rounded-xl flex items-start gap-2.5">
@@ -191,5 +193,6 @@
         {/if}
       </Button>
     </form>
+    {/if}
   </Card.Content>
 </Card.Root>

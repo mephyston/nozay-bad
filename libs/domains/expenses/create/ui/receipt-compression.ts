@@ -10,6 +10,8 @@
  * On réduit donc, en deux temps : d'abord les dimensions, ce qui coûte peu à la lisibilité
  * d'un reçu ; puis la qualité, par paliers, jusqu'à tenir dans le budget. Ce n'est
  * qu'après avoir épuisé les deux qu'on refuse.
+ *
+ * Un PDF, lui, n'est pas retouché : il passe s'il tient dans le budget.
  */
 
 /** Ce que la chaîne enregistrée ne doit pas dépasser. */
@@ -55,8 +57,37 @@ const dimensions = (source: ImageBitmap | HTMLImageElement) => ({
   hauteur: 'naturalHeight' in source ? source.naturalHeight : source.height
 });
 
+function lireEnDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const lecteur = new FileReader();
+    lecteur.onload = () => resolve(String(lecteur.result));
+    lecteur.onerror = () => reject(new Error('PDF illisible.'));
+    lecteur.readAsDataURL(file);
+  });
+}
+
 /**
- * Rend l'adresse `data:` la plus lisible qui tienne dans le budget.
+ * Un PDF part tel quel : on ne sait pas le réduire dans le navigateur, et une facture
+ * reçue par courriel pèse rarement plus que la photo d'un ticket.
+ */
+async function lirePdf(file: File, budget: number) {
+  if (file.size > budget) {
+    throw new Error(
+      `Ce PDF est trop lourd (${Math.round(file.size / 1024)} Ko, limite ${Math.round(budget / 1024)} Ko). Envoyez seulement la page utile, ou une photo du justificatif.`
+    );
+  }
+  const brut = await lireEnDataUrl(file);
+  // Certains systèmes ne typent pas le fichier : on fixe le type d'après l'extension vérifiée.
+  const dataUrl = `data:application/pdf;base64,${brut.slice(brut.indexOf(',') + 1)}`;
+  return { dataUrl, octets: poidsDataUrl(dataUrl), octetsOrigine: file.size };
+}
+
+const estPdf = (file: File) =>
+  file.type === 'application/pdf' || (!file.type && /\.pdf$/i.test(file.name));
+
+/**
+ * Rend l'adresse `data:` la plus lisible qui tienne dans le budget. Un PDF est accepté
+ * tel quel s'il y tient.
  *
  * Lève quand aucune combinaison n'y parvient — c'est-à-dire jamais pour une photo de
  * reçu, mais possiblement pour une capture d'écran très large et très bruitée.
@@ -65,14 +96,16 @@ export async function compresserJustificatif(
   file: File,
   budget = BUDGET_OCTETS
 ): Promise<{ dataUrl: string; octets: number; octetsOrigine: number }> {
+  if (estPdf(file)) return lirePdf(file, budget);
+
   /*
-    Le champ n'accepte que des images, mais la boîte de dialogue du système laisse
-    choisir « tous les fichiers ». Le dire tout de suite vaut mieux que « image
+    Le champ n'accepte que des images et des PDF, mais la boîte de dialogue du système
+    laisse choisir « tous les fichiers ». Le dire tout de suite vaut mieux que « image
     illisible », qui envoie chercher la panne du côté de la photo.
   */
   if (file.type && !file.type.startsWith('image/')) {
     throw new Error(
-      `Ce type de fichier n'est pas une image (${file.type}). Photographiez le justificatif ou exportez-le en JPEG.`
+      `Ce type de fichier n'est ni une image ni un PDF (${file.type}). Photographiez le justificatif ou exportez-le en PDF.`
     );
   }
 

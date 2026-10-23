@@ -38,8 +38,7 @@ export async function exportSeasonArchive(db: Db, store: ClubAssetStore, season:
         const res = await fetch(exp.photoUrl);
         if (res.ok) {
           const buffer = await res.arrayBuffer();
-          const ext = exp.photoUrl.split('.').pop()?.substring(0, 4) || 'jpg';
-          const validExt = ['pdf', 'jpg', 'jpeg', 'png'].includes(ext.toLowerCase()) ? ext : 'jpg';
+          const validExt = extensionJustificatif(exp.photoUrl);
           const safeName = exp.emitterName.replace(/[^a-zA-Z0-9]/g, '_');
           zipData[`notes-de-frais/NDF_${expenseIndex}_${safeName}.${validExt}`] = new Uint8Array(buffer);
         } else {
@@ -155,4 +154,15 @@ export async function exportSeasonArchive(db: Db, store: ClubAssetStore, season:
     filename: `${zipFilePrefix}-${season}.zip`,
     mimeType: 'application/zip'
   };
+}
+
+/**
+ * L'extension d'un justificatif. Il est stocké en adresse `data:` : son type se lit dans
+ * l'en-tête, pas dans un nom de fichier — un PDF sortait sinon en `.jpg`.
+ */
+function extensionJustificatif(adresse: string): string {
+  const type = /^data:([^;,]+)/.exec(adresse)?.[1];
+  if (type) return ({ 'application/pdf': 'pdf', 'image/png': 'png', 'image/webp': 'webp' } as Record<string, string>)[type] ?? 'jpg';
+  const ext = adresse.split('.').pop()?.substring(0, 4).toLowerCase() || 'jpg';
+  return ['pdf', 'jpg', 'jpeg', 'png', 'webp'].includes(ext) ? ext : 'jpg';
 }

@@ -1,6 +1,7 @@
 <script lang="ts">
-  import { UploadCloud, Loader2 } from '@lucide/svelte';
+  import { UploadCloud, Loader2, FileText } from '@lucide/svelte';
   import { compresserJustificatif, poidsDataUrl } from './receipt-compression';
+  import { estJustificatifPdf } from '../../shared/justificatif';
 
   /**
    * Choix du justificatif, avec compression dans le navigateur.
@@ -8,7 +9,7 @@
    * La photo part en base64 dans D1 : une photo de téléphone dépasse la limite sans
    * effort, et l'ancien contrôle se contentait de la refuser — à l'adhérent de se
    * débrouiller avec un outil de retouche. On réduit désormais avant d'envoyer, et on ne
-   * refuse que si même la compression n'y suffit pas.
+   * refuse que si même la compression n'y suffit pas. Un PDF part tel quel.
    */
   let {
     photoUrl = $bindable(null),
@@ -22,6 +23,7 @@
 
   let compression = $state(false);
   let allege = $state<{ avant: number; apres: number } | null>(null);
+  let nomFichier = $state('');
 
   const enKo = (octets: number) => `${Math.round(octets / 1024)} Ko`;
 
@@ -32,6 +34,7 @@
 
     compression = true;
     allege = null;
+    nomFichier = file.name;
     try {
       const { dataUrl, octets, octetsOrigine } = await compresserJustificatif(file);
       photoUrl = dataUrl;
@@ -54,7 +57,7 @@
     <input
       type="file"
       id="receipt"
-      accept="image/*"
+      accept="image/*,application/pdf,.pdf"
       bind:this={fileInput}
       onchange={handleFileChange}
       class="absolute inset-0 opacity-0 cursor-pointer z-10"
@@ -63,11 +66,16 @@
     {#if compression}
       <div class="flex flex-col items-center justify-center py-6 text-center">
         <Loader2 class="text-muted-foreground mb-2 h-8 w-8 animate-spin" />
-        <span class="text-sm font-semibold text-foreground">Allègement de la photo…</span>
+        <span class="text-sm font-semibold text-foreground">Préparation du justificatif…</span>
       </div>
     {:else if photoUrl}
       <div class="flex flex-col items-center space-y-2 py-2">
-        <img src={photoUrl} alt="Aperçu du justificatif" class="max-h-40 rounded-lg shadow-md border border-border object-contain" />
+        {#if estJustificatifPdf(photoUrl)}
+          <FileText class="h-12 w-12 text-primary" />
+          <span class="text-sm font-semibold text-foreground break-all">{nomFichier || 'Justificatif PDF'}</span>
+        {:else}
+          <img src={photoUrl} alt="Aperçu du justificatif" class="max-h-40 rounded-lg shadow-md border border-border object-contain" />
+        {/if}
         <span class="text-xs text-muted-foreground font-semibold">
           Justificatif chargé{#if allege} · {enKo(allege.avant)} → {enKo(allege.apres)}{:else} · {enKo(poidsDataUrl(photoUrl))}{/if}
         </span>
@@ -75,8 +83,8 @@
     {:else}
       <div class="flex flex-col items-center justify-center py-4 text-center">
         <UploadCloud class="w-10 h-10 text-muted-foreground mb-2" />
-        <span class="text-sm font-semibold text-foreground">Cliquez ou glissez-déposez la photo</span>
-        <span class="text-xs text-muted-foreground mt-1">Photo ou capture — elle est allégée automatiquement</span>
+        <span class="text-sm font-semibold text-foreground">Cliquez ou glissez-déposez la photo ou le PDF</span>
+        <span class="text-xs text-muted-foreground mt-1">Photo, capture ou PDF — une photo est allégée automatiquement</span>
       </div>
     {/if}
   </div>

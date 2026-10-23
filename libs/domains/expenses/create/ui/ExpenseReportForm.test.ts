@@ -77,4 +77,50 @@ describe('ExpenseReportForm Component', () => {
     // Check for Label component (data-slot="label")
     expect(target.querySelector('[data-slot="label"]')).not.toBeNull();
   });
+
+  it('remplace le formulaire par une confirmation une fois la note envoyée, PDF compris', async () => {
+    // FileReader s'appuie sur les vraies minuteries de jsdom ; jsdom ne fait pas défiler.
+    vi.useRealTimers();
+    Element.prototype.scrollIntoView = vi.fn();
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ success: true })
+    } as any);
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+    mount(ExpenseReportForm, {
+      target,
+      props: { activeSeasonId: '25-26', members, lockToMembers: true, initialMemberId: '1' }
+    });
+    flushSync();
+
+    const saisir = (selecteur: string, valeur: string) => {
+      const champ = target.querySelector<HTMLInputElement>(selecteur)!;
+      champ.value = valeur;
+      champ.dispatchEvent(new Event('input', { bubbles: true }));
+    };
+    saisir('#amount', '12.5');
+    saisir('#description', 'Volants');
+    const fichier = target.querySelector<HTMLInputElement>('#receipt')!;
+    expect(fichier.accept).toContain('application/pdf');
+    Object.defineProperty(fichier, 'files', {
+      value: [new File([new Uint8Array(20)], 'facture.pdf', { type: 'application/pdf' })]
+    });
+    fichier.dispatchEvent(new Event('change', { bubbles: true }));
+    await vi.waitFor(() => expect(target.textContent).toContain('facture.pdf'));
+
+    target.querySelector('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    await vi.waitFor(() => expect(target.textContent).toContain('Note de frais envoyée'));
+
+    const corps = JSON.parse((globalThis.fetch as any).mock.calls[0][1].body);
+    expect(corps.data.photoUrl.startsWith('data:application/pdf;base64,')).toBe(true);
+    expect(target.textContent).toContain('12,50 €');
+    expect(target.textContent).toContain('Volants');
+    expect(target.querySelector('form')).toBeNull();
+
+    target.querySelector<HTMLButtonElement>('[role="status"] button')!.click();
+    flushSync();
+    expect(target.querySelector('form')).not.toBeNull();
+    vi.useFakeTimers(); // attendu par l'afterEach
+  });
 });
