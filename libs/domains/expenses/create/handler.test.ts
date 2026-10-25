@@ -49,7 +49,7 @@ describe('createExpense handler', () => {
       amountCents: 100,
       status: 'pending',
       emitterName: 'John Doe',
-    }));
+    }), []);
     expect(result).toEqual({ id: 1, status: 'pending' });
   });
 

@@ -1,15 +1,25 @@
+import type { PieceJointe, PieceResume } from '../../shared/justificatif';
+
 export interface Expense {
   id: number;
   seasonId: string;
   description: string;
   category: string;
   amount: number;
-  photoUrl: string | null;
+  /** Le résumé des pièces : leur contenu se lit à l'ouverture (`lirePiece`). */
+  attachments: PieceResume[];
   status: 'pending' | 'approved' | 'rejected';
   emitterName: string;
   memberId: number | null;
   ledgerEntryId: number | null;
   createdAt: string;
+}
+
+/** Ce que la visionneuse montre : les pièces d'une note, à partir de l'une d'elles. */
+export interface SelectionDePieces {
+  expenseId: number;
+  pieces: PieceJointe[];
+  index: number;
 }
 
 export interface Season {

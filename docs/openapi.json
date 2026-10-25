@@ -1222,6 +1222,14 @@
             "minimum": 1,
             "type": "integer"
           },
+          "attachments": {
+            "maxItems": 5,
+            "type": "array",
+            "items": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
           "photoUrl": {
             "anyOf": [
               {
@@ -1273,15 +1281,44 @@
             "minimum": 1,
             "type": "integer"
           },
+          "attachments": {
+            "minItems": 1,
+            "maxItems": 5,
+            "type": "array",
+            "items": {
+              "anyOf": [
+                {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "id"
+                  ],
+                  "properties": {
+                    "id": {
+                      "minimum": 1,
+                      "type": "integer"
+                    }
+                  }
+                },
+                {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "dataUrl"
+                  ],
+                  "properties": {
+                    "dataUrl": {
+                      "minLength": 1,
+                      "type": "string"
+                    }
+                  }
+                }
+              ]
+            }
+          },
           "photoUrl": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "minLength": 1,
+            "type": "string"
           },
           "emitterName": {
             "minLength": 1,

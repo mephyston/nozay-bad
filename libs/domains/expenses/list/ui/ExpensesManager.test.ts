@@ -20,7 +20,7 @@ describe('ExpensesManager Component', () => {
       description: 'Achat de volants RSL',
       category: 'materiel_club',
       amount: 12000, // 120.00 €
-      photoUrl: 'http://example.com/receipt.jpg',
+      attachments: [{ id: 7, mediaType: 'image/jpeg' }],
       status: 'pending' as const,
       emitterName: 'Marie Curie',
       memberId: null,
@@ -190,24 +190,75 @@ describe('ExpensesManager Component', () => {
 
     afterEach(() => document.body.replaceChildren());
 
-    it('envoie le nouveau justificatif, PDF compris', async () => {
-      const dialogue = await ouvrirModification();
+    const joindre = async (dialogue: Element, ...noms: string[]) => {
       const fichier = dialogue.querySelector<HTMLInputElement>('#receipt');
-      expect(fichier, 'la feuille doit proposer de changer le justificatif').not.toBeNull();
+      expect(fichier, 'la feuille doit proposer d’ajouter un justificatif').not.toBeNull();
+      expect(fichier!.multiple).toBe(true);
       Object.defineProperty(fichier, 'files', {
-        value: [new File([new Uint8Array(20)], 'facture.pdf', { type: 'application/pdf' })]
+        configurable: true,
+        value: noms.map((nom) => new File([new Uint8Array(20)], nom, { type: 'application/pdf' }))
       });
       fichier!.dispatchEvent(new Event('change', { bubbles: true }));
-      await vi.waitFor(() => expect(dialogue.textContent).toContain('facture.pdf'));
+      await vi.waitFor(() => expect(dialogue.textContent).toContain(noms.at(-1)));
+    };
+
+    const retirer = (dialogue: Element, n: number) =>
+      dialogue.querySelector<HTMLButtonElement>(`[aria-label="Retirer la pièce n° ${n}"]`)!.click();
+
+    it('ajoute des pièces à celle déjà jointe, sans renvoyer son contenu', async () => {
+      const dialogue = await ouvrirModification();
+      await joindre(dialogue, 'peage.pdf', 'repas.pdf');
 
       const corps = await enregistrer(dialogue);
       expect(corps.action).toBe('update');
-      expect(corps.updates.photoUrl.startsWith('data:application/pdf;base64,')).toBe(true);
+      expect(corps.updates.attachments).toHaveLength(3);
+      expect(corps.updates.attachments[0]).toEqual({ id: 7 });
+      expect(corps.updates.attachments[1].dataUrl.startsWith('data:application/pdf;base64,')).toBe(true);
     });
 
-    it("ne renvoie pas le justificatif quand il n'a pas changé", async () => {
+    it('remplace la pièce retirée par la nouvelle', async () => {
+      const dialogue = await ouvrirModification();
+      retirer(dialogue, 1);
+      flushSync();
+      await joindre(dialogue, 'facture.pdf');
+
+      const corps = await enregistrer(dialogue);
+      expect(corps.updates.attachments).toHaveLength(1);
+      expect(corps.updates.attachments[0]).toHaveProperty('dataUrl');
+    });
+
+    it('refuse d’enregistrer une note sans aucun justificatif', async () => {
+      const dialogue = await ouvrirModification();
+      retirer(dialogue, 1);
+      flushSync();
+      dialogue.querySelector('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+      await vi.waitFor(() => expect(document.body.textContent).toContain('au moins un justificatif'));
+      expect(globalThis.fetch).not.toHaveBeenCalled();
+    });
+
+    it("ne renvoie pas les pièces quand elles n'ont pas changé", async () => {
       const corps = await enregistrer(await ouvrirModification());
+      expect(corps.updates).not.toHaveProperty('attachments');
       expect(corps.updates).not.toHaveProperty('photoUrl');
     });
+  });
+
+  it('lit la pièce à l’ouverture de la visionneuse, et seulement alors', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ success: true, data: { piece: { id: 7, mediaType: 'image/jpeg', dataUrl: 'data:image/jpeg;base64,AAAA' } } })
+    } as any);
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+    mount(ExpensesManager, { target, props: { expenses, seasonId: '25-26', seasons, categories } });
+    flushSync();
+    expect(globalThis.fetch).not.toHaveBeenCalled();
+
+    (Array.from(target.querySelectorAll('button')).find((b) => b.textContent?.trim() === 'Voir') as HTMLButtonElement).click();
+    flushSync();
+
+    await vi.waitFor(() => expect(document.querySelector('[role="dialog"] img')?.getAttribute('src')).toBe('data:image/jpeg;base64,AAAA'));
+    expect((globalThis.fetch as any).mock.calls[0][0]).toBe('/admin/api/expenses/justificatif?id=1&piece=7');
+    document.body.replaceChildren();
   });
 });

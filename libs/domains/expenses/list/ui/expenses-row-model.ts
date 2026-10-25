@@ -61,7 +61,8 @@ export const libelleDeCategorie = (exp: Expense, labels: Record<string, string> 
 
 export type GestesDeNote = {
   isClosed?: boolean;
-  onSelectPhoto: (url: string) => void;
+  /** Ouvre la visionneuse sur les pièces de la note. */
+  onVoirPieces: (exp: Expense) => void;
   /** En attente seulement : valider, rejeter, modifier. */
   onAction?: (id: number, action: 'approve' | 'reject') => void;
   onStartEdit?: (exp: Expense) => void;
@@ -102,12 +103,12 @@ export function gestesDeNote(exp: Expense, gestes: GestesDeNote): SwipeAction<Ex
   if (!gestes.isClosed && exp.status === 'pending' && gestes.onStartEdit) {
     liste.push({ id: 'modifier', label: 'Modifier', icon: Edit2, run: (x) => gestes.onStartEdit!(x) });
   }
-  if (exp.photoUrl) {
+  if (exp.attachments.length > 0) {
     liste.push({
       id: 'justificatif',
-      label: 'Voir le justificatif',
+      label: exp.attachments.length > 1 ? `Voir les ${exp.attachments.length} justificatifs` : 'Voir le justificatif',
       icon: Eye,
-      run: (x) => gestes.onSelectPhoto(x.photoUrl!)
+      run: (x) => gestes.onVoirPieces(x)
     });
   }
   if (!gestes.isClosed && exp.status === 'pending' && gestes.onAction) {

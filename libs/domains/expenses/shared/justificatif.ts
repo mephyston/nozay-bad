@@ -5,9 +5,44 @@
  * une facture reçue par courriel n'a pas à être photographiée sur un écran).
  */
 
+/** Ce que la liste dit d'une pièce : de quoi l'ouvrir, sans son contenu. */
+export interface PieceResume {
+  id: number;
+  mediaType: string;
+}
+
+/**
+ * Une pièce dans un formulaire : déjà jointe (`id`, contenu pas encore lu) ou tout juste
+ * choisie (`dataUrl`, pas encore d'identifiant).
+ */
+export interface PieceJointe {
+  id?: number;
+  mediaType: string;
+  dataUrl?: string;
+  nom?: string;
+}
+
+/** Cinq pièces par note : un déplacement (péage, carburant, repas…) tient dans une note. */
+export const PIECES_MAX = 5;
+
+/** Ce qu'une pièce peut être : une photo ou un PDF. Le reste n'a rien d'un justificatif. */
+export const TYPES_DE_PIECE = /^data:(image\/[a-z0-9.+-]+|application\/pdf)[;,]/i;
+
+/**
+ * Le type d'une pièce, tiré de son adresse `data:` (« image/webp », « application/pdf »).
+ * `null` pour ce qui n'est ni une photo ni un PDF.
+ */
+export function typeDePiece(adresse: string): string | null {
+  const trouve = TYPES_DE_PIECE.exec(adresse);
+  return trouve ? trouve[1].toLowerCase() : null;
+}
+
 export function estJustificatifPdf(adresse: string | null | undefined): boolean {
   return !!adresse && adresse.startsWith('data:application/pdf');
 }
+
+/** La même question, pour une pièce dont on n'a que le type (la liste ne lit pas le contenu). */
+export const estTypePdf = (type: string | null | undefined) => type === 'application/pdf';
 
 /**
  * Le PDF en `Blob`, pour l'ouvrir dans un onglet : la CSP de l'admin interdit de le

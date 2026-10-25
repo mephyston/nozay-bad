@@ -11,7 +11,7 @@ L'application produit quatre exports, tous portant sur **une saison**. Ils serve
 |---|---|---|
 | **Complet** | Factures en PDF, justificatifs de notes de frais, journal comptable | ZIP |
 | **Factures** | Toutes les factures de la saison en PDF | ZIP |
-| **Notes de frais** | Les justificatifs joints aux notes de frais | ZIP |
+| **Notes de frais** | Les justificatifs joints aux notes de frais ; ceux d'une même note portent son numéro, suivi de `_1`, `_2`… quand elle en a plusieurs | ZIP |
 | **Journal comptable** | Toutes les écritures de la saison | CSV |
 
 ## Le journal comptable

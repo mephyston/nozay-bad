@@ -12,7 +12,7 @@ describe('ExpensesState.startEdit', () => {
       description: 'Fromage à raclette',
       category: 14,
       amount: 4250,
-      photoUrl: null,
+      attachments: [],
       status: 'pending',
       emitterName: 'Jean Dupont',
       memberId: null,

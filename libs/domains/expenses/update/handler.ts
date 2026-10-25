@@ -12,6 +12,7 @@ import {
   buildDeleteLedgerEntryStatement
 } from '@nba/accounting-api';
 import { Expense } from '../shared/expense';
+import { planifierPieces, type PieceDemandee } from './pieces';
 import {
   SeasonClosedError,
   ExpenseNotFoundError,
@@ -152,7 +153,9 @@ export async function updateExpense(
     description?: string;
     category?: string | number;
     amount?: number;
-    photoUrl?: string | null;
+    attachments?: PieceDemandee[];
+    /** L'ancien justificatif unique : remplace toutes les pièces. */
+    photoUrl?: string;
     emitterName?: string;
     memberId?: number | null;
   }
@@ -170,18 +173,22 @@ export async function updateExpense(
     throw new SeasonClosedError('La saison cible est clôturée. Impossible d\'affecter cette note de frais.');
   }
 
-  const updated = await repo.update(db, id, {
+  const values = {
     description: body.description,
     categoryId: body.category !== undefined ? (normalizeCategory(body.category) || 1) : undefined,
     amountCents: body.amount,
     seasonId: body.seasonId ? await repo.resolveSeasonId(db, body.seasonId) : undefined,
-    photoUrl: body.photoUrl !== undefined ? body.photoUrl : undefined,
     emitterName: body.emitterName,
     memberId: body.memberId !== undefined ? body.memberId : undefined
-  });
-  
-  if (!updated) {
-    throw new ExpenseNotFoundError();
+  };
+
+  const demandees = body.attachments ?? (body.photoUrl ? [{ dataUrl: body.photoUrl }] : undefined);
+  if (demandees) {
+    await repo.updateWithAttachments(db, id, values, planifierPieces(await repo.attachmentIds(db, id), demandees));
   }
-  return updated;
+  const updated = demandees ? await repo.getById(db, id) : await repo.update(db, id, values);
+  if (!updated) throw new ExpenseNotFoundError();
+  // Sans `photo_url` : la copie de la première pièce n'a pas à repartir vers l'écran.
+  const { photoUrl: _copie, ...note } = updated;
+  return note;
 }

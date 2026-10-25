@@ -86,10 +86,10 @@
       "postcss-selector-parser": "^7.1.6"
     },
     "unifont": {
-      "undici": "^8.10.2"
+      "undici": "^8.12.2"
     },
     "@actions/http-client": {
-      "undici": "^6.28.1"
+      "undici": "^6.29.1"
     },
     "@semantic-release/github": {
       "undici": "^7.29.1"

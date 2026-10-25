@@ -57,6 +57,7 @@ const tables = [
     'push_messages',
     'push_preferences',
     'push_subscriptions',
+    'expense_attachments',
     'expenses',
     // `checks` avant `ledger_entries` : c'est lui l'enfant (`check_deposit_id`,
     // `season_id`, `ledger_entry_id`). L'ordre inverse ne cassait que le jour où un

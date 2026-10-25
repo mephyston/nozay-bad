@@ -4,7 +4,7 @@ import { zipSync, strToU8, type Zippable } from 'fflate';
 import { generateInvoicePdf } from '../../invoices/shared/generate-invoice-pdf';
 import { listInvoices } from '../../invoices/list-invoices/handler';
 import { getInvoice } from '../../invoices/get-invoice/handler';
-import { listExpenses } from '@nba/expenses-api';
+import { listExpenses, listAttachmentContents } from '@nba/expenses-api';
 import { listLedgerEntries } from '../../ledger/list-ledger-entries/handler';
 import { listAccounts } from '../../config/queries';
 import { accountLabelOf } from '../../shared/account-labels';
@@ -31,23 +31,20 @@ export async function exportSeasonArchive(db: Db, store: ClubAssetStore, season:
   // 2. Expenses
   if (type === 'all' || type === 'expenses') {
     const expensesList = await listExpenses(db, { season });
-  let expenseIndex = 1;
-  for (const exp of expensesList) {
-    if (exp.photoUrl) {
-      try {
-        const res = await fetch(exp.photoUrl);
-        if (res.ok) {
-          const buffer = await res.arrayBuffer();
-          const validExt = extensionJustificatif(exp.photoUrl);
-          const safeName = exp.emitterName.replace(/[^a-zA-Z0-9]/g, '_');
-          zipData[`notes-de-frais/NDF_${expenseIndex}_${safeName}.${validExt}`] = new Uint8Array(buffer);
-        } else {
-          zipData[`notes-de-frais/NDF_${expenseIndex}_erreur.txt`] = strToU8(`Erreur HTTP ${res.status} lors du téléchargement du justificatif: ${exp.photoUrl}`);
+    let expenseIndex = 1;
+    for (const exp of expensesList) {
+      const safeName = exp.emitterName.replace(/[^a-zA-Z0-9]/g, '_');
+      const pieces = exp.attachments.length > 0 ? await listAttachmentContents(db, exp.id) : [];
+      // Une pièce garde le nom d'avant ; plusieurs se numérotent dans l'ordre où elles
+      // ont été jointes, et restent groupées sous le numéro de la note.
+      pieces.forEach((piece, k) => {
+        const base = `notes-de-frais/NDF_${expenseIndex}_${safeName}${pieces.length > 1 ? `_${k + 1}` : ''}`;
+        try {
+          zipData[`${base}.${extensionJustificatif(piece.dataUrl)}`] = octetsDeDataUrl(piece.dataUrl);
+        } catch (e) {
+          zipData[`${base}_erreur.txt`] = strToU8(`Justificatif illisible : ${String(e)}`);
         }
-      } catch (e) {
-        zipData[`notes-de-frais/NDF_${expenseIndex}_erreur.txt`] = strToU8(`Erreur réseau lors du téléchargement du justificatif: ${exp.photoUrl}\n${String(e)}`);
-      }
-      }
+      });
       expenseIndex++;
     }
   }
@@ -154,6 +151,17 @@ export async function exportSeasonArchive(db: Db, store: ClubAssetStore, season:
     filename: `${zipFilePrefix}-${season}.zip`,
     mimeType: 'application/zip'
   };
+}
+
+/**
+ * Les octets d'une adresse `data:` en base64. Le `fetch(data:…)` d'avant passait par la
+ * pile réseau du Worker pour décoder une chaîne déjà en mémoire.
+ */
+function octetsDeDataUrl(adresse: string): Uint8Array {
+  const binaire = atob(adresse.slice(adresse.indexOf(',') + 1));
+  const octets = new Uint8Array(binaire.length);
+  for (let i = 0; i < binaire.length; i++) octets[i] = binaire.charCodeAt(i);
+  return octets;
 }
 
 /**

@@ -1,8 +1,9 @@
 <script lang="ts">
-  import { Edit2, Eye } from '@lucide/svelte';
-  import { Button, FormField, FormSheet, Input, SearchableCombobox, Textarea, toSeasonOptions, uiAlert } from '@nba/ui';
+  import { Edit2 } from '@lucide/svelte';
+  import { FormField, FormSheet, Input, SearchableCombobox, Textarea, toSeasonOptions, uiAlert } from '@nba/ui';
   import type { Expense, Season, CategoryOption } from './expenses-types';
-  import ExpenseFormFileInput from '../../create/ui/ExpenseFormFileInput.svelte';
+  import ExpenseFormAttachments from '../../create/ui/ExpenseFormAttachments.svelte';
+  import type { PieceJointe } from '../../shared/justificatif';
 
   /**
    * Modifier une note de frais.
@@ -20,11 +21,11 @@
     editCategory = $bindable(''),
     editSeasonId = $bindable(''),
     editAmountStr = $bindable(''),
-    editPhotoUrl = $bindable(null),
+    editPieces = $bindable([]),
     isSaving = false,
     categoriesList = [],
     seasons = [],
-    onSelectPhoto,
+    onVoirPiece,
     onSave,
     onClose
   }: {
@@ -34,18 +35,17 @@
     editCategory?: string;
     editSeasonId?: string;
     editAmountStr?: string;
-    /** Le justificatif affiché ; un nouveau fichier le remplace à l'enregistrement. */
-    editPhotoUrl?: string | null;
+    /** Les pièces de la note : on en retire, on en ajoute, l'enregistrement envoie la liste. */
+    editPieces?: PieceJointe[];
     isSaving?: boolean;
     categoriesList?: CategoryOption[];
     seasons?: Season[];
-    onSelectPhoto: (url: string) => void;
+    /** Ouvre la visionneuse sur la pièce n° `index` de la liste en cours. */
+    onVoirPiece: (index: number) => void;
     onSave: (id: number) => void;
     /** Appelée quand la feuille se referme, d'où qu'en vienne l'ordre. */
     onClose?: () => void;
   } = $props();
-
-  let fileInput = $state<HTMLInputElement | null>(null);
 
   function soumettre(e: Event) {
     e.preventDefault();
@@ -90,12 +90,6 @@
     <Input id="edit-amount" type="number" step="0.01" min="0.01" bind:value={editAmountStr} required class="tabular-nums" />
   </FormField>
 
-  <!-- Un clic sur la zone choisit un autre fichier : photo ou PDF. -->
-  <ExpenseFormFileInput bind:photoUrl={editPhotoUrl} bind:fileInput onError={(msg) => uiAlert(msg)} />
-  {#if editPhotoUrl}
-    <Button variant="ghost" size="sm" class="gap-1 self-end text-xs font-bold text-primary" onclick={() => onSelectPhoto(editPhotoUrl!)}>
-      <Eye class="size-3.5" />
-      Visualiser
-    </Button>
-  {/if}
+  <!-- Une vignette s'ouvre dans la visionneuse ; la croix la retire, la zone en ajoute. -->
+  <ExpenseFormAttachments bind:pieces={editPieces} onError={(msg) => uiAlert(msg)} onVoir={onVoirPiece} />
 </FormSheet>

@@ -24,6 +24,7 @@ paths:
 - Recherche : toujours `correspondA(terme, ...textes)` (accents, casse, ponctuation ignorés). Jamais `toLowerCase().includes`.
 - Balayage (`swipe-actions.ts`) : ne pas abaisser `commitRatio`/`MARGE_ARMEMENT` sans refaire le calcul avec 3 actions sur 390 px.
 - bits-ui réécrit tout l'attribut `style` d'un `Dialog.Content` quand un dialogue s'empile : ne jamais compter sur un style en ligne durable sur un nœud qu'il gère.
+- Un calque qui peut s'ouvrir depuis une feuille (visionneuse, aperçu) est un `Dialog`, jamais un `<div class="fixed … z-50">` rendu dans la page : la feuille est téléportée en fin de document et garde le focus, le calque passe derrière elle.
 
 ## Navigation et documents
 

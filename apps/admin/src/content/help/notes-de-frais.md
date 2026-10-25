@@ -12,14 +12,14 @@ Une **note de frais** est une demande de remboursement pour un achat effectué p
 - **De l'adhérent** — depuis son espace, s'il y a été **autorisé** depuis sa fiche. Voir [Fiche d'un adhérent](/admin/help/fiche-adherent).
 - **Du bureau** — le bouton de saisie permet d'enregistrer une note au nom d'un adhérent, avec le même formulaire.
 
-Une note comporte : le **demandeur**, une **catégorie de dépense**, un **montant**, une **description**, et un **justificatif** : une photo (allégée automatiquement) ou un **PDF**, limité à **800 Ko** ; les catégories marquées « masquée pour les notes de frais » n'apparaissent pas dans la liste proposée.
+Une note comporte : le **demandeur**, une **catégorie de dépense**, un **montant**, une **description**, et de **un à cinq justificatifs** : des photos (allégées automatiquement) ou des **PDF**, chacun limité à **800 Ko**. Un déplacement (péage, carburant, repas) tient ainsi dans une seule note. Plusieurs fichiers peuvent être choisis d'un coup ; la croix d'une vignette la retire avant l'envoi ; les catégories marquées « masquée pour les notes de frais » n'apparaissent pas dans la liste proposée.
 
 ## Traiter une demande
 
 Une note en attente peut être :
 
-- **Consultée** — le justificatif s'ouvre en grand (un PDF s'ouvre dans le lecteur du navigateur) ;
-- **Modifiée** — montant, catégorie, description, demandeur, saison d'affectation, et le **justificatif** (cliquer sur la zone du justificatif pour choisir une autre photo ou un PDF) ;
+- **Consultée** — **Voir** ouvre les justificatifs en grand, avec leur nombre entre parenthèses quand il y en a plusieurs ; les flèches passent de l'un à l'autre (un PDF s'ouvre dans le lecteur du navigateur) ;
+- **Modifiée** — montant, catégorie, description, demandeur, saison d'affectation, et les **justificatifs** : toucher une vignette l'ouvre, sa croix la retire, **Ajouter une pièce** en joint une autre. Une note garde toujours au moins un justificatif ;
 - **Validée** ou **refusée**.
 
 **La validation crée l'écriture de dépense** dans le grand livre, libellée « Remboursement frais – *demandeur* – *description* », rattachée à l'adhérent et imputée à la catégorie choisie. Le remboursement effectif (le virement) apparaîtra ensuite sur le relevé bancaire et se rattachera à cette écriture lors du [rapprochement bancaire](/admin/help/rapprochement-bancaire).
