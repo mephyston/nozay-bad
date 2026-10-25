@@ -131,6 +131,8 @@ Le modèle précédent couplait une branche à un environnement : promouvoir dem
 
 `promote.yml` redéploie **les 4 Workers sans exception**. Pas de `nx affected` : on promeut un tag dont on ignore l'écart avec ce qui tourne réellement, une promotion doit être rejouable, et les Workers sont couplés par service bindings — une promotion partielle produirait une flotte mélangeant deux versions de `@nba/db`.
 
+Dans `deploy.yml`, les tests affectés tournent sur **trois runners en parallèle** (`vitest --shard`). Le run de `main` qui suit la fusion d'une PR **ne les rejoue pas** si le commit a exactement le contenu de la tête de PR et qu'un run de PR est vert sur cette tête : rien n'a changé depuis qu'ils ont passé. Garde-fous, sécurité et déploiement staging tournent toujours. Un commit direct sur `main`, ou une fusion après que `main` a bougé, rejoue les tests.
+
 Le job `guard` refuse tout ref qui n'est pas un ancêtre de `main` ou qui n'a pas de run vert de `deploy.yml`. **On ne promeut que des tags postérieurs à l'adoption de ce modèle** : `promote.yml` charge l'action composite depuis l'arbre du ref promu, absente des tags antérieurs.
 
 ### 8.3 On promeut un commit, pas un binaire
