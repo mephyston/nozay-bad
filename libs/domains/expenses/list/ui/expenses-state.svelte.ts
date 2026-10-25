@@ -1,9 +1,10 @@
-import type { Expense } from './expenses-types';
+import type { Expense, SelectionDePieces } from './expenses-types';
+import type { PieceJointe } from '../../shared/justificatif';
 
 export class ExpensesState {
   activeTab = $state<'pending' | 'history'>('pending');
   searchTerm = $state('');
-  selectedPhoto = $state<string | null>(null);
+  visionneuse = $state<SelectionDePieces | null>(null);
 
   submittingId = $state<number | null>(null);
   errorMsg = $state('');
@@ -13,9 +14,9 @@ export class ExpensesState {
   editCategory = $state('');
   editSeasonId = $state('');
   editAmountStr = $state('');
-  /** Le justificatif tel qu'à l'ouverture : on ne le renvoie que s'il a été remplacé. */
-  editPhotoOrigine: string | null = null;
-  editPhotoUrl = $state<string | null>(null);
+  /** Les pièces telles qu'à l'ouverture : la liste n'est renvoyée que si elle a changé. */
+  editPiecesOrigine: number[] = [];
+  editPieces = $state<PieceJointe[]>([]);
   isSaving = $state(false);
 
   /*
@@ -29,7 +30,28 @@ export class ExpensesState {
     this.editCategory = String(exp.category);
     this.editSeasonId = String(exp.seasonId);
     this.editAmountStr = (exp.amount / 100).toFixed(2);
-    this.editPhotoOrigine = exp.photoUrl;
-    this.editPhotoUrl = exp.photoUrl;
+    this.editPiecesOrigine = exp.attachments.map((p) => p.id);
+    this.editPieces = exp.attachments.map((p) => ({ ...p }));
+  }
+
+  /** La visionneuse sur les pièces d'une note de la liste. */
+  voirPieces(exp: Expense) {
+    this.visionneuse = { expenseId: exp.id, pieces: exp.attachments, index: 0 };
+  }
+
+  /** La visionneuse sur les pièces de la feuille de modification, nouvelles comprises. */
+  voirPieceEnCours(index: number) {
+    if (this.editingId !== null) this.visionneuse = { expenseId: this.editingId, pieces: this.editPieces, index };
+  }
+
+  /**
+   * La liste à envoyer, ou `undefined` si rien n'a bougé. Une pièce gardée ne repart que
+   * par son identifiant : son contenu est déjà en base.
+   */
+  piecesModifiees(): ({ id: number } | { dataUrl: string })[] | undefined {
+    const ids = this.editPieces.map((p) => p.id);
+    const inchangee = ids.length === this.editPiecesOrigine.length && ids.every((id, i) => id === this.editPiecesOrigine[i]);
+    if (inchangee) return undefined;
+    return this.editPieces.map((p) => (p.id ? { id: p.id } : { dataUrl: p.dataUrl! }));
   }
 }

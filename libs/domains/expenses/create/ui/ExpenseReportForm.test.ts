@@ -113,7 +113,8 @@ describe('ExpenseReportForm Component', () => {
     await vi.waitFor(() => expect(target.textContent).toContain('Note de frais envoyée'));
 
     const corps = JSON.parse((globalThis.fetch as any).mock.calls[0][1].body);
-    expect(corps.data.photoUrl.startsWith('data:application/pdf;base64,')).toBe(true);
+    expect(corps.data.attachments).toHaveLength(1);
+    expect(corps.data.attachments[0].startsWith('data:application/pdf;base64,')).toBe(true);
     expect(target.textContent).toContain('12,50 €');
     expect(target.textContent).toContain('Volants');
     expect(target.querySelector('form')).toBeNull();

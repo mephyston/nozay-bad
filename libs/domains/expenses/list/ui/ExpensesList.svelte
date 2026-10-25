@@ -16,7 +16,7 @@
     categoryLabels = {},
     vue = 'pending',
     isClosed = false,
-    onSelectPhoto,
+    onVoirPieces,
     onAction,
     onStartEdit,
     onCancelValidation,
@@ -31,7 +31,7 @@
     emptyDescription?: string;
   } & GestesDeNote = $props();
 
-  const gestes = $derived({ isClosed, onSelectPhoto, onAction, onStartEdit, onCancelValidation });
+  const gestes = $derived({ isClosed, onVoirPieces, onAction, onStartEdit, onCancelValidation });
 </script>
 
 <ListView items={expenses} {emptyTitle} {emptyDescription}>

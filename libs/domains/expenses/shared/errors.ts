@@ -35,3 +35,11 @@ export class ExpenseAlreadyPendingError extends AppError {
     this.name = 'ExpenseAlreadyPendingError';
   }
 }
+
+/** Une pièce jointe qui n'est ni une photo ni un PDF, ou une de trop. */
+export class InvalidAttachmentError extends AppError {
+  constructor(message: string) {
+    super(message, 400);
+    this.name = 'InvalidAttachmentError';
+  }
+}

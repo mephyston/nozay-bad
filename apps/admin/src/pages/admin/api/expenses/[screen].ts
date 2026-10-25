@@ -18,6 +18,21 @@ async function saison(lire: Lecteur, params: URLSearchParams) {
 }
 
 export const ECRANS: Record<string, Ecran> = {
+  /*
+    Une pièce jointe, contenu compris. La liste n'en transporte que le résumé : la
+    visionneuse vient chercher ici celle qu'on ouvre, et elle seule.
+  */
+  justificatif: {
+    feature: 'expenses',
+    permission: 'expenses:reports:read',
+    charger: async (lire, _locals, params) => {
+      const note = identifiant(params.get('id'), 'de note de frais');
+      const piece = identifiant(params.get('piece'), 'de pièce jointe');
+      const lu = await lire.detail(`/expenses/${note}/attachments/${piece}`);
+      if (!lu.ok) throw new Error(`pièce jointe illisible (${lu.status})`);
+      return { piece: lu.data };
+    }
+  },
   list: {
     feature: 'expenses',
     permission: 'expenses:reports:read',

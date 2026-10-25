@@ -50,21 +50,21 @@
   async function saveEdit(id: number) {
     viewState.isSaving = true;
     viewState.errorMsg = '';
+    // La liste des pièces ne repart que si elle a changé : chacune pèse quelques centaines de Ko.
+    const pieces = viewState.piecesModifiees();
 
     await submitForm({
       validate: () => {
         const parsedAmount = parseFloat(viewState.editAmountStr);
-        return isNaN(parsedAmount) || parsedAmount <= 0 ? "Veuillez saisir un montant supérieur à 0 €." : null;
+        if (isNaN(parsedAmount) || parsedAmount <= 0) return "Veuillez saisir un montant supérieur à 0 €.";
+        return pieces?.length === 0 ? 'Une note de frais garde au moins un justificatif.' : null;
       },
       submit: () => api.saveExpenseEdit(id, {
         description: viewState.editDescription,
         category: viewState.editCategory,
         seasonId: viewState.editSeasonId,
         amount: Math.round(parseFloat(viewState.editAmountStr) * 100),
-        // Quelques centaines de Ko : renvoyés seulement s'ils ont changé.
-        ...(viewState.editPhotoUrl && viewState.editPhotoUrl !== viewState.editPhotoOrigine
-          ? { photoUrl: viewState.editPhotoUrl }
-          : {})
+        ...(pieces ? { attachments: pieces } : {})
       }),
       success: (message) => message,
       close: () => { viewState.editingId = null; },
@@ -180,7 +180,7 @@
         submittingId={viewState.submittingId}
         {categoryLabels}
         toolbar={barreDOutils}
-        onSelectPhoto={(url) => viewState.selectedPhoto = url}
+        onVoirPieces={(exp) => viewState.voirPieces(exp)}
         onStartEdit={(e) => viewState.startEdit(e)}
         onAction={handleAction}
       />
@@ -190,7 +190,7 @@
         {isClosed}
         {categoryLabels}
         toolbar={barreDOutils}
-        onSelectPhoto={(url) => viewState.selectedPhoto = url}
+        onVoirPieces={(exp) => viewState.voirPieces(exp)}
         onCancelValidation={handleCancelValidation}
       />
     {/if}
@@ -203,16 +203,16 @@
   bind:editCategory={viewState.editCategory}
   bind:editSeasonId={viewState.editSeasonId}
   bind:editAmountStr={viewState.editAmountStr}
-  bind:editPhotoUrl={viewState.editPhotoUrl}
+  bind:editPieces={viewState.editPieces}
   isSaving={viewState.isSaving}
   {categoriesList}
   {seasons}
-  onSelectPhoto={(url) => (viewState.selectedPhoto = url)}
+  onVoirPiece={(index) => viewState.voirPieceEnCours(index)}
   onSave={saveEdit}
   onClose={() => (viewState.editingId = null)}
 />
 
-<ExpensePhotoModal bind:selectedPhoto={viewState.selectedPhoto} />
+<ExpensePhotoModal bind:selection={viewState.visionneuse} />
 
 <AdminExpenseForm
   bind:open={isCreateSheetOpen}

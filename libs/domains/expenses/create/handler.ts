@@ -4,6 +4,7 @@ import { isSeasonClosed } from '@nba/members-api';
 import { getMemberById } from '@nba/members-api';
 import { normalizeCategory } from '@nba/accounting-api';
 import { SeasonClosedError, MemberNotEligibleError } from '../shared/errors';
+import { verifierPieces } from '../shared/pieces';
 import { CreateExpenseInput, CreateExpenseOutput } from "./dto";
 
 export async function createExpense(
@@ -42,15 +43,16 @@ export async function createExpense(
   // champ hors contrat et traitait 0 comme absent.
   const amountCents = body.amount;
 
+  const pieces = verifierPieces(body.attachments ?? (body.photoUrl ? [body.photoUrl] : []));
+
   return repo.create(db, {
     seasonId,
     description: body.description,
     categoryId,
     amountCents,
-    photoUrl: body.photoUrl || null,
     status: 'pending',
     emitterName: body.emitterName,
     memberId: body.memberId || null,
     createdAt: new Date()
-  });
+  }, pieces);
 }

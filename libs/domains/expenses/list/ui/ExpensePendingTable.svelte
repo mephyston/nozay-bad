@@ -23,7 +23,7 @@
     categoryLabels = {},
     seasons = [],
     toolbar: barreDOutils,
-    onSelectPhoto,
+    onVoirPieces,
     onStartEdit,
     onAction
   }: {
@@ -35,7 +35,7 @@
     seasons: Season[];
     /** La barre d'outils, commune aux deux tableaux et rendue par l'écran. */
     toolbar?: import('svelte').Snippet;
-    onSelectPhoto: (url: string) => void;
+    onVoirPieces: (exp: Expense) => void;
     onStartEdit: (exp: Expense) => void;
     onAction: (id: number, action: 'approve' | 'reject') => void;
   } = $props();
@@ -82,22 +82,22 @@
         {(exp.amount / 100).toFixed(2)} €
       </Table.Cell>
       <Table.Cell class="p-4 text-center">
-        {#if exp.photoUrl}
+        {#if exp.attachments.length > 0}
           <Button
             variant="ghost"
             size="sm"
-            onclick={() => onSelectPhoto(exp.photoUrl!)}
+            onclick={() => onVoirPieces(exp)}
             class="text-xs font-semibold text-primary hover:underline inline-flex items-center gap-1 h-auto py-1 px-2"
           >
             <Eye class="w-3.5 h-3.5" />
-            Voir
+            Voir{#if exp.attachments.length > 1}&nbsp;({exp.attachments.length}){/if}
           </Button>
         {:else}
           <span class="text-xs text-muted-foreground">Aucun</span>
         {/if}
       </Table.Cell>
       <Table.Cell class="p-4 text-right">
-        {@const gestes = gestesDeNote(exp, { isClosed, onSelectPhoto, onAction, onStartEdit })}
+        {@const gestes = gestesDeNote(exp, { isClosed, onVoirPieces, onAction, onStartEdit })}
         {#if gestes.length > 0}
           <DataTableRowActions>
             <DropdownMenu.Label>Actions</DropdownMenu.Label>
@@ -114,7 +114,7 @@
       {categoryLabels}
       vue="pending"
       {isClosed}
-      {onSelectPhoto}
+      {onVoirPieces}
       {onAction}
       {onStartEdit}
       emptyTitle="Aucune note de frais en attente"

@@ -188,6 +188,7 @@ export const ROUTE_PERMISSIONS: RouteRule[] = [
   // validation reste réservée à l'administration.
   { method: 'GET', path: '/expenses', permission: 'expenses:reports:read', service: true, feature: 'expenses' },
   { method: 'POST', path: '/expenses', permission: 'expenses:reports:write', service: true, feature: 'expenses' },
+  { method: 'GET', path: '/expenses/:id/attachments/:attachmentId', permission: 'expenses:reports:read', feature: 'expenses' },
   { method: 'PUT', path: '/expenses/:id', permission: 'expenses:reports:write', feature: 'expenses' },
   { method: 'POST', path: '/expenses/:id/approve', permission: 'expenses:reports:approve', feature: 'expenses' },
   { method: 'POST', path: '/expenses/:id/reject', permission: 'expenses:reports:approve', feature: 'expenses' },

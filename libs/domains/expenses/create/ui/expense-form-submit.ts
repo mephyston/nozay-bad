@@ -1,9 +1,11 @@
+import type { PieceJointe } from '../../shared/justificatif';
+
 export async function submitExpenseReport(params: {
   activeSeasonId: string;
   description: string;
   category: string;
   amountStr: string;
-  photoUrl: string | null;
+  pieces: PieceJointe[];
   emitterName: string;
   selectedMemberId: string;
 }): Promise<{ success: boolean; error?: string; message?: string }> {
@@ -16,8 +18,8 @@ export async function submitExpenseReport(params: {
     return { success: false, error: "Veuillez saisir un montant supérieur à 0 €." };
   }
 
-  if (!params.photoUrl) {
-    return { success: false, error: "Le justificatif (photo ou PDF) est obligatoire pour le remboursement." };
+  if (params.pieces.length === 0) {
+    return { success: false, error: "Au moins un justificatif (photo ou PDF) est obligatoire pour le remboursement." };
   }
 
   try {
@@ -31,7 +33,7 @@ export async function submitExpenseReport(params: {
           description: params.description,
           category: params.category,
           amount: Math.round(parsedAmount * 100),
-          photoUrl: params.photoUrl,
+          attachments: params.pieces.map((p) => p.dataUrl),
           emitterName: params.emitterName,
           memberId: parseInt(params.selectedMemberId)
         }

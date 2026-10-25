@@ -4,7 +4,8 @@
   import type { Member, Props } from '../../create/ui/expense-form-types';
   import { formatMemberName, scrollOptionIntoView } from '../../create/ui/expense-form-utils';
   import ExpenseFormDetails from '../../create/ui/ExpenseFormDetails.svelte';
-  import ExpenseFormFileInput from '../../create/ui/ExpenseFormFileInput.svelte';
+  import ExpenseFormAttachments from '../../create/ui/ExpenseFormAttachments.svelte';
+  import type { PieceJointe } from '../../shared/justificatif';
 
   let {
     open = $bindable(false),
@@ -16,8 +17,7 @@
   let category = $state('');
   let description = $state('');
   let amountStr = $state('');
-  let photoUrl = $state<string | null>(null);
-  let fileInput = $state<HTMLInputElement | null>(null);
+  let pieces = $state<PieceJointe[]>([]);
   let selectedMemberId = $state<string | number | undefined>(undefined);
 
   let submitting = $state(false);
@@ -58,7 +58,7 @@
     if (!selectedMemberId) return 'Sélectionnez le demandeur.';
     const parsedAmount = parseFloat(amountStr);
     if (isNaN(parsedAmount) || parsedAmount <= 0) return 'Montant invalide.';
-    if (!photoUrl) return 'Le justificatif est obligatoire.';
+    if (pieces.length === 0) return 'Au moins un justificatif est obligatoire.';
     return null;
   }
 
@@ -85,7 +85,7 @@
               // durcissement n'avait corrigé que le formulaire adhérent — celui-ci
               // envoyait un champ hors contrat, et toute création échouait en 400.
               amount: Math.round(parseFloat(amountStr) * 100),
-              photoUrl,
+              attachments: pieces.map((p) => p.dataUrl),
               memberId: Number(selectedMemberId),
               emitterName
             }
@@ -134,5 +134,5 @@
 
   <ExpenseFormDetails bind:category bind:amountStr bind:description {visibleCategories} />
 
-  <ExpenseFormFileInput bind:photoUrl bind:fileInput onError={(msg) => (errorMsg = msg)} />
+  <ExpenseFormAttachments bind:pieces onError={(msg) => (errorMsg = msg)} />
 </FormSheet>

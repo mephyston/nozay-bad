@@ -6,7 +6,8 @@
   import { submitExpenseReport } from './expense-form-submit';
   import ExpenseFormMemberSelect from './ExpenseFormMemberSelect.svelte';
   import ExpenseFormDetails from './ExpenseFormDetails.svelte';
-  import ExpenseFormFileInput from './ExpenseFormFileInput.svelte';
+  import ExpenseFormAttachments from './ExpenseFormAttachments.svelte';
+  import type { PieceJointe } from '../../shared/justificatif';
   import ExpenseFormConfirmation from './ExpenseFormConfirmation.svelte';
 
   const { activeSeasonId, members = [], categories = [], lockToMembers = false, initialMemberId = '' }: Props = $props();
@@ -15,8 +16,7 @@
   let category = $state('');
   let description = $state('');
   let amountStr = $state('');
-  let photoUrl = $state<string | null>(null);
-  let fileInput = $state<HTMLInputElement | null>(null);
+  let pieces = $state<PieceJointe[]>([]);
 
   let selectedMemberId = $state('');
   let memberSearchQuery = $state('');
@@ -116,7 +116,7 @@
   async function handleSubmit(e: SubmitEvent) {
     e.preventDefault();
     errorMsg = null; envoi = null; submitting = true;
-    const res = await submitExpenseReport({ activeSeasonId, description, category, amountStr, photoUrl, emitterName, selectedMemberId });
+    const res = await submitExpenseReport({ activeSeasonId, description, category, amountStr, pieces, emitterName, selectedMemberId });
     submitting = false;
 
     if (res.success) {
@@ -127,8 +127,7 @@
       };
       emitterName = ''; selectedMemberId = ''; lastSelectedMember = null; memberSearchQuery = '';
       category = visibleCategories[0]?.value || 'fonctionnement_administratif';
-      description = ''; amountStr = ''; photoUrl = null;
-      if (fileInput) fileInput.value = '';
+      description = ''; amountStr = ''; pieces = [];
     } else {
       errorMsg = res.error || null;
     }
@@ -178,7 +177,7 @@
 
       <ExpenseFormDetails bind:category bind:amountStr bind:description {visibleCategories} />
 
-      <ExpenseFormFileInput bind:photoUrl bind:fileInput onError={(msg) => { errorMsg = msg; }} />
+      <ExpenseFormAttachments bind:pieces onError={(msg) => { errorMsg = msg; }} />
 
       <Button
         type="submit"

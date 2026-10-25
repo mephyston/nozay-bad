@@ -34,7 +34,7 @@ describe('Expenses API Endpoints', () => {
         description: 'Achat de cartons pour tournoi',
         category: 'materiel_club',
         amount: 4500, // 45.00 €
-        photoUrl: 'justificatif_carton.jpg',
+        attachments: ['data:image/jpeg;base64,/9j/4AAQ'],
         emitterName: 'Marie Curie'
       })
     }, { DB: mockD1 as any });

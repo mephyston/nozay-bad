@@ -9,7 +9,7 @@ function note(surcharges: Partial<Expense> = {}): Expense {
     description: 'Volants pour le tournoi',
     category: 'volants',
     amount: 4500,
-    photoUrl: null,
+    attachments: [],
     status: 'pending',
     emitterName: 'Dupont Jean',
     memberId: 10,
@@ -20,7 +20,7 @@ function note(surcharges: Partial<Expense> = {}): Expense {
 }
 
 const gestes = () => ({
-  onSelectPhoto: vi.fn(),
+  onVoirPieces: vi.fn(),
   onAction: vi.fn(),
   onStartEdit: vi.fn(),
   onCancelValidation: vi.fn()
@@ -65,8 +65,14 @@ describe('expenses-row-model', () => {
 
   it('ouvre le justificatif quand il existe, et seulement alors', () => {
     expect(gestesDeNote(note(), gestes()).map((a) => a.id)).not.toContain('justificatif');
-    const avec = gestesDeNote(note({ photoUrl: '/photo.jpg' }), gestes());
+    const avec = gestesDeNote(note({ attachments: [{ id: 1, mediaType: 'image/jpeg' }] }), gestes());
     expect(avec.map((a) => a.id)).toContain('justificatif');
+  });
+
+  it('annonce le nombre de justificatifs quand il y en a plusieurs', () => {
+    const pieces = [1, 2, 3].map((id) => ({ id, mediaType: 'image/jpeg' }));
+    const voir = gestesDeNote(note({ attachments: pieces }), gestes()).find((a) => a.id === 'justificatif');
+    expect(voir?.label).toBe('Voir les 3 justificatifs');
   });
 
   it("n'offre à l'historique que le retour en arrière", () => {
@@ -77,6 +83,6 @@ describe('expenses-row-model', () => {
   it('ne laisse que le justificatif sur une saison clôturée', () => {
     const g = { ...gestes(), isClosed: true };
     expect(gestesDeNote(note(), g)).toEqual([]);
-    expect(gestesDeNote(note({ photoUrl: '/p.jpg' }), g).map((a) => a.id)).toEqual(['justificatif']);
+    expect(gestesDeNote(note({ attachments: [{ id: 1, mediaType: 'image/jpeg' }] }), g).map((a) => a.id)).toEqual(['justificatif']);
   });
 });
