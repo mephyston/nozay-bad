@@ -33,3 +33,14 @@ if (typeof Element !== 'undefined' && !Element.prototype.animate) {
     } as unknown as Animation;
   };
 }
+
+/**
+ * `Element.scrollIntoView` n'existe pas non plus dans jsdom.
+ *
+ * Depuis bits-ui 2.20, la liste d'un `Command` (sélecteur à recherche) fait défiler
+ * l'élément surligné jusqu'à lui, de façon asynchrone : sans ce bouchon, le rejet arrive
+ * hors de tout test et vitest échoue sur une « Unhandled Rejection ».
+ */
+if (typeof Element !== 'undefined' && !Element.prototype.scrollIntoView) {
+  Element.prototype.scrollIntoView = function scrollIntoView() {};
+}
