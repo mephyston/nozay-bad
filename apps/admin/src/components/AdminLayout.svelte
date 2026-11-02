@@ -14,7 +14,12 @@
    * « revenir » à un compte qu'on n'avait jamais quitté. Un défaut vide fait mieux :
    * l'oubli se voit dans l'interface au lieu d'inventer une identité.
    */
-  let { children, email = "", name, permissions = [], realEmail = "", breadcrumb = "Tableau de Bord" } = $props<{
+  /*
+   * Le type annote la déstructuration, et non `$props<…>()` : depuis svelte2tsx 0.7.62,
+   * la forme générique n'est plus lue, et les props sans défaut (`children`, `name`)
+   * devenaient obligatoires pour `astro check`.
+   */
+  let { children, email = "", name, permissions = [], realEmail = "", breadcrumb = "Tableau de Bord" }: {
     children?: import('svelte').Snippet;
     email?: string;
     name?: string;
@@ -22,7 +27,7 @@
     /** Compte réellement connecté ; diffère de `email` pendant une usurpation. */
     realEmail?: string;
     breadcrumb?: string;
-  }>();
+  } = $props();
 
   /*
    * L'identité, que l'habillage va chercher lui-même.

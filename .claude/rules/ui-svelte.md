@@ -13,6 +13,7 @@ paths:
 - Avant une notation pointée, vérifier l'export dans `libs/shared/ui/src/index.ts` : `Sheet`, `Card`, `DropdownMenu`, `Table` sont des namespaces (`export * as`), **`Select` non** (habillage d'un `<select>` natif avec des `<option>`). `<Select.Root>` compile et rend un champ invisible, sans erreur.
 - Commentaire : `<!-- … -->` dans un `.svelte`, `{/* … */}` seulement dans un `.astro`.
 - `tsc` ne lit pas les `.svelte` : grep les appelants à chaque renommage de prop. Un bouton « qui ne fait rien » = chercher `$$props.onX is not a function` en console.
+- Typer les props en annotant la déstructuration (`let { a }: Props = $props()`), jamais par `$props<Props>()` : svelte2tsx ≥ 0.7.62 ignore le générique et rend obligatoire toute prop sans défaut, ce qui casse `astro check` chez les appelants.
 
 ## Écrans de l'admin
 
