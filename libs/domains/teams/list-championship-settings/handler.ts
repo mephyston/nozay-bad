@@ -36,7 +36,8 @@ export async function listChampionshipSettings(
             : null,
         // Le règlement existe pour les quatre : il ne dépend d'aucune politique de date.
         rulesUrl: byChampionship.get(championship)?.rulesUrl ?? null,
-        rulesLabel: byChampionship.get(championship)?.rulesLabel ?? null
+        rulesLabel: byChampionship.get(championship)?.rulesLabel ?? null,
+        rostersPublishedAt: byChampionship.get(championship)?.rostersPublishedAt?.toISOString() ?? null
       };
     })
   };

@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { createDb } from '@nba/db';
 import { getPlayerCard } from './handler';
+import { audienceOf } from '../shared/rosters-publication';
 
 export type Bindings = { DB: D1Database };
 
@@ -14,6 +15,10 @@ getPlayerCardRoute.get('/players/:licence', async (c) => {
 
   return c.json({
     success: true,
-    data: await getPlayerCard(createDb(c.env.DB), { licence: c.req.param('licence'), seasonCode })
+    data: await getPlayerCard(
+      createDb(c.env.DB),
+      { licence: c.req.param('licence'), seasonCode },
+      audienceOf(c.req.header('x-caller'))
+    )
   });
 });

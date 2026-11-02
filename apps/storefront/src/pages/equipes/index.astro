@@ -192,6 +192,8 @@ const directory = players.map((p: any) => ({
                   {team.divisionLabel}
                   {team.poolLabel ? ` · poule ${team.poolLabel}` : ''}
                   {` · ${team.matchCount} matchs`}
+                  {/* Le coach compose encore : ni effectif ni capitaine à montrer. */}
+                  {!team.rostersPublished && ' · effectif en préparation'}
                 </p>
               </div>
 

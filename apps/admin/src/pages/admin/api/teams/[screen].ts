@@ -137,6 +137,15 @@ export const ECRANS: Record<string, Ecran> = {
           body: { licences: data.licences }
         })
       },
+      // Publier les effectifs d'un championnat aux adhérents, ou les retirer.
+      'publish-rosters': {
+        permission: 'teams:teams:write',
+        route: (data) => ({
+          chemin: '/teams/rosters-publication',
+          method: 'PUT',
+          body: { seasonCode: exigeSaison(data), championship: data.championship, published: Boolean(data.published) }
+        })
+      },
       'save-championship-days': {
         permission: 'teams:teams:write',
         route: (data) => ({

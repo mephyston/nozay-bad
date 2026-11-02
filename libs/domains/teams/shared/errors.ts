@@ -89,3 +89,16 @@ export class InvalidRostersError extends AppError {
     this.name = 'InvalidRostersError';
   }
 }
+
+/**
+ * 404 côté adhérent : les effectifs du championnat ne sont pas encore publiés.
+ *
+ * Introuvable plutôt qu'interdit : tant que le coach fait ses essais, l'équipe n'a ni
+ * effectif ni capitaine aux yeux de l'espace adhérent, et rien ne s'y compose.
+ */
+export class RostersNotPublishedError extends AppError {
+  constructor(message = "Les effectifs de ce championnat ne sont pas encore publiés.") {
+    super(message, 404);
+    this.name = 'RostersNotPublishedError';
+  }
+}

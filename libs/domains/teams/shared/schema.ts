@@ -106,6 +106,11 @@ export const championshipSettingsTable = sqliteTable(
     rulesUrl: text('rules_url'),
     /** Libellé du lien, « Règlement ICD Mixte 2026-2027 ». */
     rulesLabel: text('rules_label'),
+    /**
+     * Effectifs et staff du championnat publiés aux adhérents. `null` : le coach fait
+     * encore ses essais, l'espace adhérent n'en montre rien.
+     */
+    rostersPublishedAt: integer('rosters_published_at', { mode: 'timestamp' }),
     updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull()
   },
   (table) => ({

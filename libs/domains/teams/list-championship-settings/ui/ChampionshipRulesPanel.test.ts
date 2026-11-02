@@ -5,10 +5,10 @@ import type { ChampionshipSettingsItem } from '../dto';
 
 function items(over: Partial<ChampionshipSettingsItem> = {}): ChampionshipSettingsItem[] {
   return [
-    { championship: 'icr_seniors', label: 'Interclubs Régional Séniors', rankingPolicy: 'per_day', referenceEloDate: null, rulesUrl: null, rulesLabel: null, ...over },
-    { championship: 'icd_mixte', label: 'Interclubs Départemental Mixte', rankingPolicy: 'season_fixed', referenceEloDate: '2026-10-08', rulesUrl: null, rulesLabel: null },
-    { championship: 'icd_masculin', label: 'Interclubs Départemental Masculin', rankingPolicy: 'season_fixed', referenceEloDate: null, rulesUrl: null, rulesLabel: null },
-    { championship: 'icd_veterans', label: 'Interclubs Départemental Vétérans', rankingPolicy: 'season_fixed', referenceEloDate: null, rulesUrl: null, rulesLabel: null }
+    { championship: 'icr_seniors', label: 'Interclubs Régional Séniors', rankingPolicy: 'per_day', referenceEloDate: null, rulesUrl: null, rulesLabel: null, rostersPublishedAt: null, ...over },
+    { championship: 'icd_mixte', label: 'Interclubs Départemental Mixte', rankingPolicy: 'season_fixed', referenceEloDate: '2026-10-08', rulesUrl: null, rulesLabel: null, rostersPublishedAt: null },
+    { championship: 'icd_masculin', label: 'Interclubs Départemental Masculin', rankingPolicy: 'season_fixed', referenceEloDate: null, rulesUrl: null, rulesLabel: null, rostersPublishedAt: null },
+    { championship: 'icd_veterans', label: 'Interclubs Départemental Vétérans', rankingPolicy: 'season_fixed', referenceEloDate: null, rulesUrl: null, rulesLabel: null, rostersPublishedAt: null }
   ];
 }
 

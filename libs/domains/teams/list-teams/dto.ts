@@ -27,6 +27,11 @@ export interface TeamListItem {
    * où la liste n'est celle de personne en particulier.
    */
   viewerRole: TeamViewerRole;
+  /**
+   * Effectifs du championnat publiés aux adhérents. Côté adhérent, une équipe non
+   * publiée arrive sans staff ni effectif : seuls restent sa division et son numéro.
+   */
+  rostersPublished: boolean;
 }
 
 /** Le lien du lecteur avec l'équipe, du plus engageant au plus lointain. */

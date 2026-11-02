@@ -6,8 +6,10 @@ import {
   ChampionshipDayNotFoundError,
   InvalidLineupError,
   NotTeamCaptainError,
-  TeamNotFoundError
+  TeamNotFoundError,
+  RostersNotPublishedError
 } from '../shared/errors';
+import { areRostersPublished } from '../shared/rosters-publication';
 import { SaveFixtureDateRepository } from './repository';
 import type { SaveFixtureDateInput, SaveFixtureDateOutput } from './dto';
 
@@ -39,6 +41,8 @@ export async function saveFixtureDate(
 
   const licence = normalizeLicence(input.licence);
   if (!(await repo.isStaff(db, team.id, licence))) throw new NotTeamCaptainError();
+  // Effectifs non publiés : le capitaine n'est pas encore désigné aux yeux des adhérents.
+  if (!(await areRostersPublished(db, team))) throw new RostersNotPublishedError();
 
   const day = await repo.findDay(db, team.seasonCode, team.championship, input.dayNumber);
   if (!day) throw new ChampionshipDayNotFoundError();

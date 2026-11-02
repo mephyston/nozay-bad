@@ -61,8 +61,10 @@ export interface TeamCalendarDay {
   status: 'scheduled' | 'bye' | 'forfeit';
   /** La rencontre est reportée hors de la semaine théorique. */
   outsideTheoreticalWeek: boolean;
-  /** Nombre de lignes déjà composées. */
+  /** Nombre de lignes déjà composées. Côté adhérent, un brouillon ne compte que pour le staff. */
   filledLines: number;
+  /** État de la composition, tel que le lecteur a le droit de le voir. `null` : rien de visible. */
+  lineupStatus: 'draft' | 'validated' | null;
 }
 
 export interface GetTeamOutput {
@@ -85,6 +87,11 @@ export interface GetTeamOutput {
   /** Adhérents de la saison que ce championnat n'admet pas dans l'effectif (catégorie d'âge). */
   outOfCategoryLicences: string[];
   calendar: TeamCalendarDay[];
+  /**
+   * Effectifs du championnat publiés aux adhérents. Côté adhérent, `false` vient avec
+   * un effectif vide et sans staff : le coach fait encore ses essais.
+   */
+  rostersPublished: boolean;
   /** Date des classements utilisés pour ce rendu. */
   referenceEloDate: string | null;
   /** Règlement de la saison pour ce championnat, à télécharger depuis la fiche d'équipe. */

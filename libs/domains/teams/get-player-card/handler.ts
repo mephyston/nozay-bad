@@ -1,6 +1,7 @@
 import { type DbOrTx } from '@nba/db';
 import { getClubSettings } from '@nba/club/settings';
 import { CHAMPIONSHIP_LABELS, getDivision, teamName } from '../shared/championship';
+import { publishedChampionships, type Audience } from '../shared/rosters-publication';
 import { GetPlayerCardRepository } from './repository';
 import type { GetPlayerCardInput, GetPlayerCardOutput, PlayerTeam } from './dto';
 
@@ -17,15 +18,23 @@ const repo = new GetPlayerCardRepository();
  * Les classements sont lus à la date d'import la plus récente, et cette date est rendue
  * avec eux : la référence figée par championnat est une affaire de composition d'équipe,
  * elle n'a pas de sens sur une fiche.
+ *
+ * Côté adhérent, une équipe dont le coach n'a pas publié les effectifs n'y figure pas.
  */
-export async function getPlayerCard(db: DbOrTx, input: GetPlayerCardInput): Promise<GetPlayerCardOutput> {
-  const [teamRows, referenceEloDate, { teamPrefix }] = await Promise.all([
+export async function getPlayerCard(
+  db: DbOrTx,
+  input: GetPlayerCardInput,
+  audience: Audience = 'staff'
+): Promise<GetPlayerCardOutput> {
+  const [teamRows, referenceEloDate, { teamPrefix }, published] = await Promise.all([
     repo.teamsFor(db, input.licence, input.seasonCode),
     repo.latestEloDate(db),
-    getClubSettings(db)
+    getClubSettings(db),
+    publishedChampionships(db, input.seasonCode)
   ]);
 
-  const teams: PlayerTeam[] = teamRows.map((team) => ({
+  const visible = audience === 'staff' ? teamRows : teamRows.filter((team) => published.has(team.championship));
+  const teams: PlayerTeam[] = visible.map((team) => ({
     teamId: team.id,
     name: teamName(teamPrefix, team.number),
     championshipLabel: CHAMPIONSHIP_LABELS[team.championship],

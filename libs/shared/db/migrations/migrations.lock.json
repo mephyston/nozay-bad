@@ -46,6 +46,7 @@
     "0042_orders_delivered.sql": "efa7e886b80b2909",
     "0043_shop_payments_permission.sql": "b1f6bd97ae64df6a",
     "0044_products_storefront.sql": "77668f65b07590aa",
-    "0045_expense_attachments.sql": "d1848472a58e13a1"
+    "0045_expense_attachments.sql": "d1848472a58e13a1",
+    "0046_rosters_publication.sql": "60854bced530ef9e"
   }
 }

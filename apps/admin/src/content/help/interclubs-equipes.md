@@ -43,6 +43,24 @@ quelle équipe de son club ; l'effectif sert à présélectionner dans l'écran 
 pas à interdire. Chaque joueur y est affiché avec ses classements et signalé s'il n'est pas
 éligible à la division.
 
+## Publier les effectifs
+
+Effectifs et capitaines restent **invisibles des adhérents** tant que le coach ne les a pas
+publiés : vous pouvez faire tous les essais voulus en début de saison — à la main ou avec
+**Équilibrer** — sans que personne ne voie son équipe changer.
+
+Au-dessus de la liste, chaque championnat de la saison porte son état :
+
+- **En préparation, invisible des adhérents** : l'espace adhérent montre les équipes et
+  leur calendrier, sans effectif ni capitaine. Personne ne peut composer, et aucun rappel de
+  composition ne part.
+- **Effectifs publiés** : chacun voit son équipe et son capitaine, et les capitaines
+  composent. Les retouches suivantes sont visibles aussitôt.
+
+**Publier les effectifs** ouvre le championnat aux adhérents ; **Retirer** les remet en
+préparation, par exemple pour refaire un équilibrage. Ni l'un ni l'autre n'envoie de
+notification. Côté bureau, vous voyez toujours tout, publié ou non.
+
 ## Les journées
 
 Le bouton **Journées** ouvre le calendrier du championnat choisi.

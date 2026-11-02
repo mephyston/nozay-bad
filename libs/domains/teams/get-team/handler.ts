@@ -7,6 +7,8 @@ import { licencesHorsCategorie } from '../shared/roster-category';
 import { averageElo } from '../shared/elo';
 import { mondayOf } from '../shared/week';
 import { TeamNotFoundError, UnknownChampionshipError } from '../shared/errors';
+import { areRostersPublished, type Audience } from '../shared/rosters-publication';
+import { normalizeLicence } from '../shared/ranking';
 import type { PlayerRanking } from '../shared/player';
 import { GetTeamRepository } from './repository';
 import type { GetTeamOutput, RosterPlayer } from './dto';
@@ -40,22 +42,39 @@ function unranked(licence: string, gender: 'M' | 'F'): PlayerRanking {
  * recalcule à chaque journée. Hors contexte de journée, on affiche alors les classements
  * les plus récents en le signalant (`referenceOrigin: 'latest'`), plutôt que de laisser
  * croire à une référence figée.
+ *
+ * Côté adhérent (`audience: 'members'`), deux brouillons restent cachés : l'effectif et
+ * le staff d'un championnat que le coach n'a pas publié, et les compositions que le
+ * capitaine n'a pas validées — sauf pour lui et son adjoint.
  */
-export async function getTeam(db: DbOrTx, id: number): Promise<GetTeamOutput> {
+export async function getTeam(
+  db: DbOrTx,
+  id: number,
+  viewer: { audience?: Audience; licence?: string | null } = {}
+): Promise<GetTeamOutput> {
   const team = await repo.findTeam(db, id);
   if (!team) throw new TeamNotFoundError();
+  const members = viewer.audience === 'members';
   const { teamPrefix } = await getClubSettings(db);
 
   const rules = CHAMPIONSHIP_RULES[team.championship];
   const division = getDivision(team.championship, team.division);
   if (!division) throw new UnknownChampionshipError();
 
-  const [staff, rosterLicences, directory, calendarRows] = await Promise.all([
+  const [storedStaff, storedRoster, directory, calendarRows, rostersPublished] = await Promise.all([
     repo.staffFor(db, team.id),
     repo.rosterLicences(db, team.id),
     loadPlayerDirectory(db, team.seasonCode),
-    repo.calendarFor(db, team)
+    repo.calendarFor(db, team),
+    areRostersPublished(db, team)
   ]);
+  const hidden = members && !rostersPublished;
+  const staff = hidden ? [] : storedStaff;
+  const rosterLicences = hidden ? [] : storedRoster;
+  const viewerLicence = viewer.licence ? normalizeLicence(viewer.licence) : null;
+  const viewerIsStaff = Boolean(viewerLicence && staff.some((s) => s.licence === viewerLicence));
+  // Le bureau voit tout, le staff de l'équipe voit ses brouillons, les autres seulement le validé.
+  const seesDrafts = !members || viewerIsStaff;
 
   const settings = await repo.settingsFor(db, team.seasonCode, team.championship);
 
@@ -142,8 +161,11 @@ export async function getTeam(db: DbOrTx, id: number): Promise<GetTeamOutput> {
   }
 
   const linesByFixture = new Map<number, number>();
+  const statusByFixture = new Map<number, 'draft' | 'validated'>();
   for (const slot of calendarRows.slots) {
+    if (hidden || (slot.status === 'draft' && !seesDrafts)) continue;
     linesByFixture.set(slot.fixtureId, (linesByFixture.get(slot.fixtureId) ?? 0) + 1);
+    statusByFixture.set(slot.fixtureId, slot.status);
   }
 
   const calendar = calendarRows.days.flatMap((day) => {
@@ -178,7 +200,8 @@ export async function getTeam(db: DbOrTx, id: number): Promise<GetTeamOutput> {
         outsideTheoreticalWeek: Boolean(
           fixture?.playedAt && mondayOf(fixture.playedAt.slice(0, 10)) !== day.weekStart
         ),
-        filledLines: fixture ? (linesByFixture.get(fixture.id) ?? 0) : 0
+        filledLines: fixture ? (linesByFixture.get(fixture.id) ?? 0) : 0,
+        lineupStatus: fixture ? (statusByFixture.get(fixture.id) ?? null) : null
       };
     });
   });
@@ -204,6 +227,7 @@ export async function getTeam(db: DbOrTx, id: number): Promise<GetTeamOutput> {
     roster,
     outOfCategoryLicences: licencesHorsCategorie(rules.categories, directory, team.seasonCode),
     calendar,
+    rostersPublished,
     referenceEloDate,
     referenceOrigin,
     rulesUrl: settings?.rulesUrl ?? null,

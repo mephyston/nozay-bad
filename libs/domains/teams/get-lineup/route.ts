@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { createDb } from '@nba/db';
-import { loadLineup } from './handler';
+import { getLineup } from './handler';
+import { audienceOf } from '../shared/rosters-publication';
 
 export type Bindings = { DB: D1Database };
 
@@ -20,12 +21,13 @@ getLineupRoute.get('/:id/days/:number/lineup', async (c) => {
 
   return c.json({
     success: true,
-    data: await loadLineup(createDb(c.env.DB), {
+    data: await getLineup(createDb(c.env.DB), {
       teamId,
       dayNumber,
       slot: c.req.query('slot') ? Number(c.req.query('slot')) : undefined,
       // Imposée par l'appelant de confiance : l'espace adhérent la tire de la session.
-      viewerLicence: c.req.query('licence') ?? null
+      viewerLicence: c.req.query('licence') ?? null,
+      audience: audienceOf(c.req.header('x-caller'))
     })
   });
 });

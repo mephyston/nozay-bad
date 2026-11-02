@@ -5,6 +5,7 @@ import { getClubSettings } from '@nba/club/settings';
 import { CHAMPIONSHIP_RULES, teamName } from '../shared/championship';
 import { normalizeLicence } from '../shared/ranking';
 import { shiftIsoDate } from '../shared/ranking-resolution';
+import { publishedChampionships } from '../shared/rosters-publication';
 import {
   findActiveTeams,
   findFixtures,
@@ -79,7 +80,10 @@ export async function remindMissingLineups(
   const todayIso = input.parisNow.slice(0, 10);
   const reminded: RemindLineupsOutput['reminded'] = [];
 
-  const teams = await findActiveTeams(db, input.seasonCode);
+  // Un championnat aux effectifs non publiés n'a pas encore de capitaine aux yeux des
+  // adhérents : personne n'y compose, personne n'est relancé.
+  const published = await publishedChampionships(db, input.seasonCode);
+  const teams = (await findActiveTeams(db, input.seasonCode)).filter((team) => published.has(team.championship));
   const { teamPrefix } = await getClubSettings(db);
   const byChampionship = new Map<string, ReminderTeam[]>();
   for (const team of teams) {

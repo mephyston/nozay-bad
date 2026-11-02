@@ -11,6 +11,7 @@ import { loadLineup } from '../get-lineup/handler';
 import { teamFixturesTable } from '../shared/schema';
 import { InvalidLineupError, NotTeamCaptainError } from '../shared/errors';
 import { insertMemberFixture } from '@nba/members/test-fixtures';
+import { publishRosters } from '../publish-rosters/handler';
 
 const NOW = new Date('2026-10-01T10:00:00Z');
 const SEASON = '26-27';
@@ -32,6 +33,10 @@ describe('date réelle d’une rencontre', () => {
         licence, seasonId, lastName: `N${licence}`, firstName: 'Test',
         gender: 'M', birthDate: '1990-01-01', type: 'Adulte', importedAt: NOW
       });
+    }
+    // Les effectifs publiés : sans quoi l'espace adhérent ne laisse pas composer.
+    for (const championship of ['icd_mixte', 'icd_masculin', 'icd_veterans'] as const) {
+      await publishRosters(db, { seasonCode: SEASON, championship, published: true }, NOW);
     }
   });
 

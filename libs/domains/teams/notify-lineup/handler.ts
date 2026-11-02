@@ -35,6 +35,10 @@ function whenLabel(lineup: NotifyLineupInput['lineup']): string {
  * ce qui libère sa semaine aussi sûrement qu'une convocation l'occupe.
  *
  * L'auteur n'est jamais destinataire de son propre enregistrement.
+ *
+ * **Le retrait prévient aussi.** Un joueur qui s'était organisé sur une composition
+ * publiée ne doit pas la croire encore valable : quand le capitaine la repasse en
+ * brouillon, ceux qui avaient été prévenus apprennent qu'elle est retirée.
  */
 export async function notifyLineup(
   db: Db,
@@ -45,11 +49,13 @@ export async function notifyLineup(
   const author = normalizeLicence(input.authorLicence);
 
   const selected = new Set<string>();
-  for (const slot of lineup.slots) {
-    if (slot.licence1) selected.add(normalizeLicence(slot.licence1));
-    if (slot.licence2) selected.add(normalizeLicence(slot.licence2));
+  if (input.kind !== 'withdrawn') {
+    for (const slot of lineup.slots) {
+      if (slot.licence1) selected.add(normalizeLicence(slot.licence1));
+      if (slot.licence2) selected.add(normalizeLicence(slot.licence2));
+    }
+    if (selected.size === 0) return { selected: 0, benched: 0 };
   }
-  if (selected.size === 0) return { selected: 0, benched: 0 };
 
   const roster = (await repo.rosterOf(db, team.id)).map(normalizeLicence);
   const benched = roster.filter((licence) => !selected.has(licence));
@@ -72,9 +78,29 @@ export async function notifyLineup(
   const day = lineup.dayLabel ?? `journée ${lineup.dayNumber}`;
   const against = lineup.opponent ? ` contre ${lineup.opponent}` : '';
   const where = lineup.home ? 'à domicile' : "à l'extérieur";
-  const state = input.validated
-    ? 'La composition est validée.'
-    : 'La composition est encore susceptible de bouger.';
+  const url = `/equipes/${team.id}/journee/${lineup.dayNumber}${lineup.slot > 1 ? `?r=${lineup.slot}` : ''}`;
+
+  if (input.kind === 'withdrawn') {
+    const informed = new Set([...roster, ...(input.previouslySelected ?? []).map(normalizeLicence)]);
+    const withdrawnEmails = await emailsFor([...informed]);
+    await notifyContacts(
+      db,
+      withdrawnEmails,
+      {
+        title: `${lineup.teamName} — ${day} : composition retirée`,
+        body: `Le capitaine revoit la composition de ${lineup.teamName} pour ${day} (${when}). Celle qui vous avait été annoncée n'est plus d'actualité : vous serez prévenu de la nouvelle.`,
+        url,
+        source: 'teams:lineup',
+        category: 'interclubs'
+      },
+      now
+    );
+    return { selected: 0, benched: 0, withdrawn: withdrawnEmails.length };
+  }
+
+  const state = input.kind === 'updated'
+    ? 'La composition a été modifiée.'
+    : 'La composition est validée.';
 
   const selectedEmails = await emailsFor([...selected]);
   await notifyContacts(
@@ -83,7 +109,7 @@ export async function notifyLineup(
     {
       title: `${lineup.teamName} — vous jouez ${day}`,
       body: `Vous êtes aligné avec ${lineup.teamName}${against}, ${when}, ${where}. ${state}`,
-      url: `/equipes/${team.id}/journee/${lineup.dayNumber}`,
+      url,
       source: 'teams:lineup',
       category: 'interclubs'
     },
@@ -97,7 +123,7 @@ export async function notifyLineup(
     {
       title: `${lineup.teamName} — ${day} : vous n'êtes pas aligné`,
       body: `La composition de ${lineup.teamName} pour ${day} (${when}) ne vous retient pas. Vous restez dans l'effectif de l'équipe. ${state}`,
-      url: `/equipes/${team.id}/journee/${lineup.dayNumber}`,
+      url,
       source: 'teams:lineup',
       category: 'interclubs'
     },

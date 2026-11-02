@@ -104,6 +104,8 @@ searchRouter.get('/search', async (c) => {
   if (!c.env?.DB) return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
 
   const publicOnly = c.req.header('x-caller') === 'website';
+  // Un capitaine pas encore publié ne doit pas se trouver par son nom depuis l'espace adhérent.
+  const teamsAudience = c.req.header('x-caller') === 'admin' ? 'staff' : 'members';
   const q = (c.req.query('q') ?? '').trim();
   const seasonCode = (c.req.query('seasonCode') ?? '').trim();
   const words = normalize(q).split(' ').filter(Boolean);
@@ -119,7 +121,7 @@ searchRouter.get('/search', async (c) => {
     !publicOnly && features.member_directory && seasonCode ? remember(`members:${seasonCode}`, () => getMembersBySeason(db, seasonCode)) : none<Awaited<ReturnType<typeof getMembersBySeason>>[number]>(),
     remember('posts', () => listSearchablePosts(db)),
     features.events ? remember('events', () => listEvents(db)) : none<Awaited<ReturnType<typeof listEvents>>[number]>(),
-    !publicOnly && features.teams && seasonCode ? remember(`teams:${seasonCode}`, () => listTeams(db, seasonCode).then((out) => out.teams)) : none<Awaited<ReturnType<typeof listTeams>>['teams'][number]>(),
+    !publicOnly && features.teams && seasonCode ? remember(`teams:${teamsAudience}:${seasonCode}`, () => listTeams(db, seasonCode, null, teamsAudience).then((out) => out.teams)) : none<Awaited<ReturnType<typeof listTeams>>['teams'][number]>(),
     !publicOnly && features.shop ? remember('products', () => listProducts(db, { active: true, storefront: true })) : none<Awaited<ReturnType<typeof listProducts>>[number]>()
   ]);
 

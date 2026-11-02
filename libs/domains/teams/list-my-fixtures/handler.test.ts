@@ -8,6 +8,8 @@ import { saveTeamRoster } from '../save-team-roster/handler';
 import { saveChampionshipDays } from '../save-championship-days/handler';
 import { insertMemberFixture } from '@nba/members/test-fixtures';
 import { teamFixturesTable, lineupSlotsTable, championshipDaysTable } from '../shared/schema';
+import { publishRosters } from '../publish-rosters/handler';
+import { saveTeamStaff } from '../save-team-staff/handler';
 
 const NOW = new Date('2026-10-01T10:00:00Z');
 const SEASON = '26-27';
@@ -29,6 +31,10 @@ describe('rencontres à venir d’un adhérent', () => {
       licence: LICENCE, seasonId, lastName: 'Test', firstName: 'Alex',
       gender: 'M', birthDate: '1990-01-01', type: 'Adulte', importedAt: NOW
     });
+    // Les effectifs publiés : sans quoi l'espace adhérent ne laisse pas composer.
+    for (const championship of ['icd_mixte', 'icd_masculin', 'icd_veterans'] as const) {
+      await publishRosters(db, { seasonCode: SEASON, championship, published: true }, NOW);
+    }
   });
 
   async function seed(days: Array<{ number: number; weekStart: string }>) {
@@ -62,14 +68,56 @@ describe('rencontres à venir d’un adhérent', () => {
     const [fixture] = await db.insert(teamFixturesTable).values({ teamId: team.id, dayId: day.id, createdAt: NOW }).returning();
     // Saisi le mixte d'abord : l'ordre d'enregistrement ne doit pas dicter l'affichage.
     await db.insert(lineupSlotsTable).values([
-      { fixtureId: fixture.id, discipline: 'MX', position: 1, licence1: LICENCE, licence2: '07100000', updatedAt: NOW },
-      { fixtureId: fixture.id, discipline: 'DH', position: 1, licence1: '07100001', licence2: LICENCE, updatedAt: NOW }
+      { fixtureId: fixture.id, discipline: 'MX', position: 1, licence1: LICENCE, licence2: '07100000', status: 'validated', updatedAt: NOW },
+      { fixtureId: fixture.id, discipline: 'DH', position: 1, licence1: '07100001', licence2: LICENCE, status: 'validated', updatedAt: NOW }
     ]);
 
     const [result] = (await listMyFixtures(db, { licence: LICENCE, seasonCode: SEASON }, NOW)).fixtures;
 
     expect(result?.selected).toBe(true);
     expect(result?.slotLabel).toBe('DH et MX');
+  });
+
+  describe('brouillons et publication', () => {
+    async function draftLineup() {
+      const team = await seed([{ number: 1, weekStart: '2026-11-02' }]);
+      const day = (await db.select().from(championshipDaysTable).all())[0];
+      const [fixture] = await db.insert(teamFixturesTable).values({ teamId: team.id, dayId: day.id, createdAt: NOW }).returning();
+      await db.insert(lineupSlotsTable).values(
+        { fixtureId: fixture.id, discipline: 'SH', position: 1, licence1: LICENCE, status: 'draft', updatedAt: NOW }
+      );
+      return team;
+    }
+
+    it('tait au joueur une composition encore en brouillon', async () => {
+      await draftLineup();
+
+      const [result] = (await listMyFixtures(db, { licence: LICENCE, seasonCode: SEASON }, NOW)).fixtures;
+
+      // Le capitaine prépare : pour l'équipe, rien n'est encore saisi.
+      expect(result?.selected).toBe(false);
+      expect(result?.lineupExists).toBe(false);
+      expect(result?.lineupStatus).toBeNull();
+    });
+
+    it('montre le brouillon au capitaine qui le prépare', async () => {
+      const team = await draftLineup();
+      await saveTeamStaff(db, { teamId: team.id, captainLicence: LICENCE, viceCaptainLicence: null }, NOW);
+
+      const [result] = (await listMyFixtures(db, { licence: LICENCE, seasonCode: SEASON }, NOW)).fixtures;
+
+      expect(result?.selected).toBe(true);
+      expect(result?.lineupStatus).toBe('draft');
+    });
+
+    it('n’annonce aucune rencontre tant que les effectifs ne sont pas publiés', async () => {
+      await seed([{ number: 1, weekStart: '2026-11-02' }]);
+      await publishRosters(db, { seasonCode: SEASON, championship: 'icd_mixte', published: false }, NOW);
+
+      const { fixtures } = await listMyFixtures(db, { licence: LICENCE, seasonCode: SEASON }, NOW);
+
+      expect(fixtures).toEqual([]);
+    });
   });
 
   it('rend les journées à venir dans l’ordre, la plus proche en tête', async () => {

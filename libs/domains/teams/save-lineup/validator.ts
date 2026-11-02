@@ -13,5 +13,6 @@ export const saveLineupSchema = Type.Object({
     }),
     { maxItems: 12 }
   ),
-  validate: Type.Optional(Type.Boolean())
+  validate: Type.Optional(Type.Boolean()),
+  unpublish: Type.Optional(Type.Boolean())
 });

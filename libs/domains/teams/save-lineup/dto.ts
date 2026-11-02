@@ -21,8 +21,13 @@ export interface SaveLineupInput {
    */
   licence: string;
   lines: SaveLineupSlot[];
-  /** Fige la composition et la signale au coach. */
+  /** Publie la composition à l'équipe et la signale au coach. */
   validate?: boolean;
+  /**
+   * Repasse une composition publiée en brouillon : elle disparaît pour l'équipe, et ceux
+   * qui avaient été prévenus apprennent qu'elle est retirée. Prime sur `validate`.
+   */
+  unpublish?: boolean;
 }
 
 export type SaveLineupOutput = GetLineupOutput;

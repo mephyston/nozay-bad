@@ -10,6 +10,8 @@ export interface ChampionshipSettingsItem {
   /** Lien vers le règlement de la saison, publié aux joueurs sur la fiche d'équipe. */
   rulesUrl: string | null;
   rulesLabel: string | null;
+  /** Effectifs publiés aux adhérents, ISO. `null` : le coach fait encore ses essais. */
+  rostersPublishedAt: string | null;
 }
 
 export interface ListChampionshipSettingsOutput {

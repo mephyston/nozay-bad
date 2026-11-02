@@ -11,9 +11,11 @@ import { eligibleDisciplines, isEligibleByCategory } from '../shared/eligibility
 import type { PlayerRanking } from '../shared/player';
 import {
   ChampionshipDayNotFoundError,
+  RostersNotPublishedError,
   TeamNotFoundError,
   UnknownChampionshipError
 } from '../shared/errors';
+import { areRostersPublished, type Audience } from '../shared/rosters-publication';
 import { memo, type QueryCache } from '../shared/query-cache';
 import { GetLineupRepository } from './repository';
 import type { GetLineupOutput, LineupCandidate, LineupSlotView } from './dto';
@@ -311,6 +313,9 @@ export async function loadLineup(
     fixturesPerDay: rules.fixturesPerDay,
     home: fixture?.home ?? true,
     status: fixture?.status ?? 'scheduled',
+    lineupStatus: storedSlots.length === 0
+      ? null
+      : storedSlots.some((s) => s.status === 'validated') ? 'validated' : 'draft',
     slots,
     candidates,
     total: verdict.value.total,
@@ -339,5 +344,40 @@ export async function loadLineup(
     canEdit: Boolean(viewer && (viewer === staff.captain || viewer === staff.vice)),
     captainLicence: staff.captain ?? null,
     viceCaptainLicence: staff.vice ?? null
+  };
+}
+
+/**
+ * La composition telle qu'un lecteur a le droit de la voir.
+ *
+ * `loadLineup` rend tout, brouillons compris : la sauvegarde, les contrôles du bureau et
+ * les constats de valeur en ont besoin. Ce qui sort vers l'espace adhérent passe ici.
+ *
+ * - Championnat dont le coach n'a pas publié les effectifs : introuvable, personne n'y
+ *   compose encore.
+ * - Brouillon : rendu au capitaine et au vice-capitaine seuls. Les autres voient une
+ *   feuille vide, sans valeur ni verdict — la même que s'il n'y avait rien.
+ */
+export async function getLineup(
+  db: DbOrTx,
+  input: { teamId: number; dayNumber: number; slot?: number; viewerLicence?: string | null; audience: Audience }
+): Promise<GetLineupOutput> {
+  const lineup = await loadLineup(db, input);
+  if (input.audience === 'staff') return lineup;
+
+  const team = await repo.findTeam(db, input.teamId);
+  if (!team || !(await areRostersPublished(db, team))) throw new RostersNotPublishedError();
+
+  if (lineup.lineupStatus !== 'draft' || lineup.canEdit) return lineup;
+  return {
+    ...lineup,
+    lineupStatus: null,
+    slots: lineup.slots.map((slot) => ({ ...slot, licence1: null, licence2: null, rankings: '—', points: null })),
+    candidates: [],
+    total: 0,
+    divisor: 0,
+    value: null,
+    errors: [],
+    warnings: []
   };
 }
