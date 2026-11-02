@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { createDb } from '@nba/db';
 import { listTeams } from './handler';
+import { audienceOf } from '../shared/rosters-publication';
 
 export type Bindings = { DB: D1Database };
 
@@ -16,5 +17,5 @@ listTeamsRoute.get('/', async (c) => {
   // personne en particulier, comme sur les écrans d'administration.
   const licence = c.req.query('licence') ?? null;
 
-  return c.json({ success: true, data: await listTeams(createDb(c.env.DB), seasonCode, licence) });
+  return c.json({ success: true, data: await listTeams(createDb(c.env.DB), seasonCode, licence, audienceOf(c.req.header('x-caller'))) });
 });

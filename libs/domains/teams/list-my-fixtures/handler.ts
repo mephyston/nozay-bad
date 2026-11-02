@@ -3,6 +3,7 @@ import { getClubSettings } from '@nba/club/settings';
 import { CHAMPIONSHIP_RULES, getDivision, teamName } from '../shared/championship';
 import { normalizeLicence } from '../shared/ranking';
 import { lineLabel } from '../shared/team-value';
+import { publishedChampionships } from '../shared/rosters-publication';
 import { ListMyFixturesRepository } from './repository';
 import type { ListMyFixturesInput, ListMyFixturesOutput, MyFixture } from './dto';
 
@@ -27,6 +28,11 @@ function sortKey(playedAt: string | null, matchDate: string | null, weekStart: s
  *
  * La semaine en cours reste éligible jusqu'à son dimanche : une rencontre du samedi ne
  * doit pas disparaître de l'agenda le samedi matin.
+ *
+ * **Seul ce qui est publié.** Un championnat dont le coach n'a pas publié les effectifs
+ * n'apparaît pas : l'adhérent n'y a pas encore d'équipe. Une composition en brouillon
+ * ne se lit que pour le capitaine et le vice-capitaine ; les autres la voient comme
+ * « pas encore saisie ».
  */
 export async function listMyFixtures(
   db: DbOrTx,
@@ -36,7 +42,11 @@ export async function listMyFixtures(
   const licence = normalizeLicence(input.licence);
   if (!licence) return { fixtures: [] };
 
-  const teams = await repo.teamsOf(db, input.seasonCode, licence);
+  const [memberOf, published] = await Promise.all([
+    repo.teamsOf(db, input.seasonCode, licence),
+    publishedChampionships(db, input.seasonCode)
+  ]);
+  const teams = memberOf.filter((team) => published.has(team.championship));
   if (teams.length === 0) return { fixtures: [] };
   const { teamPrefix } = await getClubSettings(db);
 
@@ -80,11 +90,13 @@ export async function listMyFixtures(
 
     // Toutes ses lignes, et non la première : aligné en DH et en MX, l'adhérent ne lisait
     // que « DH ». Dans l'ordre de la feuille de match.
-    const slots = fixture ? await repo.slotsOf(db, [fixture.id], licence) : [];
+    const stored = fixture ? await repo.lineupStatus(db, fixture.id) : null;
+    // Un brouillon n'existe que pour le staff de l'équipe.
+    const status = stored === 'draft' && !team.viewerIsStaff ? null : stored;
+    const slots = fixture && status ? await repo.slotsOf(db, [fixture.id], licence) : [];
     const rang = (s: (typeof slots)[number]) =>
       division?.format.findIndex((f) => f.discipline === s.discipline && f.position === s.position) ?? 0;
     const lignes = division ? [...slots].sort((a, b) => rang(a) - rang(b)).map((s) => lineLabel(division.format, s.discipline, s.position)) : [];
-    const lineupExists = fixture ? await repo.hasLineup(db, fixture.id) : false;
 
     withLineups.push({
       teamId: team.id,
@@ -102,8 +114,8 @@ export async function listMyFixtures(
       venue: fixture?.venue ?? null,
       selected: slots.length > 0,
       slotLabel: lignes.length > 0 ? lignes.join(' et ') : null,
-      lineupStatus: slots[0]?.status ?? null,
-      lineupExists
+      lineupStatus: status,
+      lineupExists: status !== null
     });
   }
 

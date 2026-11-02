@@ -50,7 +50,8 @@ if (Astro.request.method === 'POST') {
         licence,
         slot: body.slot ?? 1,
         lines: body.lines ?? [],
-        validate: Boolean(body.validate)
+        validate: Boolean(body.validate),
+        unpublish: Boolean(body.unpublish)
       })
     });
   }

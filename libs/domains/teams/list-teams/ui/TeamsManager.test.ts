@@ -26,6 +26,7 @@ function team(over: Partial<TeamListItem> = {}): TeamListItem {
     rosterCount: 0,
     matchCount: 7,
     viewerRole: null,
+    rostersPublished: true,
     ...over
   };
 }

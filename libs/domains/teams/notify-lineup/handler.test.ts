@@ -12,6 +12,7 @@ import { saveLineup } from '../save-lineup/handler';
 import { playerRankingsTable } from '../shared/schema';
 import type { SaveLineupSlot } from '../save-lineup/dto';
 import { insertMemberFixture } from '@nba/members/test-fixtures';
+import { publishRosters } from '../publish-rosters/handler';
 
 const NOW = new Date('2026-10-01T10:00:00Z');
 const SEASON = '26-27';
@@ -81,6 +82,10 @@ describe('prévenir l’équipe d’une composition', () => {
     teamId = team.id;
     await saveTeamStaff(db, { teamId, captainLicence: men[0], viceCaptainLicence: null }, NOW);
     await saveTeamRoster(db, { teamId, licences: [...men, ...women, RESERVE] }, NOW);
+    // Les effectifs publiés : sans quoi l'espace adhérent ne laisse pas composer.
+    for (const championship of ['icd_mixte', 'icd_masculin', 'icd_veterans'] as const) {
+      await publishRosters(db, { seasonCode: SEASON, championship, published: true }, NOW);
+    }
   });
 
   const messages = () => db.select().from(pushMessagesTable).all();
@@ -119,6 +124,24 @@ describe('prévenir l’équipe d’une composition', () => {
     expect((await messages()).length).toBeGreaterThan(before);
   });
 
+  it('prévient l’équipe quand une composition publiée est retirée', async () => {
+    await saveLineup(db, { teamId, dayNumber: 1, licence: men[0], lines, validate: true }, NOW);
+    const before = (await messages()).length;
+
+    await saveLineup(db, { teamId, dayNumber: 1, licence: men[0], lines, unpublish: true }, NOW);
+
+    const withdrawn = (await messages()).slice(before);
+    expect(withdrawn).toHaveLength(1);
+    expect(withdrawn[0].title).toContain('composition retirée');
+  });
+
+  it('ne dit rien quand on retouche un brouillon jamais publié', async () => {
+    await saveLineup(db, { teamId, dayNumber: 1, licence: men[0], lines }, NOW);
+    await saveLineup(db, { teamId, dayNumber: 1, licence: men[0], lines, unpublish: true }, NOW);
+
+    expect(await messages()).toHaveLength(0);
+  });
+
   it('n’écrit jamais à l’auteur de la composition', async () => {
     const saved = await saveLineup(db, { teamId, dayNumber: 1, licence: men[0], lines }, NOW);
 
@@ -128,7 +151,7 @@ describe('prévenir l’équipe d’une composition', () => {
         team: { id: teamId, seasonCode: SEASON },
         lineup: saved,
         authorLicence: men[0],
-        validated: true
+        kind: 'published'
       },
       NOW
     );

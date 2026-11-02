@@ -22,6 +22,8 @@ Il dépend du seul domaine `members`, pour peupler les sélecteurs de joueurs. A
 | **Groupe d'exclusion hebdomadaire** | Les championnats entre lesquels un joueur ne tient qu'une seule équipe du club sur une semaine : `{ICD mixte, ICD masculin, ICR}` d'une part, `{ICD vétérans}` d'autre part. | `WEEKLY_EXCLUSION_GROUPS` |
 | **Rencontre** | La confrontation d'une équipe et d'un adversaire sur une journée. Le régional en fait disputer **deux par journée**, d'où le `slot`. | `Entity` (`team_fixtures`) |
 | **Composition** | Les lignes de la rencontre effectivement pourvues. Une ligne vide n'est pas enregistrée : leur nombre donne le diviseur « nombre de matchs joués ». | `Entity` (`lineup_slots`) |
+| **Publication des effectifs** | Acte du coach qui rend visibles aux adhérents les effectifs et capitaines d'un championnat pour une saison. Avant elle, ce sont des essais : l'espace adhérent n'en montre rien et personne n'y compose. Elle se retire. | `championship_settings.rosters_published_at` |
+| **Brouillon / composition publiée** | Une composition en brouillon n'est vue que du capitaine, du vice-capitaine et du bureau. Validée, elle est publiée à l'équipe, qui en est prévenue ; elle peut repasser en brouillon. | `lineup_slots.status` (`draft`, `validated`) |
 | **Valeur d'équipe** | L'estimation chiffrée d'une équipe pour une rencontre. Deux formules incompatibles selon le championnat (voir plus bas). | `number` (7,71) |
 | **Classement** | Le classement fédéral d'un joueur dans une discipline, de `NC` à `N1`. `NULL` ≠ `NC` : voir ci-dessous. | `Enum` (`NC`…`N1`) |
 | **CPPH** | La cote du joueur. Départage les cinq paliers `N1` du barème régional et ordonne les joueurs entre eux en ICR. | `integer` (1257) |
@@ -55,6 +57,7 @@ Il dépend du seul domaine `members`, pour peupler les sélecteurs de joueurs. A
 - [RF-TEA-005 : Le rappel des classements du jeudi](./rules/RF-TEA-005-rappel-classements-du-jeudi.md)
 - [RF-TEA-006 : Le rappel de composition avant la journée](./rules/RF-TEA-006-rappel-de-composition.md)
 - [RF-TEA-007 : Le dépassement de valeur se notifie tout seul, des deux côtés](./rules/RF-TEA-007-depassement-de-valeur-notifie.md)
+- [RF-TEA-011 : Brouillon et publication, des effectifs aux compositions](./rules/RF-TEA-011-brouillon-et-publication.md)
 
 ---
 

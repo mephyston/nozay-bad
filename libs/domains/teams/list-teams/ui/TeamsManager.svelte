@@ -27,6 +27,7 @@
   import TeamFixturesSheet from '../../save-fixture/ui/TeamFixturesSheet.svelte';
   import ChampionshipDaysSheet from '../../save-championship-days/ui/ChampionshipDaysSheet.svelte';
   import RosterBalanceSheet from '../../get-roster-balance/ui/RosterBalanceSheet.svelte';
+  import RostersPublicationPanel from '../../publish-rosters/ui/RostersPublicationPanel.svelte';
   import type { TeamListItem } from '../dto';
   import type { GetTeamOutput } from '../../get-team/dto';
   import type { ChampionshipDayItem } from '../../list-championship-days/dto';
@@ -169,6 +170,8 @@
     onDelete: (e: EquipeLike) => void remove(e as TeamListItem)
   };
 </script>
+
+<RostersPublicationPanel {teams} {seasonCode} {canWrite} {endpoint} onSaved={() => reload()} />
 
 <DataTable
   data={filtered}

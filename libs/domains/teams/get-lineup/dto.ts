@@ -85,6 +85,13 @@ export interface GetLineupOutput {
   /** Nombre de rencontres que la journée compte dans ce championnat. */
   fixturesPerDay: number;
   status: 'scheduled' | 'bye' | 'forfeit';
+  /**
+   * État de la composition **enregistrée** : `draft` tant que le capitaine prépare,
+   * `validated` une fois publiée à l'équipe, `null` si rien n'est saisi. Côté adhérent,
+   * un brouillon n'est rendu qu'au capitaine et au vice-capitaine : les autres reçoivent
+   * `null` et des lignes vides.
+   */
+  lineupStatus: 'draft' | 'validated' | null;
   slots: LineupSlotView[];
   candidates: LineupCandidate[];
   /** Total et valeur d'équipe, `null` si non calculable. */

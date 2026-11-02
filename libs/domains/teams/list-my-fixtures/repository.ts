@@ -20,7 +20,7 @@ export class ListMyFixturesRepository {
    * Un capitaine n'est pas nécessairement inscrit à son propre effectif, et il est le
    * premier concerné par la prochaine rencontre.
    */
-  async teamsOf(db: DbOrTx, seasonCode: string, licence: string): Promise<ClubTeamRow[]> {
+  async teamsOf(db: DbOrTx, seasonCode: string, licence: string): Promise<Array<ClubTeamRow & { viewerIsStaff: boolean }>> {
     const rosterIds = await db
       .select({ teamId: teamRosterTable.teamId })
       .from(teamRosterTable)
@@ -34,8 +34,9 @@ export class ListMyFixturesRepository {
 
     const ids = [...new Set([...rosterIds, ...staffIds].map((row) => row.teamId))];
     if (ids.length === 0) return [];
+    const staffOf = new Set(staffIds.map((row) => row.teamId));
 
-    return db
+    const teams = await db
       .select()
       .from(clubTeamsTable)
       .where(
@@ -46,6 +47,7 @@ export class ListMyFixturesRepository {
         )
       )
       .all();
+    return teams.map((team) => ({ ...team, viewerIsStaff: staffOf.has(team.id) }));
   }
 
   /** Les journées non encore terminées, semaine en cours comprise. */
@@ -80,14 +82,14 @@ export class ListMyFixturesRepository {
       .all();
   }
 
-  /** Une composition a-t-elle été saisie sur cette rencontre, quelle qu'elle soit ? */
-  async hasLineup(db: DbOrTx, fixtureId: number): Promise<boolean> {
+  /** Statut de la composition saisie sur cette rencontre, `null` si rien n'est saisi. */
+  async lineupStatus(db: DbOrTx, fixtureId: number): Promise<LineupSlotRow['status'] | null> {
     const row = await db
-      .select({ id: lineupSlotsTable.id })
+      .select({ status: lineupSlotsTable.status })
       .from(lineupSlotsTable)
       .where(eq(lineupSlotsTable.fixtureId, fixtureId))
       .get();
-    return Boolean(row);
+    return row?.status ?? null;
   }
 
   /** Les lignes où l'adhérent est aligné, sur les rencontres considérées. */

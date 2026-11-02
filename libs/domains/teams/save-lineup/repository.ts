@@ -79,14 +79,13 @@ export class SaveLineupRepository {
     }
   }
 
-  /** La composition en base était-elle déjà validée ? Lu avant de l'écraser. */
-  async hasValidatedLines(db: DbOrTx, fixtureId: number): Promise<boolean> {
-    const rows = await db
-      .select({ status: lineupSlotsTable.status })
+  /** La composition en base, lue avant de l'écraser : son statut et qui y figurait. */
+  async storedLines(db: DbOrTx, fixtureId: number) {
+    return db
+      .select({ status: lineupSlotsTable.status, licence1: lineupSlotsTable.licence1, licence2: lineupSlotsTable.licence2 })
       .from(lineupSlotsTable)
       .where(eq(lineupSlotsTable.fixtureId, fixtureId))
       .all();
-    return rows.some((row) => row.status === 'validated');
   }
 
   async findTeam(db: DbOrTx, id: number) {

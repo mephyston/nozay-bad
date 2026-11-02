@@ -7,8 +7,10 @@ import {
   ChampionshipDayNotFoundError,
   InvalidLineupError,
   NotTeamCaptainError,
+  RostersNotPublishedError,
   TeamNotFoundError
 } from '../shared/errors';
+import { areRostersPublished } from '../shared/rosters-publication';
 import { SaveLineupRepository } from './repository';
 import type { SaveLineupInput, SaveLineupOutput } from './dto';
 
@@ -25,6 +27,11 @@ const repo = new SaveLineupRepository();
  * affichées au capitaine. Les erreurs dures la refusent ; les avertissements — au premier
  * rang desquels la hiérarchie des valeurs — la laissent passer, parce qu'ils dépendent de
  * compositions que d'autres capitaines n'ont pas encore saisies.
+ *
+ * **Brouillon et publication.** Un brouillon n'est vu que du capitaine et de son
+ * adjoint. Valider le publie à l'équipe. Une composition publiée qu'on retouche le reste
+ * — l'équipe est reprévenue — et seul `unpublish` la fait redevenir brouillon. Rien ne
+ * se compose tant que le coach n'a pas publié les effectifs du championnat.
  */
 export async function saveLineup(
   db: DbOrTx,
@@ -36,6 +43,7 @@ export async function saveLineup(
 
   const licence = normalizeLicence(input.licence);
   if (!(await repo.isStaff(db, team.id, licence))) throw new NotTeamCaptainError();
+  if (!(await areRostersPublished(db, team))) throw new RostersNotPublishedError();
 
   const day = await repo.findDay(db, team.seasonCode, team.championship, input.dayNumber);
   if (!day) throw new ChampionshipDayNotFoundError();
@@ -65,9 +73,11 @@ export async function saveLineup(
 
   const fixture = await repo.ensureFixture(db, team.id, day.id, fixtureSlot, now);
 
-  // Lu **avant** l'écriture : une composition déjà annoncée qui change doit reprévenir
-  // ceux qui s'étaient organisés dessus, même si le capitaine ne la revalide pas.
-  const wasValidated = await repo.hasValidatedLines(db, fixture.id);
+  // Lu **avant** l'écriture : une composition déjà publiée qui change doit reprévenir
+  // ceux qui s'étaient organisés dessus, et un retrait doit les retrouver.
+  const previous = await repo.storedLines(db, fixture.id);
+  const wasValidated = previous.some((line) => line.status === 'validated');
+  const published = !input.unpublish && Boolean(input.validate || wasValidated);
 
   await repo.replaceLines(
     db,
@@ -78,7 +88,7 @@ export async function saveLineup(
       position: line.position,
       licence1: line.licence1,
       licence2: line.licence2,
-      status: input.validate ? ('validated' as const) : ('draft' as const),
+      status: published ? ('validated' as const) : ('draft' as const),
       updatedByLicence: licence,
       updatedAt: now
     }))
@@ -96,23 +106,26 @@ export async function saveLineup(
    *
    * Un brouillon se construit en plusieurs passes ; notifier l'équipe à chacune apprend
    * aux joueurs à ignorer les notifications, et la seule qui compte — « c'est arrêté » —
-   * se perdrait dans le lot. L'envoi part donc quand le capitaine valide, ou quand il
-   * touche à une composition déjà validée.
+   * se perdrait dans le lot. L'envoi part quand le capitaine publie, quand il touche à
+   * une composition publiée, et quand il la retire.
    *
    * Attendu, jamais détaché : une promesse laissée en suspens est annulée avec la requête
    * sur Workers, et l'envoi disparaîtrait sans laisser de trace.
    */
-  if (input.validate || wasValidated) {
+  if (published || wasValidated) {
     await notifyLineup(
       db as Db,
       {
         team: { id: team.id, seasonCode: team.seasonCode },
         lineup: saved,
         authorLicence: licence,
-        validated: Boolean(input.validate)
+        kind: !published ? 'withdrawn' : wasValidated ? 'updated' : 'published',
+        previouslySelected: previous.flatMap((line) => [line.licence1, ...(line.licence2 ? [line.licence2] : [])])
       },
       now
     );
+  }
+  if (published) {
     // Constat de valeur d'équipe, dans les deux directions : la composition qui vient
     // d'être arrêtée peut dépasser l'équipe du dessus comme passer sous une composition
     // validée du dessous. Jamais sur brouillon — il bouge encore. Attendu lui aussi :

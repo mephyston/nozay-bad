@@ -148,19 +148,32 @@ Une date hors de la semaine théorique est refusée au premier essai, avec l'exp
 ce qu'elle changerait ; un second envoi la confirme. Le calendrier signale alors la
 rencontre comme reportée, en rappelant la semaine d'origine.
 
-## Enregistrer ou valider
+## Brouillon, publication, retrait
 
-**Enregistrer** conserve la composition en brouillon. **Valider** la fige et la signale au
-coach. Dans les deux cas, une règle bloquante refuse l'écriture, et la composition
-précédente reste intacte — le motif du refus s'affiche sous la composition, avec l'article
-concerné.
+Le capitaine ne peut composer qu'une fois les effectifs de son championnat publiés par le
+coach (voir *Équipes*).
+
+- **Enregistrer le brouillon** garde la composition pour le capitaine et son adjoint. Les
+  autres adhérents ne la voient pas : pour eux, la composition n'est pas encore saisie.
+- **Valider et publier** la rend visible de toute l'équipe et la signale au coach.
+- Sur une composition publiée, **Enregistrer les modifications** la garde publiée.
+- **Repasser en brouillon** la retire : l'équipe ne la voit plus jusqu'à la prochaine
+  validation.
+
+Dans tous les cas, une règle bloquante refuse l'écriture, et la composition précédente
+reste intacte — le motif du refus s'affiche sous la composition, avec l'article concerné.
+
+Le bureau, lui, voit toutes les compositions dans **Contrôle des journées**, brouillons
+compris. Les contrôles entre équipes (« déjà aligné cette semaine », valeur de l'équipe du
+dessus) en tiennent compte aussi : deux capitaines ne peuvent pas prévoir le même joueur
+sans le savoir.
 
 ## Qui est prévenu, et quand
 
 Rien ne part tant que la composition reste un brouillon : elle se construit en plusieurs
 passes, et une notification par passe apprendrait à l'équipe à les ignorer toutes.
 
-À la **validation** — et à chaque modification d'une composition déjà validée — deux
+À la **publication** — et à chaque modification d'une composition publiée — deux
 messages partent, dans la catégorie *Mes équipes interclubs* que chacun peut couper depuis
 ses préférences de notification :
 
@@ -169,6 +182,10 @@ ses préférences de notification :
 - aux **joueurs de l'effectif non retenus** : ils ne sont pas sur la feuille de cette
   journée. C'est l'information qui manquait le plus : sans elle, un joueur ne sait pas s'il
   est attendu ou si le capitaine n'a rien saisi, et doit poser la question chaque semaine.
+
+Quand le capitaine **repasse une composition publiée en brouillon**, l'effectif — et les
+joueurs alignés qui n'y figuraient pas — reçoit un message « composition retirée » : celle
+qui avait été annoncée n'est plus d'actualité.
 
 Le capitaine qui enregistre n'est jamais destinataire de son propre envoi.
 

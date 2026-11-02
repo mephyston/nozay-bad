@@ -114,16 +114,36 @@
       .filter((l) => !view.slots.find((s) => s.discipline === l.discipline && s.position === l.position)?.double || l.licence2);
   }
 
-  async function submit(validate: boolean) {
+  /**
+   * Trois gestes, selon l'état de la composition.
+   *
+   * `draft` garde le brouillon pour le staff, `publish` le publie à l'équipe — et, sur une
+   * composition déjà publiée, enregistre les retouches en reprévenant l'équipe.
+   * `unpublish` la retire : elle redevient un brouillon que l'équipe ne voit plus.
+   */
+  type Geste = 'draft' | 'publish' | 'unpublish';
+  const published = $derived(view.lineupStatus === 'validated');
+  /** Le retrait se confirme dans la page : l'espace adhérent ne monte aucune boîte de dialogue. */
+  let confirmingWithdrawal = $state(false);
+
+  async function submit(geste: Geste) {
     saving = true;
     feedback = null;
+    confirmingWithdrawal = false;
+    const wasPublished = published;
     try {
       const response = await fetch('', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         // `slot` suit la rencontre affichée : sans lui, une saisie faite sur la seconde
         // rencontre d'une journée régionale serait écrite sur la première.
-        body: JSON.stringify({ action: 'save-lineup', slot: view.slot, lines: lines(), validate })
+        body: JSON.stringify({
+          action: 'save-lineup',
+          slot: view.slot,
+          lines: lines(),
+          validate: geste === 'publish',
+          unpublish: geste === 'unpublish'
+        })
       });
       const payload = (await response.json()) as { data?: GetLineupOutput; error?: string };
       if (!response.ok) throw new Error(payload.error || "L'enregistrement a échoué.");
@@ -131,7 +151,12 @@
       if (payload.data) view = payload.data;
       feedback = {
         kind: 'success',
-        message: validate ? 'Composition validée.' : 'Composition enregistrée.'
+        message:
+          geste === 'unpublish'
+            ? "Composition retirée : l'équipe ne la voit plus et a été prévenue."
+            : geste === 'publish'
+              ? wasPublished ? "Modifications enregistrées, l'équipe a été prévenue." : "Composition publiée, l'équipe a été prévenue."
+              : 'Brouillon enregistré, visible de vous et de votre adjoint seulement.'
       };
     } catch (error) {
       feedback = {
@@ -164,6 +189,18 @@
 </script>
 
 <div class="space-y-4">
+  {#if view.canEdit && view.lineupStatus}
+    <!-- L'état d'abord : le capitaine doit savoir si l'équipe voit déjà ce qu'il retouche. -->
+    <Alert.Root variant={published ? 'success' : 'info'}>
+      {#if published}<CircleCheck class="w-4 h-4" />{:else}<Info class="w-4 h-4" />{/if}
+      <Alert.Description>
+        {published
+          ? "Composition publiée : l'équipe la voit. Chaque modification enregistrée la prévient à nouveau."
+          : "Brouillon : visible de vous et de votre adjoint seulement. L'équipe la découvrira quand vous la validerez."}
+      </Alert.Description>
+    </Alert.Root>
+  {/if}
+
   <!--
     Sans classement à la date de référence, chaque joueur est lu comme non classé et une
     division à plancher déclare tout l'effectif inéligible : toutes les lignes seraient
@@ -285,15 +322,39 @@
     </Alert.Root>
   {/if}
 
-  {#if view.canEdit}
+  {#if view.canEdit && confirmingWithdrawal}
+    <Alert.Root variant="warning">
+      <TriangleAlert class="w-4 h-4" />
+      <Alert.Description>
+        <p>L'équipe ne verra plus cette composition, et ceux qui avaient été prévenus apprendront qu'elle est retirée.</p>
+        <div class="mt-2 flex flex-wrap justify-end gap-2">
+          <Button variant="outline" onclick={() => (confirmingWithdrawal = false)} disabled={saving}>Annuler</Button>
+          <Button variant="destructive" onclick={() => submit('unpublish')} disabled={saving}>Retirer la composition</Button>
+        </div>
+      </Alert.Description>
+    </Alert.Root>
+  {:else if view.canEdit && published}
     <div class="flex flex-wrap justify-end gap-2">
-      <Button variant="outline" onclick={() => submit(false)} disabled={saving}>
-        {saving ? 'Enregistrement…' : 'Enregistrer'}
+      <Button variant="outline" onclick={() => (confirmingWithdrawal = true)} disabled={saving}>
+        Repasser en brouillon
       </Button>
-      <Button onclick={() => submit(true)} disabled={saving || filled === 0}>
-        Valider la composition
+      <Button onclick={() => submit('publish')} disabled={saving || filled === 0}>
+        {saving ? 'Enregistrement…' : 'Enregistrer les modifications'}
       </Button>
     </div>
+  {:else if view.canEdit}
+    <div class="flex flex-wrap justify-end gap-2">
+      <Button variant="outline" onclick={() => submit('draft')} disabled={saving}>
+        {saving ? 'Enregistrement…' : 'Enregistrer le brouillon'}
+      </Button>
+      <Button onclick={() => submit('publish')} disabled={saving || filled === 0}>
+        Valider et publier
+      </Button>
+    </div>
+  {:else if view.lineupStatus === null}
+    <p class="text-sm text-muted-foreground text-right">
+      Le capitaine n'a pas encore publié la composition de cette rencontre.
+    </p>
   {:else}
     <p class="text-xs text-muted-foreground text-right">
       Seuls le capitaine et le vice-capitaine peuvent modifier cette composition.

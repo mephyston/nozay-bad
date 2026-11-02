@@ -3,6 +3,7 @@ import { getClubSettings } from '@nba/club/settings';
 import { CHAMPIONSHIPS, CHAMPIONSHIP_RULES, getDivision, teamName } from '../shared/championship';
 import { loadPlayerDirectory, identityOf } from '../shared/members-lookup';
 import { normalizeLicence } from '../shared/ranking';
+import { publishedChampionships, type Audience } from '../shared/rosters-publication';
 import { ListTeamsRepository } from './repository';
 import type { ListTeamsOutput, TeamListItem, TeamViewerRole } from './dto';
 
@@ -18,22 +19,28 @@ const repo = new ListTeamsRepository();
  * `viewerLicence` ne filtre rien : la liste reste celle de tout le club. Elle sert
  * seulement à marquer les équipes qui concernent le lecteur, pour qu'il les retrouve
  * d'un coup d'œil au milieu des autres.
+ *
+ * Pour les adhérents (`audience: 'members'`), un championnat dont le coach n'a pas
+ * publié les effectifs garde ses équipes mais perd staff, effectif et rôle du lecteur :
+ * ce sont encore des essais.
  */
 export async function listTeams(
   db: DbOrTx,
   seasonCode: string,
-  viewerLicence?: string | null
+  viewerLicence?: string | null,
+  audience: Audience = 'staff'
 ): Promise<ListTeamsOutput> {
   const teams = await repo.listBySeason(db, seasonCode);
   const { teamPrefix } = await getClubSettings(db);
   const teamIds = teams.map((team) => team.id);
   const viewer = viewerLicence ? normalizeLicence(viewerLicence) : '';
 
-  const [staff, rosterCounts, directory, viewerRosterTeams] = await Promise.all([
+  const [staff, rosterCounts, directory, viewerRosterTeams, published] = await Promise.all([
     repo.staffFor(db, teamIds),
     repo.rosterCounts(db, teamIds),
     loadPlayerDirectory(db, seasonCode),
-    repo.rosterTeamsOf(db, teamIds, viewer)
+    repo.rosterTeamsOf(db, teamIds, viewer),
+    publishedChampionships(db, seasonCode)
   ]);
 
   const staffByTeam = new Map<number, { captain?: string; viceCaptain?: string }>();
@@ -50,13 +57,15 @@ export async function listTeams(
     .map((team) => {
       const rules = CHAMPIONSHIP_RULES[team.championship];
       const division = getDivision(team.championship, team.division);
-      const assigned = staffByTeam.get(team.id) ?? {};
+      const rostersPublished = published.has(team.championship);
+      const hidden = audience === 'members' && !rostersPublished;
+      const assigned = hidden ? {} : (staffByTeam.get(team.id) ?? {});
 
       let viewerRole: TeamViewerRole = null;
       if (viewer) {
         if (assigned.captain === viewer) viewerRole = 'captain';
         else if (assigned.viceCaptain === viewer) viewerRole = 'viceCaptain';
-        else if (viewerRosterTeams.has(team.id)) viewerRole = 'player';
+        else if (!hidden && viewerRosterTeams.has(team.id)) viewerRole = 'player';
       }
 
       return {
@@ -74,9 +83,10 @@ export async function listTeams(
         active: team.active,
         captain: identityOf(directory, assigned.captain),
         viceCaptain: identityOf(directory, assigned.viceCaptain),
-        rosterCount: rosterCounts.get(team.id) ?? 0,
+        rosterCount: hidden ? 0 : (rosterCounts.get(team.id) ?? 0),
         matchCount: division?.format.length ?? 0,
-        viewerRole
+        viewerRole,
+        rostersPublished
       };
     })
     .sort(

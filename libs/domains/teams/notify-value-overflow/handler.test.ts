@@ -10,6 +10,7 @@ import { saveLineup } from '../save-lineup/handler';
 import { playerRankingsTable } from '../shared/schema';
 import type { SaveLineupSlot } from '../save-lineup/dto';
 import { insertMemberFixture } from '@nba/members/test-fixtures';
+import { publishRosters } from '../publish-rosters/handler';
 
 const NOW = new Date('2026-10-01T10:00:00Z');
 const SEASON = '26-27';
@@ -35,6 +36,10 @@ describe('constat automatique de dépassement de valeur', () => {
       { seasonCode: SEASON, championship: 'icd_mixte', days: [{ number: 1, weekStart: '2026-11-02' }] },
       NOW
     );
+    // Les effectifs publiés : sans quoi l'espace adhérent ne laisse pas composer.
+    for (const championship of ['icd_mixte', 'icd_masculin', 'icd_veterans'] as const) {
+      await publishRosters(db, { seasonCode: SEASON, championship, published: true }, NOW);
+    }
   });
 
   async function player(licence: string, gender: 'M' | 'F', ranking: string) {

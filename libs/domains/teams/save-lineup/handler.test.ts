@@ -3,14 +3,15 @@ import { sql } from 'drizzle-orm';
 import { setupMockDb } from '@nba/db/test-utils';
 import { type Db } from '@nba/db';
 import { saveLineup } from './handler';
-import { loadLineup } from '../get-lineup/handler';
+import { loadLineup, getLineup } from '../get-lineup/handler';
 import { saveTeam } from '../save-team/handler';
 import { saveTeamStaff } from '../save-team-staff/handler';
 import { saveChampionshipDays } from '../save-championship-days/handler';
 import { playerRankingsTable } from '../shared/schema';
-import { InvalidLineupError, NotTeamCaptainError } from '../shared/errors';
+import { InvalidLineupError, NotTeamCaptainError, RostersNotPublishedError } from '../shared/errors';
 import type { SaveLineupSlot } from './dto';
 import { insertMemberFixture } from '@nba/members/test-fixtures';
+import { publishRosters } from '../publish-rosters/handler';
 
 const NOW = new Date('2026-10-01T10:00:00Z');
 const SEASON = '26-27';
@@ -33,6 +34,10 @@ describe('composition d’une rencontre', () => {
       INSERT INTO championship_settings (season_code, championship, reference_elo_date, updated_at)
       VALUES (${SEASON}, 'icd_mixte', ${ELO}, 0)
     `);
+    // Les effectifs publiés : sans quoi l'espace adhérent ne laisse pas composer.
+    for (const championship of ['icd_mixte', 'icd_masculin', 'icd_veterans'] as const) {
+      await publishRosters(db, { seasonCode: SEASON, championship, published: true }, NOW);
+    }
   });
 
   /** Un adhérent, avec son classement à la date de référence. */
@@ -235,6 +240,56 @@ describe('composition d’une rencontre', () => {
       await expect(
         saveLineup(db, { teamId: masc.id, dayNumber: 1, licence: men[1], lines: reused }, NOW)
       ).rejects.toThrow(/semaine/);
+    });
+  });
+
+  describe('brouillon et publication', () => {
+    const PLAYER = men[2];
+    const asMember = (teamId: number, viewerLicence: string) =>
+      getLineup(db, { teamId, dayNumber: 1, viewerLicence, audience: 'members' });
+
+    it('refuse de composer tant que le coach n’a pas publié les effectifs', async () => {
+      const team = await setup();
+      await publishRosters(db, { seasonCode: SEASON, championship: 'icd_mixte', published: false }, NOW);
+
+      await expect(
+        saveLineup(db, { teamId: team.id, dayNumber: 1, licence: CAPTAIN, lines: lines() }, NOW)
+      ).rejects.toBeInstanceOf(RostersNotPublishedError);
+      await expect(asMember(team.id, PLAYER)).rejects.toBeInstanceOf(RostersNotPublishedError);
+    });
+
+    it('ne montre le brouillon qu’au capitaine et au bureau', async () => {
+      const team = await setup();
+      await saveLineup(db, { teamId: team.id, dayNumber: 1, licence: CAPTAIN, lines: lines() }, NOW);
+
+      const seenByPlayer = await asMember(team.id, PLAYER);
+      expect(seenByPlayer.lineupStatus).toBeNull();
+      expect(seenByPlayer.slots.every((s) => s.licence1 === null)).toBe(true);
+      expect(seenByPlayer.value).toBeNull();
+
+      expect((await asMember(team.id, CAPTAIN)).lineupStatus).toBe('draft');
+      const seenByStaff = await getLineup(db, { teamId: team.id, dayNumber: 1, audience: 'staff' });
+      expect(seenByStaff.slots.filter((s) => s.licence1)).toHaveLength(7);
+    });
+
+    it('publie à la validation, et reste publiée quand on la retouche', async () => {
+      const team = await setup();
+      await saveLineup(db, { teamId: team.id, dayNumber: 1, licence: CAPTAIN, lines: lines(), validate: true }, NOW);
+      const retouched = await saveLineup(db, { teamId: team.id, dayNumber: 1, licence: CAPTAIN, lines: lines() }, NOW);
+
+      expect(retouched.lineupStatus).toBe('validated');
+      expect((await asMember(team.id, PLAYER)).slots.filter((s) => s.licence1)).toHaveLength(7);
+    });
+
+    it('se retire : repassée en brouillon, elle disparaît pour l’équipe', async () => {
+      const team = await setup();
+      await saveLineup(db, { teamId: team.id, dayNumber: 1, licence: CAPTAIN, lines: lines(), validate: true }, NOW);
+      const withdrawn = await saveLineup(
+        db, { teamId: team.id, dayNumber: 1, licence: CAPTAIN, lines: lines(), unpublish: true }, NOW
+      );
+
+      expect(withdrawn.lineupStatus).toBe('draft');
+      expect((await asMember(team.id, PLAYER)).lineupStatus).toBeNull();
     });
   });
 });

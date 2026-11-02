@@ -425,6 +425,8 @@ export const ROUTE_PERMISSIONS: RouteRule[] = [
   // « roster-balance » comme un identifiant d'équipe.
   { method: 'GET', path: '/teams/roster-balance', permission: 'teams:teams:read', feature: 'teams' },
   { method: 'PUT', path: '/teams/rosters', permission: 'teams:teams:write', feature: 'teams' },
+  // Publier les effectifs d'un championnat aux adhérents, ou les retirer pour refaire des essais.
+  { method: 'PUT', path: '/teams/rosters-publication', permission: 'teams:teams:write', feature: 'teams' },
   { method: 'GET', path: '/teams/:id', permission: 'teams:teams:read', service: true, feature: 'teams' },
   { method: 'DELETE', path: '/teams/:id', permission: 'teams:teams:delete', feature: 'teams' },
   { method: 'PUT', path: '/teams/:id/staff', permission: 'teams:teams:write', feature: 'teams' },

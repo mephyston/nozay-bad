@@ -40,7 +40,10 @@ export interface MyFixture {
   selected: boolean;
   /** « SH2 », « DH et MX » s'il tient plusieurs lignes, ou `null` s'il n'est pas aligné. */
   slotLabel: string | null;
-  /** La composition est-elle figée, ou encore en brouillon ? */
+  /**
+   * La composition est-elle publiée, ou encore en brouillon ? `draft` n'arrive qu'au
+   * capitaine et au vice-capitaine : pour les autres, un brouillon vaut `null`.
+   */
   lineupStatus: 'draft' | 'validated' | null;
   /**
    * Une composition existe-t-elle, quelle qu'elle soit ?
