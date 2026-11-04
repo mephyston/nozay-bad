@@ -21,6 +21,7 @@ import { AppError } from '@nba/db';
 import { authorize } from './authz/middleware';
 import { cacheSharedReads } from './shared-read-cache';
 import { platformRouter } from './platform-usage';
+import { calendarFeedRouter } from './calendar-feed';
 
 type Bindings = {
   DB: D1Database;
@@ -116,6 +117,7 @@ app.route('/events', eventsRouter);
 app.route('/teams', teamsRouter);
 app.route('/dashboard', dashboardRouter);
 app.route('/platform', platformRouter);
+app.route('/calendar-feed', calendarFeedRouter);
 // L'identité du club et ses fonctionnalités. Une écriture sur les fonctionnalités
 // vide le cache de ce même isolate : celui qui vient d'éteindre la boutique ne doit
 // pas la voir répondre encore trente secondes.

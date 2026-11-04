@@ -16,6 +16,9 @@ import { getAttestationConfigRoute } from './get-attestation-config/route';
 import { updateAttestationConfigRoute } from './update-attestation-config/route';
 import { uploadAttestationSignatureRoute } from './upload-attestation-signature/route';
 import { generateCseAttestationRoute } from './generate-cse-attestation/route';
+import { saveCalendarFeedRoute } from './calendar-feed/save-calendar-feed/route';
+import { getCalendarFeedRoute } from './calendar-feed/get-calendar-feed/route';
+import { deleteCalendarFeedRoute } from './calendar-feed/delete-calendar-feed/route';
 
 export type Bindings = {
   DB: D1Database;
@@ -35,6 +38,10 @@ membersRouter.route('/', exportMembersRoute);
 membersRouter.route('/', lookupHouseholdRoute);
 // Littérale elle aussi : `/birthdays` serait sinon lu comme un numéro de licence.
 membersRouter.route('/', listBirthdaysRoute);
+// `/calendar-feed` est littérale : avant `/:licence`, qui la prendrait pour un numéro.
+membersRouter.route('/', saveCalendarFeedRoute);
+membersRouter.route('/', getCalendarFeedRoute);
+membersRouter.route('/', deleteCalendarFeedRoute);
 membersRouter.route('/', setExpenseAuthorizationRoute);
 // `/club-functions` est littérale : avant `/:licence` pour ne pas être lue comme une licence.
 membersRouter.route('/', listClubFunctionsRoute);
@@ -73,6 +80,8 @@ export {
   type MemberSummary
 } from './shared/queries';
 export { membershipGrantsAccess } from './shared/membership-status';
+export { resolveCalendarProfileByToken, resolveCalendarProfileByLicence } from './calendar-feed/resolve-calendar-profile/handler';
+export type { CalendarProfile } from './calendar-feed/resolve-calendar-profile/dto';
 export * from './shared/dashboard';
 export * from './shared/age-categories';
 export { listMembers } from './list-members/handler';

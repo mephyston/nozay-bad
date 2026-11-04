@@ -2,6 +2,7 @@
 import type { EventAnnouncement } from '@nba/cms/public';
 import type { AgendaEvent } from '../lib/agenda';
 import type { OpenPlaySession } from '../lib/open-play';
+import AddToCalendar from './AddToCalendar.astro';
 import EventRow from './EventRow.astro';
 import OpenPlayRow from './OpenPlayRow.astro';
 import { EventSignup, EventAttendees } from '@nba/events-ui';
@@ -91,6 +92,10 @@ const today = new Date().toISOString().slice(0, 10);
               endpoint="/agenda"
             />
           )}
+
+          {session.status !== 'cancelled' && session.date >= today && (
+            <AddToCalendar item={{ kind: 'open-play', id: session.id }} />
+          )}
         </OpenPlayRow>
       ) : (
       <EventRow event={rendezVous} {announcement}>
@@ -114,6 +119,7 @@ const today = new Date().toISOString().slice(0, 10);
             />
           </div>
         )}
+        <AddToCalendar item={{ kind: 'event', id: rendezVous.id }} />
       </EventRow>
       )}
     </div>

@@ -83,6 +83,7 @@ const tables = [
     // Sans FK vers `persons` (attribution par licence), mais fonctionnellement enfant.
     'member_club_functions',
     // L'adhésion avant la personne : c'est elle qui porte la clé étrangère.
+    'calendar_feeds',
     'memberships',
     'persons',
     'season_balances',

@@ -18,6 +18,7 @@ Aucune dépendance à `members`, alors même que les inscriptions nomment des ad
 | Terme Métier | Définition & Contexte | Type / Exemple |
 |---|---|---|
 | **Événement** | Rendez-vous daté du club, à une adresse fixe. | `Aggregate` (`club_events`) |
+| **Abonnement** | Adresse secrète, une par profil, par laquelle le calendrier personnel d'un adhérent suit son agenda. | `calendar_feeds` (domaine members) |
 | **Brouillon** | Saisi, invisible du site. Statut par défaut à la création. | `status = 'draft'` |
 | **En ligne** | Affiché dans l'agenda du site, s'il est à venir. | `status = 'published'` |
 | **Annulé** | Retiré de l'agenda public, conservé en administration avec sa trace. | `status = 'cancelled'` |
@@ -35,6 +36,7 @@ Aucune dépendance à `members`, alors même que les inscriptions nomment des ad
 
 - [RF-EVT-001 : Ouverture des inscriptions à un événement](./rules/RF-EVT-001-ouverture-des-inscriptions.md)
 - [RF-EVT-002 : Inscription et désinscription d'un adhérent](./rules/RF-EVT-002-inscription-d-un-adherent.md)
+- [RF-EVT-003 : L'agenda du club dans le calendrier personnel](./rules/RF-EVT-003-agenda-personnel.md)
 
 ---
 

@@ -166,4 +166,20 @@ export const attestationConfigTable = sqliteTable('attestation_config', {
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull()
 });
 
-
+/**
+ * L'abonnement d'une personne à son agenda, depuis son calendrier personnel.
+ *
+ * Seule l'**empreinte** du jeton est gardée : l'adresse secrète ne s'affiche qu'à sa
+ * création, et une copie de la base n'en donne aucune de valable. Une ligne par personne,
+ * et non par adhésion : l'identifiant d'adhésion change à chaque saison, et l'abonnement
+ * doit survivre au renouvellement sans que personne ait à se réabonner.
+ */
+export const calendarFeedsTable = sqliteTable('calendar_feeds', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  personId: integer('person_id').notNull().references(() => personsTable.id, { onDelete: 'cascade' }),
+  tokenHash: text('token_hash').notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
+}, (table) => ({
+  personUnq: uniqueIndex('calendar_feeds_person_idx').on(table.personId),
+  tokenUnq: uniqueIndex('calendar_feeds_token_idx').on(table.tokenHash)
+}));

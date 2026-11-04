@@ -35,6 +35,16 @@ export const ROUTE_PERMISSIONS: RouteRule[] = [
   // seul `super_admin` porte cette permission (voir permissions.ts).
   { method: 'PUT', path: '/iam/roles/:role', permission: 'iam:roles:write' },
 
+  // ── Agenda personnel ───────────────────────────────────────────────────────
+  // Appelées par le seul storefront. `:hash` est l'empreinte d'un jeton que seul le
+  // titulaire de l'adresse connaît ; la licence de `/item` et de `/members/calendar-feed`
+  // vient de la session. Rien de nominatif hors du prénom du profil concerné.
+  { method: 'GET', path: '/calendar-feed/item', permission: 'members:members:read', service: true, feature: 'calendar_feed' },
+  { method: 'GET', path: '/calendar-feed/:hash', permission: 'members:members:read', service: true, feature: 'calendar_feed' },
+  { method: 'GET', path: '/members/calendar-feed', permission: 'members:members:read', service: true, feature: 'calendar_feed' },
+  { method: 'PUT', path: '/members/calendar-feed', permission: 'members:members:read', service: true, feature: 'calendar_feed' },
+  { method: 'DELETE', path: '/members/calendar-feed', permission: 'members:members:read', service: true, feature: 'calendar_feed' },
+
   // ── Tableau de bord ────────────────────────────────────────────────────────
   { method: 'GET', path: '/dashboard/overview', permission: 'dashboard:overview:read' },
   // La recherche de l'espace adhérent : elle ne rend que ce que l'espace affiche déjà,

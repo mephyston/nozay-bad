@@ -55,6 +55,9 @@ const CACHED_READS = new Map<string, number>([
   ['/teams/players', 300]
 ]);
 
+const CALENDAR_FEED_PATH = /^\/calendar-feed\/[0-9a-f]{64}$/;
+const CALENDAR_FEED_TTL = 3600;
+
 /** Hôte fictif des clés, comme `cache.local` côté site public — aucun DNS derrière. */
 const CACHE_HOST = 'https://api-cache.local';
 
@@ -72,6 +75,11 @@ export function cachedReadTtl(method: string, path: string): number | undefined 
   // Une barre oblique finale désigne la même ressource : la laisser passer créerait
   // deux entrées pour une seule réponse, et l'une des deux ne serait jamais lue.
   const normalized = path.length > 1 && path.endsWith('/') ? path.slice(0, -1) : path;
+  // Seule exception aux chemins exacts : chaque abonnement a son adresse, mais une entrée
+  // par empreinte ne se partage avec personne, et l'empreinte est dans la clé. Une heure
+  // borne ce que les agendas abonnés coûtent en base, quelle que soit leur fréquence de
+  // relecture ; c'est aussi le délai maximal d'une révocation.
+  if (CALENDAR_FEED_PATH.test(normalized)) return CALENDAR_FEED_TTL;
   return CACHED_READS.get(normalized);
 }
 

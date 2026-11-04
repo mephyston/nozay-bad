@@ -36,6 +36,7 @@ export const FEATURES = [
   'push',
   'schedules',
   'events',
+  'calendar_feed',
   // — Activités —
   'open_play',
   'indiv',
@@ -130,6 +131,11 @@ export const FEATURE_CATALOG: Record<Feature, FeatureInfo> = {
   events: {
     label: 'Agenda',
     description: "Événements du club (tournois, stages, assemblée) avec inscriptions.",
+    group: 'Communication'
+  },
+  calendar_feed: {
+    label: 'Agenda personnel',
+    description: "Bouton d'ajout d'un rendez-vous et abonnement au calendrier de l'adhérent (Google, Apple, Outlook).",
     group: 'Communication'
   },
   open_play: {
