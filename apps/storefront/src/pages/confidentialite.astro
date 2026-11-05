@@ -3,7 +3,7 @@ import Layout from '../layouts/Layout.astro';
 import MobileNav from '../components/MobileNav.svelte';
 
 // Page publique (accessible sans connexion — voir l'allow-list du middleware).
-const lastUpdate = 'septembre 2026';
+const lastUpdate = 'novembre 2026';
 
 // Tout ce qui nomme le club vient de sa configuration : cette page est la même pour
 // tous les clubs, seules les valeurs changent. L'adresse est découpée en deux attributs
@@ -44,6 +44,10 @@ const session = Astro.locals.session;
             <li><strong class="text-foreground">Identité et coordonnées</strong> (nom, prénom, numéro de licence, email, téléphone, date de naissance, coordonnées des représentants légaux pour les mineurs) — gestion de l'adhésion au club.</li>
             <li><strong class="text-foreground">Adresse email et code à usage unique (OTP)</strong> — authentification à l'espace adhérent (connexion sans mot de passe).</li>
             <li><strong class="text-foreground">Adresse IP et données techniques de requête</strong> — sécurité, prévention des abus et bon fonctionnement du service.</li>
+            <li>
+              <strong class="text-foreground">Abonnement à l'agenda</strong> — facultatif, créé par l'adhérent et révocable à tout moment depuis le Calendrier.
+              L'adresse secrète donne accès à ses rendez-vous, et rien d'autre, sans connexion : elle est relue par le service de calendrier qu'il a choisi (Google, Apple, Microsoft…), sous sa propre responsabilité. Seule une empreinte de cette adresse est conservée.
+            </li>
             <li><strong class="text-foreground">Commandes boutique et notes de frais</strong> — traitement des demandes soumises via l'espace adhérent.</li>
             <li>
               <strong class="text-foreground">Photo de profil</strong> — facultative, déposée par l'adhérent depuis sa fiche ou, à sa demande, par un membre du bureau.

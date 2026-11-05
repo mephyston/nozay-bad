@@ -19,7 +19,9 @@ import { applySecurityHeaders, applyHtmlCacheControl, withMutableHeaders } from 
 import { listSeasons, isSeasonOpen, parisToday } from './lib/season';
 
 // Chemins accessibles sans session : page de login, endpoints d'auth, et assets Astro (_astro/_image).
-const PUBLIC_PREFIXES = ['/login', '/api/auth/', '/confidentialite', '/mentions-legales', '/manifest.webmanifest'];
+// `/calendrier/` : un agenda abonné ne sait pas ouvrir de session, son adresse secrète
+// est son seul identifiant (voir pages/calendrier/[token].ics.ts).
+const PUBLIC_PREFIXES = ['/login', '/api/auth/', '/confidentialite', '/mentions-legales', '/manifest.webmanifest', '/calendrier/'];
 
 /**
  * Pages publiques qui doivent tout de même reconnaître un visiteur connecté.
@@ -49,7 +51,9 @@ const FEATURE_PAGES: [string, Feature][] = [
   ['/equipes', 'teams'],
   ['/notifications', 'push'],
   ['/attestation', 'attestations'],
-  ['/api/attestation', 'attestations']
+  ['/api/attestation', 'attestations'],
+  ['/calendrier', 'calendar_feed'],
+  ['/api/agenda', 'calendar_feed']
 ];
 
 function featureOf(path: string): Feature | undefined {

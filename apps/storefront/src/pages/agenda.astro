@@ -6,6 +6,8 @@ import MobileNav from '../components/MobileNav.svelte';
 import EventRow from '../components/EventRow.astro';
 import OpenPlayRow from '../components/OpenPlayRow.astro';
 import IndivCard from '../components/IndivCard.astro';
+import AddToCalendar from '../components/AddToCalendar.astro';
+import CalendarSubscribe from '../components/CalendarSubscribe.svelte';
 import { EventSignup, EventAttendees } from '@nba/events-ui';
 import { dateDuRendezVous } from '../lib/agenda';
 import { OpenPlaySignup, OpenPlayOpenerButton, OpenPlayAttendees } from '@nba/schedules-ui';
@@ -327,6 +329,12 @@ const today = new Date().toISOString().slice(0, 10);
         <h1 class="text-2xl font-bold text-foreground sm:text-3xl">Calendrier</h1>
       </div>
 
+      {featureOn(Astro.locals.club, 'calendar_feed') && active && (
+        <div class="mb-4 sm:max-w-xs">
+          <CalendarSubscribe client:idle firstName={active.firstName} />
+        </div>
+      )}
+
       {/*
         Filtres en liens et non en boutons : ils changent ce que la page montre, donc
         l'adresse doit pouvoir se partager et le retour arrière fonctionner. C'est aussi
@@ -391,6 +399,10 @@ const today = new Date().toISOString().slice(0, 10);
                     needsOpener={row.session.needsOpener}
                   />
                 )}
+
+                {row.session.status !== 'cancelled' && row.session.date >= today && (
+                  <AddToCalendar item={{ kind: 'open-play', id: row.session.id }} />
+                )}
               </OpenPlayRow>
             </li>
           ) : (() => { const { event, entry } = row; return (
@@ -444,6 +456,11 @@ const today = new Date().toISOString().slice(0, 10);
                     </span>
                   </p>
                 )}
+
+                {/* Une rencontre sans date ne s'ajoute pas : il n'y aurait rien de juste à inscrire. */}
+                {entry
+                  ? !entry.provisional && <AddToCalendar item={{ kind: 'fixture', teamId: entry.fixture.teamId, dayNumber: entry.fixture.dayNumber }} />
+                  : <AddToCalendar item={{ kind: 'event', id: event.id }} />}
               </EventRow>
             </li>
           ); })())}

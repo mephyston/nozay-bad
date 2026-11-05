@@ -1,0 +1,29 @@
+---
+import { featureOn } from '@nba/club/context';
+import { calendarItemQuery, type CalendarItemRef } from '../lib/calendar-feed';
+
+interface Props {
+  item: CalendarItemRef;
+}
+
+/**
+ * « Ajouter à mon agenda » sur un rendez-vous.
+ *
+ * Sans JavaScript : deux liens dans un dépliant, posés sur chaque ligne d'un agenda qui
+ * peut en aligner cinquante. Rien n'est lu avant l'appui.
+ */
+const href = `/api/agenda/evenement.ics?${calendarItemQuery(Astro.props.item)}`;
+---
+
+{featureOn(Astro.locals.club, 'calendar_feed') && (
+  <details class="mt-2 text-sm">
+    <summary class="inline-flex min-h-[44px] cursor-pointer list-none items-center gap-1.5 font-semibold text-primary hover:underline [&::-webkit-details-marker]:hidden">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="M12 13v5"/><path d="M9.5 15.5h5"/></svg>
+      Ajouter à mon agenda
+    </summary>
+    <div class="flex flex-wrap gap-x-4">
+      <a href={`${href}&cible=google`} target="_blank" rel="noopener noreferrer" class="inline-flex min-h-[44px] items-center text-foreground underline">Google Agenda</a>
+      <a href={href} class="inline-flex min-h-[44px] items-center text-foreground underline">Apple, Outlook et autres</a>
+    </div>
+  </details>
+)}
