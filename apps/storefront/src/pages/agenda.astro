@@ -325,15 +325,12 @@ const today = new Date().toISOString().slice(0, 10);
 
   <main class="w-full flex-1 p-3 pb-nav sm:p-6 md:pb-6">
     <div class="mx-auto max-w-3xl">
-      <div class="mb-4">
+      <div class="mb-4 flex items-center gap-1">
         <h1 class="text-2xl font-bold text-foreground sm:text-3xl">Calendrier</h1>
-      </div>
-
-      {featureOn(Astro.locals.club, 'calendar_feed') && active && (
-        <div class="mb-4 sm:max-w-xs">
+        {featureOn(Astro.locals.club, 'calendar_feed') && active && (
           <CalendarSubscribe client:idle firstName={active.firstName} />
-        </div>
-      )}
+        )}
+      </div>
 
       {/*
         Filtres en liens et non en boutons : ils changent ce que la page montre, donc

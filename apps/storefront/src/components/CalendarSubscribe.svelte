@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { CalendarPlus } from '@lucide/svelte';
   import { Sheet } from '@nba/ui';
   import type { CalendarLinks } from '../lib/calendar-feed';
 
@@ -94,8 +95,16 @@
   const secondary = `${button} border border-border bg-card text-foreground`;
 </script>
 
-<button type="button" class={secondary} data-testid="calendar-subscribe" onclick={() => onOpenChange(true)}>
-  S'abonner depuis mon agenda
+<!-- Une simple icône à côté du titre : son nom passe par aria-label, et par title au survol. -->
+<button
+  type="button"
+  class="inline-flex size-11 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+  aria-label="S'abonner depuis mon agenda"
+  title="S'abonner depuis mon agenda"
+  data-testid="calendar-subscribe"
+  onclick={() => onOpenChange(true)}
+>
+  <CalendarPlus class="size-5" aria-hidden="true" />
 </button>
 
 <Sheet.Root {open} {onOpenChange}>

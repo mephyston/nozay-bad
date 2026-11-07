@@ -56,6 +56,14 @@ describe("abonnement à l'agenda", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  it("nomme le bouton, qui n'affiche qu'une icône", () => {
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+    app = mount(CalendarSubscribe, { target, props: { firstName: 'Léo' } });
+    flushSync();
+    expect(byId('calendar-subscribe')?.getAttribute('aria-label')).toBe("S'abonner depuis mon agenda");
+  });
+
   it("crée l'adresse et propose chaque application", async () => {
     app = await openSheet();
     byId('calendar-create')!.click();
