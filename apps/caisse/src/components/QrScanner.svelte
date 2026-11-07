@@ -22,6 +22,15 @@
     stream?.getTracks().forEach((track) => track.stop());
   }
 
+  // « Autorisez-la » n'aide personne si le navigateur la coupe de lui-même : hors HTTPS, il ne
+  // propose même pas la caméra, quels que soient les réglages du téléphone.
+  function cameraError(e: unknown): string {
+    if (!window.isSecureContext) return 'La caméra exige une adresse en HTTPS : le scan ne marche pas sur cette adresse locale.';
+    if (e instanceof DOMException && e.name === 'NotAllowedError') return "La caméra est refusée : autorisez-la dans les réglages du navigateur.";
+    if (e instanceof DOMException && e.name === 'NotFoundError') return "Aucune caméra n'a été trouvée sur cet appareil.";
+    return "La caméra n'a pas pu démarrer : fermez les autres applications qui l'utilisent, puis réessayez.";
+  }
+
   onMount(async () => {
     try {
       // jsQR à la demande : Safari n'a pas de BarcodeDetector, et seuls les scans en ont besoin.
@@ -48,8 +57,8 @@
         frame = requestAnimationFrame(tick);
       };
       tick();
-    } catch {
-      error = "La caméra n'est pas accessible : autorisez-la dans les réglages du navigateur.";
+    } catch (e) {
+      error = cameraError(e);
     }
   });
 
