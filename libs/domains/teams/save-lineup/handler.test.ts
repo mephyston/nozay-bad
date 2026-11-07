@@ -241,6 +241,61 @@ describe('composition d’une rencontre', () => {
         saveLineup(db, { teamId: masc.id, dayNumber: 1, licence: men[1], lines: reused }, NOW)
       ).rejects.toThrow(/semaine/);
     });
+
+    describe('en régional, deux rencontres par journée (ICR art. 1.6.3)', () => {
+      const regionalLines: SaveLineupSlot[] = [
+        { discipline: 'SH', position: 1, licence1: men[0] },
+        { discipline: 'SD', position: 1, licence1: women[0] }
+      ];
+
+      async function regionalTeam(number: number) {
+        const team = await saveTeam(
+          db,
+          { seasonCode: SEASON, championship: 'icr_seniors', division: 'R3', number },
+          NOW
+        );
+        await saveTeamStaff(db, { teamId: team.id, captainLicence: CAPTAIN, viceCaptainLicence: null }, NOW);
+        return team;
+      }
+
+      beforeEach(async () => {
+        for (const l of men) await player(l, 'M', 'D8');
+        for (const l of women) await player(l, 'F', 'D8');
+        await publishRosters(db, { seasonCode: SEASON, championship: 'icr_seniors', published: true }, NOW);
+        await saveChampionshipDays(
+          db,
+          { seasonCode: SEASON, championship: 'icr_seniors', days: [{ number: 1, weekStart: '2026-11-02' }] },
+          NOW
+        );
+      });
+
+      it('accepte les mêmes joueurs sur les deux rencontres de leur équipe', async () => {
+        const team = await regionalTeam(1);
+        await saveLineup(db, { teamId: team.id, dayNumber: 1, slot: 1, licence: CAPTAIN, lines: regionalLines }, NOW);
+
+        const second = await saveLineup(
+          db,
+          { teamId: team.id, dayNumber: 1, slot: 2, licence: CAPTAIN, lines: regionalLines },
+          NOW
+        );
+
+        expect(second.errors).toEqual([]);
+        expect(second.slots.find((s) => s.label === 'SH1')?.licence1).toBe(men[0]);
+        // Et l'écran de la première rencontre ne se met pas à la signaler en retour.
+        const first = await loadLineup(db, { teamId: team.id, dayNumber: 1, slot: 1 });
+        expect(first.errors).toEqual([]);
+      });
+
+      it('refuse un joueur déjà sur une rencontre d’une autre équipe, quelle qu’elle soit', async () => {
+        const first = await regionalTeam(1);
+        const second = await regionalTeam(2);
+        await saveLineup(db, { teamId: first.id, dayNumber: 1, slot: 1, licence: CAPTAIN, lines: regionalLines }, NOW);
+
+        await expect(
+          saveLineup(db, { teamId: second.id, dayNumber: 1, slot: 2, licence: CAPTAIN, lines: regionalLines }, NOW)
+        ).rejects.toThrow(/semaine/);
+      });
+    });
   });
 
   describe('brouillon et publication', () => {

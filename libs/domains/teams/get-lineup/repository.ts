@@ -155,21 +155,24 @@ export class GetLineupRepository {
   }
 
   /**
-   * Rencontres des équipes du club rattachées à la **même semaine théorique**.
+   * Rencontres des **autres** équipes du club rattachées à la **même semaine théorique**.
    *
    * C'est la semaine de la *journée* qui fait règle, jamais la date à laquelle la
    * rencontre se joue : le règlement dit « pour une même journée de championnat »
    * (art. 6.3.7). Un gymnase indisponible déplace la rencontre, il ne déplace pas la
    * journée — et ne change donc rien aux compositions permises.
    *
+   * L'équipe elle-même est écartée entière, pas seulement la rencontre en cours : la
+   * règle interdit de tenir deux *équipes*, or une équipe régionale dispute deux
+   * rencontres par journée (ICR art. 1.6.3) et y aligne librement les mêmes joueurs.
+   *
    * On ne retient que les championnats du même groupe d'exclusion : les vétérans
    * cohabitent librement avec les autres, leur règlement n'en citant aucun.
    */
-  async fixturesInWeek(
+  async otherTeamsFixturesInWeek(
     db: DbOrTx,
     team: ClubTeamRow,
-    weekStart: string,
-    exceptFixtureId: number | null
+    weekStart: string
   ): Promise<Array<{ fixture: TeamFixtureRow; team: ClubTeamRow }>> {
     const group = weeklyExclusionGroup(team.championship) as readonly ClubTeamRow['championship'][];
 
@@ -196,7 +199,7 @@ export class GetLineupRepository {
     const weekByDay = new Map(days.map((d) => [d.id, d.weekStart]));
 
     return fixtures
-      .filter((f) => f.id !== exceptFixtureId)
+      .filter((f) => f.teamId !== team.id)
       .filter((f) => weekByDay.get(f.dayId) === weekStart)
       .map((f) => ({ fixture: f, team: byId.get(f.teamId)! }));
   }

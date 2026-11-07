@@ -45,6 +45,10 @@ Le mixte et le masculin départementaux se citent mutuellement, et le mixte inte
 
 Les vétérans restent à part parce que **leur règlement ne cite aucun autre championnat**. Étendre la contrainte au-delà de sa lettre bloquerait des compositions que le règlement autorise — un joueur vétéran peut disputer un interclub vétérans et un interclub mixte la même semaine.
 
+### L'équipe, pas la rencontre
+
+La règle interdit de tenir deux **équipes**, pas de disputer deux rencontres. En régional, une équipe dispute deux rencontres par journée (ICR art. 1.6.3) : un joueur peut figurer sur les deux compositions de son équipe. Le contrôle ne regarde donc que les **autres** équipes du club.
+
 ### La normalisation au lundi
 
 `championship_days.weekStart` est ramené au **lundi** de sa semaine à l'écriture (`mondayOf`). C'est ce qui en fait une clé de jointure fiable entre championnats : deux journées de championnats différents appartiennent à la même semaine si et seulement si leurs `weekStart` sont égaux.
@@ -91,6 +95,17 @@ Fonctionnalité: La semaine relie les championnats
     Quand un joueur est aligné dans les deux
     Alors aucune infraction n'est signalée
     Car le règlement vétérans ne cite aucun autre championnat
+
+  Scénario: Les deux rencontres d'une journée régionale avec les mêmes joueurs
+    Étant donné qu'une équipe régionale a composé la rencontre 1 de sa journée
+    Quand son capitaine aligne les mêmes joueurs sur la rencontre 2
+    Alors la composition est acceptée
+    Et ces joueurs restent proposés sur la rencontre 2
+
+  Scénario: Un joueur de l'équipe 1 sur la rencontre 2 de l'équipe 2
+    Étant donné qu'un joueur est aligné sur la rencontre 1 de l'équipe régionale 1
+    Quand le capitaine de l'équipe régionale 2 l'aligne sur sa rencontre 2 de la même semaine
+    Alors une infraction est signalée
 
   Scénario: Une date de journée saisie un mercredi
     Quand le coach enregistre une journée dont la date est le mercredi 14/10/2026

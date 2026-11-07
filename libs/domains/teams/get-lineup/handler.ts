@@ -137,9 +137,9 @@ export async function loadLineup(
     return { team: upper, value: computeTeamValue(rules, upperDivision.format, upperEntries).value };
   };
 
-  /** Qui est déjà pris cette semaine, et par quelle équipe. */
+  /** Qui est déjà pris cette semaine par une **autre** équipe du club, et laquelle. */
   const loadWeekOccupancy = async (): Promise<Map<string, string>> => {
-    const weekFixtures = await repo.fixturesInWeek(db, team, day.weekStart, fixture?.id ?? null);
+    const weekFixtures = await repo.otherTeamsFixturesInWeek(db, team, day.weekStart);
     const weekSlots = await repo.slotsForFixtures(db, weekFixtures.map((w) => w.fixture.id));
     const busy = new Map<string, string>();
     for (const sl of weekSlots) {
