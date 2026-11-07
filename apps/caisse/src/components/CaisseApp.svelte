@@ -735,6 +735,7 @@
           <p class="text-lg font-semibold">Aucune espèce à remettre</p>
         {/if}
       </section>
+      {#if plan.toCardCents > 0 || plan.toSumUpCents > 0 || selectedSale.rechargeCents > 0}
       <ul class="bg-card divide-y rounded-2xl border text-sm">
         {#if plan.toCardCents > 0}
           <li class="flex justify-between gap-3 p-4"><span>Recrédité automatiquement sur la carte {selectedSale.prepaidCardLabel}</span><strong class="tabular-nums">{formatEuros(plan.toCardCents)}</strong></li>
@@ -746,6 +747,7 @@
           <li class="flex justify-between gap-3 p-4"><span>Recharge retirée de la carte</span><strong class="tabular-nums">{formatEuros(selectedSale.rechargeCents)}</strong></li>
         {/if}
       </ul>
+      {/if}
       {#if selectedSale.prepaidCardDeleted}
         <p class="text-muted-foreground text-sm">Le client a supprimé sa carte : ce qu'elle avait payé lui est rendu en espèces.</p>
       {/if}
