@@ -21,7 +21,8 @@
       }
       const payload = (await res.json()) as any;
       if (!payload?.ok) throw new Error();
-      const qr = qrcode(0, 'M');
+      // Correction maximale : le logo posé au centre masque des modules que la lecture reconstitue.
+      const qr = qrcode(0, 'H');
       qr.addData(payload.data.token);
       qr.make();
       qrImage = qr.createDataURL(10, 2);
@@ -72,7 +73,11 @@
 <!-- Fond blanc, même en thème sombre : un QR code sur fond sombre se lit mal à la caméra. -->
 <div class="flex aspect-square w-full items-center justify-center rounded-2xl bg-white p-3">
   {#if qrImage}
-    <img src={qrImage} alt="QR code de votre carte" class="w-full" style="image-rendering: pixelated" />
+    <div class="relative w-full">
+      <img src={qrImage} alt="QR code de votre carte" class="w-full" style="image-rendering: pixelated" />
+      <!-- Moins d'un quart de la largeur : très en deçà de ce que la correction maximale reconstitue. -->
+      <img src="/logo.png" alt="" class="absolute top-[39%] left-[39%] size-[22%] rounded-md bg-white object-contain p-[1%]" />
+    </div>
   {:else if !error}
     <p class="text-sm text-black">Préparation du QR code…</p>
   {/if}
