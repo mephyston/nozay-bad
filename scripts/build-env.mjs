@@ -33,12 +33,12 @@ import { fileURLToPath } from 'node:url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT_DIR = path.resolve(__dirname, '..');
 
-const APPS = ['storefront', 'website', 'admin'];
+const APPS = ['storefront', 'website', 'admin', 'caisse', 'buvette'];
 const ENVS = ['staging', 'production'];
 
 /**
  * Clé publique du widget Turnstile. Un seul widget couvre les deux environnements : ses
- * hostnames autorisés sont `my.nozaybad.fr` et `staging-my.nozaybad.fr`. Publique par
+ * hostnames autorisés sont ceux de l'espace adhérent et de l'app buvette, staging compris. Publique par
  * nature (elle est rendue dans le HTML) ; le secret correspondant est posé par
  * `wrangler secret put TURNSTILE_SECRET_KEY`.
  */
@@ -65,12 +65,16 @@ const URLS = {
   staging: {
     website: 'https://staging-www.nozaybad.fr',
     storefront: 'https://staging-my.nozaybad.fr',
-    admin: 'https://staging-admin.nozaybad.fr'
+    admin: 'https://staging-admin.nozaybad.fr',
+    caisse: 'https://staging-caisse.nozaybad.fr',
+    buvette: 'https://staging-buvette.nozaybad.fr'
   },
   production: {
     website: 'https://nozaybad.fr',
     storefront: 'https://my.nozaybad.fr',
-    admin: 'https://admin.nozaybad.fr'
+    admin: 'https://admin.nozaybad.fr',
+    caisse: 'https://caisse.nozaybad.fr',
+    buvette: 'https://buvette.nozaybad.fr'
   }
 };
 const HOSTS = Object.fromEntries(
@@ -121,6 +125,9 @@ function resolve(app, env) {
     vars.PUBLIC_VAPID_PUBLIC_KEY = vapidPublicKey(env);
     vars.PUBLIC_TURNSTILE_SITE_KEY = TURNSTILE_SITE_KEY;
     vars.PUBLIC_WEBSITE_URL = urls.website;
+  }
+  if (app === 'buvette') {
+    vars.PUBLIC_TURNSTILE_SITE_KEY = TURNSTILE_SITE_KEY;
   }
   if (app === 'admin') {
     vars.PUBLIC_WEBSITE_URL = urls.website;

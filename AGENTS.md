@@ -27,7 +27,7 @@ npm run dev:api            # d'abord (8787) ; puis dev:admin (4321), dev:storefr
 npx vitest run [chemins]   # une seule suite ; --changed <base> pour cibler
 npx vitest run --config vitest.architecture.config.ts
 npm run typecheck          # tsc : ne lit PAS les .svelte
-npx nx run-many -t check --projects=admin,website,storefront   # astro check
+npx nx run-many -t check --projects=admin,website,storefront,caisse,buvette   # astro check
 npx nx build <app> --skip-nx-cache
 npm run check:env && npm run check:migrations && npm run check:schema && npm run check:nx-deps && npm run check:aliases
 ```

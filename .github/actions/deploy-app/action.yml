@@ -8,7 +8,7 @@ description: >
 
 inputs:
   app:
-    description: "storefront | website | admin"
+    description: "storefront | website | admin | caisse | buvette"
     required: true
   env:
     description: "staging | production"

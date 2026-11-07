@@ -31,6 +31,8 @@ on:
           - nba-storefront
           - nba-website
           - nba-admin
+          - nba-caisse
+          - nba-buvette
       version_id:
         description: "Identifiant de version (vide = précédente ; ignoré si worker = tous)"
         required: false
@@ -103,7 +105,7 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           WORKER: ${{ inputs.worker }}
         run: |
-          for w in nba-api nba-storefront nba-website nba-admin; do
+          for w in nba-api nba-storefront nba-website nba-admin nba-caisse nba-buvette; do
             if [ "$WORKER" = "tous" ] || [ "$WORKER" = "$w" ]; then
               echo "--- $w ---"
               npx wrangler deployments list --name "$w" | tail -8
@@ -124,6 +126,13 @@ jobs:
           if [ "$WORKER" = "tous" ]; then
             # L'API en dernier : les trois autres l'appellent par service binding, on
             # préfère qu'elles reculent avant lui plutôt que l'inverse.
+            # La caisse et la buvette d'abord, sans bloquer le reste : à leur toute première
+            # version en production, il n'y a rien vers quoi reculer, et `bash -e` arrêterait
+            # le retour arrière des autres Workers.
+            for w in nba-caisse nba-buvette; do
+              echo "--- $w ---"
+              npx wrangler rollback --name "$w" --message "$REASON" --yes || echo "::warning::$w : retour arrière impossible, à vérifier."
+            done
             for w in nba-storefront nba-website nba-admin nba-api; do
               echo "--- $w ---"
               npx wrangler rollback --name "$w" --message "$REASON" --yes
@@ -138,7 +147,7 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           WORKER: ${{ inputs.worker }}
         run: |
-          for w in nba-api nba-storefront nba-website nba-admin; do
+          for w in nba-api nba-storefront nba-website nba-admin nba-caisse nba-buvette; do
             if [ "$WORKER" = "tous" ] || [ "$WORKER" = "$w" ]; then
               echo "--- $w ---"
               npx wrangler deployments list --name "$w" | tail -8
