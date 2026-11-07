@@ -15,13 +15,13 @@ Le **plafond de solde** limite ce qu'une carte peut contenir. Une recharge qui l
 
 ## Tenir la caisse
 
-1. **Ouvrir** : comptez le fond de caisse et saisissez-le. Une seule session peut être ouverte à la fois, et plusieurs bénévoles peuvent y encaisser.
+1. **Ouvrir** : dans **Buvette → Caisse**, comptez le fond de caisse et saisissez-le. Une seule session peut être ouverte à la fois, et plusieurs bénévoles peuvent y encaisser. Sans cela, la caisse des bénévoles affiche qu'elle est fermée.
 2. **Encaisser** : composez le panier, puis appuyez sur **Encaisser**.
    - **Carte buvette** : scannez le QR code du client. Si le solde suffit, la vente est payée aussitôt. Sinon, le reste se paie en espèces ou en CB.
    - **Espèces** : appuyez sur **Montant exact** ou sur le billet reçu : la caisse affiche la monnaie à rendre. Pour un autre montant, saisissez-le.
    - **CB** : appuyez sur **CB**. L'application SumUp s'ouvre avec le montant, le client présente sa carte, puis revenez à la caisse.
 3. **Recharger** : touchez **Recharge carte** dans la grille, choisissez un montant et scannez la carte. Une recharge se paie en espèces ou en CB, jamais avec la carte elle-même.
-4. **Clôturer** : dans le menu en haut à droite, choisissez **Clôturer la caisse**, comptez les espèces et saisissez le total. La caisse affiche l'écart éventuel et enregistre la synthèse en comptabilité.
+4. **Clôturer** : dans **Buvette → Caisse**, comptez les espèces et saisissez le total. L'écran indique l'écart éventuel et la synthèse part en comptabilité.
 
 ## Si la CB n'aboutit pas
 
@@ -29,9 +29,13 @@ La vente reste en attente tant que SumUp n'a pas confirmé le paiement, et la ca
 
 Si la caisse affiche **À rembourser dans SumUp**, de l'argent a été pris pour une vente abandonnée ou avec un mauvais montant. Remboursez-le depuis l'application SumUp.
 
+## Rembourser une vente
+
+En cas d'erreur, l'icône en haut à droite de la caisse ouvre les **Transactions** de la session. Touchez la vente, puis **Rembourser cette vente** : la carte est recréditée et la caisse affiche les espèces à rendre. Une part payée en CB se rembourse dans l'application SumUp.
+
 ## Rembourser une carte
 
-Dans le menu en haut à droite, **Rembourser une carte** rend tout le solde en espèces. Scannez le QR code à jour du client : il doit être présent. Le titulaire reçoit un e-mail, et sa carte reste ouverte à 0 €. S'il a perdu son téléphone, il rouvre d'abord sa carte sur un autre appareil avec son adresse e-mail.
+La tuile **Rembourser une carte**, à côté de **Recharge carte**, rend tout le solde en espèces. Scannez le QR code à jour du client : il doit être présent. Le titulaire reçoit un e-mail, et sa carte reste ouverte à 0 €. S'il a perdu son téléphone, il rouvre d'abord sa carte sur un autre appareil avec son adresse e-mail.
 
 ## En comptabilité
 

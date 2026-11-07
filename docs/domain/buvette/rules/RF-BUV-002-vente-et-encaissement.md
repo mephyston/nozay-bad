@@ -52,7 +52,7 @@ Le bénévole compose un panier et encaisse depuis un seul écran. Le montant pa
 
 **Double validation.** Une vente porte un identifiant généré par la caisse : un double appui ou une nouvelle tentative réseau ne l'encaisse et ne la débite qu'une fois.
 
-**Annulation.** Tant que la session est ouverte, un bénévole annule une vente payée : la carte est recréditée et les espèces sont rendues. La part CB se rembourse par SumUp. Après la clôture, seul un responsable corrige, avec un motif et une écriture de régularisation.
+**Rembourser une vente.** Tant que la session est ouverte, un bénévole retrouve la vente dans la liste des transactions et la rembourse : la carte est recréditée et les espèces sont rendues. La part CB se rembourse dans SumUp, ce que la caisse rappelle. Une recharge déjà consommée ne se rembourse pas ainsi. Après la clôture, seul un responsable corrige, avec un motif et une écriture de régularisation.
 
 ---
 
@@ -74,6 +74,11 @@ Fonctionnalité: Vente et encaissement
     Alors la vente ne peut pas être validée
     Quand il confirme avoir reçu 1 €
     Alors la vente est payée et le solde passe à 0 €
+
+  Scénario: Rembourser une vente depuis les transactions
+    Étant donné une vente de 4 € payée en espèces dans la session ouverte
+    Quand le bénévole la rembourse depuis la liste des transactions
+    Alors la vente est marquée remboursée et la caisse affiche 4 € à rendre
 
   Scénario: Carte complétée par la CB
     Étant donné une carte de 8 € et un panier d'articles de 12 €

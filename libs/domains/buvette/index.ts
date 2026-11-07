@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { manageItemsRoute } from './manage-items/route';
 import { manageSettingsRoute } from './manage-settings/route';
 import { getCurrentSessionRoute } from './get-current-session/route';
+import { listSessionSalesRoute } from './list-session-sales/route';
 import { openSessionRoute } from './open-session/route';
 import { closeSessionRoute } from './close-session/route';
 import { createSaleRoute } from './create-sale/route';
@@ -26,6 +27,7 @@ export const buvetteRouter = new Hono<{ Bindings: Bindings }>();
 
 buvetteRouter.route('/', manageItemsRoute);
 buvetteRouter.route('/', manageSettingsRoute);
+buvetteRouter.route('/', listSessionSalesRoute);
 buvetteRouter.route('/', getCurrentSessionRoute);
 buvetteRouter.route('/', openSessionRoute);
 buvetteRouter.route('/', closeSessionRoute);

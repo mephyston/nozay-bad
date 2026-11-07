@@ -10,6 +10,7 @@ import { saveSettings } from './manage-settings/handler';
 import { openSession } from './open-session/handler';
 import { getCurrentSession } from './get-current-session/handler';
 import { closeSession } from './close-session/handler';
+import { listSessionSales } from './list-session-sales/handler';
 import { CloseSessionRepository } from './close-session/repository';
 import { createSale } from './create-sale/handler';
 import { cancelSale } from './cancel-sale/handler';
@@ -343,6 +344,20 @@ describe('buvette', () => {
         await close(5100);
         await expect(cancelSale(db, { saleId: paid.id, cancelledByEmail: BY })).rejects.toThrow('clôturée');
       });
+    });
+
+    it('liste les ventes de la session, les plus récentes d\'abord, avec leurs articles', async () => {
+      await sale('vente-0701', { lines: [{ itemId: coffee.id, quantity: 2 }], expectedCashCents: 200 });
+      const { sale: last } = await sale('vente-0702', { lines: [{ itemId: sandwich.id, quantity: 1 }], expectedCashCents: 400 });
+      await cancelSale(db, { saleId: last.id, cancelledByEmail: BY });
+      const sales = await listSessionSales(db);
+      expect(sales.map((s) => s.status)).toEqual(['cancelled', 'paid']);
+      expect(sales[1]).toMatchObject({ cashCents: 200, lines: [{ name: 'Café', quantity: 2, unitPriceCents: 100 }] });
+    });
+
+    it('sans session ouverte, la liste est vide', async () => {
+      await close(5000);
+      expect(await listSessionSales(db)).toEqual([]);
     });
 
     it('une vente annulée ne compte pas', async () => {

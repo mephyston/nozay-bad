@@ -14,6 +14,34 @@ function article(data: any) {
 }
 
 export const ECRANS: Record<string, Ecran> = {
+  session: {
+    feature: 'buvette',
+    permission: 'buvette:sessions:read',
+    charger: async (lire, locals) => ({
+      current: (await lire('/buvette/sessions/current')) ?? null,
+      canOpen: can(locals, 'buvette:sessions:write'),
+      canClose: can(locals, 'buvette:sessions:close'),
+      canAbandon: can(locals, 'buvette:sales:write')
+    }),
+    ecritures: {
+      open_session: {
+        permission: 'buvette:sessions:write',
+        route: (data) => ({ chemin: '/buvette/sessions', method: 'POST', body: { openingFloatCents: data.openingFloatCents } })
+      },
+      close_session: {
+        permission: 'buvette:sessions:close',
+        route: (data) => ({
+          chemin: `/buvette/sessions/${identifiant(data.id, 'de session')}/close`,
+          method: 'POST',
+          body: { countedCashCents: data.countedCashCents }
+        })
+      },
+      abandon_sale: {
+        permission: 'buvette:sales:write',
+        route: (data) => ({ chemin: `/buvette/sales/${identifiant(data.id, 'de vente')}/abandon`, method: 'POST', body: {} })
+      }
+    }
+  },
   catalog: {
     feature: 'buvette',
     permission: 'buvette:items:read',

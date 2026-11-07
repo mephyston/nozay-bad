@@ -1,4 +1,5 @@
 import { readApiError } from '@nba/ui';
+import { parseEuros } from '../../shared/money';
 
 const RELAIS = '/admin/api/buvette/catalog';
 
@@ -18,12 +19,7 @@ export interface CatalogItemValues {
   active: boolean;
 }
 
-/** Un montant saisi en euros (« 2,50 »), en centimes. `null` s'il n'est pas lisible. */
-export function parseEuros(value: string): number | null {
-  const normalized = value.trim().replace(',', '.');
-  if (!/^\d+(\.\d{1,2})?$/.test(normalized)) return null;
-  return Math.round(Number(normalized) * 100);
-}
+export { parseEuros };
 
 async function ecrire(payload: Record<string, unknown>, echec: string): Promise<void> {
   const res = await fetch(RELAIS, {

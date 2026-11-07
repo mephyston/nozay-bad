@@ -55,8 +55,10 @@ export const ROUTE_PERMISSIONS: RouteRule[] = [
   { method: 'GET', path: '/buvette/settings', permission: 'buvette:settings:read', feature: 'buvette' },
   { method: 'PUT', path: '/buvette/settings', permission: 'buvette:settings:write', feature: 'buvette' },
   { method: 'GET', path: '/buvette/sessions/current', permission: 'buvette:sessions:read', callers: ['caisse'], feature: 'buvette' },
-  { method: 'POST', path: '/buvette/sessions', permission: 'buvette:sessions:write', callers: ['caisse'], feature: 'buvette' },
-  { method: 'POST', path: '/buvette/sessions/:id/close', permission: 'buvette:sessions:close', callers: ['caisse'], feature: 'buvette' },
+  // L'ouverture et la clôture restent au bureau, dans l'admin : pas d'appelant `caisse` ici.
+  { method: 'GET', path: '/buvette/sessions/current/sales', permission: 'buvette:sessions:read', callers: ['caisse'], feature: 'buvette' },
+  { method: 'POST', path: '/buvette/sessions', permission: 'buvette:sessions:write', feature: 'buvette' },
+  { method: 'POST', path: '/buvette/sessions/:id/close', permission: 'buvette:sessions:close', feature: 'buvette' },
   { method: 'POST', path: '/buvette/sales', permission: 'buvette:sales:write', callers: ['caisse'], feature: 'buvette' },
   { method: 'POST', path: '/buvette/sales/:id/cancel', permission: 'buvette:sales:write', callers: ['caisse'], feature: 'buvette' },
   { method: 'POST', path: '/buvette/sales/:id/card-attempts', permission: 'buvette:sales:write', callers: ['caisse'], feature: 'buvette' },

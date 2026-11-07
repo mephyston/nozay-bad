@@ -49,6 +49,12 @@ describe("autorisation de l'API", () => {
       expect((await callAs(asCaisse, '/members')).status).toBe(403);
     });
 
+    it('la caisse ne peut ni ouvrir ni clôturer une session', async () => {
+      expect((await callAs(asCaisse, '/buvette/sessions', { method: 'POST', body: '{}' })).status).toBe(403);
+      expect((await callAs(asCaisse, '/buvette/sessions/1/close', { method: 'POST', body: '{}' })).status).toBe(403);
+      expect((await callAs(asCaisse, '/buvette/sessions/current/sales')).status).toBe(200);
+    });
+
     it('l\'app des clients n\'atteint aucune route de la caisse', async () => {
       expect((await callAs(asBuvette, '/buvette/sessions/current')).status).toBe(403);
       expect((await callAs(asBuvette, '/buvette/sales', { method: 'POST', body: '{}' })).status).toBe(403);

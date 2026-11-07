@@ -18,9 +18,11 @@ Une session de caisse suit un tiroir d'espèces de l'ouverture à la clôture. L
 
 **Une session ouverte à la fois.** Elle correspond à un tiroir d'espèces. Plusieurs bénévoles y encaissent, chacun depuis son téléphone, et chaque vente garde le nom de son auteur.
 
-**Ouverture.** Le bénévole saisit le fond de caisse compté. La session ne s'ouvre que si les comptes et catégories de la buvette sont réglés.
+**Ouverture et clôture au bureau.** Elles se font depuis l'administration, avec leur propre droit : elles engagent le comptage et la comptabilité. La caisse ne peut ni ouvrir ni clôturer, et affiche « fermée » sans session.
 
-**Clôture.** Le bénévole compte les espèces. La caisse affiche les espèces théoriques, l'écart de caisse, le total CB et le total débité sur les cartes. La clôture est refusée s'il reste une vente en cours, y compris « à vérifier ».
+**Ouverture.** Le responsable saisit le fond de caisse compté. La session ne s'ouvre que si les comptes et catégories de la buvette sont réglés.
+
+**Clôture.** Le responsable compte les espèces. L'écran affiche les espèces théoriques, l'écart de caisse, le total CB et le total débité sur les cartes. La clôture est refusée s'il reste une vente en cours, y compris « à vérifier ».
 
 **Contrôle CB.** Le total CB de la session est rapproché des transactions SumUp portant ses identifiants. Une différence est signalée à la clôture.
 
@@ -55,19 +57,19 @@ Fonctionnalité: Session de caisse
 
   Scénario: Clôture sans écart
     Étant donné un fond de caisse de 50 € et 30 € encaissés en espèces
-    Quand le bénévole compte 80 €
+    Quand le responsable compte 80 €
     Alors l'écart de caisse est de 0 €
     Et la synthèse est posée en comptabilité
 
   Scénario: Clôture avec un écart
     Étant donné des espèces théoriques de 80 €
-    Quand le bénévole compte 78 €
+    Quand le responsable compte 78 €
     Alors un écart de -2 € est affiché
     Et il est enregistré en dépense dans la catégorie des écarts
 
   Scénario: Une vente en cours empêche la clôture
     Étant donné une session avec une vente "à vérifier"
-    Quand le bénévole clôture
+    Quand le responsable clôture
     Alors la clôture est refusée et la vente est désignée
 
   Scénario: Une recharge ne compte pas en recette
