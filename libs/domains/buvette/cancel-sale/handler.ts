@@ -1,4 +1,6 @@
 import { AppError, type Db } from '@nba/db';
+import { isCardGone } from '../shared/queries.repository';
+import { isClosedSessionError } from '../shared/validation';
 import { CancelSaleRepository } from './repository';
 import type { CancelSaleInput } from './dto';
 
@@ -31,7 +33,7 @@ export async function cancelSale(db: Db, input: CancelSaleInput) {
   ];
 
   const prepaidCard = sale.prepaidCardId && sale.prepaidCents > 0 ? await repo.getCard(db, sale.prepaidCardId) : undefined;
-  const cardGone = Boolean(prepaidCard?.deletedAt);
+  const cardGone = Boolean(prepaidCard && isCardGone(prepaidCard));
 
   const statements: any[] = [repo.buildCancelStatement(db, sale.id, by)];
   if (cardGone) {
@@ -49,6 +51,7 @@ export async function cancelSale(db: Db, input: CancelSaleInput) {
     statements.push(...reverse('debit', prepaidCard.id, sale.prepaidCents));
   }
   if (sale.rechargeCardId && sale.rechargeCents > 0) statements.push(...reverse('recharge', sale.rechargeCardId, -sale.rechargeCents));
+  if (sale.rechargeCardId && sale.rechargeCents > 0) statements.push(repo.buildResetPaperStatement(db, sale.rechargeCardId));
   if (sale.orderId) statements.push(repo.buildCancelOrderStatement(db, sale.orderId));
 
   try {
@@ -57,7 +60,7 @@ export async function cancelSale(db: Db, input: CancelSaleInput) {
     if (!results[0]?.meta?.changes) throw new AppError('Cette vente ne peut plus être annulée : sa session vient de se clôturer.', 409);
   } catch (error) {
     if (error instanceof AppError) throw error;
-    if (/NOT NULL/i.test(String(error))) throw new AppError('Cette vente ne peut plus être annulée : sa session vient de se clôturer.', 409);
+    if (isClosedSessionError(error)) throw new AppError('Cette vente ne peut plus être annulée : sa session vient de se clôturer.', 409);
     if (/CHECK/i.test(String(error))) throw new AppError('La recharge a déjà été consommée : cette vente ne peut plus être annulée.', 409);
     if (/UNIQUE/i.test(String(error))) throw new AppError('Cette vente est déjà annulée.', 409);
     throw error;

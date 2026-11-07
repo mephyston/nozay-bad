@@ -24,7 +24,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
   }
   // Sans carte sur cet appareil, tout mène à la connexion. Les appels d'API répondent eux-mêmes.
   const path = context.url.pathname;
-  const isOpen = path === '/connexion' || path.startsWith('/api/') || path.startsWith('/_astro/') || path === '/logo.png';
+  const isOpen = path === '/connexion' || path.startsWith('/carte/') || path.startsWith('/api/') || path.startsWith('/_astro/') || path === '/logo.png';
   if (!context.locals.card && !isOpen) return applySecurityHeaders(context.redirect('/connexion'));
   return applySecurityHeaders(await next());
 });

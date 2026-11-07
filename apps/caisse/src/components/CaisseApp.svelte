@@ -37,6 +37,7 @@
 
   interface PendingOrder {
     id: number;
+    number: number;
     createdAt: string;
     label: string;
     availableCents: number;
@@ -49,6 +50,9 @@
     label: string;
     balanceCents: number;
     pendingOrderId?: number | null;
+    kind?: 'account' | 'paper';
+    paperStatus?: 'new' | 'active' | 'closed' | null;
+    faceValueCents?: number | null;
   }
 
   type Screen = 'loading' | 'closed' | 'sell' | 'cart' | 'recharge' | 'scan' | 'pay' | 'cash' | 'cb' | 'done' | 'sales' | 'sale' | 'saleConfirm' | 'handover' | 'orders' | 'order' | 'refund';
@@ -210,6 +214,10 @@
     };
   }
 
+  /** Rappel au bénévole : barrer les cases d'une carte papier après un achat. */
+  const paperReminder = (card: ScannedCard | null, prepaid: number) =>
+    card?.kind === 'paper' && prepaid > 0 ? `Barrez ${formatEuros(prepaid)} sur la carte papier.` : '';
+
   /** L'écran de fin. Sans monnaie à rendre, il s'efface seul : la vente suivante attend. */
   function showDone(next: NonNullable<typeof done>) {
     done = next;
@@ -254,10 +262,13 @@
           refundTarget = card;
           screen = 'refund';
         } else if (purpose === 'recharge') {
+          if (card.kind === 'paper' && card.paperStatus !== 'new') throw new Error('Une carte papier ne se recharge pas : vendez-en une nouvelle.');
           rechargeCard = card;
-          rechargeCents = pendingRechargeCents;
+          // Une carte papier se vend à sa valeur faciale, quel que soit le montant touché.
+          rechargeCents = card.kind === 'paper' ? (card.faceValueCents ?? 0) : pendingRechargeCents;
           screen = 'sell';
         } else {
+          if (card.kind === 'paper' && card.paperStatus === 'new') throw new Error("Cette carte papier n'a pas encore été vendue.");
           prepaidCard = card;
           screen = 'pay';
           // La carte couvre tout : le scan vaut paiement, comme une carte sur un terminal.
@@ -277,14 +288,17 @@
     const { sale } = await callApi('sales', salePayload({}));
     lastSale = { id: sale.id, cashCents: sale.cashCents, cardCents: sale.cardCents, prepaidCents: sale.prepaidCents };
     const label = prepaidCard?.label ?? '';
+    const reminder = paperReminder(prepaidCard, prepaid);
     resetSale();
     await refresh();
     showDone({
       title: 'Paiement enregistré',
       amountCents: sale.itemsCents + sale.rechargeCents,
       changeCents: receivedCents !== null && receivedCents > cash ? receivedCents - cash : null,
-      detail: prepaid > 0 ? `${formatEuros(prepaid)} sur la carte ${label}` : ''
+      detail: reminder || (prepaid > 0 ? `${formatEuros(prepaid)} sur la carte ${label}` : '')
     });
+    // Le rappel doit être lu : l'écran ne s'efface pas seul.
+    if (reminder) clearTimeout(doneTimer);
   }
 
   function payCash(receivedCents: number | null) {
@@ -592,7 +606,8 @@
     <main class="grow space-y-4 p-4">
       {@render back('Articles', 'sell')}
       <h1 class="text-2xl font-semibold">Recharger une carte</h1>
-      <p class="text-muted-foreground text-sm">Choisissez le montant, puis scannez la carte du client.</p>
+      <Button variant="outline" size="lg" class="h-14 w-full" onclick={() => { pendingRechargeCents = 0; startScan('recharge'); }}>Vendre une carte papier</Button>
+      <p class="text-muted-foreground text-sm">Ou choisissez un montant, puis scannez la carte du client.</p>
       <div class="grid grid-cols-2 gap-2">
         {#each RECHARGES as cents (cents)}
           <button type="button" class="bg-card active:bg-muted rounded-2xl border p-6 text-2xl font-semibold tabular-nums" onclick={() => chooseRecharge(cents)}>{cents / 100} €</button>
@@ -818,7 +833,7 @@
             <li>
               <button type="button" class="active:bg-muted flex min-h-14 w-full items-center gap-3 px-4 py-2 text-left" onclick={() => showOrder(order.id)}>
                 <span class="min-w-0 grow">
-                  <span class="block truncate text-sm font-semibold">N° {order.id} · {order.label}</span>
+                  <span class="block truncate text-sm font-semibold">N° {order.number} · {order.label}</span>
                   <span class="text-muted-foreground block truncate text-xs">{time(order.createdAt)} · {order.lines.map((l) => `${l.quantity} × ${l.name}`).join(', ')}</span>
                 </span>
                 <span class="shrink-0 text-sm font-medium tabular-nums">{formatEuros(order.totalCents)}</span>
@@ -837,7 +852,7 @@
     <main class="flex grow flex-col gap-4 p-4">
       {@render back('Commandes', 'orders')}
       <div class="py-2 text-center">
-        <p class="text-muted-foreground text-sm">Commande n° {selectedOrder.id} · {selectedOrder.label}</p>
+        <p class="text-muted-foreground text-sm">Commande n° {selectedOrder.number} · {selectedOrder.label}</p>
         <p class="text-5xl font-semibold tabular-nums">{formatEuros(selectedOrder.totalCents)}</p>
         <p class="text-muted-foreground mt-2 text-sm">Disponible sur la carte : {formatEuros(selectedOrder.availableCents)}</p>
       </div>
@@ -864,7 +879,11 @@
           <p class="text-muted-foreground text-sm">Carte {refundTarget.label}</p>
           <p class="text-5xl font-semibold tabular-nums">{formatEuros(refundTarget.balanceCents)}</p>
         </div>
-        <p class="text-muted-foreground text-sm">Tout le solde est rendu en espèces. La carte reste ouverte, à 0 €.</p>
+        {#if refundTarget.kind === 'paper'}
+          <p class="bg-primary/10 border-primary rounded-2xl border p-3 text-sm font-semibold">Reprenez la carte papier. Une fois remboursée, elle ne vaudra plus rien.</p>
+        {:else}
+          <p class="text-muted-foreground text-sm">Tout le solde est rendu en espèces. La carte reste ouverte, à 0 €.</p>
+        {/if}
         <Button size="lg" class="h-14 w-full text-lg" disabled={busy} onclick={confirmRefund}>Confirmer le remboursement</Button>
       {:else}
         <Button size="lg" class="h-14 w-full text-lg" onclick={() => startScan('refund')}>Scanner la carte du client</Button>

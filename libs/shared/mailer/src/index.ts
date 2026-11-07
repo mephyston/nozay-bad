@@ -16,6 +16,8 @@
 
 export interface EmailEnv {
   RESEND_API_KEY?: string;
+  /** Prioritaire sur Resend : l'app buvette ne doit pas épuiser le quota de l'espace adhérent. */
+  BREVO_API_KEY?: string;
   EMAIL_FROM?: string;
   EMAIL_MODE?: string; // 'live' | 'allowlist' | 'redirect' | 'dry-run'
   EMAIL_ALLOWLIST?: string; // CSV des adresses autorisées (mode allowlist)
@@ -63,7 +65,7 @@ export async function deliver(
   const mode = (env.EMAIL_MODE || 'dry-run').toLowerCase();
 
   // Dry-run : pas de clé, mode dry-run, ou mode inconnu → on logue, on n'envoie rien.
-  if (!env.RESEND_API_KEY || mode === 'dry-run') {
+  if ((!env.RESEND_API_KEY && !env.BREVO_API_KEY) || mode === 'dry-run') {
     logSkip(mode);
     return { ok: true };
   }
@@ -100,6 +102,21 @@ export async function deliver(
   const address = /<([^>]+)>/.exec(env.EMAIL_FROM || '')?.[1] || env.EMAIL_FROM || club.contactEmail;
   const from = `${club.senderName} <${address}>`;
   const redirected = recipient !== to;
+
+  if (env.BREVO_API_KEY) {
+    if (!address) {
+      console.error('[auth] EMAIL_FROM absent : aucune adresse d\'expédition pour Brevo.');
+      return { ok: false, error: "Échec de l'envoi de l'email." };
+    }
+    return sendWithBrevo(env.BREVO_API_KEY, {
+      sender: { name: club.senderName, email: address },
+      ...(club.contactEmail ? { replyTo: { email: club.contactEmail } } : {}),
+      to: [{ email: recipient }],
+      subject: redirected ? `[TEST → ${to}] ${mail.subject}` : mail.subject,
+      htmlContent: redirected ? testBanner(to) + mail.html : mail.html,
+      textContent: mail.text
+    });
+  }
 
   try {
     const res = await fetch('https://api.resend.com/emails', {
@@ -164,4 +181,29 @@ export async function deliver(
 
 function testBanner(originalRecipient: string): string {
   return `<p style="background:#fff3cd;color:#664d03;padding:8px 12px;border-radius:6px;font-size:12px;">Email de TEST — destinataire réel : ${originalRecipient}</p>`;
+}
+
+async function sendWithBrevo(apiKey: string, body: Record<string, unknown>): Promise<DeliveryResult> {
+  try {
+    const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: { 'api-key': apiKey, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    if (res.ok) return { ok: true };
+    const detail = await res.text().catch(() => '');
+    console.error(`[auth] Brevo a renvoyé une erreur: ${res.status} ${detail}`);
+    // Brevo répond 402 ou 429 quand le plafond d'envoi est atteint.
+    if (res.status === 402 || res.status === 429) {
+      return {
+        ok: false,
+        quotaReached: true,
+        error: "Le club a atteint sa limite d'envois pour aujourd'hui. Réessayez demain, ou contactez le bureau."
+      };
+    }
+    return { ok: false, error: "Échec de l'envoi de l'email." };
+  } catch (err) {
+    console.error('[auth] Erreur réseau lors de l’envoi Brevo:', err);
+    return { ok: false, error: "Échec de l'envoi de l'email." };
+  }
 }

@@ -75,3 +75,49 @@ export async function verifyCardToken(
     return null;
   }
 }
+
+/**
+ * Le code à saisir, affiché sous le QR code quand la caméra ne lit pas : numéro de carte puis
+ * 6 chiffres qui changent chaque minute. Il donne accès au solde comme le QR code : il expire
+ * donc aussi, et il dépend de l'appareil, si bien qu'un appareil déconnecté n'en a plus de valable.
+ */
+const CARD_CODE_WINDOW_SECONDS = 60;
+/** Le client le dicte, le bénévole le tape : la minute en cours et les deux précédentes. */
+const CARD_CODE_PAST_WINDOWS = 2;
+
+async function cardCodeDigits(secret: string, cardId: number, deviceId: string, window: number): Promise<string> {
+  const message = new TextEncoder().encode(`code:${cardId}:${deviceId}:${window}`);
+  const signature = new Uint8Array(await crypto.subtle.sign('HMAC', await importKey(secret), message));
+  const value = new DataView(signature.buffer).getUint32(0) % 1_000_000;
+  return String(value).padStart(6, '0');
+}
+
+function currentWindow(nowMs: number): number {
+  return Math.floor(nowMs / 1000 / CARD_CODE_WINDOW_SECONDS);
+}
+
+export async function cardCode(secret: string, cardId: number, deviceId: string, nowMs: number = Date.now()): Promise<string> {
+  return `${cardId}-${await cardCodeDigits(secret, cardId, deviceId, currentWindow(nowMs))}`;
+}
+
+/** Le tiret est facultatif : le clavier chiffré d'un téléphone n'en a pas. */
+export function readCardCode(raw: string): { cardId: number; digits: string } | null {
+  const match = /^(\d{1,9})[\s-]?(\d{6})$/.exec(raw.trim());
+  return match ? { cardId: Number(match[1]), digits: match[2] } : null;
+}
+
+/** Rend l'appareil dont ce code est encore valable, parmi ceux de la carte qui restent ouverts. */
+export async function findDeviceForCode(
+  secret: string,
+  code: { cardId: number; digits: string },
+  deviceIds: string[],
+  nowMs: number = Date.now()
+): Promise<string | null> {
+  const now = currentWindow(nowMs);
+  for (const deviceId of deviceIds) {
+    for (let window = now; window >= now - CARD_CODE_PAST_WINDOWS; window--) {
+      if ((await cardCodeDigits(secret, code.cardId, deviceId, window)) === code.digits) return deviceId;
+    }
+  }
+  return null;
+}

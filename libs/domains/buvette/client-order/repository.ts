@@ -44,8 +44,15 @@ export class ClientOrderRepository {
     );
   }
 
-  buildCreateStatement(db: DbOrTx, cardId: number): any {
-    return db.insert(buvetteOrdersTable).values({ cardId, status: 'pending', createdAt: new Date() });
+  /** Le numéro se calcule dans l'instruction : deux commandes simultanées ne prennent pas le même. */
+  buildCreateStatement(db: DbOrTx, cardId: number, sessionId: number): any {
+    return db.insert(buvetteOrdersTable).values({
+      cardId,
+      sessionId,
+      number: sql`(SELECT COALESCE(MAX(o.number), 0) + 1 FROM buvette_orders o WHERE o.session_id = ${sessionId})` as any,
+      status: 'pending',
+      createdAt: new Date()
+    });
   }
 
   /** Rattachée par la carte : une seule commande en cours par carte, l'index y veille. */

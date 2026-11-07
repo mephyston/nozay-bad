@@ -20,7 +20,7 @@ Un client qui ne veut plus utiliser sa carte récupère son solde en espèces au
 
 **En espèces uniquement,** dans une session de caisse ouverte.
 
-**Le client est présent.** Le bénévole scanne le QR code à jour de sa carte. Un client qui a perdu son téléphone rouvre d'abord sa carte sur un autre appareil (RF-BUV-001).
+**Le client est présent.** Le bénévole scanne le QR code à jour de sa carte, ou saisit le code affiché dessous (RF-BUV-001). Un client qui a perdu son téléphone rouvre d'abord sa carte sur un autre appareil (RF-BUV-001).
 
 **Rien n'est en cours.** Le remboursement est refusé tant qu'une réservation existe sur la carte.
 

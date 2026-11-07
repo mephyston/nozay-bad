@@ -11,6 +11,12 @@ export class CancelSaleRepository {
     return db.select().from(buvetteCardsTable).where(eq(buvetteCardsTable.id, id)).get();
   }
 
+  /** Une vente annulée remet la carte papier à vendre : elle n'a jamais servi. */
+  buildResetPaperStatement(db: DbOrTx, cardId: number): any {
+    return db.update(buvetteCardsTable).set({ paperStatus: 'new' })
+      .where(and(eq(buvetteCardsTable.id, cardId), eq(buvetteCardsTable.kind, 'paper'), eq(buvetteCardsTable.balanceCents, 0)));
+  }
+
   buildCancelOrderStatement(db: DbOrTx, orderId: number): any {
     return db.update(buvetteOrdersTable).set({ status: 'cancelled' }).where(eq(buvetteOrdersTable.id, orderId));
   }

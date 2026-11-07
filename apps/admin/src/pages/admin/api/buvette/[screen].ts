@@ -14,11 +14,23 @@ function article(data: any) {
 }
 
 export const ECRANS: Record<string, Ecran> = {
+  'paper-cards': {
+    feature: 'buvette',
+    permission: 'buvette:cards:write',
+    charger: async () => ({}),
+    ecritures: {
+      generate: {
+        permission: 'buvette:cards:write',
+        route: (data) => ({ chemin: '/buvette/paper-cards', method: 'POST', body: { faceValueCents: data.faceValueCents, quantity: data.quantity } })
+      }
+    }
+  },
   session: {
     feature: 'buvette',
     permission: 'buvette:sessions:read',
     charger: async (lire, locals) => ({
       current: (await lire('/buvette/sessions/current')) ?? null,
+      cardsDebtCents: (await lire('/buvette/cards/debt'))?.cardsDebtCents ?? 0,
       canOpen: can(locals, 'buvette:sessions:write'),
       canClose: can(locals, 'buvette:sessions:close'),
       canAbandon: can(locals, 'buvette:sales:write')

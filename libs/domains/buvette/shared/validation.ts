@@ -18,6 +18,11 @@ export function actorEmail(c: any): string {
   return email;
 }
 
+/** La session vient d'être clôturée : le mouvement n'a plus de session, et le lot est annulé. */
+export function isClosedSessionError(error: unknown): boolean {
+  return /NOT NULL|buvette_card_movements_session_check/i.test(String(error));
+}
+
 export function tokenSecret(c: any): string {
   const secret = c.env?.BUVETTE_TOKEN_SECRET;
   if (!secret) throw new Error('BUVETTE_TOKEN_SECRET absent de la configuration du Worker');

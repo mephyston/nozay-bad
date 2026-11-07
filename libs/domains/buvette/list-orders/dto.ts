@@ -1,5 +1,6 @@
 export interface PendingOrder {
   id: number;
+  number: number;
   createdAt: Date;
   /** Adresse masquée : de quoi vérifier avec le client, sans la dévoiler. */
   label: string;

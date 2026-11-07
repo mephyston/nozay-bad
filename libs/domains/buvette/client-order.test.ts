@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { eq } from 'drizzle-orm';
 import { setupMockDb } from '@nba/db/test-utils';
 import { categoriesTable, seasonsTable } from '@nba/accounting/schema';
@@ -60,6 +60,21 @@ describe('commandes des clients', () => {
     await expect(order()).rejects.toThrow('fermée');
   });
 
+  it('le numéro repart à 1 à chaque session, et une commande passée ne suit pas', async () => {
+    const other = await openCard(db, 'autre@example.org');
+    const first = await order();
+    const second = await createOrder(db, other.cardId, other.deviceId, [{ itemId: coffee.id, quantity: 1 }]);
+    expect([first!.number, second!.number]).toEqual([1, 2]);
+
+    await closeSession(db, { sessionId, countedCashCents: 5000, closedByEmail: BY });
+    await openSession(db, { openingFloatCents: 0, openedByEmail: BY });
+    expect(await getCurrentOrder(db, client.cardId, client.deviceId)).toBeNull();
+    const next = await createOrder(db, other.cardId, other.deviceId, [{ itemId: coffee.id, quantity: 2 }]);
+    expect(next!.number).toBe(1);
+    expect(next!.id).not.toBe(second!.id);
+    expect((await listPendingOrders(db, '1'))[0].id).toBe(next!.id);
+  });
+
   it('une commande ne débite rien, et sa modification garde son numéro', async () => {
     await fund(client.cardId, 1000);
     const first = await order();
@@ -80,15 +95,15 @@ describe('commandes des clients', () => {
 
   it('se retrouve par numéro ou par adresse, sans la dévoiler', async () => {
     const placed = await order();
-    expect((await listPendingOrders(db, String(placed!.id)))[0]).toMatchObject({ id: placed!.id, label: 'cl***@example.org', totalCents: 600 });
-    expect(await listPendingOrders(db, `n° ${placed!.id}`)).toHaveLength(1);
+    expect((await listPendingOrders(db, String(placed!.number)))[0]).toMatchObject({ id: placed!.id, label: 'cl***@example.org', totalCents: 600 });
+    expect(await listPendingOrders(db, `n° ${placed!.number}`)).toHaveLength(1);
     expect(await listPendingOrders(db, 'CLIENT@')).toHaveLength(1);
     expect(await listPendingOrders(db, 'cli')).toHaveLength(1);
     expect(await listPendingOrders(db, 'personne')).toHaveLength(0);
     expect(await listPendingOrders(db, 'ie@')).toHaveLength(0);
     expect(await listPendingOrders(db, 'cl')).toHaveLength(0);
     expect(await listPendingOrders(db, '%%%')).toHaveLength(0);
-    expect(readSearch('  ')).toEqual({ id: null, email: null });
+    expect(readSearch('  ')).toEqual({ number: null, email: null });
   });
 
   it('s\'encaisse sans QR code : la carte vient de la commande', async () => {
@@ -163,11 +178,9 @@ describe('commandes des clients', () => {
   it('une commande d\'un service passé ne s\'encaisse pas', async () => {
     const placed = await order();
     await closeSession(db, { sessionId, countedCashCents: 5000, closedByEmail: BY });
-    vi.setSystemTime(new Date('2026-08-30T15:00:00Z'));
     await openSession(db, { openingFloatCents: 0, openedByEmail: BY });
     await expect(collect(placed!.id, 600)).rejects.toThrow('service précédent');
     expect(await listPendingOrders(db)).toEqual([]);
-    vi.setSystemTime(new Date('2026-08-30T12:00:00Z'));
   });
 
   it('une commande modifiée depuis l\'écran de la caisse est refusée', async () => {

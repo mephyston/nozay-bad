@@ -6,4 +6,8 @@ export interface ScanCardOutput {
   balanceCents: number;
   /** La commande que le client a préparée sur son téléphone, s'il y en a une. */
   pendingOrderId: number | null;
+  kind: 'account' | 'paper';
+  /** `new` : la carte papier reste à vendre, à sa valeur faciale. */
+  paperStatus: 'new' | 'active' | 'closed' | null;
+  faceValueCents: number | null;
 }

@@ -39,7 +39,15 @@ export const buvetteSettingsTable = sqliteTable('buvette_settings', {
  */
 export const buvetteCardsTable = sqliteTable('buvette_cards', {
   id: integer('id').primaryKey({ autoIncrement: true }),
-  email: text('email').notNull().unique(),
+  /** `account` : ouverte par un client, avec son adresse. `paper` : imprimée, au porteur. */
+  kind: text('kind', { enum: ['account', 'paper'] }).notNull().default('account'),
+  email: text('email').unique(),
+  /** Empreinte du code imprimé. Le code lui-même n'est jamais gardé. */
+  paperCodeHash: text('paper_code_hash').unique(),
+  faceValueCents: integer('face_value_cents'),
+  /** `new` : pas encore vendue. `closed` : remboursée ou transférée, elle ne vaut plus rien. */
+  paperStatus: text('paper_status', { enum: ['new', 'active', 'closed'] }),
+  paperClosedReason: text('paper_closed_reason', { enum: ['refunded', 'merged'] }),
   balanceCents: integer('balance_cents').notNull().default(0),
   /** La part du solde bloquée par une vente qui attend sa CB. */
   reservedCents: integer('reserved_cents').notNull().default(0),
@@ -48,7 +56,9 @@ export const buvetteCardsTable = sqliteTable('buvette_cards', {
   deletedAt: integer('deleted_at', { mode: 'timestamp' })
 }, (table) => [
   check('buvette_cards_balance_check', sql`${table.balanceCents} >= 0`),
-  check('buvette_cards_reserved_check', sql`${table.reservedCents} >= 0 AND ${table.reservedCents} <= ${table.balanceCents}`)
+  check('buvette_cards_reserved_check', sql`${table.reservedCents} >= 0 AND ${table.reservedCents} <= ${table.balanceCents}`),
+  // Deux caisses qui vendent la même carte à la même seconde : la seconde annule son lot.
+  check('buvette_cards_paper_check', sql`${table.kind} <> 'paper' OR ${table.balanceCents} <= ${table.faceValueCents}`)
 ]);
 
 /** Un navigateur ou un téléphone où la carte est ouverte. */
@@ -94,11 +104,16 @@ export const buvetteSessionClosuresTable = sqliteTable('buvette_session_closures
 export const buvetteOrdersTable = sqliteTable('buvette_orders', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   cardId: integer('card_id').notNull().references(() => buvetteCardsTable.id),
+  /** Le service où elle a été passée. Elle ne vaut que pour lui. */
+  sessionId: integer('session_id').notNull().references(() => buvetteSessionsTable.id),
+  /** Repart à 1 à chaque session : un numéro court se dicte au comptoir. */
+  number: integer('number').notNull(),
   status: text('status', { enum: ['pending', 'collected', 'cancelled'] }).notNull().default('pending'),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
 }, (table) => [
   // Une commande en cours par carte : le QR code du client désigne sans ambiguïté la sienne.
   uniqueIndex('buvette_orders_one_pending_idx').on(table.cardId).where(sql`${table.status} = 'pending'`),
+  uniqueIndex('buvette_orders_session_number_idx').on(table.sessionId, table.number),
   index('buvette_orders_status_idx').on(table.status)
 ]);
 
@@ -179,7 +194,7 @@ export const buvetteCardAttemptsTable = sqliteTable('buvette_card_attempts', {
   index('buvette_card_attempts_status_idx').on(table.status)
 ]);
 
-export const BUVETTE_MOVEMENT_TYPES = ['recharge', 'debit', 'refund', 'cancel'] as const;
+export const BUVETTE_MOVEMENT_TYPES = ['recharge', 'debit', 'refund', 'cancel', 'transfer'] as const;
 export type BuvetteMovementType = (typeof BUVETTE_MOVEMENT_TYPES)[number];
 
 /** L'historique d'une carte. Le montant est signé, du point de vue du solde. */
@@ -188,7 +203,8 @@ export const buvetteCardMovementsTable = sqliteTable('buvette_card_movements', {
   /** Identifiant unique de l'acte : un remboursement ou une annulation rejoués sont refusés. */
   clientId: text('client_id').notNull().unique(),
   cardId: integer('card_id').notNull().references(() => buvetteCardsTable.id),
-  sessionId: integer('session_id').notNull().references(() => buvetteSessionsTable.id),
+  /** Vide pour un transfert : il se fait depuis le téléphone du client, sans toucher à la caisse. */
+  sessionId: integer('session_id').references(() => buvetteSessionsTable.id),
   saleId: integer('sale_id').references(() => buvetteSalesTable.id),
   type: text('type', { enum: BUVETTE_MOVEMENT_TYPES }).notNull(),
   amountCents: integer('amount_cents').notNull(),
@@ -196,7 +212,9 @@ export const buvetteCardMovementsTable = sqliteTable('buvette_card_movements', {
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
 }, (table) => [
   index('buvette_card_movements_card_idx').on(table.cardId),
-  index('buvette_card_movements_session_idx').on(table.sessionId)
+  index('buvette_card_movements_session_idx').on(table.sessionId),
+  // Seul un transfert se passe de session : ailleurs, une session clôturée à l'instant annule le lot.
+  check('buvette_card_movements_session_check', sql`${table.type} = 'transfer' OR ${table.sessionId} IS NOT NULL`)
 ]);
 
 export type BuvetteItem = typeof buvetteItemsTable.$inferSelect;

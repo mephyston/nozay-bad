@@ -18,6 +18,10 @@ export class RefundCardRepository {
       .where(eq(buvetteCardsTable.id, cardId));
   }
 
+  buildClosePaperStatement(db: DbOrTx, cardId: number): any {
+    return db.update(buvetteCardsTable).set({ paperStatus: 'closed', paperClosedReason: 'refunded' }).where(eq(buvetteCardsTable.id, cardId));
+  }
+
   /** La session est relue dans l'instruction : clôturée entre-temps, le NOT NULL annule le lot. */
   buildMovementStatement(db: DbOrTx, sessionId: number, values: Omit<typeof buvetteCardMovementsTable.$inferInsert, 'sessionId'>): any {
     return db.insert(buvetteCardMovementsTable).values({

@@ -1,6 +1,5 @@
 import { type Db } from '@nba/db';
-import { getOpenSession } from '../shared/queries.repository';
-import { maskEmail } from '../shared/mask';
+import { cardLabel, getOpenSession, isCardGone } from '../shared/queries.repository';
 import { ListSessionSalesRepository } from './repository';
 import type { SessionSale } from './dto';
 
@@ -27,8 +26,8 @@ export async function listSessionSales(db: Db): Promise<SessionSale[]> {
     prepaidCents: sale.prepaidCents,
     cashCents: sale.cashCents,
     cardCents: sale.cardCents,
-    prepaidCardLabel: card && !card.deletedAt ? maskEmail(card.email) : null,
-    prepaidCardDeleted: Boolean(card?.deletedAt),
+    prepaidCardLabel: card && !isCardGone(card) ? cardLabel(card) : null,
+    prepaidCardDeleted: Boolean(card && isCardGone(card)),
     lines: lines.filter((l) => l.saleId === sale.id).map(({ name, quantity, unitPriceCents }) => ({ name, quantity, unitPriceCents }))
     };
   });

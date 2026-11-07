@@ -4,13 +4,15 @@ import { buvetteCardsTable, buvetteItemsTable, buvetteOrderLinesTable, buvetteOr
 
 export class ListOrdersRepository {
   /** Bornée à la session ouverte : une commande oubliée hier n'encombre pas le service d'aujourd'hui. */
-  pending(db: DbOrTx, since: Date, search: { id: number | null; email: string | null }, limit: number) {
-    const filters = [eq(buvetteOrdersTable.status, 'pending'), sql`${buvetteOrdersTable.createdAt} >= ${Math.floor(since.getTime() / 1000)}`];
-    if (search.id !== null) filters.push(eq(buvetteOrdersTable.id, search.id));
+  pending(db: DbOrTx, sessionId: number, search: { id?: number; number: number | null; email: string | null }, limit: number) {
+    const filters = [eq(buvetteOrdersTable.status, 'pending'), eq(buvetteOrdersTable.sessionId, sessionId)];
+    if (search.id !== undefined) filters.push(eq(buvetteOrdersTable.id, search.id));
+    if (search.number !== null) filters.push(eq(buvetteOrdersTable.number, search.number));
     if (search.email !== null) filters.push(sql`${buvetteCardsTable.email} LIKE ${`${search.email}%`} ESCAPE '\\'`);
     return db
       .select({
         id: buvetteOrdersTable.id,
+        number: buvetteOrdersTable.number,
         createdAt: buvetteOrdersTable.createdAt,
         email: buvetteCardsTable.email,
         balanceCents: buvetteCardsTable.balanceCents,
@@ -19,7 +21,7 @@ export class ListOrdersRepository {
       .from(buvetteOrdersTable)
       .innerJoin(buvetteCardsTable, eq(buvetteOrdersTable.cardId, buvetteCardsTable.id))
       .where(and(...filters))
-      .orderBy(desc(buvetteOrdersTable.id))
+      .orderBy(desc(buvetteOrdersTable.number))
       .limit(limit)
       .all();
   }

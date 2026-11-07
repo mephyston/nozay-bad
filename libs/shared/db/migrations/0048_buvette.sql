@@ -28,16 +28,24 @@ CREATE TABLE `buvette_settings` (
 --> statement-breakpoint
 CREATE TABLE `buvette_cards` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
-	`email` text NOT NULL,
+	`kind` text DEFAULT 'account' NOT NULL,
+	`email` text,
+	`paper_code_hash` text,
+	`face_value_cents` integer,
+	`paper_status` text,
+	`paper_closed_reason` text,
 	`balance_cents` integer DEFAULT 0 NOT NULL,
 	`reserved_cents` integer DEFAULT 0 NOT NULL,
 	`created_at` integer NOT NULL,
 	`deleted_at` integer,
 	CONSTRAINT `buvette_cards_balance_check` CHECK (`balance_cents` >= 0),
-	CONSTRAINT `buvette_cards_reserved_check` CHECK (`reserved_cents` >= 0 AND `reserved_cents` <= `balance_cents`)
+	CONSTRAINT `buvette_cards_reserved_check` CHECK (`reserved_cents` >= 0 AND `reserved_cents` <= `balance_cents`),
+	CONSTRAINT `buvette_cards_paper_check` CHECK (`kind` <> 'paper' OR `balance_cents` <= `face_value_cents`)
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `buvette_cards_email_unique` ON `buvette_cards` (`email`);
+--> statement-breakpoint
+CREATE UNIQUE INDEX `buvette_cards_paper_code_hash_unique` ON `buvette_cards` (`paper_code_hash`);
 --> statement-breakpoint
 CREATE TABLE `buvette_card_devices` (
 	`id` text PRIMARY KEY NOT NULL,
@@ -74,12 +82,17 @@ CREATE TABLE `buvette_session_closures` (
 CREATE TABLE `buvette_orders` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`card_id` integer NOT NULL,
+	`session_id` integer NOT NULL,
+	`number` integer NOT NULL,
 	`status` text DEFAULT 'pending' NOT NULL,
 	`created_at` integer NOT NULL,
-	FOREIGN KEY (`card_id`) REFERENCES `buvette_cards`(`id`) ON UPDATE no action ON DELETE no action
+	FOREIGN KEY (`card_id`) REFERENCES `buvette_cards`(`id`) ON UPDATE no action ON DELETE no action,
+	FOREIGN KEY (`session_id`) REFERENCES `buvette_sessions`(`id`) ON UPDATE no action ON DELETE no action
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `buvette_orders_one_pending_idx` ON `buvette_orders` (`card_id`) WHERE `status` = 'pending';
+--> statement-breakpoint
+CREATE UNIQUE INDEX `buvette_orders_session_number_idx` ON `buvette_orders` (`session_id`, `number`);
 --> statement-breakpoint
 CREATE INDEX `buvette_orders_status_idx` ON `buvette_orders` (`status`);
 --> statement-breakpoint
@@ -164,7 +177,7 @@ CREATE TABLE `buvette_card_movements` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`client_id` text NOT NULL,
 	`card_id` integer NOT NULL,
-	`session_id` integer NOT NULL,
+	`session_id` integer,
 	`sale_id` integer,
 	`type` text NOT NULL,
 	`amount_cents` integer NOT NULL,
@@ -172,7 +185,8 @@ CREATE TABLE `buvette_card_movements` (
 	`created_at` integer NOT NULL,
 	FOREIGN KEY (`card_id`) REFERENCES `buvette_cards`(`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`session_id`) REFERENCES `buvette_sessions`(`id`) ON UPDATE no action ON DELETE no action,
-	FOREIGN KEY (`sale_id`) REFERENCES `buvette_sales`(`id`) ON UPDATE no action ON DELETE no action
+	FOREIGN KEY (`sale_id`) REFERENCES `buvette_sales`(`id`) ON UPDATE no action ON DELETE no action,
+	CONSTRAINT `buvette_card_movements_session_check` CHECK (`type` = 'transfer' OR `session_id` IS NOT NULL)
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `buvette_card_movements_client_id_unique` ON `buvette_card_movements` (`client_id`);

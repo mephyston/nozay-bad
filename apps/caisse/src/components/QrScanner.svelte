@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onDestroy, onMount } from 'svelte';
-  import { Button } from '@nba/ui';
+  import { Button, Input } from '@nba/ui';
 
   interface Props {
     title: string;
@@ -12,6 +12,7 @@
 
   let video = $state<HTMLVideoElement>();
   let error = $state('');
+  let typedCode = $state('');
   let stream: MediaStream | null = null;
   let frame = 0;
   let stopped = false;
@@ -74,5 +75,9 @@
     <video bind:this={video} class="bg-muted aspect-square w-full rounded-lg object-cover" playsinline muted></video>
     <p class="text-muted-foreground text-sm">Visez le QR code affiché sur le téléphone du client.</p>
   {/if}
+  <form class="flex gap-2" onsubmit={(event) => { event.preventDefault(); if (typedCode.trim()) { stop(); onScan(typedCode.trim()); } }}>
+    <Input bind:value={typedCode} placeholder="Ou le code de la carte" autocapitalize="characters" autocomplete="off" aria-label="Code affiché sous le QR code, ou imprimé sur la carte papier" />
+    <Button type="submit" variant="outline" disabled={!typedCode.trim()}>Valider</Button>
+  </form>
   <Button variant="outline" class="w-full" onclick={onCancel}>Annuler</Button>
 </div>

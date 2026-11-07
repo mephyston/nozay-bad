@@ -131,6 +131,8 @@ function resolve(app, env) {
   }
   if (app === 'admin') {
     vars.PUBLIC_WEBSITE_URL = urls.website;
+    // Le QR code imprimé sur une carte papier mène à l'app buvette.
+    vars.PUBLIC_BUVETTE_URL = urls.buvette;
     vars.PUBLIC_STOREFRONT_URL = urls.storefront;
   }
   if (app === 'website') {

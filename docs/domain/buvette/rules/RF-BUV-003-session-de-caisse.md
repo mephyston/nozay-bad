@@ -44,6 +44,8 @@ Une session de caisse suit un tiroir d'espèces de l'ouverture à la clôture. L
 
 **Compte SumUp.** Il porte ce que SumUp doit au club. Le virement reçu en banque le solde, et la commission est enregistrée en dépense.
 
+**Le total dû aux clients.** L'écran de session affiche la somme des soldes des cartes, session ouverte ou non : la clôture ne touche pas aux soldes, qui restent utilisables à la session suivante et restent une dette dans les comptes.
+
 **Une session clôturée ne se rouvre pas.** Une erreur se corrige par une régularisation (RF-BUV-002).
 
 ---

@@ -22,6 +22,7 @@ interface Env {
   TURNSTILE_SECRET_KEY?: string;
   AUTH_RATE_LIMIT_DISABLED?: string;
   RESEND_API_KEY?: string;
+  BREVO_API_KEY?: string;
   EMAIL_FROM?: string;
   EMAIL_MODE?: string;
   EMAIL_ALLOWLIST?: string;

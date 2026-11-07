@@ -29,6 +29,16 @@ Le client peut préparer sa commande dans son application, onglet **Commander**,
 
 À la caisse, l'onglet **Commandes** les liste. Scannez le QR du client, ou cherchez la commande par son numéro ou son adresse e-mail si le scan échoue, puis **Encaisser la commande**. La carte du client paie ce qu'elle peut, et le reste se règle en espèces ou en CB.
 
+## Les cartes papier
+
+Pour un enfant ou une personne sans téléphone. Dans **Buvette → Cartes papier**, choisissez la valeur (5 ou 10 €), les cases à barrer (0,50 ou 1 €) et le nombre de cartes, puis imprimez le lot. **Les codes ne s'affichent qu'une fois : imprimez avant de quitter la page.** Une carte n'a aucune valeur avant d'être vendue.
+
+- **Vendre** : **Recharge carte**, puis **Vendre une carte papier**, et scannez-la. Le montant se règle tout seul.
+- **Encaisser** : scannez la carte comme une autre, ou saisissez son code, puis barrez les cases consommées.
+- **Rembourser** : **Rembourser une carte**, scannez-la et reprenez-la. Une carte remboursée ne vaut plus rien : si elle revient, la caisse le dit et refuse.
+
+Le porteur peut aussi scanner sa carte avec son téléphone et la transférer sur son compte buvette. Elle ne vaut alors plus rien non plus.
+
 ## Si la CB n'aboutit pas
 
 La vente reste en attente tant que SumUp n'a pas confirmé le paiement, et la caisse le vérifie à votre retour. Vous pouvez ensuite **Vérifier le paiement**, **Relancer le paiement CB** ou **Abandonner la vente**. La clôture est impossible tant qu'une vente attend.
@@ -41,7 +51,7 @@ En cas d'erreur, ouvrez l'onglet **Ventes** de la caisse, touchez la vente, puis
 
 ## Rembourser une carte
 
-La tuile **Rembourser une carte**, à côté de **Recharge carte**, rend tout le solde en espèces. Scannez le QR code à jour du client : il doit être présent. Le titulaire reçoit un e-mail, et sa carte reste ouverte à 0 €. S'il a perdu son téléphone, il rouvre d'abord sa carte sur un autre appareil avec son adresse e-mail.
+La tuile **Rembourser une carte**, à côté de **Recharge carte**, rend tout le solde en espèces. Scannez le QR code à jour du client, ou saisissez le code affiché dessous si la caméra ne le lit pas : il doit être présent. Le titulaire reçoit un e-mail, et sa carte reste ouverte à 0 €. S'il a perdu son téléphone, il rouvre d'abord sa carte sur un autre appareil avec son adresse e-mail.
 
 ## En comptabilité
 

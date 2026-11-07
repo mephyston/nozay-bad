@@ -2,7 +2,10 @@
 import Layout from '../layouts/Layout.astro';
 import CardLogin from '../components/CardLogin.svelte';
 
-if (Astro.locals.card) return Astro.redirect('/');
+if (Astro.locals.card) {
+  const next = Astro.url.searchParams.get('next') ?? '';
+  return Astro.redirect(next.startsWith('/carte/') ? next : '/');
+}
 const clubName = Astro.locals.club?.settings.name || '';
 const siteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY || '';
 ---

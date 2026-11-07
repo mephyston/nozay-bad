@@ -57,6 +57,7 @@ export const ROUTE_PERMISSIONS: RouteRule[] = [
   { method: 'GET', path: '/buvette/sessions/current', permission: 'buvette:sessions:read', callers: ['caisse'], feature: 'buvette' },
   // L'ouverture et la clôture restent au bureau, dans l'admin : pas d'appelant `caisse` ici.
   { method: 'GET', path: '/buvette/sessions/current/sales', permission: 'buvette:sessions:read', callers: ['caisse'], feature: 'buvette' },
+  { method: 'GET', path: '/buvette/cards/debt', permission: 'buvette:sessions:read', feature: 'buvette' },
   { method: 'POST', path: '/buvette/sessions', permission: 'buvette:sessions:write', feature: 'buvette' },
   { method: 'POST', path: '/buvette/sessions/:id/close', permission: 'buvette:sessions:close', feature: 'buvette' },
   { method: 'POST', path: '/buvette/sales', permission: 'buvette:sales:write', callers: ['caisse'], feature: 'buvette' },
@@ -73,6 +74,10 @@ export const ROUTE_PERMISSIONS: RouteRule[] = [
   { method: 'POST', path: '/buvette/cards/:id/order', permission: 'buvette:cards:write', callers: ['buvette'], feature: 'buvette' },
   { method: 'POST', path: '/buvette/cards/:id/order/current', permission: 'buvette:cards:read', callers: ['buvette'], feature: 'buvette' },
   { method: 'POST', path: '/buvette/cards/:id/order/cancel', permission: 'buvette:cards:write', callers: ['buvette'], feature: 'buvette' },
+  // Imprimer un lot reste au bureau. Un code imprimé vaut droit de lecture : c'est la carte en main.
+  { method: 'POST', path: '/buvette/paper-cards', permission: 'buvette:cards:write', feature: 'buvette' },
+  { method: 'POST', path: '/buvette/paper-cards/lookup', permission: 'buvette:cards:read', callers: ['buvette'], feature: 'buvette' },
+  { method: 'POST', path: '/buvette/cards/:id/attach-paper', permission: 'buvette:cards:write', callers: ['buvette'], feature: 'buvette' },
   { method: 'POST', path: '/buvette/cards/scan', permission: 'buvette:cards:read', callers: ['caisse'], feature: 'buvette' },
   { method: 'POST', path: '/buvette/cards/refund', permission: 'buvette:cards:write', callers: ['caisse'], feature: 'buvette' },
   { method: 'POST', path: '/buvette/cards/open', permission: 'buvette:cards:write', callers: ['buvette'], feature: 'buvette' },

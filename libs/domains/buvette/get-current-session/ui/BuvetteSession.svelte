@@ -9,11 +9,13 @@
    */
   let {
     current = null,
+    cardsDebtCents = 0,
     canOpen = false,
     canClose = false,
     canAbandon = false
   }: {
     current?: any;
+    cardsDebtCents?: number;
     canOpen?: boolean;
     canClose?: boolean;
     canAbandon?: boolean;
@@ -49,6 +51,14 @@
     busy = false;
   }
 </script>
+
+<dl class="mb-6 flex max-w-lg justify-between gap-4 rounded-lg border p-4">
+  <dt>
+    <span class="block font-semibold">Dû aux clients sur leurs cartes</span>
+    <span class="text-muted-foreground block text-sm">La somme des soldes : de l'argent encaissé, pas encore consommé.</span>
+  </dt>
+  <dd class="font-semibold tabular-nums">{euros(cardsDebtCents)}</dd>
+</dl>
 
 {#if !current}
   <div class="max-w-sm space-y-4">

@@ -1,5 +1,5 @@
 import { AppError, type Db } from '@nba/db';
-import { signCardToken } from '../shared/card-tokens';
+import { cardCode, signCardToken } from '../shared/card-tokens';
 import { getActiveDevice, getCard } from '../shared/queries.repository';
 import { CardWalletRepository } from './repository';
 import type { MovementDetail, QrTokenOutput, WalletOutput } from './dto';
@@ -21,7 +21,8 @@ export async function getWallet(db: Db, cardId: number, deviceId: string): Promi
 
 export async function issueQrToken(db: Db, secret: string, cardId: number, deviceId: string): Promise<QrTokenOutput> {
   await assertDevice(db, cardId, deviceId);
-  return signCardToken(secret, 'qr', cardId, deviceId);
+  const qr = await signCardToken(secret, 'qr', cardId, deviceId);
+  return { ...qr, code: await cardCode(secret, cardId, deviceId) };
 }
 
 /** Ferme tous les autres appareils. Le solde ne bouge pas. */

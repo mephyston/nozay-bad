@@ -1,6 +1,6 @@
 import { AppError, type Db } from '@nba/db';
 import { verifyCardToken } from '../shared/card-tokens';
-import { availableCents, getActiveDevice, getCard, getOpenSession, getSettings } from '../shared/queries.repository';
+import { assertScannedCardUsable, availableCents, getCard, getOpenSession, getSettings } from '../shared/queries.repository';
 import { newForeignTxId } from '../shared/sumup';
 import { CreateSaleRepository } from './repository';
 import type { BuvetteSale } from '../shared/schema';
@@ -9,7 +9,7 @@ import type { CreateSaleInput, CreateSaleOutput } from './dto';
 async function cardFromScan(db: Db, secret: string, token: string) {
   const payload = await verifyCardToken(secret, 'scan', token);
   if (!payload) throw new AppError('Scan expiré : scannez de nouveau le QR code du client.', 400);
-  if (!(await getActiveDevice(db, payload.c, payload.d))) throw new AppError('Cet appareil a été déconnecté de la carte.', 400);
+  await assertScannedCardUsable(db, payload.c, payload.d);
   const card = await getCard(db, payload.c);
   if (!card) throw new AppError('Carte introuvable.', 404);
   return card;
@@ -48,7 +48,7 @@ export async function createSale(db: Db, secret: string, input: CreateSaleInput)
   if (input.orderId && !order) throw new AppError('Commande introuvable.', 404);
   if (order && order.status !== 'pending') throw new AppError('Cette commande a déjà été encaissée ou annulée.', 409);
   // Le même critère que la liste de la caisse : une commande d'un service passé ne s'encaisse pas.
-  if (order && order.createdAt.getTime() < session.openedAt.getTime()) throw new AppError("Cette commande date d'un service précédent : le client doit la repasser.", 409);
+  if (order && order.sessionId !== session.id) throw new AppError("Cette commande date d'un service précédent : le client doit la repasser.", 409);
   const saleLines = order ? await repo.orderLines(db, order.id) : input.lines;
 
   const rechargeCents = order ? 0 : (input.rechargeCents ?? 0);
@@ -80,7 +80,16 @@ export async function createSale(db: Db, secret: string, input: CreateSaleInput)
     throw new AppError('Le solde de la carte a changé : vérifiez le montant à encaisser.', 409);
   }
 
-  if (rechargeCard) {
+  if (prepaidCard?.kind === 'paper' && prepaidCard.paperStatus !== 'active') {
+    throw new AppError("Cette carte papier n'a pas encore été vendue.", 409);
+  }
+
+  // Une carte papier se vend une fois, à sa valeur : au-delà, elle se consomme et se barre.
+  if (rechargeCard?.kind === 'paper') {
+    if (rechargeCard.paperStatus !== 'new') throw new AppError('Une carte papier ne se recharge pas : vendez-en une nouvelle.', 400);
+    if (rechargeCents !== rechargeCard.faceValueCents) throw new AppError(`Cette carte papier se vend ${(rechargeCard.faceValueCents ?? 0) / 100} €.`, 400);
+    if (await repo.hasSaleInProgressFor(db, rechargeCard.id)) throw new AppError('Cette carte papier a déjà une vente qui attend sa CB.', 409);
+  } else if (rechargeCard) {
     const settings = await getSettings(db);
     const max = settings?.maxBalanceCents ?? 0;
     const after = rechargeCard.balanceCents + rechargeCents - (prepaidCard?.id === rechargeCard.id ? prepaidCents : 0);
@@ -132,6 +141,7 @@ export async function createSale(db: Db, secret: string, input: CreateSaleInput)
   } else {
     if (prepaidCents > 0) statements.push(...movement(prepaidCard!.id, 'debit', -prepaidCents));
     if (rechargeCard) statements.push(...movement(rechargeCard.id, 'recharge', rechargeCents));
+    if (rechargeCard?.kind === 'paper') statements.push(repo.buildActivatePaperStatement(db, rechargeCard.id));
   }
 
   try {
@@ -140,6 +150,7 @@ export async function createSale(db: Db, secret: string, input: CreateSaleInput)
     const raced = await repo.findByClientId(db, input.clientId);
     if (raced) return replay(repo, db, raced);
     if (order && /UNIQUE/i.test(String(error))) throw new AppError("Cette commande vient d'être encaissée par une autre caisse.", 409);
+    if (/buvette_cards_paper_check/.test(String(error))) throw new AppError("Cette carte papier vient d'être vendue par une autre caisse.", 409);
     if (/CHECK/i.test(String(error))) throw new AppError('Solde insuffisant sur la carte.', 409);
     if (/NOT NULL/i.test(String(error))) {
       throw new AppError(order ? 'Cette commande vient d\'être annulée, ou la session clôturée.' : 'La session de caisse vient d\'être clôturée.', 409);

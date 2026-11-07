@@ -6,6 +6,8 @@ export interface CatalogForClient {
 
 export interface ClientOrder {
   id: number;
+  /** Ce que le client donne au comptoir. */
+  number: number;
   createdAt: Date;
   totalCents: number;
   lines: { itemId: number; name: string; quantity: number; unitPriceCents: number }[];

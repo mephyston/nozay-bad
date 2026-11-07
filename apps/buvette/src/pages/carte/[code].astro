@@ -1,0 +1,19 @@
+---
+import { createApiClient } from '@nba/api-client';
+import Layout from '../../layouts/Layout.astro';
+import PaperCard from '../../components/PaperCard.svelte';
+import { resolveEnv } from '../../lib/http';
+
+const code = (Astro.params.code ?? '').toUpperCase();
+const api = createApiClient(resolveEnv<any>(Astro.locals), { caller: 'buvette' });
+const res = await api.fetch('http://localhost/buvette/paper-cards/lookup', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ code })
+});
+const card = res.ok ? ((await res.json()) as any).data : null;
+---
+
+<Layout title="Carte papier" nav={Boolean(Astro.locals.card)}>
+  <PaperCard client:load {code} {card} signedIn={Boolean(Astro.locals.card)} />
+</Layout>

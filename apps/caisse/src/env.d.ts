@@ -16,6 +16,7 @@ interface Env {
   DEV_EMAIL?: string;
   SUMUP_AFFILIATE_KEY?: string;
   RESEND_API_KEY?: string;
+  BREVO_API_KEY?: string;
   EMAIL_FROM?: string;
   EMAIL_MODE?: string;
   EMAIL_ALLOWLIST?: string;

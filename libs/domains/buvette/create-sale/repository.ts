@@ -66,6 +66,17 @@ export class CreateSaleRepository {
       .where(eq(buvetteCardsTable.id, cardId));
   }
 
+  async hasSaleInProgressFor(db: DbOrTx, cardId: number): Promise<boolean> {
+    const row = await db.select({ id: buvetteSalesTable.id }).from(buvetteSalesTable)
+      .where(and(eq(buvetteSalesTable.rechargeCardId, cardId), eq(buvetteSalesTable.status, 'in_progress')))
+      .get();
+    return Boolean(row);
+  }
+
+  buildActivatePaperStatement(db: DbOrTx, cardId: number): any {
+    return db.update(buvetteCardsTable).set({ paperStatus: 'active' }).where(eq(buvetteCardsTable.id, cardId));
+  }
+
   /** Le CHECK de la réservation annule le lot si la carte n'a plus ce disponible. */
   buildReserveStatement(db: DbOrTx, cardId: number, amountCents: number): any {
     return db.update(buvetteCardsTable)

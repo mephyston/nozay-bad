@@ -125,6 +125,7 @@ export default defineConfig({
       // @semantic-release/git, la version du dépôt est figée et serait donc fausse.
       'import.meta.env.PUBLIC_APP_VERSION': JSON.stringify(process.env.VITE_APP_VERSION || 'dev'),
       'import.meta.env.PUBLIC_APP_ENV': JSON.stringify(APP_ENV),
+      'import.meta.env.PUBLIC_BUVETTE_URL': JSON.stringify(process.env.PUBLIC_BUVETTE_URL || 'http://localhost:4325'),
       'import.meta.env.PUBLIC_STOREFRONT_URL': JSON.stringify(STOREFRONT_URL),
       'import.meta.env.PUBLIC_WEBSITE_URL': JSON.stringify(WEBSITE_URL)
     },

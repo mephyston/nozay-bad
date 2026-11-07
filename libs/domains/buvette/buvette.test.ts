@@ -3,7 +3,7 @@ import { eq } from 'drizzle-orm';
 import { setupMockDb } from '@nba/db/test-utils';
 import { categoriesTable, ledgerEntriesTable, seasonsTable } from '@nba/accounting/schema';
 import { buvetteCardsTable } from './shared/schema';
-import { getSettings } from './shared/queries.repository';
+import { getCardsDebtCents, getSettings } from './shared/queries.repository';
 import { signCardToken } from './shared/card-tokens';
 import { createItem } from './manage-items/handler';
 import { saveSettings } from './manage-settings/handler';
@@ -14,6 +14,7 @@ import { listSessionSales } from './list-session-sales/handler';
 import { CloseSessionRepository } from './close-session/repository';
 import { createSale } from './create-sale/handler';
 import { cancelSale } from './cancel-sale/handler';
+import { cardCode } from './shared/card-tokens';
 import { maskEmail, scanCard } from './scan-card/handler';
 import { refundCard } from './refund-card/handler';
 import { openCard } from './open-card/handler';
@@ -222,8 +223,42 @@ describe('buvette', () => {
       await expect(deleteCard(db, c.cardId, deviceId)).rejects.toThrow('solde');
     });
 
+    it('le total dû est la somme des soldes', async () => {
+      await cardWith(1500, 'a@example.org');
+      await cardWith(500, 'b@example.org');
+      expect(await getCardsDebtCents(db)).toBe(2000);
+    });
+
     it('masque l\'adresse', () => {
       expect(maskEmail('david@example.org')).toBe('da***@example.org');
+    });
+  });
+
+  describe('code à saisir sous le QR code', () => {
+    const NOW = Date.now();
+
+    it('reconnaît la carte comme un scan, même sans tiret', async () => {
+      const card = await openCard(db, 'saisie@example.org');
+      const { code } = await issueQrToken(db, SECRET, card.cardId, card.deviceId);
+      const typed = await scanCard(db, SECRET, code.replace('-', ''));
+      expect(typed.kind).toBe('account');
+      expect((await scanCard(db, SECRET, code)).scanToken).toBeTruthy();
+    });
+
+    it('expire : un code noté il y a plus de 3 minutes est refusé', async () => {
+      const card = await openCard(db, 'ancien@example.org');
+      const code = await cardCode(SECRET, card.cardId, card.deviceId, NOW);
+      await expect(scanCard(db, SECRET, code, NOW + 120_000)).resolves.toBeTruthy();
+      await expect(scanCard(db, SECRET, code, NOW + 181_000)).rejects.toThrow('Code expiré');
+    });
+
+    it('un appareil déconnecté et un code inventé ne donnent rien', async () => {
+      const a = await openCard(db, 'deux@example.org');
+      const b = await openCard(db, 'deux@example.org');
+      const code = await cardCode(SECRET, b.cardId, b.deviceId, NOW);
+      await revokeOtherDevices(db, a.cardId, a.deviceId);
+      await expect(scanCard(db, SECRET, code, NOW)).rejects.toThrow('Code expiré');
+      await expect(scanCard(db, SECRET, `${a.cardId}-000000`, NOW)).rejects.toThrow('Code expiré');
     });
   });
 

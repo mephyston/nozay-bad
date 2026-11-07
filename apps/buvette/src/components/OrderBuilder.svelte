@@ -11,6 +11,7 @@
 
   interface Order {
     id: number;
+    number: number;
     totalCents: number;
     lines: { itemId: number; name: string; quantity: number; unitPriceCents: number }[];
   }
@@ -77,7 +78,7 @@
 {/if}
 
 {#if order && !editing}
-  <h1 class="text-lg font-semibold">Ma commande n° {order.id}</h1>
+  <h1 class="text-lg font-semibold">Ma commande n° {order.number}</h1>
   <ul class="bg-card divide-y rounded-2xl border">
     {#each order.lines as line (line.itemId)}
       <li class="flex justify-between gap-3 px-4 py-3 text-sm">

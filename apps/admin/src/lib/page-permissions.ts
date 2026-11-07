@@ -52,6 +52,7 @@ export const PAGE_PERMISSIONS: Record<string, Permission | null> = {
   '/admin/shop/orders': 'shop:orders:read',
 
   '/admin/buvette/catalog': 'buvette:items:read',
+  '/admin/buvette/paper-cards': 'buvette:cards:write',
   '/admin/buvette/session': 'buvette:sessions:read',
 
   '/admin/website/media': 'cms:media:read',
@@ -132,6 +133,7 @@ export const PAGE_FEATURES: Record<string, Feature> = {
   '/admin/shop/orders': 'shop',
 
   '/admin/buvette/catalog': 'buvette',
+  '/admin/buvette/paper-cards': 'buvette',
   '/admin/buvette/session': 'buvette',
 
   '/admin/website/media': 'website',

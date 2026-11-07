@@ -49,7 +49,9 @@
         step = 'code';
       } else {
         await post('verify-code', { code });
-        location.href = '/';
+        // Revenir à la carte papier qu'on rattachait, sans laisser d'adresse extérieure s'y glisser.
+        const next = new URLSearchParams(location.search).get('next') ?? '';
+        location.href = next.startsWith('/carte/') ? next : '/';
       }
     } catch (e) {
       error = e instanceof Error ? e.message : 'Une erreur est survenue.';

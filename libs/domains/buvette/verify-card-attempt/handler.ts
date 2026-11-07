@@ -33,7 +33,8 @@ async function settle(db: Db, attempt: BuvetteCardAttempt, sale: BuvetteSale, tr
   if (sale.rechargeCardId && sale.rechargeCents > 0) {
     statements.push(
       repo.buildMovementStatement(db, sale, 'recharge', sale.rechargeCardId, sale.rechargeCents),
-      repo.buildCreditStatement(db, sale.id, sale.rechargeCardId, sale.rechargeCents)
+      repo.buildCreditStatement(db, sale.id, sale.rechargeCardId, sale.rechargeCents),
+      repo.buildActivatePaperStatement(db, sale.id, sale.rechargeCardId)
     );
   }
   const code = transactionCode ?? null;

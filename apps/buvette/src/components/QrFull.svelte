@@ -4,7 +4,8 @@
   import { euros } from '../lib/format';
 
   let qrImage = $state('');
-  let order = $state<{ id: number; totalCents: number; lines: { itemId: number; name: string; quantity: number }[] } | null>(null);
+  let code = $state('');
+  let order = $state<{ number: number; totalCents: number; lines: { itemId: number; name: string; quantity: number }[] } | null>(null);
   let error = $state('');
   let timer: ReturnType<typeof setInterval> | undefined;
   let wakeLock: { release: () => Promise<void> } | null = null;
@@ -24,11 +25,13 @@
       qr.addData(payload.data.token);
       qr.make();
       qrImage = qr.createDataURL(10, 2);
+      code = payload.data.code;
       error = '';
       const current = (await (await fetch('/api/order', { cache: 'no-store' })).json().catch(() => null)) as any;
       order = current?.ok ? current.data : null;
     } catch {
       qrImage = '';
+      code = '';
       error = 'Connexion impossible. Vérifiez votre réseau.';
     }
   }
@@ -74,12 +77,15 @@
     <p class="text-sm text-black">Préparation du QR code…</p>
   {/if}
 </div>
+{#if code}
+  <p class="text-center font-mono text-2xl font-semibold tracking-wider" aria-label="Code à donner si le QR code ne se lit pas">{code}</p>
+{/if}
 {#if order}
   <section class="bg-card rounded-2xl border p-4 text-center">
-    <p class="text-lg font-semibold">Commande n° {order.id} · {euros(order.totalCents)}</p>
+    <p class="text-lg font-semibold">Commande n° {order.number} · {euros(order.totalCents)}</p>
     <p class="text-muted-foreground text-sm">{order.lines.map((l) => `${l.quantity} × ${l.name}`).join(', ')}</p>
   </section>
 {/if}
 <p class="text-muted-foreground text-center text-sm">
-  {order ? 'Présentez ce code à la buvette, ou donnez votre numéro de commande.' : 'Présentez ce code à la buvette. Il se renouvelle tout seul.'}
+  {order ? 'Présentez ce QR code à la buvette, ou donnez votre numéro de commande.' : 'Présentez ce QR code à la buvette, ou donnez le code affiché dessous. Ils se renouvellent tout seuls.'}
 </p>

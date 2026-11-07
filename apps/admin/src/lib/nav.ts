@@ -93,6 +93,7 @@ export const NAV_GROUPS: NavGroup[] = [
     feature: 'buvette',
     items: [
       { name: 'Session de caisse', icon: 'Coins', href: '/admin/buvette/session', permission: 'buvette:sessions:read', keywords: ['buvette', 'ouvrir', 'cloturer', 'fond de caisse', 'especes', 'comptage'] },
+      { name: 'Cartes papier', icon: 'Ticket', href: '/admin/buvette/paper-cards', permission: 'buvette:cards:write', keywords: ['buvette', 'carte', 'papier', 'imprimer', 'enfant', 'qr'] },
       { name: 'Catalogue buvette', icon: 'Package', href: '/admin/buvette/catalog', permission: 'buvette:items:read', keywords: ['buvette', 'caisse', 'article', 'cafe', 'sandwich', 'carte', 'plafond'] }
     ]
   },

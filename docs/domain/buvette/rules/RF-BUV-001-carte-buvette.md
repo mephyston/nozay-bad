@@ -18,7 +18,7 @@ N'importe qui obtient une carte buvette en moins d'une minute, sans mot de passe
 
 **Une carte, une adresse vérifiée.** Le client saisit son adresse électronique puis le code à 6 chiffres reçu. La carte existe dès que le code est validé. Aucune autre donnée n'est demandée. Une adresse déjà connue rouvre sa carte au lieu d'en créer une.
 
-**Toute carte créditée peut être retrouvée.** Comme la vérification précède la création, aucune carte n'a de solde sans adresse vérifiée.
+**Une carte de compte créditée peut être retrouvée.** Comme la vérification précède la création, aucune carte de compte n'a de solde sans adresse vérifiée. Une carte papier, elle, est au porteur (RF-BUV-006).
 
 **Le parcours se fait avant la caisse.** Une affiche à la buvette et un QR code affiché par la caisse mènent à la même page.
 
@@ -27,6 +27,8 @@ N'importe qui obtient une carte buvette en moins d'une minute, sans mot de passe
 **« Déconnecter tous les appareils ».** Depuis n'importe quel appareil ouvert, le client ferme tous les autres. Le solde ne bouge pas.
 
 **Le QR code expire.** Il reste valable 60 secondes et se renouvelle tant que la page est ouverte. Une capture d'écran devient vite inutilisable, et un appareil déconnecté n'en obtient plus. Il ne contient ni le solde ni l'adresse.
+
+**Un code à saisir, si la caméra ne lit pas.** Sous le QR code, l'application affiche le numéro de la carte suivi de 6 chiffres. Ces chiffres changent chaque minute et restent acceptés 2 à 3 minutes, le temps de les dicter. Ils dépendent de l'appareil : un appareil déconnecté n'a plus de code valable.
 
 **Le solde n'expire pas.** Il reste dû jusqu'à sa consommation ou son remboursement (RF-BUV-004).
 
@@ -64,6 +66,16 @@ Fonctionnalité: Carte buvette
     Quand le titulaire déconnecte tous les appareils depuis l'un d'eux
     Alors l'autre téléphone n'obtient plus de QR code valable
     Et le solde reste inchangé
+
+  Scénario: Le bénévole saisit le code affiché sous le QR code
+    Étant donné une caisse dont la caméra ne lit pas
+    Quand le bénévole saisit le code affiché sur le téléphone du client
+    Alors la carte est reconnue comme par un scan
+
+  Scénario: Un code noté trop tôt est refusé
+    Étant donné un code affiché il y a plus de 3 minutes
+    Quand le bénévole le saisit
+    Alors la caisse demande le code affiché à cet instant
 
   Scénario: Un QR code expiré est refusé
     Étant donné un QR code émis il y a plus de 60 secondes

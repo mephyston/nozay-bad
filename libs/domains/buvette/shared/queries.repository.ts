@@ -1,5 +1,7 @@
 import { and, eq, sql } from 'drizzle-orm';
-import { type DbOrTx } from '@nba/db';
+import { AppError, type DbOrTx } from '@nba/db';
+import { maskEmail } from './mask';
+import { closedPaperMessage, paperLabel, PAPER_DEVICE } from './paper-card';
 import {
   buvetteCardDevicesTable,
   buvetteCardMovementsTable,
@@ -24,9 +26,18 @@ export function availableCents(card: { balanceCents: number; reservedCents: numb
   return card.balanceCents - card.reservedCents;
 }
 
+/** Ce que le club doit à ses clients : la somme des soldes, cartes supprimées exclues d'office à 0. */
+export async function getCardsDebtCents(db: DbOrTx): Promise<number> {
+  const row = await db.select({ total: sql<number>`COALESCE(SUM(${buvetteCardsTable.balanceCents}), 0)` }).from(buvetteCardsTable).get();
+  return Number(row?.total ?? 0);
+}
+
+/** Celle du service en cours : une commande d'un service passé ne s'encaisse plus. */
 export async function getPendingOrderId(db: DbOrTx, cardId: number): Promise<number | null> {
+  const session = await getOpenSession(db);
+  if (!session) return null;
   const row = await db.select({ id: buvetteOrdersTable.id }).from(buvetteOrdersTable)
-    .where(and(eq(buvetteOrdersTable.cardId, cardId), eq(buvetteOrdersTable.status, 'pending')))
+    .where(and(eq(buvetteOrdersTable.cardId, cardId), eq(buvetteOrdersTable.status, 'pending'), eq(buvetteOrdersTable.sessionId, session.id)))
     .get();
   return row?.id ?? null;
 }
@@ -41,6 +52,29 @@ export function getActiveDevice(db: DbOrTx, cardId: number, deviceId: string) {
     eq(buvetteCardDevicesTable.cardId, cardId),
     sql`${buvetteCardDevicesTable.revokedAt} IS NULL`
   )).get();
+}
+
+/**
+ * Le contrôle d'un jeton de scan. Une carte papier n'a pas d'appareil : c'est son état qui décide,
+ * et une carte fermée le dit clairement, pour qu'on ne la rembourse pas une seconde fois.
+ */
+export async function assertScannedCardUsable(db: DbOrTx, cardId: number, deviceId: string): Promise<void> {
+  if (deviceId === PAPER_DEVICE) {
+    const card = await getCard(db, cardId);
+    if (card?.paperStatus === 'closed') throw new AppError(closedPaperMessage(card.paperClosedReason), 409);
+    return;
+  }
+  if (!(await getActiveDevice(db, cardId, deviceId))) throw new AppError('Cet appareil a été déconnecté de la carte.', 400);
+}
+
+/** Plus personne ne peut dépenser sur cette carte : ce qui lui revient se rend en espèces. */
+export function isCardGone(card: { deletedAt: unknown; paperStatus: string | null }): boolean {
+  return Boolean(card.deletedAt) || card.paperStatus === 'closed';
+}
+
+/** Ce que le bénévole lit : l'adresse masquée, ou le numéro d'une carte papier. */
+export function cardLabel(card: { id: number; email: string | null }): string {
+  return card.email ? maskEmail(card.email) : paperLabel(card.id);
 }
 
 /** Fond de caisse, plus les espèces des ventes payées, moins les remboursements en espèces. */

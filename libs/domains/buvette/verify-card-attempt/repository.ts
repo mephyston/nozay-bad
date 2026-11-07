@@ -82,6 +82,15 @@ export class CardAttemptRepository {
       .where(and(eq(buvetteCardsTable.id, cardId), sql`EXISTS (SELECT 1 FROM ${buvetteSalesTable} WHERE ${buvetteSalesTable.id} = ${saleId} AND ${buvetteSalesTable.status} = 'in_progress')`));
   }
 
+  buildActivatePaperStatement(db: DbOrTx, saleId: number, cardId: number): any {
+    return db.update(buvetteCardsTable).set({ paperStatus: 'active' })
+      .where(and(
+        eq(buvetteCardsTable.id, cardId),
+        eq(buvetteCardsTable.kind, 'paper'),
+        sql`EXISTS (SELECT 1 FROM ${buvetteSalesTable} WHERE ${buvetteSalesTable.id} = ${saleId} AND ${buvetteSalesTable.status} = 'in_progress')`
+      ));
+  }
+
   /**
    * La clé du mouvement fait échouer une seconde confirmation : rien n'est débité deux fois. La
    * session relue exige que la vente attende encore : sinon le NOT NULL annule le lot entier.

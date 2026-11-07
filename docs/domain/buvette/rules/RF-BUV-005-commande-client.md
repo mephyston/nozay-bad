@@ -24,7 +24,9 @@ Un porteur de carte prépare sa commande sur son téléphone. Le bénévole n'a 
 
 **Un article en rupture disparaît.** Le bureau le retire de la vente dans le catalogue : il sort aussitôt de l'app et de la caisse. Il n'y a pas de suivi de stock. Une commande qui contient un article retiré ne s'encaisse pas : le client doit la modifier.
 
-**Trois façons de la retrouver à la caisse.** Par le QR code du client, par son numéro ou par une partie de son adresse. L'adresse reste masquée à l'écran.
+**Un numéro court.** Il repart à 1 à chaque session de caisse, pour se dicter facilement. Une commande ne vaut que pour la session où elle a été passée.
+
+**Trois façons de la retrouver à la caisse.** Par le QR code du client, par son numéro ou par le début de son adresse, à partir de trois caractères. L'adresse reste masquée à l'écran.
 
 **Elle s'encaisse sans QR code.** Le client y a consenti depuis son appareil : la carte de la commande paie ce qu'elle peut, sans nouveau scan, et la caisse ne peut pas en changer le contenu. Le bénévole vérifie le numéro avec le client.
 
@@ -52,6 +54,11 @@ Fonctionnalité: Commande préparée par le client
     Étant donné une commande n° 42
     Quand le client en change les articles
     Alors elle porte toujours le n° 42
+
+  Scénario: Le numéro repart à 1
+    Étant donné une session clôturée et une nouvelle session ouverte
+    Quand un client commande
+    Alors sa commande porte le n° 1
 
   Scénario: Retrouver une commande sans QR code
     Étant donné une commande n° 42 de 6 € sur une carte de 10 €

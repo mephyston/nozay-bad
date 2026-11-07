@@ -1,6 +1,7 @@
 import { AppError, type Db } from '@nba/db';
 import { verifyCardToken } from '../shared/card-tokens';
-import { getActiveDevice, getCard, getExpectedCashCents, getOpenSession } from '../shared/queries.repository';
+import { assertScannedCardUsable, getCard, getExpectedCashCents, getOpenSession } from '../shared/queries.repository';
+import { isClosedSessionError } from '../shared/validation';
 import { RefundCardRepository } from './repository';
 import type { RefundCardInput, RefundCardOutput } from './dto';
 
@@ -20,7 +21,8 @@ export async function refundCard(db: Db, secret: string, input: RefundCardInput)
   const replayed = await repo.findMovement(db, clientId);
   if (replayed) return { amountCents: -replayed.amountCents, email: card.email, replayed: true };
 
-  if (!(await getActiveDevice(db, card.id, payload.d))) throw new AppError('Cet appareil a été déconnecté de la carte.', 400);
+  await assertScannedCardUsable(db, card.id, payload.d);
+
   const session = await getOpenSession(db);
   if (!session) throw new AppError('Aucune session de caisse ouverte.', 409);
   if (card.reservedCents > 0) throw new AppError('Une vente est en cours sur cette carte : terminez-la avant de rembourser.', 409);
@@ -32,6 +34,8 @@ export async function refundCard(db: Db, secret: string, input: RefundCardInput)
   try {
     await db.batch([
       repo.buildDebitStatement(db, card.id, card.balanceCents),
+      // Fermée dans le même lot : une carte papier remboursée ne vaut plus rien, même présentée à nouveau.
+      ...(card.kind === 'paper' ? [repo.buildClosePaperStatement(db, card.id)] : []),
       repo.buildMovementStatement(db, session.id, {
         clientId,
         cardId: card.id,
@@ -44,8 +48,8 @@ export async function refundCard(db: Db, secret: string, input: RefundCardInput)
   } catch (error) {
     const replay = await repo.findMovement(db, clientId);
     if (replay) return { amountCents: -replay.amountCents, email: card.email, replayed: true };
+    if (isClosedSessionError(error)) throw new AppError("La session de caisse vient d'être clôturée.", 409);
     if (/CHECK/i.test(String(error))) throw new AppError('Le solde de la carte vient de changer : scannez-la de nouveau.', 409);
-    if (/NOT NULL/i.test(String(error))) throw new AppError("La session de caisse vient d'être clôturée.", 409);
     throw error;
   }
   return { amountCents: card.balanceCents, email: card.email, replayed: false };

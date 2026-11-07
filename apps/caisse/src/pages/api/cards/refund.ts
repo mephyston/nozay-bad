@@ -18,7 +18,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
   const text = await res.text();
   if (res.ok) {
     const { data } = JSON.parse(text);
-    if (!data.replayed) {
+    // Une carte papier n'a pas d'adresse : il n'y a personne à prévenir.
+    if (!data.replayed && data.email) {
       try {
         const env = resolveEnv<any>(locals);
         const { settings } = await loadClubContext(env, 'storefront');
