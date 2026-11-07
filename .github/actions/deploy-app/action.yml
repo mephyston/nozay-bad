@@ -41,6 +41,9 @@ runs:
     - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
       with:
         node-version: ${{ inputs.node-version }}
+        # Sans cela, « 22 » prend la version livrée avec l'image du runner, qui varie d'un
+        # job à l'autre et peut être plus ancienne que le minimum exigé par Astro.
+        check-latest: true
         cache: npm
 
     - id: node-modules
