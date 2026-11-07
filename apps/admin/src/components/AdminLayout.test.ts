@@ -113,15 +113,14 @@ describe('AdminLayout Component', () => {
     const badges = [...target.querySelectorAll('span')].filter(
       (span) => span.textContent?.trim() === 'bêta'
     );
-    // Trois rubriques marquées : « Jeu libre », « Entraînement » et « Interclubs ». Le
-    // marqueur est porté par le libellé de rubrique, pas par chaque entrée — c'est la
-    // section qui est jeune.
-    expect(badges).toHaveLength(3);
+    // Deux rubriques marquées : « Entraînement » et « Buvette ». Le marqueur est porté par
+    // le libellé de rubrique, pas par chaque entrée — c'est la section qui est jeune.
+    expect(badges).toHaveLength(2);
 
     const labelled = badges.map((badge) => badge.parentElement?.textContent?.trim());
-    expect(labelled.some((text) => text?.startsWith('Jeu libre'))).toBe(true);
-    expect(labelled.some((text) => text?.startsWith('Interclubs'))).toBe(true);
+    expect(labelled.some((text) => text?.startsWith('Buvette'))).toBe(true);
     expect(labelled.some((text) => text?.startsWith('Entraînement'))).toBe(true);
+    expect(labelled.some((text) => text?.startsWith('Jeu libre') || text?.startsWith('Interclubs'))).toBe(false);
 
     unmount(component);
     target.remove();
