@@ -18,6 +18,11 @@ export function getOpenSession(db: DbOrTx) {
   return db.select().from(buvetteSessionsTable).where(eq(buvetteSessionsTable.status, 'open')).get();
 }
 
+/** Ce que la carte peut encore payer : son solde, moins ce qu'une vente en cours a réservé. */
+export function availableCents(card: { balanceCents: number; reservedCents: number }): number {
+  return card.balanceCents - card.reservedCents;
+}
+
 export function getCard(db: DbOrTx, id: number) {
   return db.select().from(buvetteCardsTable).where(eq(buvetteCardsTable.id, id)).get();
 }

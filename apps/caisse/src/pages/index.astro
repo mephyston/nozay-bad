@@ -1,8 +1,16 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import CaisseApp from '../components/CaisseApp.svelte';
+import { loadClubContext } from '@nba/club/context';
+import { resolveEnv } from '../lib/http';
+
+// Elle passe dans l'adresse du paiement : elle n'est pas secrète.
+const env = resolveEnv<Record<string, string>>(Astro.locals);
+const affiliateKey = env.SUMUP_AFFILIATE_KEY || '';
+const { settings } = await loadClubContext(env as any, 'storefront');
+const clubName = settings.shortName || settings.name;
 ---
 
 <Layout title="Caisse">
-  <CaisseApp client:only="svelte" />
+  <CaisseApp client:only="svelte" {affiliateKey} {clubName} />
 </Layout>

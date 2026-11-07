@@ -10,5 +10,7 @@ export const createSaleSchema = Type.Object({
   rechargeScanToken: Type.Optional(Type.String({ maxLength: 500 })),
   prepaidScanToken: Type.Optional(Type.String({ maxLength: 500 })),
   /** Le complément annoncé à l'écran : si le solde a bougé depuis, la vente est refusée. */
-  expectedCashCents: Type.Integer({ minimum: 0, maximum: 1000000 })
+  expectedCashCents: Type.Integer({ minimum: 0, maximum: 1000000 }),
+  /** Le reste part vers l'application SumUp au lieu d'être encaissé en espèces. */
+  payRestByCard: Type.Optional(Type.Boolean())
 });

@@ -141,7 +141,7 @@ describe('updateClubFeatures', () => {
   it('rend les comptes actifs avec leur nature, pour les menus', async () => {
     const accounts = await listTreasuryAccounts(db);
     expect(accounts.map((a) => [a.code, a.kind])).toEqual([
-      ['current', 'bank'], ['savings', 'bank'], ['cash', 'cash'], ['badnet', 'wallet'], ['member_advances', 'third_party'], ['buvette_cards', 'third_party']
+      ['current', 'bank'], ['savings', 'bank'], ['cash', 'cash'], ['badnet', 'wallet'], ['member_advances', 'third_party'], ['buvette_cards', 'third_party'], ['sumup', 'voucher']
     ]);
   });
 });

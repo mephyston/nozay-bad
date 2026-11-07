@@ -3,6 +3,8 @@ import { createRemoteJWKSet, jwtVerify } from 'jose';
 import { applySecurityHeaders } from './lib/security';
 import { isSameOrigin, IS_DEV, json, resolveEnv } from './lib/http';
 
+const PUBLIC_PATHS = new Set(['/retour', '/api/retour']);
+
 const jwksCache = new Map<string, ReturnType<typeof createRemoteJWKSet>>();
 
 function jwks(teamDomain: string) {
@@ -36,6 +38,9 @@ export const onRequest = defineMiddleware(async (context, next) => {
   if (!isSameOrigin(context.request, context.url)) {
     return applySecurityHeaders(json({ success: false, error: 'Origine refusée.' }, 403));
   }
+  // Le retour de SumUp n'a pas de session : voir pages/retour.astro.
+  if (PUBLIC_PATHS.has(context.url.pathname)) return applySecurityHeaders(await next());
+
   const email = await resolveEmail(context.request, env);
   if (!email) return applySecurityHeaders(json({ success: false, error: 'Accès non autorisé.' }, 401));
   context.locals.email = email;

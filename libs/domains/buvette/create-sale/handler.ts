@@ -1,7 +1,9 @@
 import { AppError, type Db } from '@nba/db';
 import { verifyCardToken } from '../shared/card-tokens';
-import { getActiveDevice, getCard, getOpenSession, getSettings } from '../shared/queries.repository';
+import { availableCents, getActiveDevice, getCard, getOpenSession, getSettings } from '../shared/queries.repository';
+import { newForeignTxId } from '../shared/sumup';
 import { CreateSaleRepository } from './repository';
+import type { BuvetteSale } from '../shared/schema';
 import type { CreateSaleInput, CreateSaleOutput } from './dto';
 
 async function cardFromScan(db: Db, secret: string, token: string) {
@@ -13,8 +15,20 @@ async function cardFromScan(db: Db, secret: string, token: string) {
   return card;
 }
 
+/** Un double appui ne relance rien : la tentative en cours est rendue telle quelle. */
+async function replay(repo: CreateSaleRepository, db: Db, sale: BuvetteSale): Promise<CreateSaleOutput> {
+  const attempt = sale.status === 'in_progress' ? await repo.pendingAttempt(db, sale.id) : undefined;
+  return {
+    sale,
+    replayed: true,
+    ...(attempt ? { attempt: { foreignTxId: attempt.foreignTxId, amountCents: attempt.amountCents } } : {})
+  };
+}
+
 /**
- * Encaisse une vente en espèces, par carte, ou par carte complétée d'espèces.
+ * Encaisse une vente en espèces, par carte, ou par carte complétée d'espèces. Si le reste part
+ * en CB, la vente attend : la part carte est seulement réservée, et rien n'est crédité ni débité
+ * avant que l'API de SumUp ait confirmé (voir `verify-card-attempt`).
  *
  * Tout part dans un seul lot, et chaque invariant est porté par la base : le solde par un
  * CHECK, la session ouverte par un NOT NULL, le double encaissement par un UNIQUE. Si l'un
@@ -23,7 +37,7 @@ async function cardFromScan(db: Db, secret: string, token: string) {
 export async function createSale(db: Db, secret: string, input: CreateSaleInput): Promise<CreateSaleOutput> {
   const repo = new CreateSaleRepository();
   const existing = await repo.findByClientId(db, input.clientId);
-  if (existing) return { sale: existing, replayed: true };
+  if (existing) return replay(repo, db, existing);
 
   const session = await getOpenSession(db);
   if (!session) throw new AppError('Aucune session de caisse ouverte.', 409);
@@ -43,9 +57,12 @@ export async function createSale(db: Db, secret: string, input: CreateSaleInput)
   const prepaidCard = input.prepaidScanToken ? await cardFromScan(db, secret, input.prepaidScanToken) : null;
   const rechargeCard = rechargeCents > 0 ? await cardFromScan(db, secret, input.rechargeScanToken!) : null;
 
-  const prepaidCents = prepaidCard ? Math.min(prepaidCard.balanceCents, itemsCents) : 0;
-  const cashCents = itemsCents + rechargeCents - prepaidCents;
-  if (cashCents !== input.expectedCashCents) {
+  const prepaidCents = prepaidCard ? Math.min(availableCents(prepaidCard), itemsCents) : 0;
+  const restCents = itemsCents + rechargeCents - prepaidCents;
+  const byCard = Boolean(input.payRestByCard) && restCents > 0;
+  const cashCents = byCard ? 0 : restCents;
+  const cardCents = byCard ? restCents : 0;
+  if (restCents !== input.expectedCashCents) {
     throw new AppError('Le solde de la carte a changé : vérifiez le montant à encaisser.', 409);
   }
 
@@ -67,6 +84,8 @@ export async function createSale(db: Db, secret: string, input: CreateSaleInput)
       prepaidCents,
       prepaidCardId: prepaidCents > 0 ? prepaidCard!.id : null,
       cashCents,
+      cardCents,
+      status: byCard ? 'in_progress' : 'paid',
       createdByEmail: by,
       createdAt: now
     }),
@@ -90,19 +109,29 @@ export async function createSale(db: Db, secret: string, input: CreateSaleInput)
       createdAt: now
     })
   ];
-  if (prepaidCents > 0) statements.push(...movement(prepaidCard!.id, 'debit', -prepaidCents));
-  if (rechargeCard) statements.push(...movement(rechargeCard.id, 'recharge', rechargeCents));
+  const foreignTxId = byCard ? newForeignTxId() : null;
+  if (foreignTxId) {
+    if (prepaidCents > 0) statements.push(repo.buildReserveStatement(db, prepaidCard!.id, prepaidCents));
+    statements.push(repo.buildAttemptStatement(db, input.clientId, foreignTxId, cardCents));
+  } else {
+    if (prepaidCents > 0) statements.push(...movement(prepaidCard!.id, 'debit', -prepaidCents));
+    if (rechargeCard) statements.push(...movement(rechargeCard.id, 'recharge', rechargeCents));
+  }
 
   try {
     await db.batch(statements as any);
   } catch (error) {
-    const replay = await repo.findByClientId(db, input.clientId);
-    if (replay) return { sale: replay, replayed: true };
+    const raced = await repo.findByClientId(db, input.clientId);
+    if (raced) return replay(repo, db, raced);
     if (/CHECK/i.test(String(error))) throw new AppError('Solde insuffisant sur la carte.', 409);
     if (/NOT NULL/i.test(String(error))) throw new AppError('La session de caisse vient d\'être clôturée.', 409);
     throw error;
   }
 
   const sale = await repo.findByClientId(db, input.clientId);
-  return { sale: sale!, replayed: false };
+  return {
+    sale: sale!,
+    replayed: false,
+    ...(foreignTxId ? { attempt: { foreignTxId, amountCents: cardCents } } : {})
+  };
 }

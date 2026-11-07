@@ -23,6 +23,7 @@ export async function refundCard(db: Db, secret: string, input: RefundCardInput)
   if (!(await getActiveDevice(db, card.id, payload.d))) throw new AppError('Cet appareil a été déconnecté de la carte.', 400);
   const session = await getOpenSession(db);
   if (!session) throw new AppError('Aucune session de caisse ouverte.', 409);
+  if (card.reservedCents > 0) throw new AppError('Une vente est en cours sur cette carte : terminez-la avant de rembourser.', 409);
   if (card.balanceCents <= 0) throw new AppError("Il n'y a rien à rembourser sur cette carte.", 400);
 
   const expected = await getExpectedCashCents(db, session.id, session.openingFloatCents);

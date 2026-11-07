@@ -49,7 +49,7 @@
         step = 'code';
       } else {
         await post('verify-code', { code });
-        location.reload();
+        location.href = '/';
       }
     } catch (e) {
       error = e instanceof Error ? e.message : 'Une erreur est survenue.';

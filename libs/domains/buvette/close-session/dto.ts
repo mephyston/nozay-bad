@@ -10,7 +10,9 @@ export interface CloseSessionOutput {
   countedCashCents: number;
   gapCents: number;
   itemsCashCents: number;
+  itemsCardCents: number;
   rechargeCashCents: number;
+  rechargeCardCents: number;
   prepaidCents: number;
   refundsCents: number;
 }

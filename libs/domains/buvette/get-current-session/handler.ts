@@ -6,11 +6,15 @@ import type { CurrentSession } from './dto';
 export async function getCurrentSession(db: Db): Promise<CurrentSession | null> {
   const session = await getOpenSession(db);
   if (!session) return null;
-  const totals = await new GetCurrentSessionRepository().totals(db, session.id);
+  const repo = new GetCurrentSessionRepository();
+  const totals = await repo.totals(db, session.id);
   return {
     session,
     expectedCashCents: await getExpectedCashCents(db, session.id, session.openingFloatCents),
     prepaidCents: Number(totals?.prepaidCents ?? 0),
-    salesCount: Number(totals?.salesCount ?? 0)
+    salesCount: Number(totals?.salesCount ?? 0),
+    cardCents: Number(totals?.cardCents ?? 0),
+    inProgress: await repo.inProgress(db, session.id),
+    toRefund: await repo.toRefund(db, session.id)
   };
 }

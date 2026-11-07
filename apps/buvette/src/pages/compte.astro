@@ -1,0 +1,11 @@
+---
+import Layout from '../layouts/Layout.astro';
+import AccountActions from '../components/AccountActions.svelte';
+import { walletOf } from '../lib/card-api';
+
+const wallet = await walletOf(Astro.locals);
+---
+
+<Layout title="Compte">
+  <AccountActions client:load email={wallet?.email ?? ''} balanceCents={wallet?.balanceCents ?? 0} />
+</Layout>

@@ -59,11 +59,18 @@ export const ROUTE_PERMISSIONS: RouteRule[] = [
   { method: 'POST', path: '/buvette/sessions/:id/close', permission: 'buvette:sessions:close', callers: ['caisse'], feature: 'buvette' },
   { method: 'POST', path: '/buvette/sales', permission: 'buvette:sales:write', callers: ['caisse'], feature: 'buvette' },
   { method: 'POST', path: '/buvette/sales/:id/cancel', permission: 'buvette:sales:write', callers: ['caisse'], feature: 'buvette' },
+  { method: 'POST', path: '/buvette/sales/:id/card-attempts', permission: 'buvette:sales:write', callers: ['caisse'], feature: 'buvette' },
+  { method: 'POST', path: '/buvette/sales/:id/abandon', permission: 'buvette:sales:write', callers: ['caisse'], feature: 'buvette' },
+  // Sans compte ni session : la page de retour de SumUp peut s'ouvrir dans un autre navigateur.
+  // Elle ne transmet qu'un identifiant et ne fait que relire la vérité chez SumUp.
+  { method: 'POST', path: '/buvette/card-attempts/verify', permission: 'buvette:sales:write', callers: ['caisse'], feature: 'buvette' },
   { method: 'POST', path: '/buvette/cards/scan', permission: 'buvette:cards:read', callers: ['caisse'], feature: 'buvette' },
   { method: 'POST', path: '/buvette/cards/refund', permission: 'buvette:cards:write', callers: ['caisse'], feature: 'buvette' },
   { method: 'POST', path: '/buvette/cards/open', permission: 'buvette:cards:write', callers: ['buvette'], feature: 'buvette' },
   { method: 'POST', path: '/buvette/cards/:id/wallet', permission: 'buvette:cards:read', callers: ['buvette'], feature: 'buvette' },
   { method: 'POST', path: '/buvette/cards/:id/qr-token', permission: 'buvette:cards:read', callers: ['buvette'], feature: 'buvette' },
+  { method: 'POST', path: '/buvette/cards/:id/movements/:movementId', permission: 'buvette:cards:read', callers: ['buvette'], feature: 'buvette' },
+  { method: 'POST', path: '/buvette/cards/:id/delete', permission: 'buvette:cards:write', callers: ['buvette'], feature: 'buvette' },
   { method: 'POST', path: '/buvette/cards/:id/revoke-devices', permission: 'buvette:cards:write', callers: ['buvette'], feature: 'buvette' },
 
   // ── Tableau de bord ────────────────────────────────────────────────────────

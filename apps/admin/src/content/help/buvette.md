@@ -1,0 +1,43 @@
+---
+title: "Buvette"
+description: "Préparer le catalogue, tenir la caisse et retrouver la buvette en comptabilité."
+category: "boutique"
+order: 5
+---
+
+La buvette repose sur deux applications : la **caisse**, utilisée par les bénévoles sur leur téléphone, et la **carte buvette**, que les clients ouvrent avec leur adresse e-mail. Licence ou non, tout le monde peut avoir une carte.
+
+## Préparer le catalogue
+
+Dans **Buvette → Catalogue buvette**, ajoutez les articles avec leur prix et leur catégorie comptable. Un article qu'on ne vend plus se désactive avec **En vente** : les ventes passées y renvoient, il ne se supprime pas.
+
+Le **plafond de solde** limite ce qu'une carte peut contenir. Une recharge qui le dépasserait est refusée à la caisse.
+
+## Tenir la caisse
+
+1. **Ouvrir** : comptez le fond de caisse et saisissez-le. Une seule session peut être ouverte à la fois, et plusieurs bénévoles peuvent y encaisser.
+2. **Encaisser** : composez le panier, puis appuyez sur **Encaisser**.
+   - **Carte buvette** : scannez le QR code du client. Si le solde suffit, la vente est payée aussitôt. Sinon, le reste se paie en espèces ou en CB.
+   - **Espèces** : appuyez sur **Montant exact** ou sur le billet reçu : la caisse affiche la monnaie à rendre. Pour un autre montant, saisissez-le.
+   - **CB** : appuyez sur **CB**. L'application SumUp s'ouvre avec le montant, le client présente sa carte, puis revenez à la caisse.
+3. **Recharger** : touchez **Recharge carte** dans la grille, choisissez un montant et scannez la carte. Une recharge se paie en espèces ou en CB, jamais avec la carte elle-même.
+4. **Clôturer** : dans le menu en haut à droite, choisissez **Clôturer la caisse**, comptez les espèces et saisissez le total. La caisse affiche l'écart éventuel et enregistre la synthèse en comptabilité.
+
+## Si la CB n'aboutit pas
+
+La vente reste en attente tant que SumUp n'a pas confirmé le paiement, et la caisse le vérifie à votre retour. Vous pouvez ensuite **Vérifier le paiement**, **Relancer le paiement CB** ou **Abandonner la vente**. La clôture est impossible tant qu'une vente attend.
+
+Si la caisse affiche **À rembourser dans SumUp**, de l'argent a été pris pour une vente abandonnée ou avec un mauvais montant. Remboursez-le depuis l'application SumUp.
+
+## Rembourser une carte
+
+Dans le menu en haut à droite, **Rembourser une carte** rend tout le solde en espèces. Scannez le QR code à jour du client : il doit être présent. Le titulaire reçoit un e-mail, et sa carte reste ouverte à 0 €. S'il a perdu son téléphone, il rouvre d'abord sa carte sur un autre appareil avec son adresse e-mail.
+
+## En comptabilité
+
+La clôture pose une écriture de synthèse, pas une écriture par café :
+
+- **Articles** : une recette par catégorie et par moyen de paiement ;
+- **Recharges et remboursements** : des virements avec le compte **Soldes des cartes buvette**, car l'argent reste dû au client tant qu'il n'est pas consommé ;
+- **CB** : sur le compte **À recevoir de SumUp**, à solder au virement reçu en banque, la commission étant saisie en dépense ;
+- **Écart de caisse** : une recette ou une dépense dans la catégorie **Écarts de caisse**.

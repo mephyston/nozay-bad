@@ -1,6 +1,6 @@
 import { AppError, type Db } from '@nba/db';
 import { signCardToken, verifyCardToken } from '../shared/card-tokens';
-import { getActiveDevice, getCard } from '../shared/queries.repository';
+import { availableCents, getActiveDevice, getCard } from '../shared/queries.repository';
 import type { ScanCardOutput } from './dto';
 
 export function maskEmail(email: string): string {
@@ -15,5 +15,5 @@ export async function scanCard(db: Db, secret: string, qrToken: string): Promise
   const card = await getCard(db, payload.c);
   if (!card) throw new AppError('Carte introuvable.', 404);
   const { token } = await signCardToken(secret, 'scan', card.id, payload.d);
-  return { scanToken: token, label: maskEmail(card.email), balanceCents: card.balanceCents };
+  return { scanToken: token, label: maskEmail(card.email), balanceCents: availableCents(card) };
 }

@@ -10,10 +10,16 @@ import { scanCardRoute } from './scan-card/route';
 import { refundCardRoute } from './refund-card/route';
 import { openCardRoute } from './open-card/route';
 import { cardWalletRoute } from './card-wallet/route';
+import { cardAttemptsRoute } from './verify-card-attempt/route';
+
+export { verifyPendingAttempts } from './verify-card-attempt/handler';
+export { createSumUpClient, type SumUpBindings } from './shared/sumup';
 
 export type Bindings = {
   DB: D1Database;
   BUVETTE_TOKEN_SECRET?: string;
+  SUMUP_API_KEY?: string;
+  SUMUP_MERCHANT_CODE?: string;
 };
 
 export const buvetteRouter = new Hono<{ Bindings: Bindings }>();
@@ -25,6 +31,7 @@ buvetteRouter.route('/', openSessionRoute);
 buvetteRouter.route('/', closeSessionRoute);
 buvetteRouter.route('/', createSaleRoute);
 buvetteRouter.route('/', cancelSaleRoute);
+buvetteRouter.route('/', cardAttemptsRoute);
 // Avant `/cards/:id/…` : les routes fixes ne doivent pas tomber sur le paramètre.
 buvetteRouter.route('/', scanCardRoute);
 buvetteRouter.route('/', refundCardRoute);

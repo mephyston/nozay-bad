@@ -1,6 +1,7 @@
-import { eq, inArray, sql } from 'drizzle-orm';
+import { and, eq, inArray, sql } from 'drizzle-orm';
 import { type DbOrTx } from '@nba/db';
 import {
+  buvetteCardAttemptsTable,
   buvetteCardMovementsTable,
   buvetteCardsTable,
   buvetteItemsTable,
@@ -41,6 +42,23 @@ export class CreateSaleRepository {
     return db.update(buvetteCardsTable)
       .set({ balanceCents: sql`${buvetteCardsTable.balanceCents} + ${deltaCents}` })
       .where(eq(buvetteCardsTable.id, cardId));
+  }
+
+  /** Le CHECK de la réservation annule le lot si la carte n'a plus ce disponible. */
+  buildReserveStatement(db: DbOrTx, cardId: number, amountCents: number): any {
+    return db.update(buvetteCardsTable)
+      .set({ reservedCents: sql`${buvetteCardsTable.reservedCents} + ${amountCents}` })
+      .where(eq(buvetteCardsTable.id, cardId));
+  }
+
+  buildAttemptStatement(db: DbOrTx, saleClientId: string, foreignTxId: string, amountCents: number): any {
+    return db.insert(buvetteCardAttemptsTable).values({ saleId: saleIdOf(saleClientId), foreignTxId, amountCents, createdAt: new Date() });
+  }
+
+  pendingAttempt(db: DbOrTx, saleId: number) {
+    return db.select().from(buvetteCardAttemptsTable)
+      .where(and(eq(buvetteCardAttemptsTable.saleId, saleId), eq(buvetteCardAttemptsTable.status, 'pending')))
+      .get();
   }
 
   buildMovementStatement(db: DbOrTx, saleClientId: string, values: Omit<typeof buvetteCardMovementsTable.$inferInsert, 'saleId'>): any {

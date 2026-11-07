@@ -39,6 +39,16 @@ export function splitPayment(itemsCents: number, rechargeCents: number, cardBala
   return { prepaidCents, cashCents: itemsCents + rechargeCents - prepaidCents };
 }
 
+/** Les billets que le client tend le plus souvent pour ce montant, sans le montant exact. */
+export function suggestedNotes(cashCents: number): number[] {
+  return [500, 1000, 2000, 5000].filter((note) => note > cashCents).slice(0, 3);
+}
+
+/** Les espèces doivent être confirmées : une carte trop courte ne valide rien à elle seule. */
+export function cashConfirmed(receivedCents: number | null, cashCents: number): boolean {
+  return cashCents === 0 || (receivedCents !== null && receivedCents >= cashCents);
+}
+
 export function changeDue(receivedCents: number | null, cashCents: number): number | null {
   if (receivedCents === null || receivedCents < cashCents) return null;
   return receivedCents - cashCents;

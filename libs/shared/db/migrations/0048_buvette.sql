@@ -21,6 +21,7 @@ CREATE TABLE `buvette_settings` (
 	`max_balance_cents` integer DEFAULT 10000 NOT NULL,
 	`cash_payment_method_id` integer,
 	`prepaid_payment_method_id` integer,
+	`card_payment_method_id` integer,
 	`gap_category_id` integer,
 	`updated_at` integer NOT NULL
 );
@@ -29,8 +30,10 @@ CREATE TABLE `buvette_cards` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`email` text NOT NULL,
 	`balance_cents` integer DEFAULT 0 NOT NULL,
+	`reserved_cents` integer DEFAULT 0 NOT NULL,
 	`created_at` integer NOT NULL,
-	CONSTRAINT `buvette_cards_balance_check` CHECK (`balance_cents` >= 0)
+	CONSTRAINT `buvette_cards_balance_check` CHECK (`balance_cents` >= 0),
+	CONSTRAINT `buvette_cards_reserved_check` CHECK (`reserved_cents` >= 0 AND `reserved_cents` <= `balance_cents`)
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `buvette_cards_email_unique` ON `buvette_cards` (`email`);
@@ -78,6 +81,7 @@ CREATE TABLE `buvette_sales` (
 	`prepaid_cents` integer DEFAULT 0 NOT NULL,
 	`prepaid_card_id` integer,
 	`cash_cents` integer DEFAULT 0 NOT NULL,
+	`card_cents` integer DEFAULT 0 NOT NULL,
 	`created_by_email` text NOT NULL,
 	`created_at` integer NOT NULL,
 	`cancelled_by_email` text,
@@ -85,8 +89,8 @@ CREATE TABLE `buvette_sales` (
 	FOREIGN KEY (`session_id`) REFERENCES `buvette_sessions`(`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`recharge_card_id`) REFERENCES `buvette_cards`(`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`prepaid_card_id`) REFERENCES `buvette_cards`(`id`) ON UPDATE no action ON DELETE no action,
-	CONSTRAINT `buvette_sales_amounts_check` CHECK (`items_cents` >= 0 AND `recharge_cents` >= 0 AND `prepaid_cents` >= 0 AND `cash_cents` >= 0),
-	CONSTRAINT `buvette_sales_total_check` CHECK (`prepaid_cents` + `cash_cents` = `items_cents` + `recharge_cents` AND `prepaid_cents` <= `items_cents`)
+	CONSTRAINT `buvette_sales_amounts_check` CHECK (`items_cents` >= 0 AND `recharge_cents` >= 0 AND `prepaid_cents` >= 0 AND `cash_cents` >= 0 AND `card_cents` >= 0),
+	CONSTRAINT `buvette_sales_total_check` CHECK (`prepaid_cents` + `cash_cents` + `card_cents` = `items_cents` + `recharge_cents` AND `prepaid_cents` <= `items_cents`)
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `buvette_sales_client_id_unique` ON `buvette_sales` (`client_id`);
@@ -107,6 +111,25 @@ CREATE TABLE `buvette_sale_lines` (
 );
 --> statement-breakpoint
 CREATE INDEX `buvette_sale_lines_sale_idx` ON `buvette_sale_lines` (`sale_id`);
+--> statement-breakpoint
+CREATE TABLE `buvette_card_attempts` (
+	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+	`foreign_tx_id` text NOT NULL,
+	`sale_id` integer NOT NULL,
+	`amount_cents` integer NOT NULL,
+	`status` text DEFAULT 'pending' NOT NULL,
+	`transaction_code` text,
+	`anomaly` text,
+	`created_at` integer NOT NULL,
+	`checked_at` integer,
+	FOREIGN KEY (`sale_id`) REFERENCES `buvette_sales`(`id`) ON UPDATE no action ON DELETE no action
+);
+--> statement-breakpoint
+CREATE UNIQUE INDEX `buvette_card_attempts_foreign_tx_id_unique` ON `buvette_card_attempts` (`foreign_tx_id`);
+--> statement-breakpoint
+CREATE INDEX `buvette_card_attempts_sale_idx` ON `buvette_card_attempts` (`sale_id`);
+--> statement-breakpoint
+CREATE INDEX `buvette_card_attempts_status_idx` ON `buvette_card_attempts` (`status`);
 --> statement-breakpoint
 CREATE TABLE `buvette_card_movements` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -132,17 +155,22 @@ CREATE INDEX `buvette_card_movements_session_idx` ON `buvette_card_movements` (`
 INSERT OR IGNORE INTO `account_classes` (`code`, `label`, `type`, `created_at`) VALUES
 ('419', 'Clients, avances reçues', 'tresorerie', CAST(strftime('%s','now') AS INTEGER));
 --> statement-breakpoint
+INSERT OR IGNORE INTO `account_classes` (`code`, `label`, `type`, `created_at`) VALUES
+('5115', 'Cartes bancaires à l''encaissement', 'tresorerie', CAST(strftime('%s','now') AS INTEGER));
+--> statement-breakpoint
 INSERT OR IGNORE INTO `accounts` (`code`, `label`, `account_class_id`, `kind`, `created_at`) VALUES
-('buvette_cards', 'Soldes des cartes buvette', (SELECT `id` FROM `account_classes` WHERE `code` = '419'), 'third_party', CAST(strftime('%s','now') AS INTEGER));
+('buvette_cards', 'Soldes des cartes buvette', (SELECT `id` FROM `account_classes` WHERE `code` = '419'), 'third_party', CAST(strftime('%s','now') AS INTEGER)),
+('sumup', 'À recevoir de SumUp', (SELECT `id` FROM `account_classes` WHERE `code` = '5115'), 'voucher', CAST(strftime('%s','now') AS INTEGER));
 --> statement-breakpoint
 INSERT OR IGNORE INTO `payment_methods` (`code`, `label`, `default_account_id`, `default_entry_status`, `kind`, `storefront`, `created_at`) VALUES
-('carte_buvette', 'Carte buvette', (SELECT `id` FROM `accounts` WHERE `code` = 'buvette_cards'), 'cleared', 'voucher', 0, CAST(strftime('%s','now') AS INTEGER));
+('carte_buvette', 'Carte buvette', (SELECT `id` FROM `accounts` WHERE `code` = 'buvette_cards'), 'cleared', 'voucher', 0, CAST(strftime('%s','now') AS INTEGER)),
+('sumup', 'CB SumUp (buvette)', (SELECT `id` FROM `accounts` WHERE `code` = 'sumup'), 'cleared', 'card', 0, CAST(strftime('%s','now') AS INTEGER));
 --> statement-breakpoint
 INSERT OR IGNORE INTO `categories` (`admin_label`, `adherent_label`, `hide_in_expenses`, `active`, `created_at`) VALUES
 ('Écarts de caisse', 'Écarts de caisse', 1, 1, CAST(strftime('%s','now') AS INTEGER));
 --> statement-breakpoint
-INSERT OR IGNORE INTO `buvette_settings` (`id`, `max_balance_cents`, `cash_payment_method_id`, `prepaid_payment_method_id`, `gap_category_id`, `updated_at`) VALUES
-(1, 10000, (SELECT `id` FROM `payment_methods` WHERE `code` = 'especes'), (SELECT `id` FROM `payment_methods` WHERE `code` = 'carte_buvette'), (SELECT `id` FROM `categories` WHERE `admin_label` = 'Écarts de caisse'), CAST(strftime('%s','now') AS INTEGER));
+INSERT OR IGNORE INTO `buvette_settings` (`id`, `max_balance_cents`, `cash_payment_method_id`, `prepaid_payment_method_id`, `card_payment_method_id`, `gap_category_id`, `updated_at`) VALUES
+(1, 10000, (SELECT `id` FROM `payment_methods` WHERE `code` = 'especes'), (SELECT `id` FROM `payment_methods` WHERE `code` = 'carte_buvette'), (SELECT `id` FROM `payment_methods` WHERE `code` = 'sumup'), (SELECT `id` FROM `categories` WHERE `admin_label` = 'Écarts de caisse'), CAST(strftime('%s','now') AS INTEGER));
 --> statement-breakpoint
 INSERT OR IGNORE INTO `role_permissions` (`role`, `permission`, `created_at`) VALUES
   ('president', 'buvette:items:read', CAST(strftime('%s','now') AS INTEGER)),

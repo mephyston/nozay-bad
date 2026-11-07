@@ -1,0 +1,41 @@
+---
+// Page d'arrivée de SumUp, publique : le retour peut s'ouvrir dans un autre navigateur que
+// la caisse, sans session Access. Sans gabarit ni actif, et sans aucune donnée de vente : elle
+// demande seulement au serveur de relire le paiement chez SumUp, qui seul fait foi.
+//
+// Le système ouvre toujours ce retour dans un nouvel onglet : on ne peut pas revenir dans celui
+// de la caisse. Cet onglet tente donc de se fermer, ce qui ramène sur la caisse, et celle-ci
+// relit la vente en reprenant la main. Si le navigateur refuse, il affiche la caisse lui-même.
+---
+
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex" />
+    <title>Retour de SumUp</title>
+  </head>
+  <body style="font-family: system-ui, sans-serif; padding: 24px; text-align: center">
+    <p>Paiement transmis. Retour à la caisse…</p>
+    <script is:inline>
+      (async function () {
+        var id = new URLSearchParams(location.search).get('foreign-tx-id');
+        try {
+          if (id) {
+            await fetch('/api/retour', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ foreignTxId: id })
+            });
+          }
+        } finally {
+          window.close();
+          setTimeout(function () {
+            location.replace('/');
+          }, 400);
+        }
+      })();
+    </script>
+  </body>
+</html>

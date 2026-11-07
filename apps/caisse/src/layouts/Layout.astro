@@ -13,6 +13,10 @@ const { title } = Astro.props;
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="robots" content="noindex" />
     <link rel="icon" type="image/png" href="/logo.png" />
+    <script is:inline>
+      // Le thème du téléphone, posé avant le rendu : pas d'éclair blanc en mode sombre.
+      if (window.matchMedia('(prefers-color-scheme: dark)').matches) document.documentElement.classList.add('dark');
+    </script>
     <title>{title}</title>
   </head>
   <body class="bg-background text-foreground min-h-dvh">

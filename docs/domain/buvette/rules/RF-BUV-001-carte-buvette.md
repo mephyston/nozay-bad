@@ -32,7 +32,7 @@ N'importe qui obtient une carte buvette en moins d'une minute, sans mot de passe
 
 **Un plafond de solde.** Le club le règle ; 100 € par défaut. Une recharge qui le dépasserait est refusée.
 
-**Une carte à solde nul peut être supprimée** à la demande du client. L'historique comptable est conservé sans l'adresse.
+**Une carte à solde nul peut être supprimée** à la demande du client. L'adresse est effacée, les appareils sont fermés et l'historique comptable est conservé. La même adresse peut ensuite ouvrir une nouvelle carte.
 
 ---
 

@@ -14,6 +14,7 @@ interface Env {
   CF_TEAM_DOMAIN?: string;
   CF_AUDIENCE?: string;
   DEV_EMAIL?: string;
+  SUMUP_AFFILIATE_KEY?: string;
   RESEND_API_KEY?: string;
   EMAIL_FROM?: string;
   EMAIL_MODE?: string;

@@ -10,6 +10,7 @@
   "vars": {
     "EMAIL_FROM": "Nozay Badminton Association <tresorier@nozaybad.fr>",
     "EMAIL_MODE": "live",
+    "SUMUP_AFFILIATE_KEY": "sup_afk_LhNgORlMimnE4PKINPzbB7hsLAmKCC62",
     "EMAIL_ALLOWLIST": ""
   },
   "services": [{ "binding": "API_SERVICE", "service": "nba-api" }],
@@ -20,6 +21,7 @@
       "vars": {
         "EMAIL_FROM": "Nozay Badminton Association <tresorier@nozaybad.fr>",
         "EMAIL_MODE": "allowlist",
+        "SUMUP_AFFILIATE_KEY": "sup_afk_EEO1YBXML4SVB9tmf22Axb3hmSzkgwcL",
         "EMAIL_ALLOWLIST": "david.pagnacco@gmail.com,meyharts@gmail.com,rouxjuliee@gmail.com,justine.couvidat@gmail.com,bienf007@gmail.com,r_thai2001@hotmail.com,cyril.tetevuide@orange.fr,meunieralexandre051@gmail.com,fofix@hotmail.fr,t.s.madrange@orange.fr,banssejoel@gmail.com"
       },
       "services": [{ "binding": "API_SERVICE", "service": "nba-api-staging" }]

@@ -1,0 +1,12 @@
+---
+import Layout from '../layouts/Layout.astro';
+import CardLogin from '../components/CardLogin.svelte';
+
+if (Astro.locals.card) return Astro.redirect('/');
+const clubName = Astro.locals.club?.settings.name || '';
+const siteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY || '';
+---
+
+<Layout title="Ma carte buvette" nav={false}>
+  <CardLogin client:only="svelte" {clubName} {siteKey} />
+</Layout>

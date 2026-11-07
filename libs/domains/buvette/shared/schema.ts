@@ -23,6 +23,8 @@ export const buvetteSettingsTable = sqliteTable('buvette_settings', {
   cashPaymentMethodId: integer('cash_payment_method_id'),
   /** Moyen de paiement de la carte : son compte par défaut est le compte de dette. */
   prepaidPaymentMethodId: integer('prepaid_payment_method_id'),
+  /** Moyen de paiement de la CB : son compte par défaut porte ce que SumUp doit au club. */
+  cardPaymentMethodId: integer('card_payment_method_id'),
   /** Catégorie des écarts de caisse. */
   gapCategoryId: integer('gap_category_id'),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull()
@@ -39,9 +41,12 @@ export const buvetteCardsTable = sqliteTable('buvette_cards', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   email: text('email').notNull().unique(),
   balanceCents: integer('balance_cents').notNull().default(0),
+  /** La part du solde bloquée par une vente qui attend sa CB. */
+  reservedCents: integer('reserved_cents').notNull().default(0),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
 }, (table) => [
-  check('buvette_cards_balance_check', sql`${table.balanceCents} >= 0`)
+  check('buvette_cards_balance_check', sql`${table.balanceCents} >= 0`),
+  check('buvette_cards_reserved_check', sql`${table.reservedCents} >= 0 AND ${table.reservedCents} <= ${table.balanceCents}`)
 ]);
 
 /** Un navigateur ou un téléphone où la carte est ouverte. */
@@ -85,22 +90,23 @@ export const buvetteSalesTable = sqliteTable('buvette_sales', {
   /** Généré par la caisse : un double appui ou un nouvel essai réseau n'encaisse qu'une fois. */
   clientId: text('client_id').notNull().unique(),
   sessionId: integer('session_id').notNull().references(() => buvetteSessionsTable.id),
-  status: text('status', { enum: ['paid', 'cancelled'] }).notNull().default('paid'),
+  status: text('status', { enum: ['in_progress', 'paid', 'cancelled'] }).notNull().default('paid'),
   itemsCents: integer('items_cents').notNull(),
   rechargeCents: integer('recharge_cents').notNull().default(0),
   rechargeCardId: integer('recharge_card_id').references(() => buvetteCardsTable.id),
   prepaidCents: integer('prepaid_cents').notNull().default(0),
   prepaidCardId: integer('prepaid_card_id').references(() => buvetteCardsTable.id),
   cashCents: integer('cash_cents').notNull().default(0),
+  cardCents: integer('card_cents').notNull().default(0),
   createdByEmail: text('created_by_email').notNull(),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
   cancelledByEmail: text('cancelled_by_email'),
   cancelledAt: integer('cancelled_at', { mode: 'timestamp' })
 }, (table) => [
   index('buvette_sales_session_idx').on(table.sessionId),
-  check('buvette_sales_amounts_check', sql`${table.itemsCents} >= 0 AND ${table.rechargeCents} >= 0 AND ${table.prepaidCents} >= 0 AND ${table.cashCents} >= 0`),
+  check('buvette_sales_amounts_check', sql`${table.itemsCents} >= 0 AND ${table.rechargeCents} >= 0 AND ${table.prepaidCents} >= 0 AND ${table.cashCents} >= 0 AND ${table.cardCents} >= 0`),
   // Tout est réglé, et la carte ne paie jamais une recharge.
-  check('buvette_sales_total_check', sql`${table.prepaidCents} + ${table.cashCents} = ${table.itemsCents} + ${table.rechargeCents} AND ${table.prepaidCents} <= ${table.itemsCents}`)
+  check('buvette_sales_total_check', sql`${table.prepaidCents} + ${table.cashCents} + ${table.cardCents} = ${table.itemsCents} + ${table.rechargeCents} AND ${table.prepaidCents} <= ${table.itemsCents}`)
 ]);
 
 /** Le nom, le prix et la catégorie sont recopiés : la vente ne suit pas le catalogue. */
@@ -115,6 +121,31 @@ export const buvetteSaleLinesTable = sqliteTable('buvette_sale_lines', {
 }, (table) => [
   index('buvette_sale_lines_sale_idx').on(table.saleId),
   check('buvette_sale_lines_quantity_check', sql`${table.quantity} > 0`)
+]);
+
+/**
+ * Un envoi d'un montant vers l'application SumUp. Une vente peut en compter plusieurs, chacune
+ * sous son propre identifiant : SumUp refuse celui d'une tentative déjà faite.
+ */
+export const buvetteCardAttemptsTable = sqliteTable('buvette_card_attempts', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  foreignTxId: text('foreign_tx_id').notNull().unique(),
+  saleId: integer('sale_id').notNull().references(() => buvetteSalesTable.id),
+  amountCents: integer('amount_cents').notNull(),
+  /*
+   * `expired` : SumUp ne la connaît pas 2 minutes après l'envoi. On peut relancer, mais elle
+   * reste relue pendant 24 h : un paiement terminé tard ne doit jamais passer inaperçu.
+   */
+ 
+  status: text('status', { enum: ['pending', 'expired', 'successful', 'failed'] }).notNull().default('pending'),
+  transactionCode: text('transaction_code'),
+  /** `late` : réussie sur une vente qui n'attendait plus. `amount` : montant différent. À rembourser. */
+  anomaly: text('anomaly', { enum: ['late', 'amount'] }),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+  checkedAt: integer('checked_at', { mode: 'timestamp' })
+}, (table) => [
+  index('buvette_card_attempts_sale_idx').on(table.saleId),
+  index('buvette_card_attempts_status_idx').on(table.status)
 ]);
 
 export const BUVETTE_MOVEMENT_TYPES = ['recharge', 'debit', 'refund', 'cancel'] as const;
@@ -141,3 +172,4 @@ export type BuvetteItem = typeof buvetteItemsTable.$inferSelect;
 export type BuvetteSale = typeof buvetteSalesTable.$inferSelect;
 export type BuvetteSession = typeof buvetteSessionsTable.$inferSelect;
 export type BuvetteSettings = typeof buvetteSettingsTable.$inferSelect;
+export type BuvetteCardAttempt = typeof buvetteCardAttemptsTable.$inferSelect;

@@ -16,7 +16,7 @@ import { cancelSale } from './cancel-sale/handler';
 import { maskEmail, scanCard } from './scan-card/handler';
 import { refundCard } from './refund-card/handler';
 import { openCard } from './open-card/handler';
-import { getWallet, issueQrToken, revokeOtherDevices } from './card-wallet/handler';
+import { deleteCard, getMovement, getWallet, issueQrToken, revokeOtherDevices } from './card-wallet/handler';
 
 const SECRET = 'secret-de-test';
 const BY = 'benevole@example.org';
@@ -74,8 +74,9 @@ describe('buvette', () => {
         maxBalanceCents: 10000,
         cashPaymentMethodId: settings!.cashPaymentMethodId!,
         prepaidPaymentMethodId: settings!.cashPaymentMethodId!,
+        cardPaymentMethodId: settings!.cardPaymentMethodId!,
         gapCategoryId: settings!.gapCategoryId!
-      })).rejects.toThrow('deux comptes');
+      })).rejects.toThrow('trois comptes');
     });
   });
 
@@ -190,6 +191,34 @@ describe('buvette', () => {
       await expect(issueQrToken(db, SECRET, b.cardId, b.deviceId)).rejects.toThrow('déconnecté');
       await expect(getWallet(db, b.cardId, b.deviceId)).rejects.toThrow('déconnecté');
       expect((await getWallet(db, a.cardId, a.deviceId)).balanceCents).toBe(0);
+    });
+
+    it('une carte à zéro se supprime : l\'adresse part, l\'appareil se ferme', async () => {
+      const a = await openCard(db, 'client@example.org');
+      await deleteCard(db, a.cardId, a.deviceId);
+      await expect(getWallet(db, a.cardId, a.deviceId)).rejects.toThrow('déconnecté');
+      const row = await db.select().from(buvetteCardsTable).where(eq(buvetteCardsTable.id, a.cardId)).get();
+      expect(row.email).toBe(`supprime-${a.cardId}@carte.invalid`);
+      expect((await openCard(db, 'client@example.org')).created).toBe(true);
+    });
+
+    it('le détail d\'une transaction montre les articles, et seulement à sa carte', async () => {
+      await openSession(db, { openingFloatCents: 0, openedByEmail: BY });
+      const c = await cardWith(300);
+      await sale('vente-det-1', { lines: [{ itemId: sandwich.id, quantity: 1 }], prepaidScanToken: c.scanToken, expectedCashCents: 100 });
+      const { deviceId } = await openCard(db, 'client@example.org');
+      const [movement] = (await getWallet(db, c.cardId, deviceId)).movements;
+      expect(await getMovement(db, c.cardId, deviceId, movement.id)).toMatchObject({
+        type: 'debit', amountCents: -300, cashCents: 100, lines: [{ name: 'Sandwich', quantity: 1, unitPriceCents: 400 }]
+      });
+      const other = await openCard(db, 'autre@example.org');
+      await expect(getMovement(db, other.cardId, other.deviceId, movement.id)).rejects.toThrow('introuvable');
+    });
+
+    it('une carte avec un solde ne se supprime pas', async () => {
+      const c = await cardWith(100);
+      const { deviceId } = await openCard(db, 'client@example.org');
+      await expect(deleteCard(db, c.cardId, deviceId)).rejects.toThrow('solde');
     });
 
     it('masque l\'adresse', () => {

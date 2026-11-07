@@ -9,6 +9,8 @@ const APP_ENV = process.env.PUBLIC_APP_ENV || 'production';
 
 export default defineConfig({
   output: 'server',
+  // La barre d'outils de dev se pose sur les boutons du bas de l'écran.
+  devToolbar: { enabled: false },
   // Pas de session Astro : l'identité vient de Cloudflare Access ou d'un cookie signé.
   session: false,
   adapter: cloudflare({ runtime: { mode: 'local' } }),

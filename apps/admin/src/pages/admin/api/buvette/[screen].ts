@@ -52,6 +52,7 @@ export const ECRANS: Record<string, Ecran> = {
             maxBalanceCents: data.maxBalanceCents,
             cashPaymentMethodId: data.cashPaymentMethodId,
             prepaidPaymentMethodId: data.prepaidPaymentMethodId,
+            cardPaymentMethodId: data.cardPaymentMethodId,
             gapCategoryId: data.gapCategoryId
           }
         })

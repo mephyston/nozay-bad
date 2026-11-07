@@ -63,6 +63,7 @@ export function saveMaxBalance(settings: Record<string, unknown>, maxBalanceCent
       maxBalanceCents,
       cashPaymentMethodId: settings.cashPaymentMethodId,
       prepaidPaymentMethodId: settings.prepaidPaymentMethodId,
+      cardPaymentMethodId: settings.cardPaymentMethodId,
       gapCategoryId: settings.gapCategoryId
     },
     "Le plafond n'a pas pu être enregistré."

@@ -11,6 +11,7 @@ export async function cancelSale(db: Db, input: CancelSaleInput) {
   const repo = new CancelSaleRepository();
   const sale = await repo.getSale(db, input.saleId);
   if (!sale) throw new AppError('Vente introuvable.', 404);
+  if (sale.status === 'in_progress') throw new AppError('Cette vente attend sa CB : abandonnez-la plutôt.', 409);
   if (sale.status !== 'paid') throw new AppError('Cette vente est déjà annulée.', 409);
   const session = await repo.getSession(db, sale.sessionId);
   if (session?.status !== 'open') throw new AppError('La session de cette vente est clôturée : voyez avec la trésorerie.', 409);
@@ -44,5 +45,6 @@ export async function cancelSale(db: Db, input: CancelSaleInput) {
     if (/UNIQUE/i.test(String(error))) throw new AppError('Cette vente est déjà annulée.', 409);
     throw error;
   }
+  // Le remboursement CB se fait dans SumUp : la caisse le rappelle au bénévole.
   return repo.getSale(db, sale.id);
 }

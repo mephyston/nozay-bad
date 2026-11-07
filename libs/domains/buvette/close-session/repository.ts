@@ -37,12 +37,20 @@ export class CloseSessionRepository {
     return sales.map((sale) => ({
       prepaidCents: sale.prepaidCents,
       cashCents: sale.cashCents,
+      cardCents: sale.cardCents,
       rechargeCents: sale.rechargeCents,
       lines: lines.filter((l) => l.saleId === sale.id).map((l) => ({
         accountingCategoryId: l.accountingCategoryId,
         amountCents: Number(l.amountCents)
       }))
     }));
+  }
+
+  async inProgressCount(db: DbOrTx, sessionId: number): Promise<number> {
+    const row = await db.select({ total: sql<number>`COUNT(*)` }).from(buvetteSalesTable)
+      .where(and(eq(buvetteSalesTable.sessionId, sessionId), eq(buvetteSalesTable.status, 'in_progress')))
+      .get();
+    return Number(row?.total ?? 0);
   }
 
   async refundsCents(db: DbOrTx, sessionId: number): Promise<number> {
@@ -58,7 +66,7 @@ export class CloseSessionRepository {
   async fingerprint(db: DbOrTx, sessionId: number): Promise<SessionFingerprint> {
     const row = await db
       .select({
-        paidSales: sql<number>`(SELECT COUNT(*) FROM ${buvetteSalesTable} WHERE ${buvetteSalesTable.sessionId} = ${sessionId} AND ${buvetteSalesTable.status} = 'paid')`,
+        paidSales: sql<number>`(SELECT COUNT(*) FROM ${buvetteSalesTable} WHERE ${buvetteSalesTable.sessionId} = ${sessionId} AND ${buvetteSalesTable.status} <> 'cancelled')`,
         movements: sql<number>`(SELECT COUNT(*) FROM ${buvetteCardMovementsTable} WHERE ${buvetteCardMovementsTable.sessionId} = ${sessionId})`
       })
       .from(buvetteSessionsTable)
@@ -76,7 +84,7 @@ export class CloseSessionRepository {
     return db.insert(buvetteSessionClosuresTable).values({
       ...values,
       expectedCashCents: sql`CASE WHEN
-        (SELECT COUNT(*) FROM ${buvetteSalesTable} WHERE ${buvetteSalesTable.sessionId} = ${sessionId} AND ${buvetteSalesTable.status} = 'paid') = ${seen.paidSales}
+        (SELECT COUNT(*) FROM ${buvetteSalesTable} WHERE ${buvetteSalesTable.sessionId} = ${sessionId} AND ${buvetteSalesTable.status} <> 'cancelled') = ${seen.paidSales}
         AND (SELECT COUNT(*) FROM ${buvetteCardMovementsTable} WHERE ${buvetteCardMovementsTable.sessionId} = ${sessionId}) = ${seen.movements}
         THEN ${expectedCashCents} END` as any
     });

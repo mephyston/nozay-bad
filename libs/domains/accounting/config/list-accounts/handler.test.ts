@@ -8,7 +8,7 @@ describe('listAccounts (Integration)', () => {
 
     const accounts = await listAccounts(db);
 
-    expect(accounts.map((a) => a.code)).toEqual(['current', 'savings', 'cash', 'badnet', 'member_advances', 'buvette_cards']);
+    expect(accounts.map((a) => a.code)).toEqual(['current', 'savings', 'cash', 'badnet', 'member_advances', 'buvette_cards', 'sumup']);
     const badnet = accounts.find((a) => a.code === 'badnet');
     expect(badnet).toMatchObject({ label: 'Porte-monnaie Badnet', classCode: '517', classType: 'tresorerie' });
     const advances = accounts.find((a) => a.code === 'member_advances');

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { changeDue, itemsTotal, newClientId, parseEuros, splitPayment } from './cart';
+import { cashConfirmed, changeDue, suggestedNotes, itemsTotal, newClientId, parseEuros, splitPayment } from './cart';
 
 describe('panier de la caisse', () => {
   it('génère un identifiant accepté par l\'API, sans contexte sécurisé', () => {
@@ -23,6 +23,20 @@ describe('panier de la caisse', () => {
     expect(parseEuros('3')).toBe(300);
     expect(parseEuros('1,234')).toBeNull();
     expect(parseEuros('abc')).toBeNull();
+  });
+
+  it('exige que les espèces soient confirmées, sauf si la carte paie tout', () => {
+    expect(cashConfirmed(null, 0)).toBe(true);
+    expect(cashConfirmed(null, 400)).toBe(false);
+    expect(cashConfirmed(300, 400)).toBe(false);
+    expect(cashConfirmed(400, 400)).toBe(true);
+    expect(cashConfirmed(500, 400)).toBe(true);
+  });
+
+  it('propose les billets au-dessus du montant', () => {
+    expect(suggestedNotes(350)).toEqual([500, 1000, 2000]);
+    expect(suggestedNotes(1000)).toEqual([2000, 5000]);
+    expect(suggestedNotes(6000)).toEqual([]);
   });
 
   it('calcule la monnaie seulement si le reçu suffit', () => {
