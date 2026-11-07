@@ -54,7 +54,7 @@ Ce `catch` prouve que l'erreur sur `BEGIN` **a déjà été rencontrée en produ
 
 ### 3. Ce que fait le harnais de test
 
-`libs/shared/db/src/test-utils.ts` utilise `@cloudflare/vitest-pool-workers` qui exécute les tests dans miniflare (SQLite local). Le Proxy intercepte `BEGIN`/`COMMIT`/`ROLLBACK` pour simuler un rollback par snapshot. Conséquences :
+`libs/shared/db/src/test-utils.ts` utilise `@cloudflare/vitest-plugin` qui exécute les tests dans miniflare (SQLite local). Le Proxy intercepte `BEGIN`/`COMMIT`/`ROLLBACK` pour simuler un rollback par snapshot. Conséquences :
 
 1. **Les tests passent toujours** — même si le runtime de production lèverait une erreur
 2. **Le rollback simulé masque l'absence de vrai rollback** — les tests vérifient un comportement que D1 ne peut pas fournir

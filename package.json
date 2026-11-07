@@ -31,7 +31,7 @@
   "type": "module",
   "devDependencies": {
     "@astrojs/check": "^0.9.12",
-    "@cloudflare/vitest-pool-workers": "^0.18.7",
+    "@cloudflare/vitest-plugin": "^1.5.1",
     "@cloudflare/workers-types": "^5.20260707.1",
     "@lucide/svelte": "^1.61.0",
     "@nx/eslint-plugin": "^23.3.1",
@@ -97,6 +97,9 @@
     },
     "@semantic-release/github": {
       "undici": "^7.29.1"
+    },
+    "@semantic-release/npm": {
+      "npm": "^12.2.2"
     },
     "axios": "^1.20.0",
     "minimatch@10": {

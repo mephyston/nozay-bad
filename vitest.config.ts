@@ -1,6 +1,6 @@
 import { defineConfig } from 'vitest/config';
 import { svelte } from '@sveltejs/vite-plugin-svelte';
-import { cloudflareTest } from '@cloudflare/vitest-pool-workers';
+import { cloudflareTest } from '@cloudflare/vitest-plugin';
 import path from 'path';
 import { wranglerTestConfigPath } from './vitest.wrangler';
 import { workspaceAliases } from './vitest.aliases';
