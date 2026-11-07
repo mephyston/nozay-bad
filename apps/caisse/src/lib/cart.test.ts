@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { changeDue, itemsTotal, parseEuros, splitPayment } from './cart';
+import { changeDue, itemsTotal, newClientId, parseEuros, splitPayment } from './cart';
 
 describe('panier de la caisse', () => {
+  it('génère un identifiant accepté par l\'API, sans contexte sécurisé', () => {
+    expect(newClientId()).toMatch(/^[A-Za-z0-9-]{8,64}$/);
+    expect(newClientId()).not.toBe(newClientId());
+  });
+
   it('additionne les articles', () => {
     const items = [{ id: 1, name: 'Café', priceCents: 100, active: true }, { id: 2, name: 'Sandwich', priceCents: 400, active: true }];
     expect(itemsTotal(new Map([[1, 3], [2, 1]]), items)).toBe(700);

@@ -7,6 +7,15 @@ export interface CatalogItem {
 
 export type Cart = Map<number, number>;
 
+/**
+ * L'identifiant d'une vente ou d'un remboursement. `crypto.randomUUID` n'existe qu'en HTTPS ou
+ * sur localhost : il ferait tomber la caisse ouverte depuis un téléphone sur le réseau local.
+ */
+export function newClientId(): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+}
+
 export function formatEuros(cents: number): string {
   return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(cents / 100);
 }

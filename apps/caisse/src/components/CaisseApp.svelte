@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import { Button, Input } from '@nba/ui';
   import QrScanner from './QrScanner.svelte';
-  import { callApi, changeDue, formatEuros, itemsTotal, parseEuros, splitPayment, type CatalogItem } from '../lib/cart';
+  import { callApi, changeDue, formatEuros, itemsTotal, newClientId, parseEuros, splitPayment, type CatalogItem } from '../lib/cart';
 
   type Screen = 'loading' | 'open' | 'sell' | 'scan' | 'pay' | 'refund' | 'close' | 'closed';
   type ScanPurpose = 'prepaid' | 'recharge' | 'refund';
@@ -28,8 +28,8 @@
   let closing = $state<any>(null);
   // Garder le même identifiant tant que la vente n'a pas abouti : un nouvel essai réseau ne
   // peut ainsi pas encaisser deux fois.
-  let saleClientId = crypto.randomUUID();
-  let refundClientId = crypto.randomUUID();
+  let saleClientId = newClientId();
+  let refundClientId = newClientId();
 
   const activeItems = $derived(items.filter((i) => i.active));
   const itemsCents = $derived(itemsTotal(cart, items));
@@ -73,7 +73,7 @@
     rechargeCard = null;
     prepaidCard = null;
     received = '';
-    saleClientId = crypto.randomUUID();
+    saleClientId = newClientId();
   }
 
   function startScan(purpose: ScanPurpose) {
@@ -140,7 +140,7 @@
       const data = await callApi('cards/refund', { clientId: refundClientId, scanToken: refundTarget!.scanToken });
       notice = `Rendez ${formatEuros(data.amountCents)} en espèces au client.`;
       refundTarget = null;
-      refundClientId = crypto.randomUUID();
+      refundClientId = newClientId();
       await reload();
     });
   }
