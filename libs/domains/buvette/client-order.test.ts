@@ -145,7 +145,7 @@ describe('commandes des clients', () => {
     await collect(placed!.id, 0);
     const next = await createOrder(db, client.cardId, client.deviceId, [{ itemId: coffee.id, quantity: 1 }]);
     expect(next!.id).not.toBe(placed!.id);
-    const [sold] = await listSessionSales(db);
+    const [sold] = (await listSessionSales(db)).filter((entry) => entry.kind === 'sale');
     expect(sold.lines).toHaveLength(2);
   });
 

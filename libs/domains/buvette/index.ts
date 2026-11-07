@@ -15,9 +15,12 @@ import { cardAttemptsRoute } from './verify-card-attempt/route';
 import { clientOrderRoute } from './client-order/route';
 import { listOrdersRoute } from './list-orders/route';
 import { paperCardsRoute } from './paper-cards/route';
+import { refundCardPaymentRoute } from './refund-card-payment/route';
 
 export { verifyPendingAttempts } from './verify-card-attempt/handler';
 export { createSumUpClient, type SumUpBindings } from './shared/sumup';
+export { settlePendingRefunds } from './refund-card-payment/handler';
+export { createSumUpRefunds } from './shared/sumup-refunds';
 
 export type Bindings = {
   DB: D1Database;
@@ -37,6 +40,7 @@ buvetteRouter.route('/', closeSessionRoute);
 buvetteRouter.route('/', createSaleRoute);
 buvetteRouter.route('/', cancelSaleRoute);
 buvetteRouter.route('/', cardAttemptsRoute);
+buvetteRouter.route('/', refundCardPaymentRoute);
 buvetteRouter.route('/', listOrdersRoute);
 buvetteRouter.route('/', paperCardsRoute);
 // Avant `/cards/:id/…` : les routes fixes ne doivent pas tomber sur le paramètre.

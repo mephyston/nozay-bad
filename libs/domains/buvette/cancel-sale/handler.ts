@@ -70,6 +70,7 @@ export async function cancelSale(db: Db, input: CancelSaleInput) {
     sale: await repo.getSale(db, sale.id),
     cardCreditedCents: cardGone ? 0 : sale.prepaidCents,
     cashToReturnCents: sale.cashCents + (cardGone ? sale.prepaidCents : 0),
-    sumUpToRefundCents: sale.cardCents
+    sumUpToRefundCents: sale.cardCents,
+    cardAttemptId: sale.cardCents > 0 ? ((await repo.successfulAttemptId(db, sale.id)) ?? null) : null
   };
 }

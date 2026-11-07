@@ -43,11 +43,13 @@ Le porteur peut aussi scanner sa carte avec son téléphone et la transférer su
 
 La vente reste en attente tant que SumUp n'a pas confirmé le paiement, et la caisse le vérifie à votre retour. Vous pouvez ensuite **Vérifier le paiement**, **Relancer le paiement CB** ou **Abandonner la vente**. La clôture est impossible tant qu'une vente attend.
 
-Si la caisse affiche **À rembourser dans SumUp**, de l'argent a été pris pour une vente abandonnée ou avec un mauvais montant. Remboursez-le depuis l'application SumUp.
+Si la caisse signale un **paiement CB arrivé sur une vente terminée**, de l'argent a été pris pour une vente abandonnée ou avec un mauvais montant. Touchez **Rembourser** : SumUp le rend sur la carte bancaire du client, sans passer par l'application. Si le remboursement a déjà été fait dans l'application, la caisse le constate et n'envoie rien. **Remboursement en cours** veut dire que SumUp n'a pas encore répondu : ne le refaites pas, la caisse le revérifie toute seule.
 
 ## Rembourser une vente
 
-En cas d'erreur, ouvrez l'onglet **Ventes** de la caisse, touchez la vente, puis **Rembourser cette vente**. Un écran annonce d'abord si vous aurez des espèces à remettre, puis la caisse vous demande de confirmer que vous les avez remises : la part payée par carte y revient, ou se rend en espèces si le client a supprimé sa carte ; les espèces se rendent ; une part payée en CB se rembourse dans l'application SumUp.
+En cas d'erreur, ouvrez l'onglet **Ventes** de la caisse, touchez la vente, puis **Rembourser cette vente**. Un écran annonce d'abord si vous aurez des espèces à remettre, puis la caisse vous demande de confirmer que vous les avez remises : la part payée par carte y revient, ou se rend en espèces si le client a supprimé sa carte ; les espèces se rendent ; une part payée en CB est remboursée par SumUp sur la carte bancaire du client. Si SumUp refuse, la caisse vous dit de le faire dans l'application. Le détail d'une vente montre son numéro de transaction SumUp.
+
+Les remboursements de solde de carte apparaissent aussi dans l'onglet **Ventes**, pour mémoire : ils ne se remboursent pas une seconde fois.
 
 ## Rembourser une carte
 

@@ -194,6 +194,22 @@ export const buvetteCardAttemptsTable = sqliteTable('buvette_card_attempts', {
   index('buvette_card_attempts_status_idx').on(table.status)
 ]);
 
+/**
+ * Un remboursement de CB par l'API SumUp, un par paiement : la clé unique empêche une seconde
+ * demande. `pending` : demandé, réponse pas encore établie. `failed` : SumUp a refusé, ou n'a
+ * rien remboursé ; un bénévole peut relancer, ou rembourser dans l'application.
+ */
+export const buvetteSumUpRefundsTable = sqliteTable('buvette_sumup_refunds', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  attemptId: integer('attempt_id').notNull().unique().references(() => buvetteCardAttemptsTable.id),
+  status: text('status', { enum: ['pending', 'done', 'failed'] }).notNull(),
+  amountCents: integer('amount_cents'),
+  error: text('error'),
+  requestedByEmail: text('requested_by_email').notNull(),
+  requestedAt: integer('requested_at', { mode: 'timestamp' }).notNull(),
+  doneAt: integer('done_at', { mode: 'timestamp' })
+});
+
 export const BUVETTE_MOVEMENT_TYPES = ['recharge', 'debit', 'refund', 'cancel', 'transfer'] as const;
 export type BuvetteMovementType = (typeof BUVETTE_MOVEMENT_TYPES)[number];
 

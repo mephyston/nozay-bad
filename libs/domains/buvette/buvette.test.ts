@@ -277,6 +277,12 @@ describe('buvette', () => {
       expect((await getCurrentSession(db))?.expectedCashCents).toBe(4500);
     });
 
+    it('le remboursement apparaît dans les ventes de la caisse, pour mémoire', async () => {
+      const card = await cardWith(1500);
+      await refund(card.scanToken);
+      expect(await listSessionSales(db)).toEqual([expect.objectContaining({ kind: 'card_refund', amountCents: 1500, cardLabel: expect.stringContaining('@') })]);
+    });
+
     it('un rejeu ne sort pas d\'espèces une seconde fois', async () => {
       const card = await cardWith(1500);
       await refund(card.scanToken);
@@ -385,7 +391,7 @@ describe('buvette', () => {
       await sale('vente-0701', { lines: [{ itemId: coffee.id, quantity: 2 }], expectedCashCents: 200 });
       const { sale: last } = await sale('vente-0702', { lines: [{ itemId: sandwich.id, quantity: 1 }], expectedCashCents: 400 });
       await cancelSale(db, { saleId: last.id, cancelledByEmail: BY });
-      const sales = await listSessionSales(db);
+      const sales = (await listSessionSales(db)).filter((s) => s.kind === 'sale');
       expect(sales.map((s) => s.status)).toEqual(['cancelled', 'paid']);
       expect(sales[1]).toMatchObject({ cashCents: 200, lines: [{ name: 'Café', quantity: 2, unitPriceCents: 100 }] });
     });

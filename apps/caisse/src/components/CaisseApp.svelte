@@ -22,6 +22,7 @@
   }
 
   interface SessionSale {
+    kind: 'sale';
     id: number;
     status: 'in_progress' | 'paid' | 'cancelled';
     createdAt: string;
@@ -32,7 +33,26 @@
     cardCents: number;
     prepaidCardLabel: string | null;
     prepaidCardDeleted: boolean;
+    transactionCode: string | null;
+    cardAttemptId: number | null;
+    cardRefundStatus: 'pending' | 'done' | 'failed' | null;
     lines: { name: string; quantity: number; unitPriceCents: number }[];
+  }
+
+  interface SessionCardRefund {
+    kind: 'card_refund';
+    id: number;
+    createdAt: string;
+    amountCents: number;
+    cardLabel: string;
+  }
+
+  interface CardRefund {
+    attemptId: number;
+    status: 'done' | 'pending' | 'failed';
+    amountCents: number;
+    transactionCode: string | null;
+    error: string | null;
   }
 
   interface PendingOrder {
@@ -70,7 +90,7 @@
     salesCount: number;
     cardCents: number;
     inProgress: InProgress[];
-    toRefund: { transactionCode: string | null; amountCents: number }[];
+    toRefund: { attemptId: number; transactionCode: string | null; amountCents: number; refundStatus: 'pending' | 'done' | 'failed' | null }[];
   } | null>(null);
   let cart = $state(new Map<number, number>());
   let rechargeCents = $state(0);
@@ -85,8 +105,8 @@
   let done = $state<{ title: string; amountCents: number; changeCents: number | null; detail: string } | null>(null);
   let lastSale = $state<{ id: number; cashCents: number; cardCents: number; prepaidCents: number } | null>(null);
   /** Ce qu'un remboursement laisse à faire au bénévole : l'écran ne se ferme pas sans lui. */
-  let handover = $state<{ cashCents: number; cardCents: number; sumUpCents: number } | null>(null);
-  let sales = $state<SessionSale[]>([]);
+  let handover = $state<{ cashCents: number; cardCents: number; sumUpCents: number; sumUp?: CardRefund | null } | null>(null);
+  let sales = $state<(SessionSale | SessionCardRefund)[]>([]);
   let selectedSale = $state<SessionSale | null>(null);
   let orders = $state<PendingOrder[]>([]);
   let orderSearch = $state('');
@@ -410,7 +430,7 @@
 
   function openSales() {
     run(async () => {
-      sales = await callApi<SessionSale[]>('sessions/current/sales');
+      sales = await callApi<(SessionSale | SessionCardRefund)[]>('sessions/current/sales');
       screen = 'sales';
     });
   }
@@ -424,13 +444,33 @@
     };
   }
 
+  async function refundCardPayment(attemptId: number): Promise<CardRefund | null> {
+    try {
+      return await callApi<CardRefund>(`card-attempts/${attemptId}/refund`, {});
+    } catch {
+      return null;
+    }
+  }
+
+  /** Un paiement arrivé sur une vente qui ne l'attendait plus : remboursé d'un appui. */
+  function refundStray(attemptId: number) {
+    run(async () => {
+      const refund = await callApi<CardRefund>(`card-attempts/${attemptId}/refund`, {});
+      if (refund.status === 'failed') error = `SumUp a refusé : ${refund.error ?? 'remboursez dans l\'application SumUp'}.`;
+      else if (refund.status === 'pending') error = 'Remboursement demandé à SumUp, pas encore confirmé : ne le relancez pas, la caisse le revérifie.';
+      await refresh();
+    });
+  }
+
   function refundSale(sale: SessionSale) {
     run(async () => {
       const result = await callApi(`sales/${sale.id}/cancel`, {});
       if (lastSale?.id === sale.id) lastSale = null;
       selectedSale = null;
       await refresh();
-      handover = { cashCents: result.cashToReturnCents, cardCents: result.cardCreditedCents, sumUpCents: result.sumUpToRefundCents };
+      // La part CB repart par l'API SumUp ; si elle échoue, la caisse dit de la faire dans l'application.
+      const sumUp = result.cardAttemptId ? await refundCardPayment(result.cardAttemptId) : null;
+      handover = { cashCents: result.cashToReturnCents, cardCents: result.cardCreditedCents, sumUpCents: result.sumUpToRefundCents, sumUp };
       screen = 'handover';
     });
   }
@@ -445,8 +485,8 @@
     const id = lastSale?.id;
     if (!id) return;
     run(async () => {
-      sales = await callApi<SessionSale[]>('sessions/current/sales');
-      selectedSale = sales.find((s) => s.id === id) ?? null;
+      sales = await callApi<(SessionSale | SessionCardRefund)[]>('sessions/current/sales');
+      selectedSale = sales.find((s): s is SessionSale => s.kind === 'sale' && s.id === id) ?? null;
       clearTimeout(doneTimer);
       done = null;
       screen = selectedSale ? 'saleConfirm' : 'sales';
@@ -495,10 +535,19 @@
     <p role="alert" class="bg-destructive/10 text-destructive m-3 mb-0 rounded-lg p-3 text-sm">{error}</p>
   {/if}
   {#if current?.toRefund?.length && screen === 'sell'}
-    <p role="alert" class="bg-destructive/10 text-destructive m-3 mb-0 rounded-lg p-3 text-sm">
-      À rembourser dans SumUp :
-      {current.toRefund.map((r) => `${formatEuros(r.amountCents)}${r.transactionCode ? ` (${r.transactionCode})` : ''}`).join(', ')}
-    </p>
+    <section role="alert" class="bg-destructive/10 text-destructive m-3 mb-0 space-y-2 rounded-lg p-3 text-sm">
+      <p class="font-semibold">Paiement CB arrivé sur une vente terminée : à rendre au client.</p>
+      {#each current.toRefund as r (r.attemptId)}
+        <div class="flex items-center justify-between gap-2">
+          <span class="tabular-nums">{formatEuros(r.amountCents)}{r.transactionCode ? ` · ${r.transactionCode}` : ''}</span>
+          {#if r.refundStatus === 'pending'}
+            <span class="text-xs">Remboursement en cours…</span>
+          {:else}
+            <Button size="sm" variant="outline" disabled={busy} onclick={() => refundStray(r.attemptId)}>{r.refundStatus === 'failed' ? 'Réessayer' : 'Rembourser'}</Button>
+          {/if}
+        </div>
+      {/each}
+    </section>
   {/if}
 
   {#if screen === 'loading'}
@@ -714,17 +763,28 @@
       <h1 class="text-2xl font-semibold">Ventes</h1>
       {#if sales.length}
         <ul class="bg-card divide-y overflow-hidden rounded-2xl border">
-          {#each sales as sale (sale.id)}
+          {#each sales as sale (`${sale.kind}-${sale.id}`)}
+            {#if sale.kind === 'card_refund'}
+              <li class="flex min-h-14 items-center gap-3 px-4 py-2">
+                <span class="min-w-0 grow">
+                  <span class="block truncate text-sm font-semibold">Remboursement de carte · {sale.cardLabel}</span>
+                  <span class="text-muted-foreground block text-xs">{time(sale.createdAt)} · rendu en espèces</span>
+                </span>
+                <span class="shrink-0 text-sm font-medium tabular-nums">−{formatEuros(sale.amountCents)}</span>
+                <span class="size-4 shrink-0"></span>
+              </li>
+            {:else}
             <li>
               <button type="button" class="active:bg-muted flex min-h-14 w-full items-center gap-3 px-4 py-2 text-left" onclick={() => { selectedSale = sale; go('sale'); }}>
                 <span class="min-w-0 grow">
                   <span class="block truncate text-sm font-semibold">{saleTitle(sale)}</span>
-                  <span class="text-muted-foreground block text-xs">{time(sale.createdAt)} · {saleStatus(sale)}</span>
+                  <span class="text-muted-foreground block text-xs">{time(sale.createdAt)} · {saleStatus(sale)}{sale.transactionCode ? ` · ${sale.transactionCode}` : ''}</span>
                 </span>
                 <span class={`shrink-0 text-sm font-medium tabular-nums ${sale.status === 'cancelled' ? 'text-muted-foreground line-through' : ''}`}>{formatEuros(sale.itemsCents + sale.rechargeCents)}</span>
                 <ChevronRight class="text-muted-foreground size-4 shrink-0" />
               </button>
             </li>
+            {/if}
           {/each}
         </ul>
       {:else}
@@ -751,7 +811,14 @@
         {#if selectedSale.prepaidCents > 0}<div class="flex justify-between"><dt>Carte buvette</dt><dd class="tabular-nums">{formatEuros(selectedSale.prepaidCents)}</dd></div>{/if}
         {#if selectedSale.cashCents > 0}<div class="flex justify-between"><dt>Espèces</dt><dd class="tabular-nums">{formatEuros(selectedSale.cashCents)}</dd></div>{/if}
         {#if selectedSale.cardCents > 0}<div class="flex justify-between"><dt>CB</dt><dd class="tabular-nums">{formatEuros(selectedSale.cardCents)}</dd></div>{/if}
+        {#if selectedSale.transactionCode}<div class="flex justify-between"><dt>Transaction SumUp</dt><dd class="font-mono">{selectedSale.transactionCode}</dd></div>{/if}
+        {#if selectedSale.cardRefundStatus}
+          <div class="flex justify-between"><dt>Remboursement CB</dt><dd>{selectedSale.cardRefundStatus === 'done' ? 'fait par SumUp' : selectedSale.cardRefundStatus === 'pending' ? 'en cours' : 'refusé par SumUp'}</dd></div>
+        {/if}
       </dl>
+      {#if selectedSale.status === 'cancelled' && selectedSale.cardAttemptId && selectedSale.cardRefundStatus !== 'done' && selectedSale.cardRefundStatus !== 'pending'}
+        <Button variant="outline" size="lg" class="h-14 w-full text-lg" disabled={busy} onclick={() => refundStray(selectedSale!.cardAttemptId!)}>Rembourser la CB par SumUp</Button>
+      {/if}
       {#if selectedSale.status === 'paid'}
         {#if selectedSale.rechargeCents > 0}
           <p class="text-muted-foreground text-sm">Le remboursement retire la recharge de la carte. Il est refusé si elle a déjà été dépensée.</p>
@@ -780,7 +847,7 @@
           <li class="flex justify-between gap-3 p-4"><span>Recrédité automatiquement sur la carte {selectedSale.prepaidCardLabel}</span><strong class="tabular-nums">{formatEuros(plan.toCardCents)}</strong></li>
         {/if}
         {#if plan.toSumUpCents > 0}
-          <li class="flex justify-between gap-3 p-4"><span>À rembourser par vous dans l'application SumUp</span><strong class="tabular-nums">{formatEuros(plan.toSumUpCents)}</strong></li>
+          <li class="flex justify-between gap-3 p-4"><span>Remboursé sur la carte bancaire du client, par SumUp</span><strong class="tabular-nums">{formatEuros(plan.toSumUpCents)}</strong></li>
         {/if}
         {#if selectedSale.rechargeCents > 0}
           <li class="flex justify-between gap-3 p-4"><span>Recharge retirée de la carte</span><strong class="tabular-nums">{formatEuros(selectedSale.rechargeCents)}</strong></li>
@@ -811,11 +878,15 @@
       {#if handover.cardCents > 0}
         <p class="bg-card rounded-2xl border p-3 text-sm">{formatEuros(handover.cardCents)} déjà recrédités sur sa carte.</p>
       {/if}
-      {#if handover.sumUpCents > 0}
-        <p role="alert" class="bg-destructive/10 text-destructive rounded-2xl p-3 text-sm font-semibold">Remboursez {formatEuros(handover.sumUpCents)} dans l'application SumUp.</p>
+      {#if handover.sumUpCents > 0 && handover.sumUp?.status === 'done'}
+        <p class="bg-card rounded-2xl border p-3 text-sm">{formatEuros(handover.sumUp.amountCents)} remboursés sur sa carte bancaire par SumUp.</p>
+      {:else if handover.sumUpCents > 0 && handover.sumUp?.status === 'pending'}
+        <p class="bg-card rounded-2xl border p-3 text-sm">Remboursement de {formatEuros(handover.sumUpCents)} demandé à SumUp. La caisse vérifie qu'il passe : ne le refaites pas dans l'application.</p>
+      {:else if handover.sumUpCents > 0}
+        <p role="alert" class="bg-destructive/10 text-destructive rounded-2xl p-3 text-sm font-semibold">SumUp n'a pas pu rembourser {formatEuros(handover.sumUpCents)} : faites-le dans l'application SumUp.</p>
       {/if}
       <Button size="lg" class="mt-4 h-14 w-full text-lg" onclick={finishHandover}>
-        {handover.cashCents > 0 ? `J'ai remis ${formatEuros(handover.cashCents)} au client` : handover.sumUpCents > 0 ? "J'ai remboursé dans SumUp" : 'Terminé'}
+        {handover.cashCents > 0 ? `J'ai remis ${formatEuros(handover.cashCents)} au client` : handover.sumUpCents > 0 && handover.sumUp?.status !== 'done' && handover.sumUp?.status !== 'pending' ? "J'ai remboursé dans SumUp" : 'Terminé'}
       </Button>
     </main>
 

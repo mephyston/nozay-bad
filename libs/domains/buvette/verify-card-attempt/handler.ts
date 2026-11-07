@@ -77,6 +77,9 @@ async function verifyOne(db: Db, lookup: SumUpLookup, attempt: BuvetteCardAttemp
   }
   // De l'argent a été pris pour une vente qui n'attendait plus : à rembourser, jamais à rattacher.
   if (sale.status !== 'in_progress') {
+    // Sauf si c'est ce paiement qui vient de la régler : la caisse et la page de retour vérifient
+    // souvent en même temps, et l'autre vérification a pu passer entre nos deux lectures.
+    if ((await repo.findByForeignId(db, attempt.foreignTxId))?.status === 'successful') return;
     await repo.markAttempt(db, attempt.id, { status: 'successful', anomaly: 'late', transactionCode: code });
     return;
   }

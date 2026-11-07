@@ -195,6 +195,20 @@ CREATE INDEX `buvette_card_movements_card_idx` ON `buvette_card_movements` (`car
 --> statement-breakpoint
 CREATE INDEX `buvette_card_movements_session_idx` ON `buvette_card_movements` (`session_id`);
 --> statement-breakpoint
+CREATE TABLE `buvette_sumup_refunds` (
+	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+	`attempt_id` integer NOT NULL,
+	`status` text NOT NULL,
+	`amount_cents` integer,
+	`error` text,
+	`requested_by_email` text NOT NULL,
+	`requested_at` integer NOT NULL,
+	`done_at` integer,
+	FOREIGN KEY (`attempt_id`) REFERENCES `buvette_card_attempts`(`id`) ON UPDATE no action ON DELETE no action
+);
+--> statement-breakpoint
+CREATE UNIQUE INDEX `buvette_sumup_refunds_attempt_id_unique` ON `buvette_sumup_refunds` (`attempt_id`);
+--> statement-breakpoint
 INSERT OR IGNORE INTO `account_classes` (`code`, `label`, `type`, `created_at`) VALUES
 ('419', 'Clients, avances reçues', 'tresorerie', CAST(strftime('%s','now') AS INTEGER));
 --> statement-breakpoint

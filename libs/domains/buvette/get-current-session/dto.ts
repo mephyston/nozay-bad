@@ -9,5 +9,5 @@ export interface CurrentSession {
   /** Les ventes qui attendent leur CB, et leur dernière tentative. */
   inProgress: { saleId: number; cardCents: number; prepaidCents: number; rechargeCents: number; foreignTxId: string | null; attemptStatus: string | null }[];
   /** Des paiements CB à rembourser depuis SumUp : réussis sur une vente qui n'attendait plus. */
-  toRefund: { transactionCode: string | null; amountCents: number; anomaly: string | null }[];
+  toRefund: { attemptId: number; transactionCode: string | null; amountCents: number; anomaly: string | null; refundStatus: 'pending' | 'done' | 'failed' | null }[];
 }

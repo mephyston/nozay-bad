@@ -1,6 +1,6 @@
 import { and, eq, isNotNull, sql } from 'drizzle-orm';
 import { type DbOrTx } from '@nba/db';
-import { buvetteCardAttemptsTable, buvetteSalesTable } from '../shared/schema';
+import { buvetteCardAttemptsTable, buvetteSalesTable, buvetteSumUpRefundsTable } from '../shared/schema';
 
 export class GetCurrentSessionRepository {
   inProgress(db: DbOrTx, sessionId: number) {
@@ -22,13 +22,20 @@ export class GetCurrentSessionRepository {
   toRefund(db: DbOrTx, sessionId: number) {
     return db
       .select({
+        attemptId: buvetteCardAttemptsTable.id,
         transactionCode: buvetteCardAttemptsTable.transactionCode,
         amountCents: buvetteCardAttemptsTable.amountCents,
-        anomaly: buvetteCardAttemptsTable.anomaly
+        anomaly: buvetteCardAttemptsTable.anomaly,
+        refundStatus: buvetteSumUpRefundsTable.status
       })
       .from(buvetteCardAttemptsTable)
       .innerJoin(buvetteSalesTable, eq(buvetteCardAttemptsTable.saleId, buvetteSalesTable.id))
-      .where(and(eq(buvetteSalesTable.sessionId, sessionId), isNotNull(buvetteCardAttemptsTable.anomaly)))
+      .leftJoin(buvetteSumUpRefundsTable, eq(buvetteSumUpRefundsTable.attemptId, buvetteCardAttemptsTable.id))
+      .where(and(
+        eq(buvetteSalesTable.sessionId, sessionId),
+        isNotNull(buvetteCardAttemptsTable.anomaly),
+        sql`(${buvetteSumUpRefundsTable.status} IS NULL OR ${buvetteSumUpRefundsTable.status} <> 'done')`
+      ))
       .all();
   }
 

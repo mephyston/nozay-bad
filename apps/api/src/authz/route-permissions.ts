@@ -67,6 +67,7 @@ export const ROUTE_PERMISSIONS: RouteRule[] = [
   // Sans compte ni session : la page de retour de SumUp peut s'ouvrir dans un autre navigateur.
   // Elle ne transmet qu'un identifiant et ne fait que relire la vérité chez SumUp.
   { method: 'POST', path: '/buvette/card-attempts/verify', permission: 'buvette:sales:write', callers: ['caisse'], feature: 'buvette' },
+  { method: 'POST', path: '/buvette/card-attempts/:id/refund', permission: 'buvette:sales:write', callers: ['caisse'], feature: 'buvette' },
   { method: 'GET', path: '/buvette/orders', permission: 'buvette:sales:write', callers: ['caisse'], feature: 'buvette' },
   { method: 'GET', path: '/buvette/orders/:id', permission: 'buvette:sales:write', callers: ['caisse'], feature: 'buvette' },
   // Le catalogue vu par les clients : ce qui est en vente, sans catégorie comptable.
