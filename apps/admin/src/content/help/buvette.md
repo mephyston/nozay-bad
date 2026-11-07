@@ -15,13 +15,13 @@ Le **plafond de solde** limite ce qu'une carte peut contenir. Une recharge qui l
 
 ## Tenir la caisse
 
-1. **Ouvrir** : dans **Buvette → Caisse**, comptez le fond de caisse et saisissez-le. Une seule session peut être ouverte à la fois, et plusieurs bénévoles peuvent y encaisser. Sans cela, la caisse des bénévoles affiche qu'elle est fermée.
+1. **Ouvrir** : dans **Buvette → Session de caisse**, comptez le fond de caisse et saisissez-le. Une seule session peut être ouverte à la fois, et plusieurs bénévoles peuvent y encaisser. Sans cela, la caisse des bénévoles affiche qu'elle est fermée.
 2. **Encaisser** : composez le panier, puis appuyez sur **Encaisser**.
    - **Carte buvette** : scannez le QR code du client. Si le solde suffit, la vente est payée aussitôt. Sinon, le reste se paie en espèces ou en CB.
    - **Espèces** : appuyez sur **Montant exact** ou sur le billet reçu : la caisse affiche la monnaie à rendre. Pour un autre montant, saisissez-le.
    - **CB** : appuyez sur **CB**. L'application SumUp s'ouvre avec le montant, le client présente sa carte, puis revenez à la caisse.
 3. **Recharger** : touchez **Recharge carte** dans la grille, choisissez un montant et scannez la carte. Une recharge se paie en espèces ou en CB, jamais avec la carte elle-même.
-4. **Clôturer** : dans **Buvette → Caisse**, comptez les espèces et saisissez le total. L'écran indique l'écart éventuel et la synthèse part en comptabilité.
+4. **Clôturer** : dans **Buvette → Session de caisse**, comptez les espèces et saisissez le total. L'écran indique l'écart éventuel et la synthèse part en comptabilité.
 
 ## Si la CB n'aboutit pas
 
