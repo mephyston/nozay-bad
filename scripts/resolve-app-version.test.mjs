@@ -25,11 +25,9 @@ describe('resolveAppVersion', () => {
     expect(resolveAppVersion({ nearestTag: 'v2.2.2', sha: SHA, env: 'staging' })).toBe('2.2.2+d0438f6');
   });
 
-  it('n’affiche jamais un SHA nu en production, même sur un commit non taggé', () => {
-    // C'est ce que `git describe --exact-match` produisait : 40 caractères dans le badge.
-    const version = resolveAppVersion({ nearestTag: 'v2.2.2', sha: SHA, env: 'production' });
-    expect(version).toBe('2.2.2+d0438f6');
-    expect(version).not.toContain(SHA);
+  it('n’affiche jamais le commit en production, même sur un commit non taggé', () => {
+    expect(resolveAppVersion({ nearestTag: 'v2.2.2', sha: SHA, env: 'production' })).toBe('2.2.2');
+    expect(resolveAppVersion({ sha: SHA, env: 'production' })).toBe('0.0.0');
   });
 
   it('tient un dépôt sans aucun tag', () => {

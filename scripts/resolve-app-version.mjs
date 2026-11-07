@@ -48,7 +48,8 @@ function bare(value) {
  * déploiements d'une même version sans prétendre en être une nouvelle. La
  * préproduction la porte toujours — on y redéploie sans cesse le même numéro, et sans
  * elle on ne saurait pas si sa dernière livraison est passée. La production ne la porte
- * que faute de tag exact, c'est-à-dire quand on promeut un commit intermédiaire.
+ * jamais, les adhérents n'ont pas à la lire : un commit intermédiaire promu y affiche le
+ * numéro de la dernière version dont il descend.
  *
  * @param {{released?: string|null, exactTag?: string|null, nearestTag?: string|null,
  *          sha?: string|null, env?: string}} facts
@@ -56,16 +57,11 @@ function bare(value) {
  */
 export function resolveAppVersion({ released, exactTag, nearestTag, sha, env } = {}) {
   const build = (sha ?? '').trim().slice(0, SHORT_SHA);
-  const identity = bare(released) || bare(exactTag);
+  const version = bare(released) || bare(exactTag) || bare(nearestTag) || '0.0.0';
 
-  if (identity) {
-    // Sans SHA on ne peut pas qualifier la build : mieux vaut le numéro seul qu'un
-    // « 2.2.2+ » bancal.
-    return env === 'production' || !build ? identity : `${identity}+${build}`;
-  }
-
-  const previous = bare(nearestTag) || '0.0.0';
-  return build ? `${previous}+${build}` : previous;
+  // Sans SHA on ne peut pas qualifier la build : mieux vaut le numéro seul qu'un
+  // « 2.2.2+ » bancal.
+  return env === 'production' || !build ? version : `${version}+${build}`;
 }
 
 // ─── CLI ────────────────────────────────────────────────────────────────────────
