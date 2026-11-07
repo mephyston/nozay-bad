@@ -175,6 +175,8 @@ describe('Astro Auth Middleware', () => {
 
     expect(response.status).toBe(403);
     expect(next).not.toHaveBeenCalled();
+    // Sans compte, pas de tableau de bord où revenir : la sortie ferme la session Access.
+    expect(await response.text()).toContain('href="/cdn-cgi/access/logout"');
   });
 
   describe('API IAM injoignable', () => {
