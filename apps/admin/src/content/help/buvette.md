@@ -37,7 +37,7 @@ Si la caisse affiche **À rembourser dans SumUp**, de l'argent a été pris pour
 
 ## Rembourser une vente
 
-En cas d'erreur, ouvrez l'onglet **Ventes** de la caisse, touchez la vente, puis **Rembourser cette vente**. Un écran récapitule ce qui va se passer, à confirmer : la part payée par carte y revient, ou se rend en espèces si le client a supprimé sa carte ; les espèces se rendent ; une part payée en CB se rembourse dans l'application SumUp.
+En cas d'erreur, ouvrez l'onglet **Ventes** de la caisse, touchez la vente, puis **Rembourser cette vente**. Un écran annonce d'abord si vous aurez des espèces à remettre, puis la caisse vous demande de confirmer que vous les avez remises : la part payée par carte y revient, ou se rend en espèces si le client a supprimé sa carte ; les espèces se rendent ; une part payée en CB se rembourse dans l'application SumUp.
 
 ## Rembourser une carte
 

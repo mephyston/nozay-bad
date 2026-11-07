@@ -52,7 +52,7 @@ Le bénévole compose un panier et encaisse depuis un seul écran. Le montant pa
 
 **Double validation.** Une vente porte un identifiant généré par la caisse : un double appui ou une nouvelle tentative réseau ne l'encaisse et ne la débite qu'une fois.
 
-**Rembourser une vente.** Tant que la session est ouverte, un bénévole retrouve la vente dans l'onglet Ventes. Un écran récapitule le remboursement, à confirmer : la part carte revient sur la carte si elle existe encore, sinon elle sort en espèces ; les espèces se rendent ; la part CB se rembourse dans SumUp, ce que la caisse rappelle. Une recharge déjà consommée ne se rembourse pas ainsi. Après la clôture, seul un responsable corrige, avec un motif et une écriture de régularisation.
+**Rembourser une vente.** Tant que la session est ouverte, un bénévole retrouve la vente dans l'onglet Ventes. Un écran annonce d'abord s'il aura des espèces à remettre, ou si tout revient sur la carte. Après le remboursement, un dernier écran demande de confirmer que les espèces ont bien été remises. Le partage est le suivant : la part carte revient sur la carte si elle existe encore, sinon elle sort en espèces ; les espèces se rendent ; la part CB se rembourse dans SumUp, ce que la caisse rappelle. Une recharge déjà consommée ne se rembourse pas ainsi. Après la clôture, seul un responsable corrige, avec un motif et une écriture de régularisation.
 
 ---
 
@@ -78,8 +78,15 @@ Fonctionnalité: Vente et encaissement
   Scénario: Rembourser une vente demande une confirmation
     Étant donné une vente de 4 € payée en espèces dans la session ouverte
     Quand le bénévole demande son remboursement depuis l'onglet Ventes
-    Alors un écran annonce 4 € à rendre en espèces
+    Alors un écran annonce 4 € à remettre en espèces
     Et rien n'est remboursé avant sa confirmation
+    Quand il confirme
+    Alors la caisse lui demande de confirmer avoir remis 4 € au client
+
+  Scénario: Tout revient sur la carte
+    Étant donné une vente de 5 € payée entièrement par carte
+    Quand le bénévole la rembourse
+    Alors la caisse indique qu'aucune espèce n'est à remettre
 
   Scénario: La carte n'existe plus
     Étant donné une vente de 3 € payée par une carte depuis supprimée

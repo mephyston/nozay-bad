@@ -26,9 +26,11 @@ Un client qui ne veut plus utiliser sa carte récupère son solde en espèces au
 
 **La caisse doit pouvoir payer.** Le remboursement est refusé si les espèces théoriques sont inférieures au montant.
 
+**Le bénévole confirme la remise.** Après le remboursement, la caisse lui demande de confirmer qu'il a remis les espèces au client.
+
 **Atomique.** La mise à zéro de la carte et la sortie d'espèces sont enregistrées ensemble, sous un identifiant qui empêche de rembourser deux fois.
 
-**Traçabilité.** Le remboursement apparaît dans l'historique de la carte, un courriel en informe le titulaire, et la clôture en donne la liste avec le nom du bénévole.
+**Traçabilité.** Le remboursement apparaît dans l'historique de la carte, un courriel en informe le titulaire, chaque mouvement garde le nom du bénévole et la clôture en donne le total.
 
 **Comptabilité.** Ce n'est pas une dépense : un virement va de la caisse vers le compte de dette de cartes (RF-BUV-003).
 
