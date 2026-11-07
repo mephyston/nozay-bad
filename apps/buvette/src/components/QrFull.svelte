@@ -1,8 +1,10 @@
 <script lang="ts">
   import { onDestroy, onMount } from 'svelte';
   import qrcode from 'qrcode-generator';
+  import { euros } from '../lib/format';
 
   let qrImage = $state('');
+  let order = $state<{ id: number; totalCents: number; lines: { itemId: number; name: string; quantity: number }[] } | null>(null);
   let error = $state('');
   let timer: ReturnType<typeof setInterval> | undefined;
   let wakeLock: { release: () => Promise<void> } | null = null;
@@ -23,6 +25,8 @@
       qr.make();
       qrImage = qr.createDataURL(10, 2);
       error = '';
+      const current = (await (await fetch('/api/order', { cache: 'no-store' })).json().catch(() => null)) as any;
+      order = current?.ok ? current.data : null;
     } catch {
       qrImage = '';
       error = 'Connexion impossible. Vérifiez votre réseau.';
@@ -70,4 +74,12 @@
     <p class="text-sm text-black">Préparation du QR code…</p>
   {/if}
 </div>
-<p class="text-muted-foreground text-center text-sm">Présentez ce code à la buvette. Il se renouvelle tout seul.</p>
+{#if order}
+  <section class="bg-card rounded-2xl border p-4 text-center">
+    <p class="text-lg font-semibold">Commande n° {order.id} · {euros(order.totalCents)}</p>
+    <p class="text-muted-foreground text-sm">{order.lines.map((l) => `${l.quantity} × ${l.name}`).join(', ')}</p>
+  </section>
+{/if}
+<p class="text-muted-foreground text-center text-sm">
+  {order ? 'Présentez ce code à la buvette, ou donnez votre numéro de commande.' : 'Présentez ce code à la buvette. Il se renouvelle tout seul.'}
+</p>

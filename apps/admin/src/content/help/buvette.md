@@ -23,6 +23,12 @@ Le **plafond de solde** limite ce qu'une carte peut contenir. Une recharge qui l
 3. **Recharger** : touchez **Recharge carte** dans la grille, choisissez un montant et scannez la carte. Une recharge se paie en espèces ou en CB, jamais avec la carte elle-même.
 4. **Clôturer** : dans **Buvette → Session de caisse**, comptez les espèces et saisissez le total. L'écran indique l'écart éventuel et la synthèse part en comptabilité.
 
+## Les commandes des clients
+
+Le client peut préparer sa commande dans son application, onglet **Commander**, puis présenter son QR code. Rien n'est débité avant l'encaissement. Un article retiré de la vente dans le catalogue disparaît de l'application.
+
+À la caisse, l'onglet **Commandes** les liste. Scannez le QR du client, ou cherchez la commande par son numéro ou son adresse e-mail si le scan échoue, puis **Encaisser la commande**. La carte du client paie ce qu'elle peut, et le reste se règle en espèces ou en CB.
+
 ## Si la CB n'aboutit pas
 
 La vente reste en attente tant que SumUp n'a pas confirmé le paiement, et la caisse le vérifie à votre retour. Vous pouvez ensuite **Vérifier le paiement**, **Relancer le paiement CB** ou **Abandonner la vente**. La clôture est impossible tant qu'une vente attend.
@@ -31,7 +37,7 @@ Si la caisse affiche **À rembourser dans SumUp**, de l'argent a été pris pour
 
 ## Rembourser une vente
 
-En cas d'erreur, l'icône en haut à droite de la caisse ouvre les **Transactions** de la session. Touchez la vente, puis **Rembourser cette vente** : la carte est recréditée et la caisse affiche les espèces à rendre. Une part payée en CB se rembourse dans l'application SumUp.
+En cas d'erreur, ouvrez l'onglet **Ventes** de la caisse, touchez la vente, puis **Rembourser cette vente**. Un écran récapitule ce qui va se passer, à confirmer : la part payée par carte y revient, ou se rend en espèces si le client a supprimé sa carte ; les espèces se rendent ; une part payée en CB se rembourse dans l'application SumUp.
 
 ## Rembourser une carte
 

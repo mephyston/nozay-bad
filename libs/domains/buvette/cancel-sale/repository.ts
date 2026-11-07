@@ -1,10 +1,18 @@
 import { and, eq, sql } from 'drizzle-orm';
 import { type DbOrTx } from '@nba/db';
-import { buvetteCardMovementsTable, buvetteCardsTable, buvetteSalesTable, buvetteSessionsTable } from '../shared/schema';
+import { buvetteCardMovementsTable, buvetteCardsTable, buvetteOrdersTable, buvetteSalesTable, buvetteSessionsTable } from '../shared/schema';
 
 export class CancelSaleRepository {
   getSale(db: DbOrTx, id: number) {
     return db.select().from(buvetteSalesTable).where(eq(buvetteSalesTable.id, id)).get();
+  }
+
+  getCard(db: DbOrTx, id: number) {
+    return db.select().from(buvetteCardsTable).where(eq(buvetteCardsTable.id, id)).get();
+  }
+
+  buildCancelOrderStatement(db: DbOrTx, orderId: number): any {
+    return db.update(buvetteOrdersTable).set({ status: 'cancelled' }).where(eq(buvetteOrdersTable.id, orderId));
   }
 
   getSession(db: DbOrTx, id: number) {

@@ -1,6 +1,6 @@
 import { desc, eq, inArray } from 'drizzle-orm';
 import { type DbOrTx } from '@nba/db';
-import { buvetteSaleLinesTable, buvetteSalesTable } from '../shared/schema';
+import { buvetteCardsTable, buvetteSaleLinesTable, buvetteSalesTable } from '../shared/schema';
 
 export class ListSessionSalesRepository {
   /** Bornée : une caisse revient sur ses dernières ventes, pas sur tout un tournoi d'un coup. */
@@ -10,6 +10,10 @@ export class ListSessionSalesRepository {
       .orderBy(desc(buvetteSalesTable.id))
       .limit(limit)
       .all();
+  }
+
+  cards(db: DbOrTx, cardIds: number[]) {
+    return db.select().from(buvetteCardsTable).where(inArray(buvetteCardsTable.id, cardIds)).all();
   }
 
   lines(db: DbOrTx, saleIds: number[]) {

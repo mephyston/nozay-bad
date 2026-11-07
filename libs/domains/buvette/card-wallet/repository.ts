@@ -1,6 +1,6 @@
 import { and, desc, eq, ne, sql } from 'drizzle-orm';
 import { type DbOrTx } from '@nba/db';
-import { buvetteCardDevicesTable, buvetteCardMovementsTable, buvetteCardsTable, buvetteSaleLinesTable, buvetteSalesTable } from '../shared/schema';
+import { buvetteCardDevicesTable, buvetteCardMovementsTable, buvetteCardsTable, buvetteOrdersTable, buvetteSaleLinesTable, buvetteSalesTable } from '../shared/schema';
 
 export class CardWalletRepository {
   movements(db: DbOrTx, cardId: number) {
@@ -21,8 +21,13 @@ export class CardWalletRepository {
   /** L'historique comptable reste, sans l'adresse. Le filtre écarte une recharge arrivée entre-temps. */
   buildForgetStatement(db: DbOrTx, cardId: number): any {
     return db.update(buvetteCardsTable)
-      .set({ email: `supprime-${cardId}@carte.invalid` })
+      .set({ email: `supprime-${cardId}@carte.invalid`, deletedAt: new Date() })
       .where(and(eq(buvetteCardsTable.id, cardId), eq(buvetteCardsTable.balanceCents, 0), eq(buvetteCardsTable.reservedCents, 0)));
+  }
+
+  buildCancelOrdersStatement(db: DbOrTx, cardId: number): any {
+    return db.update(buvetteOrdersTable).set({ status: 'cancelled' })
+      .where(and(eq(buvetteOrdersTable.cardId, cardId), eq(buvetteOrdersTable.status, 'pending')));
   }
 
   buildRevokeAllStatement(db: DbOrTx, cardId: number): any {

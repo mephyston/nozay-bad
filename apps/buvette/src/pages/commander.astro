@@ -1,0 +1,19 @@
+---
+import { createApiClient } from '@nba/api-client';
+import Layout from '../layouts/Layout.astro';
+import OrderBuilder from '../components/OrderBuilder.svelte';
+import { forCard, walletOf } from '../lib/card-api';
+import { resolveEnv } from '../lib/http';
+
+const api = createApiClient(resolveEnv<any>(Astro.locals), { caller: 'buvette' });
+const catalogRes = await api.fetch('http://localhost/buvette/catalog');
+const catalog = catalogRes.ok ? ((await catalogRes.json()) as any).data : { open: false, items: [] };
+
+const currentRes = await forCard(Astro.locals, 'order/current');
+const current = currentRes.ok ? ((await currentRes.json()) as any).data : null;
+const wallet = await walletOf(Astro.locals);
+---
+
+<Layout title="Commander">
+  <OrderBuilder client:load open={catalog.open} items={catalog.items} {current} balanceCents={(wallet?.balanceCents ?? 0) - (wallet?.reservedCents ?? 0)} />
+</Layout>

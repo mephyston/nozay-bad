@@ -1,7 +1,8 @@
 <script lang="ts">
   import { onDestroy, onMount } from 'svelte';
-  import { Banknote, Check, ChevronLeft, ChevronRight, CreditCard, Plus, QrCode, ReceiptText, RotateCcw, ShoppingBasket } from '@lucide/svelte';
+  import { Banknote, Check, ChevronLeft, ChevronRight, CreditCard, Plus, QrCode, RotateCcw, ScanLine, ShoppingBasket } from '@lucide/svelte';
   import { Button, Input } from '@nba/ui';
+  import CaisseNav from './CaisseNav.svelte';
   import QrScanner from './QrScanner.svelte';
   import { isIosDevice, sumUpLink } from '../lib/sumup-link';
   import { callApi, formatEuros, itemsTotal, newClientId, parseEuros, splitPayment, suggestedNotes, type CatalogItem } from '../lib/cart';
@@ -29,17 +30,29 @@
     prepaidCents: number;
     cashCents: number;
     cardCents: number;
+    prepaidCardLabel: string | null;
+    prepaidCardDeleted: boolean;
     lines: { name: string; quantity: number; unitPriceCents: number }[];
+  }
+
+  interface PendingOrder {
+    id: number;
+    createdAt: string;
+    label: string;
+    availableCents: number;
+    totalCents: number;
+    lines: { name: string; quantity: number; unitPriceCents: number; available: boolean }[];
   }
 
   interface ScannedCard {
     scanToken: string;
     label: string;
     balanceCents: number;
+    pendingOrderId?: number | null;
   }
 
-  type Screen = 'loading' | 'closed' | 'sell' | 'cart' | 'recharge' | 'scan' | 'pay' | 'cash' | 'cb' | 'done' | 'sales' | 'sale' | 'refund';
-  type ScanPurpose = 'prepaid' | 'recharge' | 'refund';
+  type Screen = 'loading' | 'closed' | 'sell' | 'cart' | 'recharge' | 'scan' | 'pay' | 'cash' | 'cb' | 'done' | 'sales' | 'sale' | 'saleConfirm' | 'orders' | 'order' | 'refund';
+  type ScanPurpose = 'prepaid' | 'recharge' | 'refund' | 'order';
 
   let { affiliateKey, clubName }: Props = $props();
 
@@ -69,13 +82,21 @@
   let lastSale = $state<{ id: number; cashCents: number; cardCents: number; prepaidCents: number } | null>(null);
   let sales = $state<SessionSale[]>([]);
   let selectedSale = $state<SessionSale | null>(null);
+  let orders = $state<PendingOrder[]>([]);
+  let orderSearch = $state('');
+  let selectedOrder = $state<PendingOrder | null>(null);
+  /** La commande en cours d'encaissement : ses articles et sa carte viennent d'elle. */
+  let payingOrder = $state<PendingOrder | null>(null);
+  let ordersTimer: ReturnType<typeof setInterval> | undefined;
   let doneTimer: ReturnType<typeof setTimeout> | undefined;
   // Le même identifiant tant que la vente n'a pas abouti : un nouvel essai réseau n'encaisse qu'une fois.
   let saleClientId = newClientId();
   let refundClientId = newClientId();
 
+  const NAV_SCREENS: Screen[] = ['sell', 'sales', 'orders', 'closed'];
+  const activeTab = $derived(screen === 'sell' ? 'sell' : screen === 'sales' ? 'sales' : screen === 'orders' ? 'orders' : null);
   const activeItems = $derived(items.filter((i) => i.active));
-  const itemsCents = $derived(itemsTotal(cart, items));
+  const itemsCents = $derived(payingOrder ? payingOrder.totalCents : itemsTotal(cart, items));
   const totalCents = $derived(itemsCents + rechargeCents);
   const articleCount = $derived([...cart.values()].reduce((sum, q) => sum + q, 0) + (rechargeCents > 0 ? 1 : 0));
   const split = $derived(splitPayment(itemsCents, rechargeCents, prepaidCard?.balanceCents ?? null));
@@ -118,7 +139,13 @@
       await resume();
     });
     document.addEventListener('visibilitychange', resume);
-    return () => document.removeEventListener('visibilitychange', resume);
+    // Les commandes arrivent des téléphones : le compteur du menu les signale sans recharger.
+    ordersTimer = setInterval(pollOrders, 15_000);
+    pollOrders();
+    return () => {
+      clearInterval(ordersTimer);
+      document.removeEventListener('visibilitychange', resume);
+    };
   });
 
   onDestroy(() => clearTimeout(doneTimer));
@@ -147,11 +174,14 @@
     rechargeCents = 0;
     rechargeCard = null;
     prepaidCard = null;
+    payingOrder = null;
+    selectedOrder = null;
     amountInput = '';
     saleClientId = newClientId();
   }
 
   function salePayload(extra: Record<string, unknown>) {
+    if (payingOrder) return { clientId: saleClientId, lines: [], orderId: payingOrder.id, expectedOrderCents: payingOrder.totalCents, expectedCashCents: split.cashCents, ...extra };
     return {
       clientId: saleClientId,
       lines: [...cart].map(([itemId, quantity]) => ({ itemId, quantity })),
@@ -182,7 +212,11 @@
   }
 
   function cancelScan() {
-    go(scanPurpose === 'refund' ? 'refund' : scanPurpose === 'recharge' ? 'recharge' : 'pay');
+    go(backFromScan(scanPurpose));
+  }
+
+  function backFromScan(purpose: ScanPurpose): Screen {
+    return purpose === 'refund' ? 'refund' : purpose === 'recharge' ? 'recharge' : purpose === 'order' ? 'orders' : 'pay';
   }
 
   function chooseRecharge(cents: number) {
@@ -195,7 +229,10 @@
       const purpose = scanPurpose;
       try {
         const card = await callApi<ScannedCard>('cards/scan', { qrToken });
-        if (purpose === 'refund') {
+        if (purpose === 'order') {
+          if (!card.pendingOrderId) throw new Error(`Aucune commande en cours sur la carte ${card.label}.`);
+          await showOrder(card.pendingOrderId);
+        } else if (purpose === 'refund') {
           refundTarget = card;
           screen = 'refund';
         } else if (purpose === 'recharge') {
@@ -209,7 +246,7 @@
           if (splitPayment(itemsCents, rechargeCents, card.balanceCents).cashCents === 0) await confirmSale(null);
         }
       } catch (e) {
-        screen = purpose === 'refund' ? 'refund' : purpose === 'recharge' ? 'recharge' : 'pay';
+        screen = backFromScan(purpose);
         throw e;
       }
     });
@@ -239,6 +276,48 @@
       return;
     }
     run(() => confirmSale(received));
+  }
+
+  async function pollOrders() {
+    if (document.visibilityState !== 'visible' || !current || screen === 'orders') return;
+    orders = await callApi<PendingOrder[]>('orders').catch(() => orders);
+  }
+
+  function selectTab(tab: 'sell' | 'orders' | 'sales') {
+    error = '';
+    if (tab === 'sell') screen = current ? 'sell' : 'closed';
+    if (tab === 'orders') openOrders();
+    if (tab === 'sales') openSales();
+  }
+
+  function openOrders() {
+    run(async () => {
+      orderSearch = '';
+      orders = await callApi<PendingOrder[]>('orders');
+      screen = 'orders';
+    });
+  }
+
+  function searchOrders() {
+    run(async () => {
+      const query = orderSearch.trim() ? `?search=${encodeURIComponent(orderSearch.trim())}` : '';
+      orders = await callApi<PendingOrder[]>(`orders${query}`);
+    });
+  }
+
+  function showOrder(id: number) {
+    return run(async () => {
+      selectedOrder = await callApi<PendingOrder>(`orders/${id}`);
+      screen = 'order';
+    });
+  }
+
+  /** La commande passe en paiement : le reste du parcours est celui d'une vente. */
+  function collectOrder(order: PendingOrder) {
+    resetSale();
+    payingOrder = order;
+    prepaidCard = { scanToken: '', label: order.label, balanceCents: order.availableCents };
+    go('pay');
   }
 
   function launchSumUp(foreignTxId: string, amountCents: number) {
@@ -299,20 +378,28 @@
     });
   }
 
-  /** Rembourse une vente : la carte retrouve son dû, le reste se rend à la main ou dans SumUp. */
-  function refundSale(sale: { id: number; cashCents: number; cardCents: number; prepaidCents: number }) {
+  /** Ce que le remboursement va faire : affiché avant, pour que le bénévole confirme en connaissance. */
+  function refundPlan(sale: SessionSale) {
+    return {
+      toCardCents: sale.prepaidCardDeleted ? 0 : sale.prepaidCents,
+      toCashCents: sale.cashCents + (sale.prepaidCardDeleted ? sale.prepaidCents : 0),
+      toSumUpCents: sale.cardCents
+    };
+  }
+
+  function refundSale(sale: SessionSale) {
     run(async () => {
-      await callApi(`sales/${sale.id}/cancel`, {});
+      const result = await callApi(`sales/${sale.id}/cancel`, {});
       if (lastSale?.id === sale.id) lastSale = null;
       selectedSale = null;
       await refresh();
       showDone({
         title: 'Vente remboursée',
         amountCents: 0,
-        changeCents: sale.cashCents > 0 ? sale.cashCents : null,
+        changeCents: result.cashToReturnCents > 0 ? result.cashToReturnCents : null,
         detail: [
-          sale.prepaidCents > 0 ? `${formatEuros(sale.prepaidCents)} recrédités sur la carte.` : '',
-          sale.cardCents > 0 ? `Remboursez ${formatEuros(sale.cardCents)} dans SumUp.` : ''
+          result.cardCreditedCents > 0 ? `${formatEuros(result.cardCreditedCents)} recrédités sur la carte.` : '',
+          result.sumUpToRefundCents > 0 ? `Remboursez ${formatEuros(result.sumUpToRefundCents)} dans SumUp.` : ''
         ].filter(Boolean).join(' ')
       });
       // Rien ne s'efface seul : le bénévole doit lire ce qu'il lui reste à faire.
@@ -320,9 +407,17 @@
     });
   }
 
-  function cancelLastSale() {
-    const sale = lastSale;
-    if (sale) refundSale(sale);
+  /** Depuis l'écran de fin : même confirmation que depuis la liste des ventes. */
+  function reviewLastSale() {
+    const id = lastSale?.id;
+    if (!id) return;
+    run(async () => {
+      sales = await callApi<SessionSale[]>('sessions/current/sales');
+      selectedSale = sales.find((s) => s.id === id) ?? null;
+      clearTimeout(doneTimer);
+      done = null;
+      screen = selectedSale ? 'saleConfirm' : 'sales';
+    });
   }
 
   function confirmRefund() {
@@ -355,9 +450,6 @@
         <span class="text-muted-foreground -mt-0.5 block text-[10px] font-semibold tracking-wider uppercase">Caisse</span>
       </div>
     </div>
-    {#if screen === 'sell'}
-      <button type="button" aria-label="Transactions" class="flex size-11 items-center justify-center" disabled={busy} onclick={openSales}><ReceiptText class="size-6" /></button>
-    {/if}
   </div>
 </header>
 
@@ -385,14 +477,14 @@
   {:else if screen === 'scan'}
     <main class="p-4">
       <QrScanner
-        title={scanPurpose === 'recharge' ? 'Carte à recharger' : scanPurpose === 'refund' ? 'Carte à rembourser' : 'Carte du client'}
+        title={scanPurpose === 'recharge' ? 'Carte à recharger' : scanPurpose === 'refund' ? 'Carte à rembourser' : scanPurpose === 'order' ? 'QR du client' : 'Carte du client'}
         {onScan}
         onCancel={cancelScan}
       />
     </main>
 
   {:else if screen === 'sell'}
-    <main class="grid grow auto-rows-min grid-cols-3 gap-2 p-3 pb-36">
+    <main class="grid grow auto-rows-min grid-cols-3 gap-2 p-3" style="padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 13rem)">
       {#each activeItems as item (item.id)}
         {@const quantity = cart.get(item.id) ?? 0}
         <button
@@ -415,12 +507,16 @@
         <RotateCcw class="size-5" />
         <span class="text-sm leading-tight font-semibold">Rembourser une carte</span>
       </button>
+      <button type="button" class="active:bg-muted flex aspect-square flex-col justify-between rounded-2xl border border-dashed p-3 text-left" onclick={() => startScan('order')}>
+        <ScanLine class="size-5" />
+        <span class="text-sm leading-tight font-semibold">Scanner une commande</span>
+      </button>
       {#if activeItems.length === 0}
         <p class="text-muted-foreground col-span-3 text-sm">Aucun article en vente : le catalogue se règle dans l'administration.</p>
       {/if}
     </main>
 
-    <div class="bg-background fixed inset-x-0 bottom-0 z-10 border-t" style="padding-bottom: env(safe-area-inset-bottom, 0px)">
+    <div class="bg-background fixed inset-x-0 bottom-0 z-10 border-t" style="padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 4.75rem)">
       <div class="mx-auto max-w-md space-y-2 p-3">
         {#if !cartEmpty}
           <button type="button" class="flex min-h-10 w-full items-center gap-2 text-sm" onclick={() => go('cart')}>
@@ -483,7 +579,11 @@
 
   {:else if screen === 'pay'}
     <main class="flex grow flex-col gap-4 p-4">
-      {@render back('Panier', cartEmpty ? 'sell' : 'cart', () => (prepaidCard = null))}
+      {#if payingOrder}
+        {@render back('Commande', 'order', () => { payingOrder = null; prepaidCard = null; })}
+      {:else}
+        {@render back('Panier', cartEmpty ? 'sell' : 'cart', () => (prepaidCard = null))}
+      {/if}
       <div class="py-6 text-center">
         <p class="text-muted-foreground text-sm">{prepaidCard ? 'Reste à payer' : 'À payer'}</p>
         <p class="text-5xl font-semibold tabular-nums">{formatEuros(split.cashCents)}</p>
@@ -491,20 +591,25 @@
           <p class="text-muted-foreground mt-2 text-sm">{formatEuros(split.prepaidCents)} sur la carte {prepaidCard.label}</p>
         {/if}
       </div>
+      {#if split.cashCents === 0}
+        <Button size="lg" class="h-14 w-full text-lg" disabled={busy} onclick={() => run(() => confirmSale(null))}>Valider la commande</Button>
+      {/if}
       <div class="grid gap-2">
         {#if !prepaidCard && itemsCents > 0}
           <button type="button" class="bg-card active:bg-muted flex items-center gap-4 rounded-2xl border p-5 text-lg font-semibold" disabled={busy} onclick={() => startScan('prepaid')}>
             <QrCode class="size-7" />Carte buvette
           </button>
         {/if}
-        {#if affiliateKey}
+        {#if affiliateKey && split.cashCents > 0}
           <button type="button" class="bg-card active:bg-muted flex items-center gap-4 rounded-2xl border p-5 text-lg font-semibold" disabled={busy} onclick={payByCard}>
             <CreditCard class="size-7" />CB
           </button>
         {/if}
-        <button type="button" class="bg-card active:bg-muted flex items-center gap-4 rounded-2xl border p-5 text-lg font-semibold" disabled={busy} onclick={() => { amountInput = ''; go('cash'); }}>
-          <Banknote class="size-7" />Espèces
-        </button>
+        {#if split.cashCents > 0}
+          <button type="button" class="bg-card active:bg-muted flex items-center gap-4 rounded-2xl border p-5 text-lg font-semibold" disabled={busy} onclick={() => { amountInput = ''; go('cash'); }}>
+            <Banknote class="size-7" />Espèces
+          </button>
+        {/if}
       </div>
     </main>
 
@@ -562,14 +667,13 @@
       {/if}
       <Button size="lg" class="mt-4 h-14 w-full text-lg" onclick={newSale}>Nouvelle vente</Button>
       {#if lastSale && done.title !== 'Vente remboursée' && done.title !== 'Solde remboursé'}
-        <Button variant="ghost" class="w-full" disabled={busy} onclick={cancelLastSale}>Rembourser cette vente</Button>
+        <Button variant="ghost" class="w-full" disabled={busy} onclick={reviewLastSale}>Rembourser cette vente</Button>
       {/if}
     </main>
 
   {:else if screen === 'sales'}
-    <main class="grow space-y-3 p-4">
-      {@render back('Articles', 'sell')}
-      <h1 class="text-2xl font-semibold">Transactions</h1>
+    <main class="grow space-y-3 p-4" style="padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 6rem)">
+      <h1 class="text-2xl font-semibold">Ventes</h1>
       {#if sales.length}
         <ul class="bg-card divide-y overflow-hidden rounded-2xl border">
           {#each sales as sale (sale.id)}
@@ -592,7 +696,7 @@
 
   {:else if screen === 'sale' && selectedSale}
     <main class="flex grow flex-col gap-4 p-4">
-      {@render back('Transactions', 'sales', () => (selectedSale = null))}
+      {@render back('Ventes', 'sales', () => (selectedSale = null))}
       <div class="py-2 text-center">
         <p class="text-muted-foreground text-sm">{time(selectedSale.createdAt)} · {saleStatus(selectedSale)}</p>
         <p class="text-5xl font-semibold tabular-nums">{formatEuros(selectedSale.itemsCents + selectedSale.rechargeCents)}</p>
@@ -614,8 +718,86 @@
         {#if selectedSale.rechargeCents > 0}
           <p class="text-muted-foreground text-sm">Le remboursement retire la recharge de la carte. Il est refusé si elle a déjà été dépensée.</p>
         {/if}
-        <Button variant="destructive" size="lg" class="h-14 w-full text-lg" disabled={busy} onclick={() => refundSale(selectedSale!)}>Rembourser cette vente</Button>
+        <Button variant="outline" size="lg" class="h-14 w-full text-lg" onclick={() => go('saleConfirm')}>Rembourser cette vente</Button>
       {/if}
+    </main>
+
+  {:else if screen === 'saleConfirm' && selectedSale}
+    {@const plan = refundPlan(selectedSale)}
+    <main class="flex grow flex-col gap-4 p-4">
+      <h1 class="text-2xl font-semibold">Rembourser cette vente ?</h1>
+      <p class="text-muted-foreground text-sm">{saleTitle(selectedSale)}</p>
+      <ul class="bg-card divide-y rounded-2xl border">
+        {#if plan.toCardCents > 0}
+          <li class="flex justify-between gap-3 p-4"><span>Recrédité sur la carte {selectedSale.prepaidCardLabel}</span><strong class="tabular-nums">{formatEuros(plan.toCardCents)}</strong></li>
+        {/if}
+        {#if plan.toCashCents > 0}
+          <li class="flex justify-between gap-3 p-4"><span>À rendre en espèces</span><strong class="tabular-nums">{formatEuros(plan.toCashCents)}</strong></li>
+        {/if}
+        {#if plan.toSumUpCents > 0}
+          <li class="flex justify-between gap-3 p-4"><span>À rembourser dans SumUp</span><strong class="tabular-nums">{formatEuros(plan.toSumUpCents)}</strong></li>
+        {/if}
+        {#if selectedSale.rechargeCents > 0}
+          <li class="flex justify-between gap-3 p-4"><span>Recharge retirée de la carte</span><strong class="tabular-nums">{formatEuros(selectedSale.rechargeCents)}</strong></li>
+        {/if}
+      </ul>
+      {#if selectedSale.prepaidCardDeleted}
+        <p class="text-muted-foreground text-sm">Le client a supprimé sa carte : ce qu'elle avait payé lui est rendu en espèces.</p>
+      {/if}
+      <p class="text-muted-foreground text-sm">Cette action ne s'annule pas.</p>
+      <Button variant="destructive" size="lg" class="h-14 w-full text-lg" disabled={busy} onclick={() => refundSale(selectedSale!)}>Confirmer le remboursement</Button>
+      <Button variant="ghost" class="w-full" disabled={busy} onclick={() => go('sale')}>Retour</Button>
+    </main>
+
+  {:else if screen === 'orders'}
+    <main class="grow space-y-3 p-4" style="padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 6rem)">
+      <h1 class="text-2xl font-semibold">Commandes</h1>
+      <Button size="lg" class="h-14 w-full text-lg" onclick={() => startScan('order')}><ScanLine class="size-5" />Scanner le QR du client</Button>
+      <form class="flex gap-2" onsubmit={(event) => { event.preventDefault(); searchOrders(); }}>
+        <Input bind:value={orderSearch} placeholder="Numéro ou adresse e-mail" autocapitalize="off" aria-label="Rechercher une commande" />
+        <Button type="submit" variant="outline" disabled={busy}>Chercher</Button>
+      </form>
+      {#if orders.length}
+        <ul class="bg-card divide-y overflow-hidden rounded-2xl border">
+          {#each orders as order (order.id)}
+            <li>
+              <button type="button" class="active:bg-muted flex min-h-14 w-full items-center gap-3 px-4 py-2 text-left" onclick={() => showOrder(order.id)}>
+                <span class="min-w-0 grow">
+                  <span class="block truncate text-sm font-semibold">N° {order.id} · {order.label}</span>
+                  <span class="text-muted-foreground block truncate text-xs">{time(order.createdAt)} · {order.lines.map((l) => `${l.quantity} × ${l.name}`).join(', ')}</span>
+                </span>
+                <span class="shrink-0 text-sm font-medium tabular-nums">{formatEuros(order.totalCents)}</span>
+                <ChevronRight class="text-muted-foreground size-4 shrink-0" />
+              </button>
+            </li>
+          {/each}
+        </ul>
+      {:else}
+        <p class="text-muted-foreground text-sm">{orderSearch ? 'Aucune commande ne correspond.' : 'Aucune commande en cours.'}</p>
+      {/if}
+    </main>
+
+  {:else if screen === 'order' && selectedOrder}
+    {@const unavailable = selectedOrder.lines.some((l) => !l.available)}
+    <main class="flex grow flex-col gap-4 p-4">
+      {@render back('Commandes', 'orders')}
+      <div class="py-2 text-center">
+        <p class="text-muted-foreground text-sm">Commande n° {selectedOrder.id} · {selectedOrder.label}</p>
+        <p class="text-5xl font-semibold tabular-nums">{formatEuros(selectedOrder.totalCents)}</p>
+        <p class="text-muted-foreground mt-2 text-sm">Disponible sur la carte : {formatEuros(selectedOrder.availableCents)}</p>
+      </div>
+      <ul class="bg-card divide-y rounded-2xl border text-sm">
+        {#each selectedOrder.lines as line (line.name)}
+          <li class="flex justify-between gap-3 p-3">
+            <span>{line.quantity} × {line.name}{#if !line.available}<span class="text-destructive"> · plus en vente</span>{/if}</span>
+            <span class="tabular-nums">{formatEuros(line.quantity * line.unitPriceCents)}</span>
+          </li>
+        {/each}
+      </ul>
+      {#if unavailable}
+        <p role="alert" class="bg-destructive/10 text-destructive rounded-lg p-3 text-sm">Un article n'est plus en vente : le client doit modifier sa commande.</p>
+      {/if}
+      <Button size="lg" class="h-14 w-full text-lg" disabled={busy || unavailable} onclick={() => collectOrder(selectedOrder!)}>Encaisser la commande</Button>
     </main>
 
   {:else if screen === 'refund'}
@@ -636,3 +818,7 @@
 
   {/if}
 </div>
+
+{#if current && NAV_SCREENS.includes(screen)}
+  <CaisseNav active={activeTab} ordersCount={orders.length} onSelect={selectTab} />
+{/if}

@@ -3,8 +3,8 @@ import { CancelSaleRepository } from './repository';
 import type { CancelSaleInput } from './dto';
 
 /**
- * Annule une vente tant que sa session est ouverte : la carte retrouve ce qu'elle a payé, et
- * perd ce qu'une recharge lui avait apporté. Une recharge déjà consommée fait échouer le CHECK
+ * Rembourse une vente tant que sa session est ouverte : la carte retrouve ce qu'elle a payé, et
+ * perd ce qu'une recharge lui avait apporté. Si la carte a été supprimée, sa part sort en espèces. Une recharge déjà consommée fait échouer le CHECK
  * du solde et donc tout le lot. La clé des mouvements empêche d'annuler deux fois.
  */
 export async function cancelSale(db: Db, input: CancelSaleInput) {
@@ -30,9 +30,26 @@ export async function cancelSale(db: Db, input: CancelSaleInput) {
     })
   ];
 
+  const prepaidCard = sale.prepaidCardId && sale.prepaidCents > 0 ? await repo.getCard(db, sale.prepaidCardId) : undefined;
+  const cardGone = Boolean(prepaidCard?.deletedAt);
+
   const statements: any[] = [repo.buildCancelStatement(db, sale.id, by)];
-  if (sale.prepaidCardId && sale.prepaidCents > 0) statements.push(...reverse('debit', sale.prepaidCardId, sale.prepaidCents));
+  if (cardGone) {
+    // Un mouvement `refund` : il sort des espèces attendues, et le virement de clôture suit.
+    statements.push(repo.buildMovementStatement(db, sale.sessionId, {
+      clientId: `cancel-refund-${sale.clientId}`,
+      cardId: prepaidCard!.id,
+      saleId: sale.id,
+      type: 'refund',
+      amountCents: -sale.prepaidCents,
+      createdByEmail: by,
+      createdAt: new Date()
+    }));
+  } else if (prepaidCard) {
+    statements.push(...reverse('debit', prepaidCard.id, sale.prepaidCents));
+  }
   if (sale.rechargeCardId && sale.rechargeCents > 0) statements.push(...reverse('recharge', sale.rechargeCardId, -sale.rechargeCents));
+  if (sale.orderId) statements.push(repo.buildCancelOrderStatement(db, sale.orderId));
 
   try {
     const results: any[] = await db.batch(statements as any);
@@ -46,5 +63,10 @@ export async function cancelSale(db: Db, input: CancelSaleInput) {
     throw error;
   }
   // Le remboursement CB se fait dans SumUp : la caisse le rappelle au bénévole.
-  return repo.getSale(db, sale.id);
+  return {
+    sale: await repo.getSale(db, sale.id),
+    cardCreditedCents: cardGone ? 0 : sale.prepaidCents,
+    cashToReturnCents: sale.cashCents + (cardGone ? sale.prepaidCents : 0),
+    sumUpToRefundCents: sale.cardCents
+  };
 }

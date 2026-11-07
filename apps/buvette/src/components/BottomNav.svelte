@@ -1,12 +1,13 @@
 <script lang="ts">
-  import { QrCode, User, Wallet } from '@lucide/svelte';
+  import { QrCode, ShoppingBasket, User, Wallet } from '@lucide/svelte';
 
-  /** La barre flottante de l'espace adhérent : mêmes formes, trois onglets. */
+  /** La barre flottante de l'espace adhérent : mêmes formes, quatre onglets. */
   let { currentPath = '' }: { currentPath?: string } = $props();
 
   const items = [
     { href: '/', label: 'Ma carte', icon: Wallet },
-    { href: '/qr', label: 'QR code', icon: QrCode },
+    { href: '/commander', label: 'Commander', icon: ShoppingBasket },
+    { href: '/qr', label: 'Mon QR', icon: QrCode },
     { href: '/compte', label: 'Compte', icon: User }
   ];
 

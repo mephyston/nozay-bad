@@ -1,6 +1,6 @@
 import { and, asc, desc, eq, sql } from 'drizzle-orm';
 import { type DbOrTx } from '@nba/db';
-import { buvetteCardAttemptsTable, buvetteCardMovementsTable, buvetteCardsTable, buvetteSalesTable } from '../shared/schema';
+import { buvetteCardAttemptsTable, buvetteCardMovementsTable, buvetteCardsTable, buvetteOrdersTable, buvetteSalesTable } from '../shared/schema';
 import type { BuvetteCardAttempt, BuvetteSale } from '../shared/schema';
 
 export class CardAttemptRepository {
@@ -45,6 +45,19 @@ export class CardAttemptRepository {
     return db.update(buvetteSalesTable)
       .set(status === 'cancelled' ? { status, cancelledByEmail: by, cancelledAt: new Date() } : { status })
       .where(and(eq(buvetteSalesTable.id, saleId), eq(buvetteSalesTable.status, 'in_progress')));
+  }
+
+  /**
+   * La vente abandonnée rend sa commande au client. S'il en a repassé une entre-temps, l'ancienne
+   * s'annule : l'index d'une commande par carte ferait sinon échouer l'abandon, et le solde
+   * resterait réservé.
+   */
+  buildReopenOrderStatement(db: DbOrTx, orderId: number): any {
+    return db.update(buvetteOrdersTable)
+      .set({
+        status: sql`CASE WHEN EXISTS (SELECT 1 FROM buvette_orders o WHERE o.card_id = buvette_orders.card_id AND o.status = 'pending') THEN 'cancelled' ELSE 'pending' END` as any
+      })
+      .where(eq(buvetteOrdersTable.id, orderId));
   }
 
   /** La réservation devient un débit, tant que la vente attend encore : jamais sur une vente abandonnée. */

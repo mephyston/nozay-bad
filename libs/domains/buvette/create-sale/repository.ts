@@ -5,6 +5,8 @@ import {
   buvetteCardMovementsTable,
   buvetteCardsTable,
   buvetteItemsTable,
+  buvetteOrderLinesTable,
+  buvetteOrdersTable,
   buvetteSaleLinesTable,
   buvetteSalesTable,
   buvetteSessionsTable
@@ -18,6 +20,22 @@ export class CreateSaleRepository {
     return db.select().from(buvetteSalesTable).where(eq(buvetteSalesTable.clientId, clientId)).get();
   }
 
+  getOrder(db: DbOrTx, id: number) {
+    return db.select().from(buvetteOrdersTable).where(eq(buvetteOrdersTable.id, id)).get();
+  }
+
+  orderLines(db: DbOrTx, orderId: number) {
+    return db.select({ itemId: buvetteOrderLinesTable.itemId, quantity: buvetteOrderLinesTable.quantity })
+      .from(buvetteOrderLinesTable)
+      .where(eq(buvetteOrderLinesTable.orderId, orderId))
+      .all();
+  }
+
+  buildCollectOrderStatement(db: DbOrTx, orderId: number): any {
+    return db.update(buvetteOrdersTable).set({ status: 'collected' })
+      .where(and(eq(buvetteOrdersTable.id, orderId), eq(buvetteOrdersTable.status, 'pending')));
+  }
+
   items(db: DbOrTx, ids: number[]) {
     return db.select().from(buvetteItemsTable).where(inArray(buvetteItemsTable.id, ids)).all();
   }
@@ -27,9 +45,13 @@ export class CreateSaleRepository {
    * rend NULL, la contrainte NOT NULL échoue et le lot entier est annulé.
    */
   buildSaleStatement(db: DbOrTx, sessionId: number, values: Omit<typeof buvetteSalesTable.$inferInsert, 'sessionId'>): any {
+    // Une commande annulée par le client à cet instant annule la vente de la même façon.
+    const orderStillPending = values.orderId
+      ? sql`AND EXISTS (SELECT 1 FROM ${buvetteOrdersTable} WHERE ${buvetteOrdersTable.id} = ${values.orderId} AND ${buvetteOrdersTable.status} = 'pending')`
+      : sql``;
     return db.insert(buvetteSalesTable).values({
       ...values,
-      sessionId: sql`(SELECT ${buvetteSessionsTable.id} FROM ${buvetteSessionsTable} WHERE ${buvetteSessionsTable.id} = ${sessionId} AND ${buvetteSessionsTable.status} = 'open')` as any
+      sessionId: sql`(SELECT ${buvetteSessionsTable.id} FROM ${buvetteSessionsTable} WHERE ${buvetteSessionsTable.id} = ${sessionId} AND ${buvetteSessionsTable.status} = 'open' ${orderStillPending})` as any
     });
   }
 

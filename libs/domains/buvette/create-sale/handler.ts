@@ -42,19 +42,33 @@ export async function createSale(db: Db, secret: string, input: CreateSaleInput)
   const session = await getOpenSession(db);
   if (!session) throw new AppError('Aucune session de caisse ouverte.', 409);
 
-  const rechargeCents = input.rechargeCents ?? 0;
-  if (rechargeCents > 0 && !input.rechargeScanToken) throw new AppError('Scannez la carte à recharger.', 400);
-  if (rechargeCents === 0 && input.lines.length === 0) throw new AppError('Le panier est vide.', 400);
+  // Une commande apporte ses articles et sa carte : le client y a consenti depuis son téléphone,
+  // même si son QR code ne se lit pas. La caisse ne peut donc pas en changer le contenu.
+  const order = input.orderId ? await repo.getOrder(db, input.orderId) : undefined;
+  if (input.orderId && !order) throw new AppError('Commande introuvable.', 404);
+  if (order && order.status !== 'pending') throw new AppError('Cette commande a déjà été encaissée ou annulée.', 409);
+  // Le même critère que la liste de la caisse : une commande d'un service passé ne s'encaisse pas.
+  if (order && order.createdAt.getTime() < session.openedAt.getTime()) throw new AppError("Cette commande date d'un service précédent : le client doit la repasser.", 409);
+  const saleLines = order ? await repo.orderLines(db, order.id) : input.lines;
 
-  const items = input.lines.length ? await repo.items(db, input.lines.map((l) => l.itemId)) : [];
-  const lines = input.lines.map((line) => {
+  const rechargeCents = order ? 0 : (input.rechargeCents ?? 0);
+  if (rechargeCents > 0 && !input.rechargeScanToken) throw new AppError('Scannez la carte à recharger.', 400);
+  if (rechargeCents === 0 && saleLines.length === 0) throw new AppError('Le panier est vide.', 400);
+
+  const items = saleLines.length ? await repo.items(db, saleLines.map((l) => l.itemId)) : [];
+  const lines = saleLines.map((line) => {
     const item = items.find((i) => i.id === line.itemId);
     if (!item || !item.active) throw new AppError("Un article du panier n'est plus en vente.", 400);
     return { line, item };
   });
   const itemsCents = lines.reduce((sum, { line, item }) => sum + line.quantity * item.priceCents, 0);
+  if (order && input.expectedOrderCents !== undefined && input.expectedOrderCents !== itemsCents) {
+    throw new AppError('Le client vient de modifier sa commande : rouvrez-la.', 409);
+  }
 
-  const prepaidCard = input.prepaidScanToken ? await cardFromScan(db, secret, input.prepaidScanToken) : null;
+  const prepaidCard = order
+    ? ((await getCard(db, order.cardId)) ?? null)
+    : input.prepaidScanToken ? await cardFromScan(db, secret, input.prepaidScanToken) : null;
   const rechargeCard = rechargeCents > 0 ? await cardFromScan(db, secret, input.rechargeScanToken!) : null;
 
   const prepaidCents = prepaidCard ? Math.min(availableCents(prepaidCard), itemsCents) : 0;
@@ -78,6 +92,7 @@ export async function createSale(db: Db, secret: string, input: CreateSaleInput)
   const statements: any[] = [
     repo.buildSaleStatement(db, session.id, {
       clientId: input.clientId,
+      orderId: order?.id ?? null,
       itemsCents,
       rechargeCents,
       rechargeCardId: rechargeCard?.id ?? null,
@@ -109,6 +124,7 @@ export async function createSale(db: Db, secret: string, input: CreateSaleInput)
       createdAt: now
     })
   ];
+  if (order) statements.push(repo.buildCollectOrderStatement(db, order.id));
   const foreignTxId = byCard ? newForeignTxId() : null;
   if (foreignTxId) {
     if (prepaidCents > 0) statements.push(repo.buildReserveStatement(db, prepaidCard!.id, prepaidCents));
@@ -123,8 +139,11 @@ export async function createSale(db: Db, secret: string, input: CreateSaleInput)
   } catch (error) {
     const raced = await repo.findByClientId(db, input.clientId);
     if (raced) return replay(repo, db, raced);
+    if (order && /UNIQUE/i.test(String(error))) throw new AppError("Cette commande vient d'être encaissée par une autre caisse.", 409);
     if (/CHECK/i.test(String(error))) throw new AppError('Solde insuffisant sur la carte.', 409);
-    if (/NOT NULL/i.test(String(error))) throw new AppError('La session de caisse vient d\'être clôturée.', 409);
+    if (/NOT NULL/i.test(String(error))) {
+      throw new AppError(order ? 'Cette commande vient d\'être annulée, ou la session clôturée.' : 'La session de caisse vient d\'être clôturée.', 409);
+    }
     throw error;
   }
 

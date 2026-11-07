@@ -42,7 +42,9 @@ const club = Astro.locals.club?.settings;
         </div>
       </div>
     </header>
-    <main class="mx-auto max-w-md space-y-4 p-4" style="padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px))">
+    <!-- `gap` et non `space-y` : les îlots Svelte sont enveloppés dans un élément sans boîte, que
+         `space-y` ne sait pas espacer. `gap` traverse cette enveloppe et espace leur contenu. -->
+    <main class="mx-auto flex max-w-md flex-col gap-4 p-4" style="padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px))">
       <slot />
     </main>
     {nav && <BottomNav client:load currentPath={Astro.url.pathname} />}

@@ -7,5 +7,8 @@ export interface SessionSale {
   prepaidCents: number;
   cashCents: number;
   cardCents: number;
+  /** Ce qui se passerait au remboursement : la carte, si elle existe encore. */
+  prepaidCardLabel: string | null;
+  prepaidCardDeleted: boolean;
   lines: { name: string; quantity: number; unitPriceCents: number }[];
 }

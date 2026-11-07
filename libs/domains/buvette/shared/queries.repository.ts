@@ -4,6 +4,7 @@ import {
   buvetteCardDevicesTable,
   buvetteCardMovementsTable,
   buvetteCardsTable,
+  buvetteOrdersTable,
   buvetteSalesTable,
   buvetteSessionsTable,
   buvetteSettingsTable
@@ -21,6 +22,13 @@ export function getOpenSession(db: DbOrTx) {
 /** Ce que la carte peut encore payer : son solde, moins ce qu'une vente en cours a réservé. */
 export function availableCents(card: { balanceCents: number; reservedCents: number }): number {
   return card.balanceCents - card.reservedCents;
+}
+
+export async function getPendingOrderId(db: DbOrTx, cardId: number): Promise<number | null> {
+  const row = await db.select({ id: buvetteOrdersTable.id }).from(buvetteOrdersTable)
+    .where(and(eq(buvetteOrdersTable.cardId, cardId), eq(buvetteOrdersTable.status, 'pending')))
+    .get();
+  return row?.id ?? null;
 }
 
 export function getCard(db: DbOrTx, id: number) {

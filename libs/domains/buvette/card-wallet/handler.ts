@@ -39,7 +39,7 @@ export async function deleteCard(db: Db, cardId: number, deviceId: string): Prom
     throw new AppError('Il reste un solde sur cette carte : demandez son remboursement à la buvette.', 409);
   }
   const repo = new CardWalletRepository();
-  await db.batch([repo.buildForgetStatement(db, cardId), repo.buildRevokeAllStatement(db, cardId)] as any);
+  await db.batch([repo.buildForgetStatement(db, cardId), repo.buildRevokeAllStatement(db, cardId), repo.buildCancelOrdersStatement(db, cardId)] as any);
 }
 
 /** Le détail d'une transaction. Une recharge n'a pas d'articles : seule une vente en porte. */

@@ -154,6 +154,7 @@ export async function abandonSale(db: Db, lookup: SumUpLookup, saleId: number, b
   // La libération d'abord : elle exige que la vente attende encore, et ne décompte donc qu'une fois.
   statements.reverse();
   if (sale.prepaidCardId && sale.prepaidCents > 0) statements.unshift(repo.buildReleaseStatement(db, saleId, sale.prepaidCardId, sale.prepaidCents));
+  if (sale.orderId) statements.push(repo.buildReopenOrderStatement(db, sale.orderId));
   await db.batch(statements as any);
   return repo.getSale(db, saleId);
 }

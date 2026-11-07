@@ -6,6 +6,8 @@ export interface CreateSaleInput {
   rechargeCents?: number;
   rechargeScanToken?: string;
   prepaidScanToken?: string;
+  orderId?: number;
+  expectedOrderCents?: number;
   /** Le reste annoncé à l'écran, en espèces ou en CB selon `payRestByCard`. */
   expectedCashCents: number;
   payRestByCard?: boolean;

@@ -43,7 +43,9 @@ export const buvetteCardsTable = sqliteTable('buvette_cards', {
   balanceCents: integer('balance_cents').notNull().default(0),
   /** La part du solde bloquée par une vente qui attend sa CB. */
   reservedCents: integer('reserved_cents').notNull().default(0),
-  createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+  /** Carte supprimée par son titulaire : un remboursement ne peut plus s'y faire. */
+  deletedAt: integer('deleted_at', { mode: 'timestamp' })
 }, (table) => [
   check('buvette_cards_balance_check', sql`${table.balanceCents} >= 0`),
   check('buvette_cards_reserved_check', sql`${table.reservedCents} >= 0 AND ${table.reservedCents} <= ${table.balanceCents}`)
@@ -85,11 +87,38 @@ export const buvetteSessionClosuresTable = sqliteTable('buvette_session_closures
   closedAt: integer('closed_at', { mode: 'timestamp' }).notNull()
 });
 
+/**
+ * Une commande passée depuis l'app buvette. Elle ne porte pas de prix : la caisse le recalcule
+ * à l'encaissement. Rien n'est réservé ni débité tant qu'elle n'est pas encaissée.
+ */
+export const buvetteOrdersTable = sqliteTable('buvette_orders', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  cardId: integer('card_id').notNull().references(() => buvetteCardsTable.id),
+  status: text('status', { enum: ['pending', 'collected', 'cancelled'] }).notNull().default('pending'),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
+}, (table) => [
+  // Une commande en cours par carte : le QR code du client désigne sans ambiguïté la sienne.
+  uniqueIndex('buvette_orders_one_pending_idx').on(table.cardId).where(sql`${table.status} = 'pending'`),
+  index('buvette_orders_status_idx').on(table.status)
+]);
+
+export const buvetteOrderLinesTable = sqliteTable('buvette_order_lines', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  orderId: integer('order_id').notNull().references(() => buvetteOrdersTable.id),
+  itemId: integer('item_id').notNull().references(() => buvetteItemsTable.id),
+  quantity: integer('quantity').notNull()
+}, (table) => [
+  index('buvette_order_lines_order_idx').on(table.orderId),
+  check('buvette_order_lines_quantity_check', sql`${table.quantity} > 0`)
+]);
+
 export const buvetteSalesTable = sqliteTable('buvette_sales', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   /** Généré par la caisse : un double appui ou un nouvel essai réseau n'encaisse qu'une fois. */
   clientId: text('client_id').notNull().unique(),
   sessionId: integer('session_id').notNull().references(() => buvetteSessionsTable.id),
+  /** La commande du client, si la vente en vient. */
+  orderId: integer('order_id').references(() => buvetteOrdersTable.id),
   status: text('status', { enum: ['in_progress', 'paid', 'cancelled'] }).notNull().default('paid'),
   itemsCents: integer('items_cents').notNull(),
   rechargeCents: integer('recharge_cents').notNull().default(0),
@@ -104,6 +133,8 @@ export const buvetteSalesTable = sqliteTable('buvette_sales', {
   cancelledAt: integer('cancelled_at', { mode: 'timestamp' })
 }, (table) => [
   index('buvette_sales_session_idx').on(table.sessionId),
+  // Deux caisses ne peuvent pas encaisser la même commande. Abandonnée, elle se rencaisse.
+  uniqueIndex('buvette_sales_one_per_order_idx').on(table.orderId).where(sql`${table.orderId} IS NOT NULL AND ${table.status} <> 'cancelled'`),
   check('buvette_sales_amounts_check', sql`${table.itemsCents} >= 0 AND ${table.rechargeCents} >= 0 AND ${table.prepaidCents} >= 0 AND ${table.cashCents} >= 0 AND ${table.cardCents} >= 0`),
   // Tout est réglé, et la carte ne paie jamais une recharge.
   check('buvette_sales_total_check', sql`${table.prepaidCents} + ${table.cashCents} + ${table.cardCents} = ${table.itemsCents} + ${table.rechargeCents} AND ${table.prepaidCents} <= ${table.itemsCents}`)

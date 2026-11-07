@@ -12,6 +12,8 @@ import { refundCardRoute } from './refund-card/route';
 import { openCardRoute } from './open-card/route';
 import { cardWalletRoute } from './card-wallet/route';
 import { cardAttemptsRoute } from './verify-card-attempt/route';
+import { clientOrderRoute } from './client-order/route';
+import { listOrdersRoute } from './list-orders/route';
 
 export { verifyPendingAttempts } from './verify-card-attempt/handler';
 export { createSumUpClient, type SumUpBindings } from './shared/sumup';
@@ -34,8 +36,10 @@ buvetteRouter.route('/', closeSessionRoute);
 buvetteRouter.route('/', createSaleRoute);
 buvetteRouter.route('/', cancelSaleRoute);
 buvetteRouter.route('/', cardAttemptsRoute);
+buvetteRouter.route('/', listOrdersRoute);
 // Avant `/cards/:id/…` : les routes fixes ne doivent pas tomber sur le paramètre.
 buvetteRouter.route('/', scanCardRoute);
 buvetteRouter.route('/', refundCardRoute);
 buvetteRouter.route('/', openCardRoute);
+buvetteRouter.route('/', clientOrderRoute);
 buvetteRouter.route('/', cardWalletRoute);

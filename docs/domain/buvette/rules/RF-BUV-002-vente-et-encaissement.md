@@ -52,7 +52,7 @@ Le bénévole compose un panier et encaisse depuis un seul écran. Le montant pa
 
 **Double validation.** Une vente porte un identifiant généré par la caisse : un double appui ou une nouvelle tentative réseau ne l'encaisse et ne la débite qu'une fois.
 
-**Rembourser une vente.** Tant que la session est ouverte, un bénévole retrouve la vente dans la liste des transactions et la rembourse : la carte est recréditée et les espèces sont rendues. La part CB se rembourse dans SumUp, ce que la caisse rappelle. Une recharge déjà consommée ne se rembourse pas ainsi. Après la clôture, seul un responsable corrige, avec un motif et une écriture de régularisation.
+**Rembourser une vente.** Tant que la session est ouverte, un bénévole retrouve la vente dans l'onglet Ventes. Un écran récapitule le remboursement, à confirmer : la part carte revient sur la carte si elle existe encore, sinon elle sort en espèces ; les espèces se rendent ; la part CB se rembourse dans SumUp, ce que la caisse rappelle. Une recharge déjà consommée ne se rembourse pas ainsi. Après la clôture, seul un responsable corrige, avec un motif et une écriture de régularisation.
 
 ---
 
@@ -75,10 +75,16 @@ Fonctionnalité: Vente et encaissement
     Quand il confirme avoir reçu 1 €
     Alors la vente est payée et le solde passe à 0 €
 
-  Scénario: Rembourser une vente depuis les transactions
+  Scénario: Rembourser une vente demande une confirmation
     Étant donné une vente de 4 € payée en espèces dans la session ouverte
-    Quand le bénévole la rembourse depuis la liste des transactions
-    Alors la vente est marquée remboursée et la caisse affiche 4 € à rendre
+    Quand le bénévole demande son remboursement depuis l'onglet Ventes
+    Alors un écran annonce 4 € à rendre en espèces
+    Et rien n'est remboursé avant sa confirmation
+
+  Scénario: La carte n'existe plus
+    Étant donné une vente de 3 € payée par une carte depuis supprimée
+    Quand le bénévole confirme le remboursement
+    Alors 3 € sont à rendre en espèces et les espèces attendues baissent d'autant
 
   Scénario: Carte complétée par la CB
     Étant donné une carte de 8 € et un panier d'articles de 12 €

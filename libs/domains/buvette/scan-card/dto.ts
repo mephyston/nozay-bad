@@ -4,4 +4,6 @@ export interface ScanCardOutput {
   label: string;
   /** Le solde disponible : ce qu'une vente en cours a réservé n'y figure pas. */
   balanceCents: number;
+  /** La commande que le client a préparée sur son téléphone, s'il y en a une. */
+  pendingOrderId: number | null;
 }

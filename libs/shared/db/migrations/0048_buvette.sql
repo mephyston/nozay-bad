@@ -32,6 +32,7 @@ CREATE TABLE `buvette_cards` (
 	`balance_cents` integer DEFAULT 0 NOT NULL,
 	`reserved_cents` integer DEFAULT 0 NOT NULL,
 	`created_at` integer NOT NULL,
+	`deleted_at` integer,
 	CONSTRAINT `buvette_cards_balance_check` CHECK (`balance_cents` >= 0),
 	CONSTRAINT `buvette_cards_reserved_check` CHECK (`reserved_cents` >= 0 AND `reserved_cents` <= `balance_cents`)
 );
@@ -70,10 +71,35 @@ CREATE TABLE `buvette_session_closures` (
 	FOREIGN KEY (`session_id`) REFERENCES `buvette_sessions`(`id`) ON UPDATE no action ON DELETE no action
 );
 --> statement-breakpoint
+CREATE TABLE `buvette_orders` (
+	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+	`card_id` integer NOT NULL,
+	`status` text DEFAULT 'pending' NOT NULL,
+	`created_at` integer NOT NULL,
+	FOREIGN KEY (`card_id`) REFERENCES `buvette_cards`(`id`) ON UPDATE no action ON DELETE no action
+);
+--> statement-breakpoint
+CREATE UNIQUE INDEX `buvette_orders_one_pending_idx` ON `buvette_orders` (`card_id`) WHERE `status` = 'pending';
+--> statement-breakpoint
+CREATE INDEX `buvette_orders_status_idx` ON `buvette_orders` (`status`);
+--> statement-breakpoint
+CREATE TABLE `buvette_order_lines` (
+	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+	`order_id` integer NOT NULL,
+	`item_id` integer NOT NULL,
+	`quantity` integer NOT NULL,
+	FOREIGN KEY (`order_id`) REFERENCES `buvette_orders`(`id`) ON UPDATE no action ON DELETE no action,
+	FOREIGN KEY (`item_id`) REFERENCES `buvette_items`(`id`) ON UPDATE no action ON DELETE no action,
+	CONSTRAINT `buvette_order_lines_quantity_check` CHECK (`quantity` > 0)
+);
+--> statement-breakpoint
+CREATE INDEX `buvette_order_lines_order_idx` ON `buvette_order_lines` (`order_id`);
+--> statement-breakpoint
 CREATE TABLE `buvette_sales` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`client_id` text NOT NULL,
 	`session_id` integer NOT NULL,
+	`order_id` integer,
 	`status` text DEFAULT 'paid' NOT NULL,
 	`items_cents` integer NOT NULL,
 	`recharge_cents` integer DEFAULT 0 NOT NULL,
@@ -87,6 +113,7 @@ CREATE TABLE `buvette_sales` (
 	`cancelled_by_email` text,
 	`cancelled_at` integer,
 	FOREIGN KEY (`session_id`) REFERENCES `buvette_sessions`(`id`) ON UPDATE no action ON DELETE no action,
+	FOREIGN KEY (`order_id`) REFERENCES `buvette_orders`(`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`recharge_card_id`) REFERENCES `buvette_cards`(`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`prepaid_card_id`) REFERENCES `buvette_cards`(`id`) ON UPDATE no action ON DELETE no action,
 	CONSTRAINT `buvette_sales_amounts_check` CHECK (`items_cents` >= 0 AND `recharge_cents` >= 0 AND `prepaid_cents` >= 0 AND `cash_cents` >= 0 AND `card_cents` >= 0),
@@ -96,6 +123,8 @@ CREATE TABLE `buvette_sales` (
 CREATE UNIQUE INDEX `buvette_sales_client_id_unique` ON `buvette_sales` (`client_id`);
 --> statement-breakpoint
 CREATE INDEX `buvette_sales_session_idx` ON `buvette_sales` (`session_id`);
+--> statement-breakpoint
+CREATE UNIQUE INDEX `buvette_sales_one_per_order_idx` ON `buvette_sales` (`order_id`) WHERE `order_id` IS NOT NULL AND `status` <> 'cancelled';
 --> statement-breakpoint
 CREATE TABLE `buvette_sale_lines` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,

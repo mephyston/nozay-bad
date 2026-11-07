@@ -8,6 +8,8 @@ const tables = [
     'buvette_card_movements',
     'buvette_sale_lines',
     'buvette_sales',
+    'buvette_order_lines',
+    'buvette_orders',
     'buvette_session_closures',
     'buvette_sessions',
     'buvette_card_devices',

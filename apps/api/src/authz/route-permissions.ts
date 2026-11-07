@@ -66,6 +66,13 @@ export const ROUTE_PERMISSIONS: RouteRule[] = [
   // Sans compte ni session : la page de retour de SumUp peut s'ouvrir dans un autre navigateur.
   // Elle ne transmet qu'un identifiant et ne fait que relire la vérité chez SumUp.
   { method: 'POST', path: '/buvette/card-attempts/verify', permission: 'buvette:sales:write', callers: ['caisse'], feature: 'buvette' },
+  { method: 'GET', path: '/buvette/orders', permission: 'buvette:sales:write', callers: ['caisse'], feature: 'buvette' },
+  { method: 'GET', path: '/buvette/orders/:id', permission: 'buvette:sales:write', callers: ['caisse'], feature: 'buvette' },
+  // Le catalogue vu par les clients : ce qui est en vente, sans catégorie comptable.
+  { method: 'GET', path: '/buvette/catalog', permission: 'buvette:items:read', callers: ['buvette'], feature: 'buvette' },
+  { method: 'POST', path: '/buvette/cards/:id/order', permission: 'buvette:cards:write', callers: ['buvette'], feature: 'buvette' },
+  { method: 'POST', path: '/buvette/cards/:id/order/current', permission: 'buvette:cards:read', callers: ['buvette'], feature: 'buvette' },
+  { method: 'POST', path: '/buvette/cards/:id/order/cancel', permission: 'buvette:cards:write', callers: ['buvette'], feature: 'buvette' },
   { method: 'POST', path: '/buvette/cards/scan', permission: 'buvette:cards:read', callers: ['caisse'], feature: 'buvette' },
   { method: 'POST', path: '/buvette/cards/refund', permission: 'buvette:cards:write', callers: ['caisse'], feature: 'buvette' },
   { method: 'POST', path: '/buvette/cards/open', permission: 'buvette:cards:write', callers: ['buvette'], feature: 'buvette' },
