@@ -174,6 +174,28 @@ export interface CreateRevenueTransactionParams {
   accrualNote?: string | null;
 }
 
+export { buildInternalTransferStatements, type TransferToBuild } from './ledger/create-internal-transfer/statements';
+
+/** Une dépense sur le compte du moyen de paiement, à joindre au lot d'un autre domaine. */
+export function buildCreateExpenseLedgerEntryStatement(db: any, params: CreateRevenueTransactionParams): any {
+  return new CreateLedgerEntryRepository().buildCreateStatement(db, {
+    seasonId: params.seasonId,
+    type: 'depense',
+    accountId: sql`(SELECT default_account_id FROM payment_methods WHERE id = ${params.paymentMethodId})` as any,
+    paymentMethodId: params.paymentMethodId,
+    amountCents: params.amountCents,
+    description: params.description,
+    date: params.date,
+    categoryId: params.categoryId ?? null,
+    memberId: null,
+    reference: params.reference ?? null,
+    accrualType: 'normal',
+    accrualNote: null,
+    status: sql`(SELECT default_entry_status FROM payment_methods WHERE id = ${params.paymentMethodId})` as any,
+    createdAt: new Date()
+  });
+}
+
 export function buildCreateRevenueLedgerEntryStatement(db: any, params: CreateRevenueTransactionParams): any {
   const repository = new CreateLedgerEntryRepository();
   return repository.buildCreateStatement(db, {

@@ -32,6 +32,7 @@ export const FEATURES = [
   'expenses',
   // — Boutique —
   'shop',
+  'buvette',
   // — Communication —
   'push',
   'schedules',
@@ -132,6 +133,11 @@ export const FEATURE_CATALOG: Record<Feature, FeatureInfo> = {
     label: 'Agenda',
     description: "Événements du club (tournois, stages, assemblée) avec inscriptions.",
     group: 'Communication'
+  },
+  buvette: {
+    label: 'Buvette',
+    description: "Caisse des bénévoles et carte prépayée des clients. Éteint, les deux applications répondent introuvable. Les soldes restent dus aux clients.",
+    group: 'Boutique'
   },
   calendar_feed: {
     label: 'Agenda personnel',

@@ -19,6 +19,7 @@
     "@nba/schedules-api",
     "@nba/security-headers",
     "@nba/runtime-env",
+    "@nba/buvette-api",
     "@nba/shop-api",
     "@nba/teams-api",
     "@nba/ui"

@@ -48,6 +48,7 @@
     "0044_products_storefront.sql": "77668f65b07590aa",
     "0045_expense_attachments.sql": "d1848472a58e13a1",
     "0046_rosters_publication.sql": "60854bced530ef9e",
-    "0047_calendar_feeds.sql": "840562d16c93b7b3"
+    "0047_calendar_feeds.sql": "840562d16c93b7b3",
+    "0048_buvette.sql": "d0dbe47b6205045b"
   }
 }

@@ -53,6 +53,7 @@
       | 'expenses'
       | 'iam'
       | 'shop'
+      | 'buvette'
       | 'teams';
     /** Nom de l'écran auprès du relais `/admin/api/<domaine>/[screen]`. */
     ecran: string;

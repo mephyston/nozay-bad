@@ -36,6 +36,8 @@ export default defineConfig({
       '@nba/iam': path.resolve(__dirname, '../../libs/domains/iam/index.ts'),
       '@nba/iam/schema': path.resolve(__dirname, '../../libs/domains/iam/shared/schema.ts'),
       '@nba/accounting-api': path.resolve(__dirname, '../../libs/domains/accounting/index.ts'),
+      '@nba/buvette-api': path.resolve(__dirname, '../../libs/domains/buvette/index.ts'),
+      '@nba/buvette/schema': path.resolve(__dirname, '../../libs/domains/buvette/shared/schema.ts'),
       '@nba/accounting/schema': path.resolve(__dirname, '../../libs/domains/accounting/shared/schema.ts'),
       '@nba/expenses-api': path.resolve(__dirname, '../../libs/domains/expenses/index.ts'),
       '@nba/expenses/schema': path.resolve(__dirname, '../../libs/domains/expenses/shared/schema.ts'),

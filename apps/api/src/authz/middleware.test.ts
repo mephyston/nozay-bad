@@ -34,6 +34,33 @@ describe("autorisation de l'API", () => {
   const asAdmin = (email: string) => ({ 'x-caller': 'admin', 'x-user-email': email });
   const asStorefront = { 'x-caller': 'storefront' };
 
+  describe('Workers dédiés de la buvette', () => {
+    const asCaisse = { 'x-caller': 'caisse', 'x-user-email': 'benevole@example.org' };
+    const asBuvette = { 'x-caller': 'buvette' };
+
+    it('la caisse atteint ses routes, sans compte d\'administration', async () => {
+      expect((await callAs(asCaisse, '/buvette/items')).status).toBe(200);
+      expect((await callAs(asCaisse, '/buvette/sessions/current')).status).toBe(200);
+    });
+
+    it('la caisse n\'atteint ni les routes de l\'app des clients, ni le reste de l\'API', async () => {
+      expect((await callAs(asCaisse, '/buvette/cards/open', { method: 'POST', body: '{}' })).status).toBe(403);
+      expect((await callAs(asCaisse, '/buvette/items', { method: 'POST', body: '{}' })).status).toBe(403);
+      expect((await callAs(asCaisse, '/members')).status).toBe(403);
+    });
+
+    it('l\'app des clients n\'atteint aucune route de la caisse', async () => {
+      expect((await callAs(asBuvette, '/buvette/sessions/current')).status).toBe(403);
+      expect((await callAs(asBuvette, '/buvette/sales', { method: 'POST', body: '{}' })).status).toBe(403);
+      expect((await callAs(asBuvette, '/members')).status).toBe(403);
+    });
+
+    it('le storefront et le site n\'atteignent aucune route de la buvette', async () => {
+      expect((await callAs(asStorefront, '/buvette/items')).status).toBe(403);
+      expect((await callAs({ 'x-caller': 'website' }, '/buvette/cards/open', { method: 'POST', body: '{}' })).status).toBe(403);
+    });
+  });
+
   describe('appelant storefront', () => {
     it('accède aux routes marquées « service »', async () => {
       expect((await callAs(asStorefront, '/accounting/seasons')).status).toBe(200);

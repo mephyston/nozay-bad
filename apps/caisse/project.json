@@ -1,0 +1,48 @@
+{
+  "name": "caisse",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "sourceRoot": "apps/caisse/src",
+  // Nx ne lit pas les imports des fichiers .astro et .svelte (cf. scripts/check-nx-deps.js).
+  "implicitDependencies": [
+    "@nba/club",
+    "@nba/mailer",
+    "@nba/runtime-env",
+    "@nba/security-headers",
+    "@nba/ui"
+  ],
+  "targets": {
+    "lint": {
+      "command": "eslint {projectRoot}"
+    },
+    "check": {
+      "command": "astro check",
+      "options": { "cwd": "{projectRoot}" },
+      "cache": true,
+      "inputs": ["default", "^default"]
+    },
+    "build": {
+      "executor": "nx:run-commands",
+      "outputs": ["{projectRoot}/dist"],
+      "inputs": [
+        "production",
+        "^production",
+        { "env": "PUBLIC_APP_ENV" },
+        { "env": "VITE_APP_VERSION" }
+      ],
+      "options": {
+        "command": "astro build",
+        "cwd": "apps/caisse"
+      }
+    },
+    "dev": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "options": {
+        "command": "PUBLIC_APP_ENV=development astro dev --port 4324",
+        "cwd": "apps/caisse"
+      }
+    }
+  },
+  "tags": ["type:app", "scope:caisse"]
+}

@@ -4,7 +4,7 @@ Toujours chargée. Le détail fait foi dans `CONTRIBUTING.md` §1-5 et `docs/arc
 
 ## Organisation
 
-- `apps/` = les 4 Workers déployables (`api`, `admin`, `storefront`, `website`) ; `libs/domains/<domaine>/` = le métier ; `libs/shared/` = **technique uniquement** (aucune règle métier, aucune table, aucun catalogue de valeurs).
+- `apps/` = les 6 Workers déployables (`api`, `admin`, `storefront`, `website`, `caisse`, `buvette`) ; `libs/domains/<domaine>/` = le métier ; `libs/shared/` = **technique uniquement** (aucune règle métier, aucune table, aucun catalogue de valeurs).
 - Le code se regroupe par **cohérence fonctionnelle**, jamais par couche technique : un gros domaine se découpe en capacités métier (`accounting/ledger/`, `accounting/invoices/`), pas en `commands/`/`queries/` (ADR-0003).
 - Un cas d'usage = un dossier (une tranche) : `dto.ts`, `validator.ts` (TypeBox), `handler.ts` (ni Hono ni Drizzle), `repository.ts` (seul à importer `drizzle-orm`), `route.ts` (valide, appelle le handler, répond), `handler.test.ts`, et `ui/` pour ses composants.
 - Les tables Drizzle d'un domaine vivent dans `libs/domains/<domaine>/shared/schema.ts`, **à la racine du domaine** : le glob de `drizzle.config.ts` ne descend que d'un niveau.

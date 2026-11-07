@@ -12,6 +12,7 @@
       "@nba/club/context": ["../../libs/domains/club/shared/context.ts"],
       "@nba/schedules/open-play": ["../../libs/domains/schedules/shared/open-play.ts"],
       "@nba/security-headers": ["../../libs/shared/security-headers/src/index.ts"],
+      "@nba/mailer": ["../../libs/shared/mailer/src/index.ts"],
       "@nba/runtime-env": ["../../libs/shared/runtime-env/src/index.ts"],
       "@nba/members-api": ["../../libs/domains/members/index.ts"],
       "@nba/accounting-api": ["../../libs/domains/accounting/index.ts"],

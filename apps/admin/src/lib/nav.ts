@@ -89,6 +89,13 @@ export const NAV_GROUPS: NavGroup[] = [
     ]
   },
   {
+    label: 'Buvette',
+    feature: 'buvette',
+    items: [
+      { name: 'Catalogue buvette', icon: 'Package', href: '/admin/buvette/catalog', permission: 'buvette:items:read', keywords: ['buvette', 'caisse', 'article', 'cafe', 'sandwich', 'carte', 'plafond'] }
+    ]
+  },
+  {
     label: 'Communication',
     items: [
       // En tête de la communication, et non sous « Site public » : depuis l'absorption

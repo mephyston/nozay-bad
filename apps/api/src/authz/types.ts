@@ -20,6 +20,12 @@ export interface RouteRule {
    */
   service?: true;
   /**
+   * Workers dédiés à une seule application, seuls admis ici en dehors de l'admin. La caisse
+   * affirme l'adresse validée par Cloudflare Access, qui sert à la traçabilité des actes.
+   * L'app des clients n'atteint jamais une route de la caisse, ni l'inverse.
+   */
+  callers?: readonly ('caisse' | 'buvette')[];
+  /**
    * Route dont c'est précisément le rôle de répondre pour une adresse sans compte.
    *
    * Le refus par défaut d'un acteur inconnu est la bonne règle partout ailleurs,

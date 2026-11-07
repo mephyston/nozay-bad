@@ -50,6 +50,17 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   'shop:orders:approve': 'Valider, refuser et livrer une commande',
   'shop:payments:write': 'Encaisser une commande',
 
+  'buvette:items:read': 'Consulter le catalogue de la buvette',
+  'buvette:items:write': 'Modifier le catalogue de la buvette',
+  'buvette:settings:read': 'Consulter les réglages de la buvette',
+  'buvette:settings:write': 'Modifier les réglages de la buvette',
+  'buvette:sessions:read': 'Consulter les sessions de caisse',
+  'buvette:sessions:write': 'Ouvrir une session de caisse',
+  'buvette:sessions:close': 'Clôturer une session de caisse',
+  'buvette:sales:write': 'Encaisser et annuler une vente à la buvette',
+  'buvette:cards:read': 'Scanner une carte buvette',
+  'buvette:cards:write': 'Rembourser le solde et gérer une carte buvette',
+
   'notifications:messages:read': "Consulter l'historique des notifications",
   'notifications:messages:send': 'Envoyer une notification au club',
 
@@ -109,6 +120,7 @@ export const PERMISSION_GROUPS: { domain: string; label: string }[] = [
   { domain: 'accounting', label: 'Comptabilité' },
   { domain: 'expenses', label: 'Notes de frais' },
   { domain: 'shop', label: 'Boutique' },
+  { domain: 'buvette', label: 'Buvette' },
   { domain: 'notifications', label: 'Communication' },
   { domain: 'cms', label: 'Site public' },
   { domain: 'schedules', label: 'Créneaux' },

@@ -1,0 +1,16 @@
+---
+import Layout from '../layouts/Layout.astro';
+import CardLogin from '../components/CardLogin.svelte';
+import CardWallet from '../components/CardWallet.svelte';
+
+const clubName = Astro.locals.club?.settings.name || '';
+const siteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY || '';
+---
+
+<Layout title="Carte buvette">
+  <main class="mx-auto max-w-md space-y-4 p-4">
+    {Astro.locals.card
+      ? <CardWallet client:only="svelte" {clubName} />
+      : <CardLogin client:only="svelte" {clubName} {siteKey} />}
+  </main>
+</Layout>

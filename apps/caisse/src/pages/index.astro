@@ -1,0 +1,8 @@
+---
+import Layout from '../layouts/Layout.astro';
+import CaisseApp from '../components/CaisseApp.svelte';
+---
+
+<Layout title="Caisse">
+  <CaisseApp client:only="svelte" />
+</Layout>

@@ -60,6 +60,9 @@ function deny(
  */
 const SERVICE_CALLERS = new Set(['storefront', 'website']);
 
+/** Workers dédiés à une application : bornés aux routes qui les nomment (`callers`). */
+const DEDICATED_CALLERS = new Set<string>(['caisse', 'buvette']);
+
 export function authorize(): MiddlewareHandler<{ Bindings: AuthzBindings }> {
   return async (c, next) => {
     if (EXEMPT_PATHS.has(c.req.path)) return next();
@@ -82,6 +85,14 @@ export function authorize(): MiddlewareHandler<{ Bindings: AuthzBindings }> {
     // permission propre, ils sont donc bornés aux routes marquées `service`.
     if (SERVICE_CALLERS.has(caller)) {
       if (!rule.service) {
+        const res = deny(c, 403, 'Accès refusé', `route interdite à ${caller}`, enforcing);
+        return res ?? next();
+      }
+      return next();
+    }
+
+    if (DEDICATED_CALLERS.has(caller)) {
+      if (!rule.callers?.some((allowed) => allowed === caller)) {
         const res = deny(c, 403, 'Accès refusé', `route interdite à ${caller}`, enforcing);
         return res ?? next();
       }
