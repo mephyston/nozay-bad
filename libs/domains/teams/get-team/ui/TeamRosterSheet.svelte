@@ -73,7 +73,12 @@
   }
 
   const captainItems = $derived(withSelected(suggest(captainQuery), captain));
-  const viceItems = $derived(withSelected(suggest(viceQuery), viceCaptain));
+  /** Une fois un vice-capitaine désigné, l'option vide en tête de liste permet de le détacher. */
+  const viceItems = $derived(
+    viceCaptain
+      ? [{ label: 'Aucun vice-capitaine', value: '' }, ...withSelected(suggest(viceQuery), viceCaptain)]
+      : suggest(viceQuery)
+  );
   /** Ceux que le championnat n'admet pas (un senior en vétérans) ne sont pas proposés à l'ajout. */
   const horsCategorie = $derived(new Set(detail?.outOfCategoryLicences ?? []));
   const addableItems = $derived(suggest(addQuery, [...roster, ...horsCategorie]));

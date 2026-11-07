@@ -33,7 +33,8 @@ sont deux équipes distinctes.
 La désignation du **capitaine** et du **vice-capitaine** n'est pas décorative : c'est elle,
 et rien d'autre, qui ouvre le droit de composer l'équipe depuis l'espace adhérent. Le
 vice-capitaine est une notion interne au club, absente des règlements — il est là pour
-suppléer.
+suppléer. Pour le détacher, choisissez **Aucun vice-capitaine** en tête de la liste, puis
+enregistrez : il perd aussitôt le droit de composer.
 
 Les deux doivent figurer au fichier des adhérents de la saison. Une licence inconnue est
 refusée : ce serait un droit accordé à personne.
