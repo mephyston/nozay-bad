@@ -21,7 +21,7 @@ import * as path from 'node:path';
  *  - les commentaires, où Nozay reste l'exemple qui a fait naître chaque règle.
  */
 const ROOT = path.resolve(__dirname, '..');
-const SCANNED = ['apps/admin/src', 'apps/api/src', 'apps/storefront/src', 'apps/website/src', 'libs/domains', 'libs/shared', 'scripts'];
+const SCANNED = ['apps/admin/src', 'apps/api/src', 'apps/storefront/src', 'apps/website/src', 'apps/caisse/src', 'apps/buvette/src', 'libs/domains', 'libs/shared', 'scripts'];
 const EXTENSIONS = new Set(['.ts', '.astro', '.svelte', '.mjs', '.js']);
 const IGNORED_DIRS = new Set(['node_modules', 'dist', '.astro', '.wrangler', 'migrations', 'wp-import', 'mocks']);
 const ALLOWED_FILES = new Set([

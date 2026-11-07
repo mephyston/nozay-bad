@@ -12,6 +12,8 @@ Tout est écrit en **français** : code métier, commentaires, messages de commi
 | `apps/admin` | Worker `nba-admin` : portail du bureau (Astro + Svelte, PWA) |
 | `apps/storefront` | Worker `nba-storefront` : espace adhérent (OTP par courriel, PWA) |
 | `apps/website` | Worker `nba-website` : site public rendu depuis le CMS maison |
+| `apps/caisse` | Worker `nba-caisse` : caisse des bénévoles derrière Cloudflare Access |
+| `apps/buvette` | Worker `nba-buvette` : carte buvette des clients (code par courriel) |
 | `libs/domains/<domaine>` | Le métier, en tranches verticales (un dossier par cas d'usage) |
 | `libs/shared/*` | Technique transverse uniquement ; `@nba/ui` = design system |
 | `libs/shared/db/migrations` | Migrations D1, append-only |
@@ -21,11 +23,11 @@ Tout est écrit en **français** : code métier, commentaires, messages de commi
 ## Commandes
 
 ```bash
-npm run dev:api            # d'abord (8787) ; puis dev:admin (4321), dev:storefront (4322), dev:website (4323)
+npm run dev:api            # d'abord (8787) ; puis dev:admin (4321), dev:storefront (4322), dev:website (4323), dev:caisse (4324), dev:buvette (4325)
 npx vitest run [chemins]   # une seule suite ; --changed <base> pour cibler
 npx vitest run --config vitest.architecture.config.ts
 npm run typecheck          # tsc : ne lit PAS les .svelte
-npx nx run-many -t check --projects=admin,website,storefront   # astro check
+npx nx run-many -t check --projects=admin,website,storefront,caisse,buvette   # astro check
 npx nx build <app> --skip-nx-cache
 npm run check:env && npm run check:migrations && npm run check:schema && npm run check:nx-deps && npm run check:aliases
 ```

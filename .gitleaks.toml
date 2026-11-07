@@ -15,6 +15,11 @@ description = "Jeu d'essai des notifications push : clé d'authentification de s
 regexTarget = "secret"
 regexes = ['''^BTBZMqHH6r4T''']
 
+[[allowlists]]
+description = "Clés d'affiliation SumUp : publiques, elles passent dans l'adresse de paiement et n'autorisent rien. Les clés secrètes (sup_sk_) restent détectées."
+regexTarget = "secret"
+regexes = ['''^sup_afk_''']
+
 # Sortie de build de Storybook, versionnée par erreur du 31/07 au 01/08/2026
 # (`ad5f2d3c` puis `4b98c56a` qui la retire, avant le .gitignore). Elle reste dans
 # l'historique, et un bundle minifié est le pire terrain pour la règle

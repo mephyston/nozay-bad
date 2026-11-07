@@ -96,6 +96,11 @@ export default tseslint.config(
               onlyDependOnLibsWithTags: ['scope:shop', 'scope:shared', 'scope:members', 'scope:accounting', 'scope:notifications', 'scope:club']
             },
             {
+              sourceTag: 'scope:buvette',
+              // La clôture de caisse pose ses écritures dans le lot même de la clôture.
+              onlyDependOnLibsWithTags: ['scope:buvette', 'scope:shared', 'scope:accounting', 'scope:club']
+            },
+            {
               sourceTag: 'scope:schedules',
               // Feuille : les créneaux ne dépendent d'aucun autre domaine. C'est le
               // site — et demain le storefront — qui composent.

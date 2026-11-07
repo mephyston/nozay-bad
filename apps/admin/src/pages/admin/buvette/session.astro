@@ -1,0 +1,16 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import AdminLayout from '../../../components/AdminLayout.svelte';
+import BuvetteSessionScreen from '../../../components/BuvetteSessionScreen.svelte';
+
+// Page figée : l'îlot demande ses données au relais (cf. shop/products.astro).
+export const prerender = true;
+---
+
+<Layout title="Caisse de la buvette">
+  <AdminLayout client:idle breadcrumb="Buvette / Caisse">
+    <div class="space-y-6">
+      <BuvetteSessionScreen client:load />
+    </div>
+  </AdminLayout>
+</Layout>

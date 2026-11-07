@@ -1,0 +1,16 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import AdminLayout from '../../../components/AdminLayout.svelte';
+import PaperCardsScreen from '../../../components/PaperCardsScreen.svelte';
+
+// Page figée : rien n'y est lu avant de générer un lot.
+export const prerender = true;
+---
+
+<Layout title="Cartes papier">
+  <AdminLayout client:idle breadcrumb="Buvette / Cartes papier">
+    <div class="space-y-6">
+      <PaperCardsScreen client:load />
+    </div>
+  </AdminLayout>
+</Layout>

@@ -45,6 +45,48 @@ export const ROUTE_PERMISSIONS: RouteRule[] = [
   { method: 'PUT', path: '/members/calendar-feed', permission: 'members:members:read', service: true, feature: 'calendar_feed' },
   { method: 'DELETE', path: '/members/calendar-feed', permission: 'members:members:read', service: true, feature: 'calendar_feed' },
 
+  // ── Buvette ────────────────────────────────────────────────────────────────
+  // `caisse` : Worker derrière Cloudflare Access, il affirme l'adresse du bénévole.
+  // `buvette` : Worker de l'app des clients, il a vérifié l'adresse par code et contrôle
+  // la session de la carte. Aucune de ces routes n'est ouverte aux autres Workers.
+  { method: 'GET', path: '/buvette/items', permission: 'buvette:items:read', callers: ['caisse'], feature: 'buvette' },
+  { method: 'POST', path: '/buvette/items', permission: 'buvette:items:write', feature: 'buvette' },
+  { method: 'PUT', path: '/buvette/items/:id', permission: 'buvette:items:write', feature: 'buvette' },
+  { method: 'GET', path: '/buvette/settings', permission: 'buvette:settings:read', feature: 'buvette' },
+  { method: 'PUT', path: '/buvette/settings', permission: 'buvette:settings:write', feature: 'buvette' },
+  { method: 'GET', path: '/buvette/sessions/current', permission: 'buvette:sessions:read', callers: ['caisse'], feature: 'buvette' },
+  // L'ouverture et la clôture restent au bureau, dans l'admin : pas d'appelant `caisse` ici.
+  { method: 'GET', path: '/buvette/sessions/current/sales', permission: 'buvette:sessions:read', callers: ['caisse'], feature: 'buvette' },
+  { method: 'GET', path: '/buvette/cards/debt', permission: 'buvette:sessions:read', feature: 'buvette' },
+  { method: 'POST', path: '/buvette/sessions', permission: 'buvette:sessions:write', feature: 'buvette' },
+  { method: 'POST', path: '/buvette/sessions/:id/close', permission: 'buvette:sessions:close', feature: 'buvette' },
+  { method: 'POST', path: '/buvette/sales', permission: 'buvette:sales:write', callers: ['caisse'], feature: 'buvette' },
+  { method: 'POST', path: '/buvette/sales/:id/cancel', permission: 'buvette:sales:write', callers: ['caisse'], feature: 'buvette' },
+  { method: 'POST', path: '/buvette/sales/:id/card-attempts', permission: 'buvette:sales:write', callers: ['caisse'], feature: 'buvette' },
+  { method: 'POST', path: '/buvette/sales/:id/abandon', permission: 'buvette:sales:write', callers: ['caisse'], feature: 'buvette' },
+  // Sans compte ni session : la page de retour de SumUp peut s'ouvrir dans un autre navigateur.
+  // Elle ne transmet qu'un identifiant et ne fait que relire la vérité chez SumUp.
+  { method: 'POST', path: '/buvette/card-attempts/verify', permission: 'buvette:sales:write', callers: ['caisse'], feature: 'buvette' },
+  { method: 'GET', path: '/buvette/orders', permission: 'buvette:sales:write', callers: ['caisse'], feature: 'buvette' },
+  { method: 'GET', path: '/buvette/orders/:id', permission: 'buvette:sales:write', callers: ['caisse'], feature: 'buvette' },
+  // Le catalogue vu par les clients : ce qui est en vente, sans catégorie comptable.
+  { method: 'GET', path: '/buvette/catalog', permission: 'buvette:items:read', callers: ['buvette'], feature: 'buvette' },
+  { method: 'POST', path: '/buvette/cards/:id/order', permission: 'buvette:cards:write', callers: ['buvette'], feature: 'buvette' },
+  { method: 'POST', path: '/buvette/cards/:id/order/current', permission: 'buvette:cards:read', callers: ['buvette'], feature: 'buvette' },
+  { method: 'POST', path: '/buvette/cards/:id/order/cancel', permission: 'buvette:cards:write', callers: ['buvette'], feature: 'buvette' },
+  // Imprimer un lot reste au bureau. Un code imprimé vaut droit de lecture : c'est la carte en main.
+  { method: 'POST', path: '/buvette/paper-cards', permission: 'buvette:cards:write', feature: 'buvette' },
+  { method: 'POST', path: '/buvette/paper-cards/lookup', permission: 'buvette:cards:read', callers: ['buvette'], feature: 'buvette' },
+  { method: 'POST', path: '/buvette/cards/:id/attach-paper', permission: 'buvette:cards:write', callers: ['buvette'], feature: 'buvette' },
+  { method: 'POST', path: '/buvette/cards/scan', permission: 'buvette:cards:read', callers: ['caisse'], feature: 'buvette' },
+  { method: 'POST', path: '/buvette/cards/refund', permission: 'buvette:cards:write', callers: ['caisse'], feature: 'buvette' },
+  { method: 'POST', path: '/buvette/cards/open', permission: 'buvette:cards:write', callers: ['buvette'], feature: 'buvette' },
+  { method: 'POST', path: '/buvette/cards/:id/wallet', permission: 'buvette:cards:read', callers: ['buvette'], feature: 'buvette' },
+  { method: 'POST', path: '/buvette/cards/:id/qr-token', permission: 'buvette:cards:read', callers: ['buvette'], feature: 'buvette' },
+  { method: 'POST', path: '/buvette/cards/:id/movements/:movementId', permission: 'buvette:cards:read', callers: ['buvette'], feature: 'buvette' },
+  { method: 'POST', path: '/buvette/cards/:id/delete', permission: 'buvette:cards:write', callers: ['buvette'], feature: 'buvette' },
+  { method: 'POST', path: '/buvette/cards/:id/revoke-devices', permission: 'buvette:cards:write', callers: ['buvette'], feature: 'buvette' },
+
   // ── Tableau de bord ────────────────────────────────────────────────────────
   { method: 'GET', path: '/dashboard/overview', permission: 'dashboard:overview:read' },
   // La recherche de l'espace adhérent : elle ne rend que ce que l'espace affiche déjà,

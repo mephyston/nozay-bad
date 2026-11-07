@@ -50,6 +50,20 @@ export const ALL_PERMISSIONS = [
   'expenses:reports:write',
   'expenses:reports:approve', // approuver / rejeter / annuler
 
+  // — Buvette —
+  // La caisse et l'app des clients passent par leur propre appelant (`callers`, voir
+  // route-permissions.ts) : ces droits-ci valent pour l'écran de gestion de l'admin.
+  'buvette:items:read',
+  'buvette:items:write',
+  'buvette:settings:read',
+  'buvette:settings:write',
+  'buvette:sessions:read',
+  'buvette:sessions:write',
+  'buvette:sessions:close',
+  'buvette:sales:write',
+  'buvette:cards:read',
+  'buvette:cards:write',
+
   // — Boutique —
   'shop:products:read',
   'shop:products:write',

@@ -1,3 +1,4 @@
+import { createSumUpClient, verifyPendingAttempts, type SumUpBindings } from '@nba/buvette-api';
 import { createDb } from '@nba/db';
 import { getClubFeatures, getClubSettings, localClock, type FeatureState } from '@nba/club/settings';
 import { getSeasonAtDate, type SeasonRow } from '@nba/accounting-api';
@@ -19,7 +20,7 @@ import {
   type VapidEnv
 } from '@nba/notifications-api';
 
-export type ScheduledBindings = {
+export type ScheduledBindings = SumUpBindings & {
   DB: D1Database;
   /**
    * Interrupteur d'environnement des envois programmés.
@@ -306,6 +307,16 @@ export async function handleScheduled(
   if (!env?.DB) {
     console.error('[push] binding DB absent : cron ignoré');
     return;
+  }
+
+  // Le filet des CB dont le retour s'est perdu. Avant le contrôle des clés d'envoi, qui n'ont
+  // rien à voir, et jamais bloquant pour les notifications qui suivent.
+  if (event.cron === DISPATCH_CRON && env.SUMUP_API_KEY) {
+    try {
+      await verifyPendingAttempts(createDb(env.DB), createSumUpClient(env));
+    } catch (error) {
+      console.error('[buvette] vérification périodique des CB en échec', error);
+    }
   }
 
   const vapid = resolveVapid(env);

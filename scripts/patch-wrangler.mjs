@@ -37,7 +37,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT_DIR = path.resolve(__dirname, '..');
 
 /** Applications déployées via la configuration redirigée de l'adaptateur Astro. */
-const APPS = ['storefront', 'website', 'admin'];
+const APPS = ['storefront', 'website', 'admin', 'caisse', 'buvette'];
 const ENVS = ['staging', 'production'];
 
 /**

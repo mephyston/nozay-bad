@@ -1,0 +1,52 @@
+---
+import { EnvBanner } from '@nba/ui';
+import BottomNav from '../components/BottomNav.svelte';
+import '@fontsource-variable/outfit';
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+  /** Faux sur l'écran de connexion : rien à quoi naviguer. */
+  nav?: boolean;
+}
+
+const { title, nav = true } = Astro.props;
+const club = Astro.locals.club?.settings;
+---
+
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="robots" content="noindex" />
+    <link rel="icon" type="image/png" href="/logo.png" />
+    <script is:inline>
+      // Le thème du téléphone, posé avant le rendu : pas d'éclair blanc en mode sombre.
+      if (window.matchMedia('(prefers-color-scheme: dark)').matches) document.documentElement.classList.add('dark');
+    </script>
+    <title>{club?.shortName ? `${title} - ${club.shortName}` : title}</title>
+    {!nav && <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" is:inline async defer></script>}
+  </head>
+  <body class="bg-background text-foreground min-h-dvh">
+    <EnvBanner />
+    <header
+      class="bg-background sticky top-0 z-40 border-b"
+      style="height: calc(3.5rem + env(safe-area-inset-top, 0px)); padding-top: env(safe-area-inset-top, 0px)"
+    >
+      <div class="mx-auto flex h-full max-w-md items-center gap-2 px-4">
+        <img src="/logo.png" alt="" class="size-7 shrink-0 object-contain" />
+        <div>
+          <span class="text-foreground block text-sm font-bold tracking-tight">{club?.shortName || 'Buvette'}</span>
+          <span class="text-muted-foreground -mt-0.5 block text-[10px] font-semibold tracking-wider uppercase">Carte buvette</span>
+        </div>
+      </div>
+    </header>
+    <!-- `gap` et non `space-y` : les îlots Svelte sont enveloppés dans un élément sans boîte, que
+         `space-y` ne sait pas espacer. `gap` traverse cette enveloppe et espace leur contenu. -->
+    <main class="mx-auto flex max-w-md flex-col gap-4 p-4" style="padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px))">
+      <slot />
+    </main>
+    {nav && <BottomNav client:load currentPath={Astro.url.pathname} />}
+  </body>
+</html>

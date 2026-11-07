@@ -16,6 +16,7 @@ export default defineConfig({
       '@nba/schedules/open-play': path.resolve(__dirname, '../../libs/domains/schedules/shared/open-play.ts'),
       '@nba/club-ui': path.resolve(__dirname, '../../libs/domains/club/shared/ui.ts'),
       '@nba/security-headers': path.resolve(__dirname, '../../libs/shared/security-headers/src/index.ts'),
+      '@nba/mailer': path.resolve(__dirname, '../../libs/shared/mailer/src/index.ts'),
       '@nba/runtime-env': path.resolve(__dirname, '../../libs/shared/runtime-env/src/index.ts'),
     },
     conditions: ['browser'],

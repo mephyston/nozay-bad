@@ -64,6 +64,8 @@ export default defineConfig({
       'libs/shared/preview/vitest.config.ts',
       'libs/shared/security-headers/vitest.config.ts',
       'apps/storefront/vitest.config.ts',
+      'apps/caisse/vitest.config.ts',
+      'apps/buvette/vitest.config.ts',
       'apps/website/vitest.config.ts',
       'libs/shared/ui/vitest.config.ts',
       
@@ -177,6 +179,25 @@ export default defineConfig({
         }
       },
       
+      {
+        extends: true,
+        plugins: [
+          cloudflareTest({
+            wrangler: {
+              configPath: wranglerConfig,
+            },
+          }),
+        ],
+        cacheDir: path.resolve(__dirname, 'node_modules/.vite/features-buvette-api'),
+        test: {
+          name: 'features-buvette-api',
+          globals: true,
+          root: path.resolve(__dirname, 'libs/domains/buvette'),
+          include: ['**/*.test.ts'],
+          exclude: ['**/ui/**', '**/node_modules/**'],
+        }
+      },
+
       // Inline project configs for shop API and UI
       {
         extends: true,

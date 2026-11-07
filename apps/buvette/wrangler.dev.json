@@ -1,0 +1,10 @@
+{
+  "name": "nba-buvette",
+  "main": "./dist/server/entry.mjs",
+  "compatibility_date": "2024-09-23",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": { "directory": "./dist/client", "binding": "ASSETS" },
+  "services": [{ "binding": "API_SERVICE", "service": "nba-api" }],
+  "kv_namespaces": [{ "binding": "RATE_LIMIT_KV", "id": "281c9992dd914501a709ef8f03fe2ab8" }],
+  "vars": { "INTERNAL_API_KEY": "dev-secret-key-12345" }
+}

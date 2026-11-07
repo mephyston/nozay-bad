@@ -27,6 +27,7 @@ const scanTargets = [
   ...walkDir(path.join(repoRoot, 'apps/admin/src/layouts')).filter(f => f.endsWith('.astro')),
   ...walkDir(path.join(repoRoot, 'apps/storefront/src/components')).filter(f => /\.(astro|svelte)$/.test(f)),
   ...walkDir(path.join(repoRoot, 'apps/storefront/src/layouts')).filter(f => f.endsWith('.astro')),
+  ...['caisse', 'buvette'].flatMap(app => walkDir(path.join(repoRoot, 'apps', app, 'src')).filter(f => /\.(astro|svelte)$/.test(f))),
   // Le site public passe par les mêmes règles : sans cette entrée il y échapperait
   // en silence, et c'est l'app la plus tentée d'écrire des couleurs en dur.
   ...walkDir(path.join(repoRoot, 'apps/website/src/pages')).filter(f => f.endsWith('.astro')),

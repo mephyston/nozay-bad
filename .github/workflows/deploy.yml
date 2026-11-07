@@ -125,6 +125,8 @@ jobs:
       storefront: ${{ steps.affected.outputs.storefront }}
       website: ${{ steps.affected.outputs.website }}
       admin: ${{ steps.affected.outputs.admin }}
+      caisse: ${{ steps.affected.outputs.caisse }}
+      buvette: ${{ steps.affected.outputs.buvette }}
       ds: ${{ steps.affected.outputs.ds }}
       # Tableau JSON des applications Astro à déployer, consommé par la matrice de
       # `deploy-apps`. Vaut '[]' quand aucune n'est affectée : le job est alors ignoré.
@@ -183,6 +185,8 @@ jobs:
             STOREFRONT_AFFECTED="true"
             WEBSITE_AFFECTED="true"
             ADMIN_AFFECTED="true"
+            CAISSE_AFFECTED="true"
+            BUVETTE_AFFECTED="true"
             DS_AFFECTED="true"
           else
             AFFECTED=$(npx nx show projects --affected --base="$NX_BASE" --head="$NX_HEAD" 2>/dev/null || echo "")
@@ -192,6 +196,8 @@ jobs:
             if echo "$AFFECTED" | grep -qx 'storefront'; then STOREFRONT_AFFECTED="true"; else STOREFRONT_AFFECTED="false"; fi
             if echo "$AFFECTED" | grep -qx 'website'; then WEBSITE_AFFECTED="true"; else WEBSITE_AFFECTED="false"; fi
             if echo "$AFFECTED" | grep -qx 'admin'; then ADMIN_AFFECTED="true"; else ADMIN_AFFECTED="false"; fi
+            if echo "$AFFECTED" | grep -qx 'caisse'; then CAISSE_AFFECTED="true"; else CAISSE_AFFECTED="false"; fi
+            if echo "$AFFECTED" | grep -qx 'buvette'; then BUVETTE_AFFECTED="true"; else BUVETTE_AFFECTED="false"; fi
             # Le visual regression ne couvre que le design system : inutile de le jouer
             # quand seuls admin/storefront changent sans y toucher.
             #
@@ -219,6 +225,8 @@ jobs:
           if [ "$STOREFRONT_AFFECTED" = "true" ]; then LIST="$LIST storefront"; fi
           if [ "$WEBSITE_AFFECTED" = "true" ]; then LIST="$LIST website"; fi
           if [ "$ADMIN_AFFECTED" = "true" ]; then LIST="$LIST admin"; fi
+          if [ "$CAISSE_AFFECTED" = "true" ]; then LIST="$LIST caisse"; fi
+          if [ "$BUVETTE_AFFECTED" = "true" ]; then LIST="$LIST buvette"; fi
           # $LIST volontairement sans guillemets : c'est le découpage en mots qui fait
           # une ligne par application.
           # shellcheck disable=SC2086
@@ -230,6 +238,8 @@ jobs:
             echo "storefront=$STOREFRONT_AFFECTED"
             echo "website=$WEBSITE_AFFECTED"
             echo "admin=$ADMIN_AFFECTED"
+            echo "caisse=$CAISSE_AFFECTED"
+            echo "buvette=$BUVETTE_AFFECTED"
             echo "ds=$DS_AFFECTED"
           } >> "$GITHUB_OUTPUT"
 

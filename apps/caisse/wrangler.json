@@ -1,0 +1,30 @@
+{
+  "name": "nba-caisse",
+  "compatibility_date": "2024-09-23",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": {
+    "enabled": true,
+    "logs": { "enabled": true, "head_sampling_rate": 1, "persist": true, "invocation_logs": true }
+  },
+  "routes": [{ "pattern": "caisse.nozaybad.fr", "custom_domain": true }],
+  "vars": {
+    "EMAIL_FROM": "Nozay Badminton Association <noreply@nozaybad.fr>",
+    "EMAIL_MODE": "live",
+    "SUMUP_AFFILIATE_KEY": "sup_afk_LhNgORlMimnE4PKINPzbB7hsLAmKCC62",
+    "EMAIL_ALLOWLIST": ""
+  },
+  "services": [{ "binding": "API_SERVICE", "service": "nba-api" }],
+  "env": {
+    "staging": {
+      "name": "nba-caisse-staging",
+      "routes": [{ "pattern": "staging-caisse.nozaybad.fr", "custom_domain": true }],
+      "vars": {
+        "EMAIL_FROM": "Nozay Badminton Association <noreply@nozaybad.fr>",
+        "EMAIL_MODE": "allowlist",
+        "SUMUP_AFFILIATE_KEY": "sup_afk_EEO1YBXML4SVB9tmf22Axb3hmSzkgwcL",
+        "EMAIL_ALLOWLIST": "david.pagnacco@gmail.com,meyharts@gmail.com,rouxjuliee@gmail.com,justine.couvidat@gmail.com,bienf007@gmail.com,r_thai2001@hotmail.com,cyril.tetevuide@orange.fr,meunieralexandre051@gmail.com,fofix@hotmail.fr,t.s.madrange@orange.fr,banssejoel@gmail.com"
+      },
+      "services": [{ "binding": "API_SERVICE", "service": "nba-api-staging" }]
+    }
+  }
+}

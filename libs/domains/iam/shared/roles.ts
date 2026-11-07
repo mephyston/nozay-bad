@@ -103,6 +103,9 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'expenses:reports:read',
     'shop:products:read',
     'shop:orders:read',
+    'buvette:items:read',
+    'buvette:settings:read',
+    'buvette:sessions:read',
     'notifications:messages:read',
     // Actes de gouvernance : ouverture et clôture d'exercice, vote du budget, et
     // désignation du bureau — nommer un président ou un trésorier est une décision
@@ -179,6 +182,17 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'shop:orders:read',
     'shop:orders:approve',
     'shop:payments:write',
+    // La buvette écrit au grand livre à chaque clôture : elle relève de la trésorerie.
+    'buvette:items:read',
+    'buvette:items:write',
+    'buvette:settings:read',
+    'buvette:settings:write',
+    'buvette:sessions:read',
+    'buvette:sessions:write',
+    'buvette:sessions:close',
+    'buvette:sales:write',
+    'buvette:cards:read',
+    'buvette:cards:write',
     'notifications:messages:read',
     // Consultation seule : la communication du club n'est pas du ressort de la trésorerie.
     'cms:pages:read',

@@ -1,0 +1,186 @@
+@import "tailwindcss";
+@source "../../../../libs/**/*.svelte";
+@source "../../../../libs/**/*.ts";
+
+@plugin "tailwindcss-animate";
+
+@custom-variant dark (&:where(.dark, .dark *));
+@custom-variant data-open (&[data-state=open]);
+@custom-variant data-closed (&[data-state=closed]);
+
+:root {
+  --background: rgb(250, 249, 245);
+  --foreground: rgb(61, 57, 41);
+  --card: rgb(245, 244, 239);
+  --card-foreground: rgb(20, 20, 19);
+  --popover: rgb(255, 255, 255);
+  --popover-foreground: rgb(40, 38, 27);
+  --primary: rgb(201, 100, 66);
+  --primary-foreground: rgb(255, 255, 255);
+  --secondary: rgb(233, 230, 220);
+  --secondary-foreground: rgb(83, 81, 70);
+  --muted: rgb(237, 233, 222);
+  --muted-foreground: rgb(110, 109, 104);
+  --accent: rgb(233, 230, 220);
+  --accent-foreground: rgb(40, 38, 27);
+  --destructive: rgb(220, 38, 38);
+  --destructive-foreground: rgb(255, 255, 255);
+  --success: rgb(16, 185, 129);
+  --success-foreground: rgb(255, 255, 255);
+  --warning: rgb(245, 158, 11);
+  --warning-foreground: rgb(255, 255, 255);
+  --info: rgb(59, 130, 246);
+  --info-foreground: rgb(255, 255, 255);
+  --border: rgb(218, 217, 212);
+  --input: rgb(180, 178, 167);
+  --ring: rgb(201, 100, 66);
+  --font-sans: 'Outfit Variable', Outfit, sans-serif;
+  --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+  --font-mono: Geist Mono, ui-monospace, monospace;
+  --radius: 0.75rem;
+}
+
+.dark {
+  --background: rgb(38, 38, 36);
+  --foreground: rgb(241, 241, 239);
+  --card: rgb(44, 44, 43);
+  --card-foreground: rgb(250, 249, 245);
+  --popover: rgb(48, 48, 46);
+  --popover-foreground: rgb(229, 229, 226);
+  --primary: rgb(217, 119, 87);
+  --primary-foreground: rgb(20, 20, 19);
+  --secondary: rgb(250, 249, 245);
+  --secondary-foreground: rgb(48, 48, 46);
+  --muted: rgb(27, 27, 25);
+  --muted-foreground: rgb(183, 181, 169);
+  --accent: rgb(26, 25, 21);
+  --accent-foreground: rgb(245, 244, 238);
+  --destructive: rgb(239, 68, 68);
+  --destructive-foreground: rgb(255, 255, 255);
+  --success: rgb(5, 150, 105);
+  --success-foreground: rgb(255, 255, 255);
+  --warning: rgb(217, 119, 6);
+  --warning-foreground: rgb(255, 255, 255);
+  --info: rgb(37, 99, 235);
+  --info-foreground: rgb(255, 255, 255);
+  --border: rgb(62, 62, 56);
+  --input: rgb(82, 81, 74);
+  --ring: rgb(217, 119, 87);
+  --font-sans: 'Outfit Variable', Outfit, sans-serif;
+  --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+  --font-mono: Geist Mono, ui-monospace, monospace;
+}
+
+/*
+  Dégagement du bas de page sous la barre d'onglets flottante (`MobileNav`) : sa hauteur,
+  son décollement du bord et la zone sûre de l'appareil. Remplace le `pb-24` que chaque
+  page recopiait — et qui ne tenait pas compte de l'indicateur home des iPhone.
+*/
+@utility pb-nav {
+  padding-bottom: calc(4.25rem + env(safe-area-inset-bottom, 0px) + 0.5rem);
+}
+
+@theme {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+  --font-serif: var(--font-serif);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground font-sans;
+  }
+
+  /* En PWA installée, le pied de page (copyright + liens légaux) fait doublon avec
+     le chrome de l'application. Les liens légaux restent atteignables à tout moment
+     via l'onglet « Plus » de la navigation mobile. */
+  @media (display-mode: standalone) {
+    footer {
+      display: none;
+    }
+  }
+}
+
+/*
+  Centrage d'un bloc de texte riche, posé par l'éditeur d'administration.
+
+  Écrit à la main, et non repris de l'utilitaire Tailwind de même rôle : la classe
+  arrive dans du HTML **stocké**, injecté par `set:html`, que le balayage de Tailwind
+  ne voit jamais. Un `text-center` n'y serait donc pas généré. Règle recopiée du site
+  public — les deux applications affichent le même contenu, et `nba-center` est la
+  seule classe que la liste blanche de `@nba/html` laisse passer.
+*/
+.nba-center {
+  text-align: center;
+}
+
+/*
+  La matière « verre » des surfaces flottantes (barre d'onglets, loupe, pilule de
+  recherche) : fond translucide, flou, liseré clair. Celle du Liquid Glass d'iOS, que
+  WebKit n'expose pas au web — on la fabrique avec `backdrop-filter`. Deux replis : un
+  moteur sans `backdrop-filter` reçoit une surface opaque, et le réglage d'accessibilité
+  « Réduire la transparence » du système aussi. Teinte à 72 % : en dessous, le texte
+  qui défile derrière gêne la lecture.
+*/
+.glass-surface {
+  background: color-mix(in oklab, var(--glass-base, var(--background)) var(--glass-opacity, 72%), transparent);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  backdrop-filter: blur(20px) saturate(160%);
+  border: 1px solid color-mix(in oklab, var(--border) 70%, transparent);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.35),
+    0 8px 24px rgb(0 0 0 / 0.12),
+    0 1px 2px rgb(0 0 0 / 0.08);
+}
+.dark .glass-surface {
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.1),
+    0 8px 28px rgb(0 0 0 / 0.45),
+    0 1px 2px rgb(0 0 0 / 0.3);
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass-surface {
+    background: var(--glass-base, var(--background));
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .glass-surface {
+    background: var(--glass-base, var(--background));
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
