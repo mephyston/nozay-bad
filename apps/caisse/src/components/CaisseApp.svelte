@@ -95,8 +95,24 @@
   let saleClientId = newClientId();
   let refundClientId = newClientId();
 
-  const NAV_SCREENS: Screen[] = ['sell', 'sales', 'orders', 'closed'];
-  const activeTab = $derived(screen === 'sell' ? 'sell' : screen === 'sales' ? 'sales' : screen === 'orders' ? 'orders' : null);
+  /*
+    Le menu reste partout, sauf là où partir ferait une erreur : le scan, une CB en attente, et
+    les confirmations, dont celle des espèces à remettre.
+  */
+  const TAB_OF_SCREEN: Partial<Record<Screen, 'sell' | 'orders' | 'sales'>> = {
+    sell: 'sell',
+    cart: 'sell',
+    recharge: 'sell',
+    pay: 'sell',
+    cash: 'sell',
+    refund: 'sell',
+    orders: 'orders',
+    order: 'orders',
+    sales: 'sales',
+    sale: 'sales'
+  };
+  const activeTab = $derived(TAB_OF_SCREEN[screen] ?? null);
+  const showNav = $derived(Boolean(current && activeTab && !(screen === 'refund' && refundTarget)));
   const activeItems = $derived(items.filter((i) => i.active));
   const itemsCents = $derived(payingOrder ? payingOrder.totalCents : itemsTotal(cart, items));
   const totalCents = $derived(itemsCents + rechargeCents);
@@ -287,6 +303,11 @@
 
   function selectTab(tab: 'sell' | 'orders' | 'sales') {
     error = '';
+    // Le panier reste, mais un paiement commencé s'arrête : son scan ne vaut que pour lui.
+    if (payingOrder) resetSale();
+    prepaidCard = null;
+    selectedSale = null;
+    selectedOrder = null;
     if (tab === 'sell') screen = current ? 'sell' : 'closed';
     if (tab === 'orders') openOrders();
     if (tab === 'sales') openSales();
@@ -452,7 +473,10 @@
   </div>
 </header>
 
-<div class="mx-auto flex max-w-md flex-col" style="min-height: calc(100dvh - 3.5rem)">
+<div
+  class="mx-auto flex max-w-md flex-col"
+  style={`min-height: calc(100dvh - 3.5rem); padding-bottom: ${showNav ? 'calc(env(safe-area-inset-bottom, 0px) + 5.5rem)' : '0px'}`}
+>
   {#if error}
     <p role="alert" class="bg-destructive/10 text-destructive m-3 mb-0 rounded-lg p-3 text-sm">{error}</p>
   {/if}
@@ -530,7 +554,7 @@
     </div>
 
   {:else if screen === 'cart'}
-    <main class="grow space-y-3 p-4 pb-28">
+    <main class="grow space-y-3 p-4 pb-24">
       {@render back('Articles', 'sell')}
       <h1 class="text-2xl font-semibold">Panier</h1>
       <ul class="divide-y rounded-2xl border">
@@ -558,7 +582,7 @@
       </ul>
       <Button variant="ghost" class="w-full" onclick={() => { resetSale(); go('sell'); }}>Vider le panier</Button>
     </main>
-    <div class="bg-background fixed inset-x-0 bottom-0 border-t p-3" style="padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 0.75rem)">
+    <div class="bg-background fixed inset-x-0 bottom-0 z-10 border-t p-3" style="padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 5.25rem)">
       <div class="mx-auto max-w-md">
         <Button size="lg" class="h-14 w-full text-lg" onclick={() => go('pay')}>Encaisser {formatEuros(totalCents)}</Button>
       </div>
@@ -850,6 +874,6 @@
   {/if}
 </div>
 
-{#if current && NAV_SCREENS.includes(screen)}
+{#if showNav}
   <CaisseNav active={activeTab} ordersCount={orders.length} onSelect={selectTab} />
 {/if}
