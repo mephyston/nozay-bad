@@ -86,6 +86,9 @@ const IGNORED_KEYS = new Set([
   'account_id'
 ]);
 
+/** Workers dont le staging peut envoyer de vrais courriels (voir le contrôle d'`EMAIL_MODE`). */
+const STAGING_LIVE_EMAIL = new Set(['nba-buvette-staging']);
+
 function fail(message) {
   console.error(`\n[patch-wrangler] ${message}\n`);
   process.exit(1);
@@ -227,7 +230,9 @@ function assertResolved(cfg, { app, env }) {
       }
     }
     // Anti-envoi aux adhérents : la configuration générée aplatit EMAIL_MODE=live.
-    if (cfg.vars?.EMAIL_MODE === 'live') {
+    // Seule exception, la buvette : elle n'envoie qu'un code de connexion, à l'adresse que le
+    // visiteur vient de saisir lui-même ; le staging s'y ouvre à toute adresse, à dessein.
+    if (cfg.vars?.EMAIL_MODE === 'live' && !STAGING_LIVE_EMAIL.has(cfg.name)) {
       fail(`staging : EMAIL_MODE=live enverrait de vrais courriels aux adhérents.`);
     }
   }
