@@ -53,7 +53,7 @@ Les remboursements de solde de carte apparaissent aussi dans l'onglet **Ventes**
 
 ## Rembourser une carte
 
-La tuile **Rembourser une carte**, à côté de **Recharge carte**, rend tout le solde en espèces. Scannez le QR code à jour du client, ou saisissez le code affiché dessous si la caméra ne le lit pas : il doit être présent. Le titulaire reçoit un e-mail, et sa carte reste ouverte à 0 €. S'il a perdu son téléphone, il rouvre d'abord sa carte sur un autre appareil avec son adresse e-mail.
+La tuile **Rembourser une carte**, à côté de **Recharge carte**, rend tout le solde en espèces. Scannez le QR code à jour du client, ou saisissez le code affiché dessous si la caméra ne le lit pas : il doit être présent. Sa carte reste ouverte à 0 €, et le remboursement apparaît dans son historique : aucun e-mail ne part, la buvette n'en envoie que pour le code de connexion. S'il a perdu son téléphone, il rouvre d'abord sa carte sur un autre appareil avec son adresse e-mail.
 
 ## En comptabilité
 

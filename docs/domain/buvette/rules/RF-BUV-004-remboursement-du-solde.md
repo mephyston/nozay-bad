@@ -30,7 +30,9 @@ Un client qui ne veut plus utiliser sa carte récupère son solde en espèces au
 
 **Atomique.** La mise à zéro de la carte et la sortie d'espèces sont enregistrées ensemble, sous un identifiant qui empêche de rembourser deux fois.
 
-**Traçabilité.** Le remboursement apparaît dans l'historique de la carte, un courriel en informe le titulaire, chaque mouvement garde le nom du bénévole et la clôture en donne le total.
+**Traçabilité.** Le remboursement apparaît dans l'historique de la carte, chaque mouvement garde le nom du bénévole et la clôture en donne le total.
+
+**Aucun courriel.** Le remboursement n'envoie pas de courriel (RF-BUV-001) : l'historique de la carte en fait foi.
 
 **Comptabilité.** Ce n'est pas une dépense : un virement va de la caisse vers le compte de dette de cartes (RF-BUV-003).
 
@@ -48,7 +50,6 @@ Fonctionnalité: Remboursement du solde
     Quand le bénévole scanne le QR code et confirme le remboursement
     Alors le solde passe à 0 €
     Et les espèces théoriques passent à 45 €
-    Et le titulaire reçoit un courriel
 
   Scénario: Pas assez d'espèces
     Étant donné une carte de 15 € et des espèces théoriques de 10 €
