@@ -14,7 +14,7 @@ export interface SessionSale {
   /** Le numéro SumUp du paiement CB, et où en est son remboursement par l'API. */
   transactionCode: string | null;
   cardAttemptId: number | null;
-  cardRefundStatus: 'pending' | 'done' | 'failed' | null;
+  cardRefundStatus: 'pending' | 'done' | 'failed' | 'cash' | null;
   lines: { name: string; quantity: number; unitPriceCents: number }[];
 }
 

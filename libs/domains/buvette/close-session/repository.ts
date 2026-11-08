@@ -53,13 +53,17 @@ export class CloseSessionRepository {
     return Number(row?.total ?? 0);
   }
 
-  async refundsCents(db: DbOrTx, sessionId: number): Promise<number> {
+  /** Les soldes rendus : en espèces, ou sur la CB qui avait payé la recharge. */
+  async refundsCents(db: DbOrTx, sessionId: number): Promise<{ cashCents: number; cardCents: number }> {
     const row = await db
-      .select({ total: sql<number>`COALESCE(SUM(-${buvetteCardMovementsTable.amountCents}), 0)` })
+      .select({
+        cash: sql<number>`COALESCE(SUM(CASE WHEN ${buvetteCardMovementsTable.sumupAttemptId} IS NULL THEN -${buvetteCardMovementsTable.amountCents} END), 0)`,
+        card: sql<number>`COALESCE(SUM(CASE WHEN ${buvetteCardMovementsTable.sumupAttemptId} IS NOT NULL THEN -${buvetteCardMovementsTable.amountCents} END), 0)`
+      })
       .from(buvetteCardMovementsTable)
       .where(and(eq(buvetteCardMovementsTable.sessionId, sessionId), eq(buvetteCardMovementsTable.type, 'refund')))
       .get();
-    return Number(row?.total ?? 0);
+    return { cashCents: Number(row?.cash ?? 0), cardCents: Number(row?.card ?? 0) };
   }
 
   /** Ce qui bouge dès qu'une vente, une annulation ou un remboursement a lieu dans la session. */

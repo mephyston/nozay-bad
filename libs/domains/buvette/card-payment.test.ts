@@ -95,7 +95,7 @@ describe('paiement par CB', () => {
   it('un montant différent ne paie pas la vente et se signale', async () => {
     const { attempt } = await sellByCard({ lines: [{ itemId: sandwich.id, quantity: 1 }], expectedCashCents: 1200 });
     expect(await verifyAttempt(db, lookupOf(success(120)), attempt!.foreignTxId)).toMatchObject({ saleStatus: 'in_progress', anomaly: 'amount' });
-    expect((await getCurrentSession(db))?.toRefund).toEqual([{ attemptId: expect.any(Number), transactionCode: 'TAAA', amountCents: 1200, anomaly: 'amount', refundStatus: null }]);
+    expect((await getCurrentSession(db))?.toRefund).toEqual([{ kind: 'stray', attemptId: expect.any(Number), transactionCode: 'TAAA', amountCents: 1200, anomaly: 'amount', refundStatus: null }]);
   });
 
   it('un échec libère le droit de relancer, sous un nouvel identifiant', async () => {
@@ -118,7 +118,7 @@ describe('paiement par CB', () => {
     const later = Date.now() + 2 * 60 * 1000 + 1000;
     await abandonSale(db, lookupOf({ status: 'unknown' }), sale.id, BY, later);
     expect(await verifyPendingAttempts(db, lookupOf(success(1200)), later + 60_000)).toBe(1);
-    expect((await getCurrentSession(db))?.toRefund).toEqual([{ attemptId: expect.any(Number), transactionCode: 'TAAA', amountCents: 1200, anomaly: 'late', refundStatus: null }]);
+    expect((await getCurrentSession(db))?.toRefund).toEqual([{ kind: 'stray', attemptId: expect.any(Number), transactionCode: 'TAAA', amountCents: 1200, anomaly: 'late', refundStatus: null }]);
     expect(attempt).toBeDefined();
   });
 
@@ -158,7 +158,7 @@ describe('paiement par CB', () => {
     expect((await abandonSale(db, down, sale.id, BY))?.status).toBe('cancelled');
     expect(await card(c.cardId)).toMatchObject({ balanceCents: 800, reservedCents: 0 });
     expect(await verifyPendingAttempts(db, lookupOf(success(400)), Date.now() + 61_000)).toBe(1);
-    expect((await getCurrentSession(db))?.toRefund).toEqual([{ attemptId: expect.any(Number), transactionCode: 'TAAA', amountCents: 400, anomaly: 'late', refundStatus: null }]);
+    expect((await getCurrentSession(db))?.toRefund).toEqual([{ kind: 'stray', attemptId: expect.any(Number), transactionCode: 'TAAA', amountCents: 400, anomaly: 'late', refundStatus: null }]);
     expect(await card(c.cardId)).toMatchObject({ balanceCents: 800, reservedCents: 0 });
   });
 

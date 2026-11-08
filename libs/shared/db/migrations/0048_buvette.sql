@@ -181,6 +181,7 @@ CREATE TABLE `buvette_card_movements` (
 	`card_id` integer NOT NULL,
 	`session_id` integer,
 	`sale_id` integer,
+	`sumup_attempt_id` integer,
 	`type` text NOT NULL,
 	`amount_cents` integer NOT NULL,
 	`created_by_email` text NOT NULL,
@@ -188,6 +189,7 @@ CREATE TABLE `buvette_card_movements` (
 	FOREIGN KEY (`card_id`) REFERENCES `buvette_cards`(`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`session_id`) REFERENCES `buvette_sessions`(`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`sale_id`) REFERENCES `buvette_sales`(`id`) ON UPDATE no action ON DELETE no action,
+	FOREIGN KEY (`sumup_attempt_id`) REFERENCES `buvette_card_attempts`(`id`) ON UPDATE no action ON DELETE no action,
 	CONSTRAINT `buvette_card_movements_session_check` CHECK (`type` = 'transfer' OR `session_id` IS NOT NULL)
 );
 --> statement-breakpoint
@@ -201,6 +203,9 @@ CREATE TABLE `buvette_sumup_refunds` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`attempt_id` integer NOT NULL,
 	`status` text NOT NULL,
+	`refund_client_id` text,
+	`reason` text DEFAULT 'payment' NOT NULL,
+	`requested_cents` integer,
 	`amount_cents` integer,
 	`error` text,
 	`requested_by_email` text NOT NULL,

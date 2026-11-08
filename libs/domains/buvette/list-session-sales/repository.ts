@@ -39,7 +39,7 @@ export class ListSessionSalesRepository {
         refundStatus: buvetteSumUpRefundsTable.status
       })
       .from(buvetteCardAttemptsTable)
-      .leftJoin(buvetteSumUpRefundsTable, eq(buvetteSumUpRefundsTable.attemptId, buvetteCardAttemptsTable.id))
+      .leftJoin(buvetteSumUpRefundsTable, and(eq(buvetteSumUpRefundsTable.attemptId, buvetteCardAttemptsTable.id), eq(buvetteSumUpRefundsTable.reason, 'payment')))
       .where(and(inArray(buvetteCardAttemptsTable.saleId, saleIds), eq(buvetteCardAttemptsTable.status, 'successful')))
       .all();
   }

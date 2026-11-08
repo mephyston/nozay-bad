@@ -10,4 +10,6 @@ export interface ScanCardOutput {
   /** `new` : la carte papier reste à vendre, à sa valeur faciale. */
   paperStatus: 'new' | 'active' | 'closed' | null;
   faceValueCents: number | null;
+  /** Au remboursement, ce qui reviendrait sur les CB des recharges ; le reste sort en espèces. */
+  cbRefundableCents: number;
 }

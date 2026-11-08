@@ -45,10 +45,11 @@ export async function closeSession(db: Db, input: CloseSessionInput): Promise<Cl
     throw new AppError('Une vente attend encore sa CB : vérifiez-la ou abandonnez-la avant de clôturer.', 409);
   }
   const summary = summarizeSession(await repo.paidSales(db, session.id));
-  if ((summary.itemsCardCents > 0 || summary.rechargeCardCents > 0) && !cardMethod) {
+  const refunds = await repo.refundsCents(db, session.id);
+  const refundsCents = refunds.cashCents + refunds.cardCents;
+  if ((summary.itemsCardCents > 0 || summary.rechargeCardCents > 0 || refunds.cardCents > 0) && !cardMethod) {
     throw new AppError('Le moyen de paiement de la CB n\'est pas réglé.', 400);
   }
-  const refundsCents = await repo.refundsCents(db, session.id);
   const expectedCashCents = await getExpectedCashCents(db, session.id, session.openingFloatCents);
   const gapCents = input.countedCashCents - expectedCashCents;
   const label = `Buvette du ${date}`;
@@ -93,12 +94,21 @@ export async function closeSession(db: Db, input: CloseSessionInput): Promise<Cl
       description: `${label} — recharges par CB`,
       reference
     }] : []),
-    ...(refundsCents > 0 ? [{
+    ...(refunds.cashCents > 0 ? [{
       sourceAccountId: cashMethod.defaultAccountId,
       destinationAccountId: prepaidMethod.defaultAccountId,
-      amountCents: refundsCents,
+      amountCents: refunds.cashCents,
       date,
       description: `${label} — remboursements de solde`,
+      reference
+    }] : []),
+    // Rendus sur la CB qui avait chargé la carte : ils sortent du compte SumUp, pas de la caisse.
+    ...(refunds.cardCents > 0 ? [{
+      sourceAccountId: cardMethod!.defaultAccountId,
+      destinationAccountId: prepaidMethod.defaultAccountId,
+      amountCents: refunds.cardCents,
+      date,
+      description: `${label} — remboursements de solde par CB`,
       reference
     }] : [])
   ]);

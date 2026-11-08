@@ -205,7 +205,14 @@ export const buvetteCardAttemptsTable = sqliteTable('buvette_card_attempts', {
 export const buvetteSumUpRefundsTable = sqliteTable('buvette_sumup_refunds', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   attemptId: integer('attempt_id').notNull().unique().references(() => buvetteCardAttemptsTable.id),
-  status: text('status', { enum: ['pending', 'done', 'failed'] }).notNull(),
+  /** `cash` : SumUp a refusé une part de remboursement de carte, rendue en espèces à la place : close. */
+  status: text('status', { enum: ['pending', 'done', 'failed', 'cash'] }).notNull(),
+  /** L'acte de remboursement de carte qui a réservé cette part : de quoi le reprendre s'il est interrompu. */
+  refundClientId: text('refund_client_id'),
+  /** `payment` : tout le paiement. `card_balance` : une part, rendue au remboursement d'une carte. */
+  reason: text('reason', { enum: ['payment', 'card_balance'] }).notNull().default('payment'),
+  /** Le montant visé pour une part ; vide, tout ce qui reste à rembourser sur la transaction. */
+  requestedCents: integer('requested_cents'),
   amountCents: integer('amount_cents'),
   error: text('error'),
   requestedByEmail: text('requested_by_email').notNull(),
@@ -225,6 +232,8 @@ export const buvetteCardMovementsTable = sqliteTable('buvette_card_movements', {
   /** Vide pour un transfert : il se fait depuis le téléphone du client, sans toucher à la caisse. */
   sessionId: integer('session_id').references(() => buvetteSessionsTable.id),
   saleId: integer('sale_id').references(() => buvetteSalesTable.id),
+  /** Un remboursement de solde rendu sur la CB qui avait payé la recharge : il ne sort pas de la caisse. */
+  sumupAttemptId: integer('sumup_attempt_id').references(() => buvetteCardAttemptsTable.id),
   type: text('type', { enum: BUVETTE_MOVEMENT_TYPES }).notNull(),
   amountCents: integer('amount_cents').notNull(),
   createdByEmail: text('created_by_email').notNull(),

@@ -3,10 +3,22 @@ import { findDeviceForCode, readCardCode, signCardToken, verifyCardToken } from 
 import { maskEmail } from '../shared/mask';
 import { closedPaperMessage, hashPaperCode, PAPER_DEVICE, paperLabel, readPaperCode } from '../shared/paper-card';
 import { availableCents, cardLabel, getActiveDevice, getCard, getPendingOrderId } from '../shared/queries.repository';
+import { planCardRefund } from '../shared/card-refund-plan';
+import { SumUpRefundsRepository } from '../shared/sumup-refunds.repository';
 import { ScanCardRepository } from './repository';
 import type { ScanCardOutput } from './dto';
 
 export { maskEmail };
+
+/** Un aperçu sans appel à SumUp : un refus le moment venu repasse en espèces. */
+async function cbRefundable(db: Db, card: { id: number; balanceCents: number; reservedCents: number }): Promise<number> {
+  // Le remboursement refuse une carte dont une vente attend sa CB : rien à prévoir alors.
+  if (card.balanceCents <= 0 || card.reservedCents > 0) return 0;
+  const cardId = card.id;
+  const balanceCents = card.balanceCents;
+  const plan = planCardRefund(balanceCents, await new SumUpRefundsRepository().cardRechargePayments(db, cardId));
+  return plan.reduce((sum, part) => sum + part.amountCents, 0);
+}
 
 /** Une carte papier ne porte pas de QR code tournant : son code imprimé la désigne. */
 async function scanPaper(db: Db, secret: string, code: string): Promise<ScanCardOutput> {
@@ -21,7 +33,8 @@ async function scanPaper(db: Db, secret: string, code: string): Promise<ScanCard
     pendingOrderId: null,
     kind: 'paper',
     paperStatus: card.paperStatus,
-    faceValueCents: card.faceValueCents
+    faceValueCents: card.faceValueCents,
+    cbRefundableCents: await cbRefundable(db, card)
   };
 }
 
@@ -55,6 +68,7 @@ export async function scanCard(db: Db, secret: string, qrToken: string, nowMs: n
     pendingOrderId: await getPendingOrderId(db, card.id),
     kind: 'account',
     paperStatus: null,
-    faceValueCents: null
+    faceValueCents: null,
+    cbRefundableCents: await cbRefundable(db, card)
   };
 }

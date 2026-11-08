@@ -1,10 +1,27 @@
-import { eq, sql } from 'drizzle-orm';
+import { eq, like, or, sql } from 'drizzle-orm';
 import { type DbOrTx } from '@nba/db';
 import { buvetteCardMovementsTable, buvetteCardsTable, buvetteSessionsTable } from '../shared/schema';
 
 export class RefundCardRepository {
-  findMovement(db: DbOrTx, clientId: string) {
-    return db.select().from(buvetteCardMovementsTable).where(eq(buvetteCardMovementsTable.clientId, clientId)).get();
+  /** Les mouvements d'un remboursement : la part espèces et les parts rendues sur CB. */
+  findMovements(db: DbOrTx, clientId: string) {
+    return db.select().from(buvetteCardMovementsTable)
+      .where(or(eq(buvetteCardMovementsTable.clientId, clientId), like(buvetteCardMovementsTable.clientId, `${clientId}-cb-%`)))
+      .all();
+  }
+
+  /** Bloque le solde le temps que SumUp rembourse : rien ne peut le dépenser entre-temps. */
+  buildReserveStatement(db: DbOrTx, cardId: number, amountCents: number): any {
+    return db.update(buvetteCardsTable)
+      .set({ reservedCents: sql`${buvetteCardsTable.reservedCents} + ${amountCents}` })
+      .where(eq(buvetteCardsTable.id, cardId));
+  }
+
+  /** Retire le montant réservé, et la réservation avec. */
+  buildDebitReservedStatement(db: DbOrTx, cardId: number, amountCents: number): any {
+    return db.update(buvetteCardsTable)
+      .set({ balanceCents: sql`${buvetteCardsTable.balanceCents} - ${amountCents}`, reservedCents: sql`${buvetteCardsTable.reservedCents} - ${amountCents}` })
+      .where(eq(buvetteCardsTable.id, cardId));
   }
 
   /**

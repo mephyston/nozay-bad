@@ -1,4 +1,4 @@
-import { and, eq, sql } from 'drizzle-orm';
+import { and, eq, isNull, sql } from 'drizzle-orm';
 import { AppError, type DbOrTx } from '@nba/db';
 import { maskEmail } from './mask';
 import { closedPaperMessage, paperLabel, PAPER_DEVICE } from './paper-card';
@@ -77,7 +77,7 @@ export function cardLabel(card: { id: number; email: string | null }): string {
   return card.email ? maskEmail(card.email) : paperLabel(card.id);
 }
 
-/** Fond de caisse, plus les espèces des ventes payées, moins les remboursements en espèces. */
+/** Fond de caisse, plus les espèces des ventes payées, moins les remboursements en espèces (pas ceux rendus sur CB). */
 export async function getExpectedCashCents(db: DbOrTx, sessionId: number, openingFloatCents: number): Promise<number> {
   const sales = await db
     .select({ total: sql<number>`COALESCE(SUM(${buvetteSalesTable.cashCents}), 0)` })
@@ -87,7 +87,7 @@ export async function getExpectedCashCents(db: DbOrTx, sessionId: number, openin
   const refunds = await db
     .select({ total: sql<number>`COALESCE(SUM(-${buvetteCardMovementsTable.amountCents}), 0)` })
     .from(buvetteCardMovementsTable)
-    .where(and(eq(buvetteCardMovementsTable.sessionId, sessionId), eq(buvetteCardMovementsTable.type, 'refund')))
+    .where(and(eq(buvetteCardMovementsTable.sessionId, sessionId), eq(buvetteCardMovementsTable.type, 'refund'), isNull(buvetteCardMovementsTable.sumupAttemptId)))
     .get();
   return openingFloatCents + Number(sales?.total ?? 0) - Number(refunds?.total ?? 0);
 }
