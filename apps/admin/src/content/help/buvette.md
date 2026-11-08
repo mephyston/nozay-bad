@@ -15,7 +15,7 @@ Dans le **Catalogue buvette**, chaque article a un pictogramme, affiché en fili
 
 ## Préparer le catalogue
 
-Dans **Buvette → Catalogue buvette**, ajoutez les articles avec leur prix et leur catégorie comptable. Un article qu'on ne vend plus se désactive avec **En vente** : les ventes passées y renvoient, il ne se supprime pas.
+Dans **Buvette → Catalogue buvette**, ajoutez les articles avec leur prix. La catégorie comptable ne se règle pas par article : elle se choisit à l'ouverture de chaque session (buvette du tournoi d'hiver, du forum des associations…), et tout ce que la session vend y est comptabilisé. Un article qu'on ne vend plus se désactive avec **En vente** : les ventes passées y renvoient, il ne se supprime pas.
 
 Le **plafond de solde** limite ce qu'une carte peut contenir. Une recharge qui le dépasserait est refusée à la caisse.
 
@@ -65,7 +65,7 @@ La tuile **Rembourser une carte**, à côté de **Recharge carte**, rend tout le
 
 La clôture pose une écriture de synthèse, pas une écriture par café :
 
-- **Articles** : une recette par catégorie et par moyen de paiement ;
+- **Articles** : une recette par moyen de paiement, dans la catégorie choisie pour la session ;
 - **Recharges et remboursements** : des virements avec le compte **Soldes des cartes buvette**, car l'argent reste dû au client tant qu'il n'est pas consommé ;
 - **CB** : sur le compte **À recevoir de SumUp**, à solder au virement reçu en banque, la commission étant saisie en dépense ;
 - **Écart de caisse** : une recette ou une dépense dans la catégorie **Écarts de caisse**.

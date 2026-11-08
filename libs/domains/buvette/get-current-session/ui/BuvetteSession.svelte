@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { Button, FormField, Input, submitForm } from '@nba/ui';
+  import { Button, FormField, Input, SearchableCombobox, submitForm } from '@nba/ui';
   import { parseEuros } from '../../shared/money';
-  import { abandonSale, closeCaisse, openCaisse } from './session-actions';
+  import { abandonSale, closeCaisse, openCaisse, setSessionCategory } from './session-actions';
 
   /**
    * L'ouverture et la clôture de la caisse, réservées au bureau : elles engagent le comptage
@@ -9,12 +9,14 @@
    */
   let {
     current = null,
+    categories = [],
     cardsDebtCents = 0,
     canOpen = false,
     canClose = false,
     canAbandon = false
   }: {
     current?: any;
+    categories?: { id: number; adminLabel: string }[];
     cardsDebtCents?: number;
     canOpen?: boolean;
     canClose?: boolean;
@@ -25,13 +27,31 @@
 
   let amount = $state('');
   let busy = $state(false);
+  const categoryItems = $derived(categories.map((c) => ({ value: c.id, label: c.adminLabel })));
+  const categoryName = (id: number) => categories.find((c) => c.id === id)?.adminLabel ?? `Catégorie n° ${id}`;
+  // svelte-ignore state_referenced_locally
+  let categoryId = $state<number>(current?.session.accountingCategoryId ?? 0);
+  let editingCategory = $state(false);
 
   async function open() {
     busy = true;
     await submitForm({
-      validate: () => (parseEuros(amount) === null ? 'Saisissez le montant compté, par exemple 50,00.' : null),
-      submit: () => openCaisse(parseEuros(amount)!)
+      validate: () =>
+        !categoryId ? 'Choisissez la catégorie comptable de cette buvette (tournoi, forum…).'
+          : parseEuros(amount) === null ? 'Saisissez le montant compté, par exemple 50,00.' : null,
+      submit: () => openCaisse(parseEuros(amount)!, categoryId)
     });
+    busy = false;
+  }
+
+  async function saveCategory() {
+    busy = true;
+    await submitForm({
+      validate: () => (!categoryId ? 'Choisissez une catégorie.' : null),
+      submit: () => setSessionCategory(categoryId),
+      success: 'Catégorie enregistrée.'
+    });
+    editingCategory = false;
     busy = false;
   }
 
@@ -64,6 +84,9 @@
   <div class="max-w-sm space-y-4">
     <p class="text-muted-foreground">La caisse est fermée : les bénévoles ne peuvent pas encaisser.</p>
     {#if canOpen}
+      <FormField label="Catégorie comptable" id="categorie" hint="Tout ce que la session vendra y sera comptabilisé : buvette du tournoi d'hiver, du forum des associations…">
+        <SearchableCombobox id="categorie" items={categoryItems} bind:value={categoryId} placeholder="Choisir une catégorie" />
+      </FormField>
       <FormField label="Fond de caisse compté (€)" id="fond">
         <Input id="fond" inputmode="decimal" bind:value={amount} placeholder="50,00" />
       </FormField>
@@ -74,6 +97,19 @@
   <div class="max-w-lg space-y-6">
     <dl class="space-y-2 rounded-lg border p-4">
       <div class="flex justify-between gap-4"><dt>Ouverte le</dt><dd>{current.session.businessDate}, par {current.session.openedByEmail}</dd></div>
+      <div class="flex items-center justify-between gap-4">
+        <dt>Catégorie comptable</dt>
+        <dd class="flex items-center gap-2">
+          {categoryName(current.session.accountingCategoryId)}
+          {#if canOpen && !editingCategory}<Button variant="ghost" size="sm" onclick={() => (editingCategory = true)}>Changer</Button>{/if}
+        </dd>
+      </div>
+      {#if editingCategory}
+        <div class="flex items-end gap-2">
+          <div class="grow"><SearchableCombobox id="categorie-session" items={categoryItems} bind:value={categoryId} placeholder="Choisir une catégorie" /></div>
+          <Button size="sm" disabled={busy} onclick={saveCategory}>Enregistrer</Button>
+        </div>
+      {/if}
       <div class="flex justify-between gap-4"><dt>Fond de caisse</dt><dd class="tabular-nums">{euros(current.session.openingFloatCents)}</dd></div>
       <div class="flex justify-between gap-4 font-semibold"><dt>Espèces attendues</dt><dd class="tabular-nums">{euros(current.expectedCashCents)}</dd></div>
       <div class="flex justify-between gap-4"><dt>CB</dt><dd class="tabular-nums">{euros(current.cardCents)}</dd></div>

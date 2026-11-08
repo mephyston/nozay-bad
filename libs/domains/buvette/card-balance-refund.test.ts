@@ -67,8 +67,8 @@ describe('remboursement d\'une carte sur la CB qui l\'a chargée', () => {
       code: '25-26', name: 'Saison 2025-2026', startDate: '2025-09-01', endDate: '2026-08-31', active: true, closedAt: null, createdAt: new Date()
     });
     const category = await db.select().from(categoriesTable).where(eq(categoriesTable.adminLabel, 'Buvettes')).get();
-    coffee = await createItem(db, { name: 'Café', priceCents: 500, accountingCategoryId: category.id });
-    await openSession(db, { openingFloatCents: 5000, openedByEmail: BY });
+    coffee = await createItem(db, { name: 'Café', priceCents: 500 });
+    await openSession(db, { openingFloatCents: 5000, accountingCategoryId: category.id, openedByEmail: BY });
     card = await openCard(db, 'client@example.org');
     sumup = fakeSumUp();
   });

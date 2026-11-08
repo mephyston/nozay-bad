@@ -117,8 +117,7 @@ export async function createSale(db: Db, secret: string, input: CreateSaleInput)
       itemId: item.id,
       name: item.name,
       unitPriceCents: item.priceCents,
-      quantity: line.quantity,
-      accountingCategoryId: item.accountingCategoryId
+      quantity: line.quantity
     }))
   ];
   const movement = (cardId: number, type: 'debit' | 'recharge', amountCents: number) => [

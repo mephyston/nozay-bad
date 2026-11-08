@@ -8,8 +8,6 @@ export const buvetteItemsTable = sqliteTable('buvette_items', {
   priceCents: integer('price_cents').notNull(),
   /** Le pictogramme imposé depuis le catalogue ; vide, il est deviné d'après le nom. */
   icon: text('icon'),
-  /** Catégorie comptable (`categories.id`), résolue à la clôture de caisse. */
-  accountingCategoryId: integer('accounting_category_id').notNull(),
   active: integer('active', { mode: 'boolean' }).notNull().default(true),
   sortOrder: integer('sort_order').notNull().default(0),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
@@ -81,6 +79,11 @@ export const buvetteSessionsTable = sqliteTable('buvette_sessions', {
   /** Date comptable : celle de l'ouverture, dans le fuseau du club (AAAA-MM-JJ). */
   businessDate: text('business_date').notNull(),
   openingFloatCents: integer('opening_float_cents').notNull(),
+  /**
+   * La catégorie comptable (`categories.id`) de tout ce que la session vend : une buvette sert
+   * un événement (tournoi d'hiver, forum des associations…), pas un type d'article.
+   */
+  accountingCategoryId: integer('accounting_category_id').notNull(),
   openedByEmail: text('opened_by_email').notNull(),
   openedAt: integer('opened_at', { mode: 'timestamp' }).notNull()
 }, (table) => [
@@ -167,8 +170,7 @@ export const buvetteSaleLinesTable = sqliteTable('buvette_sale_lines', {
   itemId: integer('item_id').notNull().references(() => buvetteItemsTable.id),
   name: text('name').notNull(),
   unitPriceCents: integer('unit_price_cents').notNull(),
-  quantity: integer('quantity').notNull(),
-  accountingCategoryId: integer('accounting_category_id').notNull()
+  quantity: integer('quantity').notNull()
 }, (table) => [
   index('buvette_sale_lines_sale_idx').on(table.saleId),
   check('buvette_sale_lines_quantity_check', sql`${table.quantity} > 0`)

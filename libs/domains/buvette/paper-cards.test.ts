@@ -35,8 +35,8 @@ describe('cartes papier', () => {
       code: '25-26', name: 'Saison 2025-2026', startDate: '2025-09-01', endDate: '2026-08-31', active: true, closedAt: null, createdAt: new Date()
     });
     const category = await db.select().from(categoriesTable).where(eq(categoriesTable.adminLabel, 'Buvettes')).get();
-    coffee = await createItem(db, { name: 'Café', priceCents: 100, accountingCategoryId: category.id });
-    sessionId = (await openSession(db, { openingFloatCents: 5000, openedByEmail: BY })).id;
+    coffee = await createItem(db, { name: 'Café', priceCents: 100 });
+    sessionId = (await openSession(db, { openingFloatCents: 5000, accountingCategoryId: category.id, openedByEmail: BY })).id;
     [paper] = await generatePaperCards(db, 1000, 1);
   });
 

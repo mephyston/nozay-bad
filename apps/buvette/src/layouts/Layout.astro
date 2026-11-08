@@ -40,6 +40,12 @@ const club = Astro.locals.club?.settings;
           <span class="text-foreground block text-sm font-bold tracking-tight">{club?.shortName || 'Buvette'}</span>
           <span class="text-muted-foreground -mt-0.5 block text-[10px] font-semibold tracking-wider uppercase">Carte buvette</span>
         </div>
+        {nav && (
+          <a href="/?guide" class="text-muted-foreground hover:text-foreground ml-auto flex size-11 items-center justify-center rounded-full" aria-label="Aide : revoir le guide de la carte">
+            <!-- Icône « aide » (cercle et point d'interrogation), en ligne : l'en-tête ne charge aucun îlot. -->
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="size-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><path d="M12 17h.01" /></svg>
+          </a>
+        )}
       </div>
     </header>
     <!-- `gap` et non `space-y` : les îlots Svelte sont enveloppés dans un élément sans boîte, que

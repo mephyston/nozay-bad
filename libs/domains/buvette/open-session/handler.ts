@@ -31,3 +31,12 @@ export async function openSession(db: Db, input: OpenSessionInput) {
     throw error;
   }
 }
+
+/** Corrige la catégorie de la session ouverte, avant que la clôture ne passe ses écritures. */
+export async function setSessionCategory(db: Db, accountingCategoryId: number) {
+  const session = await getOpenSession(db);
+  if (!session) throw new AppError('Aucune session de caisse ouverte.', 409);
+  const updated = await new OpenSessionRepository().setCategory(db, session.id, accountingCategoryId);
+  if (!updated) throw new AppError('La session vient d\'être clôturée.', 409);
+  return updated;
+}

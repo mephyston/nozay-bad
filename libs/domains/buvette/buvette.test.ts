@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { eq } from 'drizzle-orm';
+import { eq, ne } from 'drizzle-orm';
 import { setupMockDb } from '@nba/db/test-utils';
 import { categoriesTable, ledgerEntriesTable, seasonsTable } from '@nba/accounting/schema';
 import { buvetteCardsTable } from './shared/schema';
@@ -7,7 +7,7 @@ import { getCardsDebtCents, getSettings } from './shared/queries.repository';
 import { signCardToken } from './shared/card-tokens';
 import { createItem } from './manage-items/handler';
 import { saveSettings } from './manage-settings/handler';
-import { openSession } from './open-session/handler';
+import { openSession, setSessionCategory } from './open-session/handler';
 import { getCurrentSession } from './get-current-session/handler';
 import { closeSession } from './close-session/handler';
 import { listSessionSales } from './list-session-sales/handler';
@@ -49,24 +49,24 @@ describe('buvette', () => {
     });
     const category = await db.select().from(categoriesTable).where(eq(categoriesTable.adminLabel, 'Buvettes')).get();
     categoryId = category.id;
-    coffee = await createItem(db, { name: 'Café', priceCents: 100, accountingCategoryId: categoryId });
-    sandwich = await createItem(db, { name: 'Sandwich', priceCents: 400, accountingCategoryId: categoryId });
+    coffee = await createItem(db, { name: 'Café', priceCents: 100 });
+    sandwich = await createItem(db, { name: 'Sandwich', priceCents: 400 });
   });
 
   describe('session de caisse', () => {
     it('la migration règle la buvette : une session s\'ouvre sans configuration', async () => {
-      const session = await openSession(db, { openingFloatCents: 5000, openedByEmail: BY });
+      const session = await openSession(db, { openingFloatCents: 5000, accountingCategoryId: categoryId, openedByEmail: BY });
       expect(session.businessDate).toBe('2026-08-30');
     });
 
     it('une seule session ouverte à la fois', async () => {
-      await openSession(db, { openingFloatCents: 0, openedByEmail: BY });
-      await expect(openSession(db, { openingFloatCents: 0, openedByEmail: BY })).rejects.toThrow('déjà ouverte');
+      await openSession(db, { openingFloatCents: 0, accountingCategoryId: categoryId, openedByEmail: BY });
+      await expect(openSession(db, { openingFloatCents: 0, accountingCategoryId: categoryId, openedByEmail: BY })).rejects.toThrow('déjà ouverte');
     });
 
     it('refuse d\'ouvrir hors de tout exercice', async () => {
       vi.setSystemTime(new Date('2026-09-15T12:00:00Z'));
-      await expect(openSession(db, { openingFloatCents: 0, openedByEmail: BY })).rejects.toThrow('exercice');
+      await expect(openSession(db, { openingFloatCents: 0, accountingCategoryId: categoryId, openedByEmail: BY })).rejects.toThrow('exercice');
       vi.setSystemTime(new Date('2026-08-30T12:00:00Z'));
     });
 
@@ -84,7 +84,7 @@ describe('buvette', () => {
 
   describe('vente', () => {
     beforeEach(async () => {
-      await openSession(db, { openingFloatCents: 5000, openedByEmail: BY });
+      await openSession(db, { openingFloatCents: 5000, accountingCategoryId: categoryId, openedByEmail: BY });
     });
 
     it('paiement complet par carte', async () => {
@@ -205,7 +205,7 @@ describe('buvette', () => {
     });
 
     it('le détail d\'une transaction montre les articles, et seulement à sa carte', async () => {
-      await openSession(db, { openingFloatCents: 0, openedByEmail: BY });
+      await openSession(db, { openingFloatCents: 0, accountingCategoryId: categoryId, openedByEmail: BY });
       const c = await cardWith(300);
       await sale('vente-det-1', { lines: [{ itemId: sandwich.id, quantity: 1 }], prepaidScanToken: c.scanToken, expectedCashCents: 100 });
       const { deviceId } = await openCard(db, 'client@example.org');
@@ -274,7 +274,7 @@ describe('buvette', () => {
 
   describe('remboursement', () => {
     beforeEach(async () => {
-      await openSession(db, { openingFloatCents: 6000, openedByEmail: BY });
+      await openSession(db, { openingFloatCents: 6000, accountingCategoryId: categoryId, openedByEmail: BY });
     });
 
     const refund = (scanToken: string, clientId = 'remb-0001') =>
@@ -328,7 +328,7 @@ describe('buvette', () => {
     let sessionId: number;
 
     beforeEach(async () => {
-      sessionId = (await openSession(db, { openingFloatCents: 5000, openedByEmail: BY })).id;
+      sessionId = (await openSession(db, { openingFloatCents: 5000, accountingCategoryId: categoryId, openedByEmail: BY })).id;
     });
 
     const close = (countedCashCents: number) => closeSession(db, { sessionId, countedCashCents, closedByEmail: BY });
@@ -350,6 +350,17 @@ describe('buvette', () => {
       const legs = entries.filter((e: any) => e.type === 'transfert');
       expect(legs.map((e: any) => e.amountCents).sort()).toEqual([1600, 1600, 2000, 2000]);
       expect(entries.some((e: any) => e.type === 'depense')).toBe(false);
+    });
+
+    it('toutes les ventes vont dans la catégorie de la session, même changée en cours de route', async () => {
+      const autre = await db.select().from(categoriesTable).where(ne(categoriesTable.id, categoryId)).get();
+      await sale('vente-0111', { lines: [{ itemId: coffee.id, quantity: 1 }, { itemId: sandwich.id, quantity: 1 }], expectedCashCents: 500 });
+      await setSessionCategory(db, autre.id);
+      await close(5500);
+      const recettes = (await db.select().from(ledgerEntriesTable).all()).filter((e: any) => e.type === 'recette');
+      expect(recettes).toHaveLength(1);
+      expect(recettes[0]).toMatchObject({ categoryId: autre.id, amountCents: 500 });
+      await expect(setSessionCategory(db, categoryId)).rejects.toThrow('Aucune session');
     });
 
     it('une recharge seule ne pose aucune recette', async () => {
@@ -379,8 +390,8 @@ describe('buvette', () => {
 
       it('une vente qui passe pendant la clôture annule tout, et rien n\'est perdu', async () => {
         const original = CloseSessionRepository.prototype.paidSales;
-        vi.spyOn(CloseSessionRepository.prototype, 'paidSales').mockImplementationOnce(async function (this: any, d: any, id: number) {
-          const lues = await original.call(this, d, id);
+        vi.spyOn(CloseSessionRepository.prototype, 'paidSales').mockImplementationOnce(async function (this: any, d: any, id: number, categorie: number) {
+          const lues = await original.call(this, d, id, categorie);
           await sale('vente-0601', { lines: [{ itemId: coffee.id, quantity: 1 }], expectedCashCents: 100 });
           return lues;
         });

@@ -52,8 +52,8 @@ describe('remboursement d\'une CB par SumUp', () => {
       code: '25-26', name: 'Saison 2025-2026', startDate: '2025-09-01', endDate: '2026-08-31', active: true, closedAt: null, createdAt: new Date()
     });
     const category = await db.select().from(categoriesTable).where(eq(categoriesTable.adminLabel, 'Buvettes')).get();
-    sandwich = await createItem(db, { name: 'Sandwich', priceCents: 400, accountingCategoryId: category.id });
-    await openSession(db, { openingFloatCents: 5000, openedByEmail: BY });
+    sandwich = await createItem(db, { name: 'Sandwich', priceCents: 400 });
+    await openSession(db, { openingFloatCents: 5000, accountingCategoryId: category.id, openedByEmail: BY });
   });
 
   it('rembourse la part CB d\'une vente remboursée, une seule fois', async () => {

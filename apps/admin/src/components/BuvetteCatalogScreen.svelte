@@ -12,7 +12,7 @@
 <div class="mt-6">
   <EcranDistant domaine="buvette" ecran="catalog" variante="liste">
     {#snippet pret(d)}
-      <BuvetteCatalog items={d.items} categories={d.categories} settings={d.settings} canWrite={d.canWrite} />
+      <BuvetteCatalog items={d.items} settings={d.settings} canWrite={d.canWrite} />
     {/snippet}
   </EcranDistant>
 </div>

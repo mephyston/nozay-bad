@@ -10,7 +10,6 @@ CREATE TABLE `buvette_items` (
 	`name` text NOT NULL,
 	`price_cents` integer NOT NULL,
 	`icon` text,
-	`accounting_category_id` integer NOT NULL,
 	`active` integer DEFAULT true NOT NULL,
 	`sort_order` integer DEFAULT 0 NOT NULL,
 	`created_at` integer NOT NULL,
@@ -65,6 +64,7 @@ CREATE TABLE `buvette_sessions` (
 	`status` text DEFAULT 'open' NOT NULL,
 	`business_date` text NOT NULL,
 	`opening_float_cents` integer NOT NULL,
+	`accounting_category_id` integer NOT NULL,
 	`opened_by_email` text NOT NULL,
 	`opened_at` integer NOT NULL,
 	CONSTRAINT `buvette_sessions_float_check` CHECK (`opening_float_cents` >= 0)
@@ -149,7 +149,6 @@ CREATE TABLE `buvette_sale_lines` (
 	`name` text NOT NULL,
 	`unit_price_cents` integer NOT NULL,
 	`quantity` integer NOT NULL,
-	`accounting_category_id` integer NOT NULL,
 	FOREIGN KEY (`sale_id`) REFERENCES `buvette_sales`(`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`item_id`) REFERENCES `buvette_items`(`id`) ON UPDATE no action ON DELETE no action,
 	CONSTRAINT `buvette_sale_lines_quantity_check` CHECK (`quantity` > 0)

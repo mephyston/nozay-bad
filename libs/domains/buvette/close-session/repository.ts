@@ -19,14 +19,14 @@ export class CloseSessionRepository {
     return db.select().from(buvetteSessionsTable).where(eq(buvetteSessionsTable.id, id)).get();
   }
 
-  async paidSales(db: DbOrTx, sessionId: number): Promise<ClosingSale[]> {
+  /** Toutes les lignes vont dans la catégorie de la session. */
+  async paidSales(db: DbOrTx, sessionId: number, accountingCategoryId: number): Promise<ClosingSale[]> {
     const sales = await db.select().from(buvetteSalesTable)
       .where(and(eq(buvetteSalesTable.sessionId, sessionId), eq(buvetteSalesTable.status, 'paid')))
       .all();
     const lines = await db
       .select({
         saleId: buvetteSaleLinesTable.saleId,
-        accountingCategoryId: buvetteSaleLinesTable.accountingCategoryId,
         amountCents: sql<number>`${buvetteSaleLinesTable.unitPriceCents} * ${buvetteSaleLinesTable.quantity}`
       })
       .from(buvetteSaleLinesTable)
@@ -40,7 +40,7 @@ export class CloseSessionRepository {
       cardCents: sale.cardCents,
       rechargeCents: sale.rechargeCents,
       lines: lines.filter((l) => l.saleId === sale.id).map((l) => ({
-        accountingCategoryId: l.accountingCategoryId,
+        accountingCategoryId,
         amountCents: Number(l.amountCents)
       }))
     }));

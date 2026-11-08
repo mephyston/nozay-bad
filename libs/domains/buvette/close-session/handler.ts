@@ -44,7 +44,7 @@ export async function closeSession(db: Db, input: CloseSessionInput): Promise<Cl
   if ((await repo.inProgressCount(db, session.id)) > 0) {
     throw new AppError('Une vente attend encore sa CB : vérifiez-la ou abandonnez-la avant de clôturer.', 409);
   }
-  const summary = summarizeSession(await repo.paidSales(db, session.id));
+  const summary = summarizeSession(await repo.paidSales(db, session.id, session.accountingCategoryId));
   const refunds = await repo.refundsCents(db, session.id);
   const refundsCents = refunds.cashCents + refunds.cardCents;
   if ((summary.itemsCardCents > 0 || summary.rechargeCardCents > 0 || refunds.cardCents > 0) && !cardMethod) {
