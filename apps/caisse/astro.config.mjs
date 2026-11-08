@@ -41,7 +41,7 @@ export default defineConfig({
         'tailwind-variants',
         '@internationalized/date'
       ],
-      exclude: ['astro:transitions', '@astrojs/cloudflare', '@nba/ui', '@nba/club-ui']
+      exclude: ['astro:transitions', '@astrojs/cloudflare', '@nba/ui', '@nba/club-ui', '@nba/buvette-ui']
     },
     ssr: { external: ['@astrojs/cloudflare'] }
   },

@@ -3,6 +3,7 @@
   import { Banknote, Check, ChevronLeft, ChevronRight, CreditCard, Plus, QrCode, RotateCcw, ScanLine, ShoppingBasket } from '@lucide/svelte';
   import { Button, Input } from '@nba/ui';
   import MoneyHandover from './MoneyHandover.svelte';
+  import { ItemIcon } from '@nba/buvette-ui';
   import CaisseNav from './CaisseNav.svelte';
   import QrScanner from './QrScanner.svelte';
   import { isIosDevice, sumUpLink } from '../lib/sumup-link';
@@ -577,11 +578,13 @@
         {@const quantity = cart.get(item.id) ?? 0}
         <button
           type="button"
-          class="bg-card active:bg-muted relative flex aspect-square flex-col justify-between rounded-2xl border p-3 text-left"
+          class="bg-card active:bg-muted relative flex aspect-square flex-col justify-between overflow-hidden rounded-2xl border p-3 text-left"
           onclick={() => add(item.id, 1)}
         >
-          <span class="line-clamp-3 text-sm leading-tight font-semibold">{item.name}</span>
-          <span class="text-muted-foreground text-sm tabular-nums">{formatEuros(item.priceCents)}</span>
+          <!-- Le pictogramme en filigrane : on reconnaît l'article d'un coup d'œil, le nom reste lisible. -->
+          <span class="text-primary/15 pointer-events-none absolute -right-2 -bottom-2 size-16 text-5xl"><ItemIcon name={item.name} icon={item.icon} class="size-16" /></span>
+          <span class="relative line-clamp-3 text-sm leading-tight font-semibold">{item.name}</span>
+          <span class="text-muted-foreground relative text-sm tabular-nums">{formatEuros(item.priceCents)}</span>
           {#if quantity > 0}
             <span class="bg-primary text-primary-foreground absolute top-2 right-2 flex size-6 items-center justify-center rounded-full text-xs font-bold">{quantity}</span>
           {/if}

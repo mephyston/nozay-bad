@@ -9,6 +9,7 @@ CREATE TABLE `buvette_items` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`name` text NOT NULL,
 	`price_cents` integer NOT NULL,
+	`icon` text,
 	`accounting_category_id` integer NOT NULL,
 	`active` integer DEFAULT true NOT NULL,
 	`sort_order` integer DEFAULT 0 NOT NULL,

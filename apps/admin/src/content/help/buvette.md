@@ -9,6 +9,10 @@ La buvette repose sur deux applications : la **caisse**, utilisée par les bén�
 
 Pour ouvrir sa carte, le client accepte les conditions d'utilisation de la carte buvette ; elles sont lisibles depuis la page de connexion, avec la politique de confidentialité et les mentions légales. La carte se charge uniquement à la buvette, en espèces ou par carte bancaire : il n'y a rien à payer en ligne.
 
+À sa première visite, l'app présente ses quatre onglets (carte, QR code, commande, compte) et rappelle que la carte se recharge à la buvette en présentant son QR code ; le client peut revoir ce guide depuis l'onglet **Compte**.
+
+Dans le **Catalogue buvette**, chaque article a un pictogramme, affiché en filigrane sur sa tuile dans la caisse et à côté de lui dans l'app. Il est choisi automatiquement d'après le nom (café, soda, sandwich, barre chocolatée…) ; le champ **Pictogramme** permet d'en imposer un autre. Un nom que rien ne reconnaît garde son initiale.
+
 ## Préparer le catalogue
 
 Dans **Buvette → Catalogue buvette**, ajoutez les articles avec leur prix et leur catégorie comptable. Un article qu'on ne vend plus se désactive avec **En vente** : les ventes passées y renvoient, il ne se supprime pas.

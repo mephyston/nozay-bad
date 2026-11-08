@@ -54,6 +54,8 @@
   {/if}
 </div>
 
+<a href="/?guide" class="text-primary block text-center text-sm font-semibold hover:underline">Revoir le guide de la carte</a>
+
 <p class="text-muted-foreground flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs">
   <a href="/mentions-legales" class="hover:underline">Mentions légales</a>
   <a href="/confidentialite" class="hover:underline">Confidentialité</a>

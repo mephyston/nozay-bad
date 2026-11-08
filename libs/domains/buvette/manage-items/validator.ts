@@ -7,5 +7,7 @@ export const saveItemSchema = Type.Object({
   priceCents: Type.Integer({ minimum: 0, maximum: 100000 }),
   accountingCategoryId: Type.Integer({ minimum: 1 }),
   active: Type.Optional(Type.Boolean()),
-  sortOrder: Type.Optional(Type.Integer({ minimum: 0 }))
+  sortOrder: Type.Optional(Type.Integer({ minimum: 0 })),
+  /** Un pictogramme de la liste, ou `null` pour le deviner d'après le nom. */
+  icon: Type.Optional(Type.Union([Type.String({ pattern: '^[a-z]{2,20}$' }), Type.Null()]))
 });

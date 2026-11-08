@@ -4,4 +4,5 @@ export interface SaveItemInput {
   accountingCategoryId: number;
   active?: boolean;
   sortOrder?: number;
+  icon?: string | null;
 }

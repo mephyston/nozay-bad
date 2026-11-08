@@ -1,7 +1,7 @@
 export interface CatalogForClient {
   /** Fermée, la buvette montre sa carte mais ne prend pas de commande. */
   open: boolean;
-  items: { id: number; name: string; priceCents: number }[];
+  items: { id: number; name: string; priceCents: number; icon: string | null }[];
 }
 
 export interface ClientOrder {

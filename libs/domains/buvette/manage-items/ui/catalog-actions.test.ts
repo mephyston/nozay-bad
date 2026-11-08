@@ -9,7 +9,7 @@ describe('saisie du catalogue', () => {
   });
 
   it('exige un nom, un prix et une catégorie', () => {
-    const valid = { name: 'Café', priceEuros: '1', accountingCategoryId: 6, active: true };
+    const valid = { name: 'Café', priceEuros: '1', accountingCategoryId: 6, active: true, icon: '' };
     expect(validateItem(valid)).toBeNull();
     expect(validateItem({ ...valid, name: ' ' })).toContain('nom');
     expect(validateItem({ ...valid, priceEuros: 'gratuit' })).toContain('prix');

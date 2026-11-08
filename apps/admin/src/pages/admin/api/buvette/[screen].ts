@@ -9,7 +9,8 @@ function article(data: any) {
     priceCents: data.priceCents,
     accountingCategoryId: data.accountingCategoryId,
     active: data.active,
-    sortOrder: data.sortOrder
+    sortOrder: data.sortOrder,
+    icon: data.icon ?? null
   };
 }
 

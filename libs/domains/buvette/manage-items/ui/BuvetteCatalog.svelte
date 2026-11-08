@@ -1,5 +1,7 @@
 <script lang="ts">
-  import { Button, FormField, FormSheet, Input, SearchableCombobox, SwitchField, submitForm } from '@nba/ui';
+  import { Button, FormField, FormSheet, Input, SearchableCombobox, Select, SwitchField, submitForm } from '@nba/ui';
+  import ItemIcon from '../../shared/ItemIcon.svelte';
+  import { guessItemIcon, ITEM_ICONS } from '../../shared/item-icons';
   import { parseEuros, saveItem, saveMaxBalance, validateItem, type CatalogItem, type CatalogItemValues } from './catalog-actions';
 
   /**
@@ -28,7 +30,8 @@
   let sortOrder = $state(0);
   let submitting = $state(false);
   let error = $state<string | null>(null);
-  let values = $state<CatalogItemValues>({ name: '', priceEuros: '', accountingCategoryId: 0, active: true });
+  let values = $state<CatalogItemValues>({ name: '', priceEuros: '', accountingCategoryId: 0, active: true, icon: '' });
+  const guessed = $derived(ITEM_ICONS.find((i) => i.key === guessItemIcon(values.name))?.label ?? 'initiale du nom');
 
   // svelte-ignore state_referenced_locally
   let maxEuros = $state(String((settings.maxBalanceCents ?? 10000) / 100));
@@ -38,8 +41,8 @@
     editingId = item?.id ?? null;
     sortOrder = item?.sortOrder ?? items.length;
     values = item
-      ? { name: item.name, priceEuros: String(item.priceCents / 100).replace('.', ','), accountingCategoryId: item.accountingCategoryId, active: item.active }
-      : { name: '', priceEuros: '', accountingCategoryId: 0, active: true };
+      ? { name: item.name, priceEuros: String(item.priceCents / 100).replace('.', ','), accountingCategoryId: item.accountingCategoryId, active: item.active, icon: item.icon ?? '' }
+      : { name: '', priceEuros: '', accountingCategoryId: 0, active: true, icon: '' };
     error = null;
     open = true;
   }
@@ -74,6 +77,7 @@
   <ul class="divide-y rounded-lg border">
     {#each items as item (item.id)}
       <li class="flex items-center justify-between gap-3 p-3">
+        <span class="bg-primary/10 text-primary flex size-9 shrink-0 items-center justify-center rounded-lg"><ItemIcon name={item.name} icon={item.icon} class="size-5" /></span>
         <span class="grow">
           <span class="font-medium">{item.name}</span>
           {#if !item.active}<span class="text-muted-foreground text-sm"> · retiré de la vente</span>{/if}
@@ -118,6 +122,17 @@
       bind:value={values.accountingCategoryId}
       placeholder="Choisir une catégorie"
     />
+  </FormField>
+  <FormField label="Pictogramme" id="picto" hint="Affiché sur la tuile de la caisse et dans l'app buvette.">
+    <div class="flex items-center gap-3">
+      <span class="bg-primary/10 text-primary flex size-10 shrink-0 items-center justify-center rounded-lg"><ItemIcon name={values.name || '?'} icon={values.icon || null} class="size-5" /></span>
+      <Select id="picto" bind:value={values.icon}>
+        <option value="">Automatique ({guessed})</option>
+        {#each ITEM_ICONS as icon (icon.key)}
+          <option value={icon.key}>{icon.label}</option>
+        {/each}
+      </Select>
+    </div>
   </FormField>
   <SwitchField id="actif" label="En vente" bind:checked={values.active} />
 </FormSheet>

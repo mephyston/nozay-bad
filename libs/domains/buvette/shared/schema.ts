@@ -6,6 +6,8 @@ export const buvetteItemsTable = sqliteTable('buvette_items', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   name: text('name').notNull(),
   priceCents: integer('price_cents').notNull(),
+  /** Le pictogramme imposé depuis le catalogue ; vide, il est deviné d'après le nom. */
+  icon: text('icon'),
   /** Catégorie comptable (`categories.id`), résolue à la clôture de caisse. */
   accountingCategoryId: integer('accounting_category_id').notNull(),
   active: integer('active', { mode: 'boolean' }).notNull().default(true),

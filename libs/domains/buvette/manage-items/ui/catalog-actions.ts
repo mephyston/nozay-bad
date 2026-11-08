@@ -10,6 +10,7 @@ export interface CatalogItem {
   accountingCategoryId: number;
   active: boolean;
   sortOrder: number;
+  icon: string | null;
 }
 
 export interface CatalogItemValues {
@@ -17,6 +18,8 @@ export interface CatalogItemValues {
   priceEuros: string;
   accountingCategoryId: number;
   active: boolean;
+  /** Vide : deviné d'après le nom. */
+  icon: string;
 }
 
 export { parseEuros };
@@ -46,7 +49,8 @@ export function saveItem(id: number | null, values: CatalogItemValues, sortOrder
       priceCents: parseEuros(values.priceEuros),
       accountingCategoryId: values.accountingCategoryId,
       active: values.active,
-      sortOrder
+      sortOrder,
+      icon: values.icon || null
     },
     "L'article n'a pas pu être enregistré."
   );
