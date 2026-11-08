@@ -1,0 +1,44 @@
+---
+import LegalPage from '../components/LegalPage.astro';
+
+// Tout ce qui nomme le club vient de sa configuration : la page est la même pour tous les clubs.
+const club = Astro.locals.club?.settings;
+const nom = club?.name ?? '';
+---
+
+<LegalPage title="Mentions légales">
+  <section>
+    <h2>1. Éditeur</h2>
+    <p>
+      La carte buvette est éditée par <strong>{nom}</strong>, association régie par la loi du 1<sup>er</sup> juillet 1901.
+    </p>
+    <ul>
+      {club?.legalSeat && <li>Siège social : <strong>{club.legalSeat}</strong></li>}
+      {club?.rna && <li>Association déclarée n° <strong>{club.rna}</strong></li>}
+      {club?.siret && <li>SIRET : <strong>{club.siret}</strong></li>}
+      {club?.contactEmail && <li>Contact : <a class="text-primary hover:underline" href={`mailto:${club.contactEmail}`}>{club.contactEmail}</a></li>}
+    </ul>
+  </section>
+
+  <section>
+    <h2>2. Directeur de la publication</h2>
+    <p><strong>{club?.publicationDirector || 'La présidence'}</strong>, en qualité de représentant légal de l'association.</p>
+  </section>
+
+  <section>
+    <h2>3. Hébergeur</h2>
+    <p>
+      <strong>Cloudflare, Inc.</strong>, 101 Townsend Street, San Francisco, CA 94107, États-Unis —
+      <a href="https://www.cloudflare.com" target="_blank" rel="noopener" class="text-primary hover:underline">www.cloudflare.com</a>.
+    </p>
+  </section>
+
+  <section>
+    <h2>4. Nature du service</h2>
+    <p>
+      La carte buvette est une carte prépayée, utilisable uniquement à la buvette de l'association. Ses règles figurent dans les
+      <a href="/conditions" class="text-primary hover:underline">conditions d'utilisation</a>, et le traitement des données dans la
+      <a href="/confidentialite" class="text-primary hover:underline">politique de confidentialité</a>.
+    </p>
+  </section>
+</LegalPage>

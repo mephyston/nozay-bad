@@ -7,6 +7,8 @@ order: 5
 
 La buvette repose sur deux applications : la **caisse**, utilisée par les bénévoles sur leur téléphone, et la **carte buvette**, que les clients ouvrent avec leur adresse e-mail. Licence ou non, tout le monde peut avoir une carte.
 
+Pour ouvrir sa carte, le client accepte les conditions d'utilisation de la carte buvette ; elles sont lisibles depuis la page de connexion, avec la politique de confidentialité et les mentions légales. La carte se charge uniquement à la buvette, en espèces ou par carte bancaire : il n'y a rien à payer en ligne.
+
 ## Préparer le catalogue
 
 Dans **Buvette → Catalogue buvette**, ajoutez les articles avec leur prix et leur catégorie comptable. Un article qu'on ne vend plus se désactive avec **En vente** : les ventes passées y renvoient, il ne se supprime pas.

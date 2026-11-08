@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { createApiClient } from '@nba/api-client';
 import { COOKIE_SECURE, IS_DEV, json, resolveEnv, sessionSecret } from '../../lib/http';
 import { checkCode, isLimited } from '../../lib/otp';
+import { TERMS_VERSION } from '../../lib/terms';
 import {
   cardCookie,
   clearPendingCookie,
@@ -44,7 +45,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
   const res = await api.fetch('http://localhost/buvette/cards/open', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email })
+    // Le code n'a été envoyé qu'après acceptation des conditions (`request-code`).
+    body: JSON.stringify({ email, termsVersion: TERMS_VERSION })
   });
   if (!res.ok) return json({ ok: false, error: "La carte n'a pas pu être ouverte." }, 502);
   const { data } = (await res.json()) as { data: { cardId: number; deviceId: string; created: boolean } };

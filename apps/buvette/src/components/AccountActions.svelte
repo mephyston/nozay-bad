@@ -53,3 +53,9 @@
     {/if}
   {/if}
 </div>
+
+<p class="text-muted-foreground flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs">
+  <a href="/mentions-legales" class="hover:underline">Mentions légales</a>
+  <a href="/confidentialite" class="hover:underline">Confidentialité</a>
+  <a href="/conditions" class="hover:underline">Conditions d'utilisation</a>
+</p>

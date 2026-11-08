@@ -234,6 +234,16 @@ describe('buvette', () => {
     });
   });
 
+  describe('conditions d\'utilisation', () => {
+    it('garde la dernière version acceptée, à chaque ouverture', async () => {
+      const first = await openCard(db, 'cgu@example.org', '2026-11-08');
+      await openCard(db, 'cgu@example.org', '2027-01-15');
+      const card = await db.select().from(buvetteCardsTable).where(eq(buvetteCardsTable.id, first.cardId)).get();
+      expect(card).toMatchObject({ termsVersion: '2027-01-15' });
+      expect(card.termsAcceptedAt).toBeInstanceOf(Date);
+    });
+  });
+
   describe('code à saisir sous le QR code', () => {
     const NOW = Date.now();
 

@@ -37,6 +37,8 @@ CREATE TABLE `buvette_cards` (
 	`balance_cents` integer DEFAULT 0 NOT NULL,
 	`reserved_cents` integer DEFAULT 0 NOT NULL,
 	`created_at` integer NOT NULL,
+	`terms_version` text,
+	`terms_accepted_at` integer,
 	`deleted_at` integer,
 	CONSTRAINT `buvette_cards_balance_check` CHECK (`balance_cents` >= 0),
 	CONSTRAINT `buvette_cards_reserved_check` CHECK (`reserved_cents` >= 0 AND `reserved_cents` <= `balance_cents`),

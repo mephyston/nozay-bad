@@ -1,0 +1,72 @@
+---
+import LegalPage from '../components/LegalPage.astro';
+
+const club = Astro.locals.club?.settings;
+const nom = club?.name ?? '';
+---
+
+<LegalPage title="Politique de confidentialité">
+  <section>
+    <h2>1. Responsable du traitement</h2>
+    <p>
+      <strong>{nom}</strong>{club?.legalSeat && <Fragment>, dont le siège est situé {club.legalSeat}</Fragment>}.
+      {club?.contactEmail && <Fragment> Pour toute question sur vos données : <a class="text-primary hover:underline" href={`mailto:${club.contactEmail}`}>{club.contactEmail}</a>.</Fragment>}
+    </p>
+  </section>
+
+  <section>
+    <h2>2. Données collectées et finalités</h2>
+    <ul>
+      <li><strong>Votre adresse e-mail</strong> : elle ouvre votre carte et vous permet de la retrouver avec son solde sur un autre téléphone. Elle ne sert qu'à vous envoyer le code de connexion : aucune lettre d'information, aucune publicité.</li>
+      <li><strong>Les appareils</strong> où la carte est ouverte : un identifiant aléatoire et sa date d'ouverture, pour pouvoir les déconnecter.</li>
+      <li><strong>L'historique de la carte</strong> : chaque recharge, achat, remboursement et commande, avec son montant, sa date et le bénévole qui l'a enregistré.</li>
+      <li><strong>Les paiements par carte bancaire</strong> sont traités par SumUp. Nous ne voyons ni ne gardons aucune donnée bancaire, seulement le montant et le numéro de la transaction.</li>
+    </ul>
+    <p>Une carte papier ne porte aucune donnée personnelle tant qu'elle n'est pas rattachée à un compte.</p>
+  </section>
+
+  <section>
+    <h2>3. Base légale</h2>
+    <p>
+      L'exécution des <a href="/conditions" class="text-primary hover:underline">conditions d'utilisation</a> que vous acceptez en ouvrant votre carte, et l'obligation légale de tenir la comptabilité de l'association.
+    </p>
+  </section>
+
+  <section>
+    <h2>4. Destinataires et sous-traitants</h2>
+    <ul>
+      <li>Les bénévoles de la buvette et le bureau de l'association, pour les besoins du service et de la comptabilité.</li>
+      <li>Cloudflare, qui héberge le service.</li>
+      <li>Notre prestataire d'envoi de courriels, pour le code de connexion.</li>
+      <li>SumUp, pour les paiements par carte bancaire, sous sa propre responsabilité.</li>
+    </ul>
+    <p>Vos données ne sont ni vendues, ni cédées, ni utilisées à des fins commerciales.</p>
+  </section>
+
+  <section>
+    <h2>5. Durées de conservation</h2>
+    <ul>
+      <li>L'adresse et les appareils : tant que la carte existe. À sa suppression, l'adresse est effacée et les appareils déconnectés.</li>
+      <li>Les opérations de la carte : 10 ans, durée de conservation des pièces comptables, sans l'adresse une fois la carte supprimée.</li>
+      <li>Le code de connexion : 10 minutes.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>6. Cookies</h2>
+    <p>
+      Un seul cookie, strictement nécessaire : il garde votre carte ouverte sur cet appareil. La page de connexion utilise aussi Cloudflare Turnstile pour écarter les robots. Aucun cookie de mesure d'audience ni de publicité : aucun consentement n'est donc demandé.
+    </p>
+  </section>
+
+  <section>
+    <h2>7. Vos droits</h2>
+    <p>
+      Vous pouvez accéder à vos données, les rectifier, vous opposer à leur traitement ou en demander l'effacement en écrivant à l'adresse ci-dessus. Depuis l'onglet Compte, vous pouvez aussi supprimer vous-même votre carte quand son solde est nul ; un solde restant se rembourse d'abord à la buvette.
+    </p>
+    <p>
+      Vous pouvez introduire une réclamation auprès de la <strong>CNIL</strong> —
+      <a href="https://www.cnil.fr" target="_blank" rel="noopener" class="text-primary hover:underline">www.cnil.fr</a>.
+    </p>
+  </section>
+</LegalPage>

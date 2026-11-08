@@ -52,6 +52,9 @@ export const buvetteCardsTable = sqliteTable('buvette_cards', {
   /** La part du solde bloquée par une vente qui attend sa CB. */
   reservedCents: integer('reserved_cents').notNull().default(0),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+  /** La version des conditions d'utilisation acceptée à la dernière ouverture, et quand. */
+  termsVersion: text('terms_version'),
+  termsAcceptedAt: integer('terms_accepted_at', { mode: 'timestamp' }),
   /** Carte supprimée par son titulaire : un remboursement ne peut plus s'y faire. */
   deletedAt: integer('deleted_at', { mode: 'timestamp' })
 }, (table) => [
