@@ -11,6 +11,7 @@ import { openSession, setSessionCategory } from './open-session/handler';
 import { getCurrentSession } from './get-current-session/handler';
 import { closeSession } from './close-session/handler';
 import { listSessionSales } from './list-session-sales/handler';
+import { getSessionReport, listSessionHistory } from './session-history/handler';
 import { CloseSessionRepository } from './close-session/repository';
 import { createSale } from './create-sale/handler';
 import { cancelSale } from './cancel-sale/handler';
@@ -361,6 +362,24 @@ describe('buvette', () => {
       expect(recettes).toHaveLength(1);
       expect(recettes[0]).toMatchObject({ categoryId: autre.id, amountCents: 500 });
       await expect(setSessionCategory(db, categoryId)).rejects.toThrow('Aucune session');
+    });
+
+    it('l\'historique donne les totaux, chaque vente, les soldes rendus et les ventes par article', async () => {
+      const card = await cardWith(0);
+      await sale('vente-0121', { rechargeCents: 1000, rechargeScanToken: card.scanToken, expectedCashCents: 1000 });
+      await sale('vente-0122', { lines: [{ itemId: coffee.id, quantity: 2 }], expectedCashCents: 200 });
+      const { sale: annulee } = await sale('vente-0123', { lines: [{ itemId: sandwich.id, quantity: 1 }], expectedCashCents: 400 });
+      await cancelSale(db, { saleId: annulee.id, cancelledByEmail: BY });
+      await refundCard(db, SECRET, { clientId: 'remb-0121', scanToken: card.scanToken, createdByEmail: BY });
+      await close(5000 + 1000 + 200 - 1000);
+
+      const { sessions, items } = await listSessionHistory(db);
+      expect(sessions[0]).toMatchObject({ id: sessionId, status: 'closed', salesCount: 2, itemsCents: 200, rechargeCents: 1000, refundsCashCents: 1000, gapCents: 0 });
+      expect(items).toEqual([{ name: 'Café', quantity: 2, amountCents: 200 }]);
+      const report = await getSessionReport(db, sessionId);
+      expect(report.sales.map((s) => s.status).sort()).toEqual(['cancelled', 'paid', 'paid']);
+      expect(report.cardRefunds).toEqual([expect.objectContaining({ amountCents: 1000, byCard: false })]);
+      await expect(getSessionReport(db, 9999)).rejects.toThrow('introuvable');
     });
 
     it('une recharge seule ne pose aucune recette', async () => {

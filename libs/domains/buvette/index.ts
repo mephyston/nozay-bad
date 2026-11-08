@@ -16,6 +16,7 @@ import { clientOrderRoute } from './client-order/route';
 import { listOrdersRoute } from './list-orders/route';
 import { paperCardsRoute } from './paper-cards/route';
 import { refundCardPaymentRoute } from './refund-card-payment/route';
+import { sessionHistoryRoute } from './session-history/route';
 
 export { verifyPendingAttempts } from './verify-card-attempt/handler';
 export { createSumUpClient, type SumUpBindings } from './shared/sumup';
@@ -34,6 +35,7 @@ export const buvetteRouter = new Hono<{ Bindings: Bindings }>();
 buvetteRouter.route('/', manageItemsRoute);
 buvetteRouter.route('/', manageSettingsRoute);
 buvetteRouter.route('/', listSessionSalesRoute);
+buvetteRouter.route('/', sessionHistoryRoute);
 buvetteRouter.route('/', getCurrentSessionRoute);
 buvetteRouter.route('/', openSessionRoute);
 buvetteRouter.route('/', closeSessionRoute);

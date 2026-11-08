@@ -25,6 +25,25 @@ export const ECRANS: Record<string, Ecran> = {
       }
     }
   },
+  history: {
+    feature: 'buvette',
+    permission: 'buvette:sessions:read',
+    charger: async (lire) => {
+      const [history, categories] = await Promise.all([lire('/buvette/sessions/history'), lire('/accounting/categories')]);
+      return { sessions: history?.sessions ?? [], items: history?.items ?? [], categories: categories ?? [] };
+    },
+    ecritures: {}
+  },
+  'session-report': {
+    feature: 'buvette',
+    permission: 'buvette:sessions:read',
+    charger: async (lire, _locals, params) => {
+      const id = identifiant(params.get('id'), 'de session');
+      const [report, categories] = await Promise.all([lire(`/buvette/sessions/${id}/report`), lire('/accounting/categories')]);
+      return { report, categories: categories ?? [] };
+    },
+    ecritures: {}
+  },
   session: {
     feature: 'buvette',
     permission: 'buvette:sessions:read',

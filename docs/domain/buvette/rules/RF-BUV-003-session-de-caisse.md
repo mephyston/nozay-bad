@@ -50,6 +50,10 @@ Une session de caisse suit un tiroir d'espèces de l'ouverture à la clôture. L
 
 ---
 
+**Historique.** Le bureau retrouve chaque session passée : sa catégorie, ses totaux par moyen de paiement, l'écart de caisse, chaque vente avec ses articles, son moyen de paiement et son numéro de transaction SumUp, les soldes de carte rendus, et les ventes par article. Un rapport par article réunit aussi toutes les sessions. Les ventes remboursées n'y comptent pas.
+
+---
+
 ## 4. Scénarios d'Acceptation (Gherkin)
 
 ```gherkin

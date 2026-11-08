@@ -57,6 +57,8 @@ export const ROUTE_PERMISSIONS: RouteRule[] = [
   { method: 'GET', path: '/buvette/sessions/current', permission: 'buvette:sessions:read', callers: ['caisse'], feature: 'buvette' },
   // L'ouverture et la clôture restent au bureau, dans l'admin : pas d'appelant `caisse` ici.
   { method: 'GET', path: '/buvette/sessions/current/sales', permission: 'buvette:sessions:read', callers: ['caisse'], feature: 'buvette' },
+  { method: 'GET', path: '/buvette/sessions/history', permission: 'buvette:sessions:read', feature: 'buvette' },
+  { method: 'GET', path: '/buvette/sessions/:id/report', permission: 'buvette:sessions:read', feature: 'buvette' },
   { method: 'GET', path: '/buvette/cards/debt', permission: 'buvette:sessions:read', feature: 'buvette' },
   { method: 'POST', path: '/buvette/sessions', permission: 'buvette:sessions:write', feature: 'buvette' },
   { method: 'PUT', path: '/buvette/sessions/current/category', permission: 'buvette:sessions:write', feature: 'buvette' },

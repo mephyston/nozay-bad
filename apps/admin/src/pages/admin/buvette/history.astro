@@ -1,0 +1,16 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import AdminLayout from '../../../components/AdminLayout.svelte';
+import BuvetteHistoryScreen from '../../../components/BuvetteHistoryScreen.svelte';
+
+// Page figée : l'îlot lit l'identifiant de session dans l'adresse et demande ses données au relais.
+export const prerender = true;
+---
+
+<Layout title="Historique de la buvette">
+  <AdminLayout client:idle breadcrumb="Buvette / Historique">
+    <div class="space-y-6">
+      <BuvetteHistoryScreen client:load />
+    </div>
+  </AdminLayout>
+</Layout>
