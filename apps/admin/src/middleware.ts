@@ -5,7 +5,7 @@ import { createApiClient } from '@nba/api-client';
 import { resolveEnv as resolveRuntimeEnv } from '@nba/runtime-env';
 import { can, resolvePermissions, isRole, DEFAULT_ROLE, type ActorDto, type Role } from '@nba/iam-ui';
 import { applySecurityHeaders } from './lib/security-headers';
-import { rejectedAccessToken } from './lib/access-reauth';
+import { reconnectPage, rejectedAccessToken, RECONNECT_PATH } from './lib/access-reauth';
 import { PAGE_PERMISSIONS, PAGE_FEATURES, matchPagePattern, isPageRoute } from './lib/page-permissions';
 import { accepteEcriture } from './lib/page-writes';
 import { impersonationEnabled } from './lib/guard';
@@ -168,6 +168,8 @@ function devActor(email: string, role: Role): ActorDto {
 
 export const handleAuth = async (context: APIContext, next: MiddlewareNext) => {
   const request = context.request;
+  // Hors Access (application Bypass) : sans jeton, elle efface les cookies Access périmés.
+  if (new URL(request.url).pathname === RECONNECT_PATH) return reconnectPage(request);
   const env = resolveEnv(context);
 
   let email: string;

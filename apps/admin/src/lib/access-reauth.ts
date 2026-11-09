@@ -56,3 +56,38 @@ export function rejectedAccessToken(request: Request): Response {
   headers.set('Location', `${url.pathname}${url.search}`);
   return new Response(null, { status: 302, headers });
 }
+
+/**
+ * Sortie de secours, hors Access (application « Bypass » sur ce seul chemin) : elle efface les
+ * cookies Access de l'admin puis renvoie vers l'accueil, où Access redemande un code.
+ *
+ * Pourquoi hors Access : après le renommage du domaine d'équipe, un cookie resté dans le
+ * navigateur renvoyait vers l'ancien domaine (« Unable to find your Access organization »)
+ * avant que la requête n'atteigne l'admin. Ni la révocation des sessions, qui laisse le cookie
+ * en place, ni le relais de `rejectedAccessToken`, que la requête n'atteint jamais, n'en
+ * sortaient. Cette page, si.
+ */
+export const RECONNECT_PATH = '/reconnexion';
+
+const ACCESS_COOKIES = ['CF_Authorization', 'CF_AppSession', 'CF_Binding', REAUTH_COOKIE];
+
+export function reconnectPage(request: Request): Response {
+  const host = new URL(request.url).hostname;
+  const headers = new Headers({ 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
+  for (const name of ACCESS_COOKIES) {
+    headers.append('Set-Cookie', `${name}=; Path=/; Max-Age=0; Secure; HttpOnly; SameSite=Lax`);
+    headers.append('Set-Cookie', `${name}=; Domain=${host}; Path=/; Max-Age=0; Secure; HttpOnly; SameSite=Lax`);
+  }
+  // Le `Refresh` part après que le navigateur a appliqué les Set-Cookie : l'accueil arrive sans
+  // cookie, et Access redemande un code sur le domaine d'équipe actuel.
+  headers.set('Refresh', '2; url=/admin');
+  const html =
+    '<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">' +
+    '<meta name="robots" content="noindex"><title>Reconnexion</title></head>' +
+    '<body style="font-family:system-ui,sans-serif;margin:0;min-height:100dvh;display:grid;place-items:center;padding:16px">' +
+    '<main style="max-width:26rem;text-align:center"><h1 style="font-size:1.4rem">Reconnexion à l\'administration</h1>' +
+    '<p>Votre ancienne connexion a été effacée. Vous allez recevoir un nouveau code par e-mail.</p>' +
+    '<p><a href="/admin" style="display:inline-block;padding:10px 18px;border:1px solid #ccc;border-radius:12px;color:inherit;text-decoration:none;font-weight:600">Se reconnecter</a></p>' +
+    '</main></body></html>';
+  return new Response(html, { status: 200, headers });
+}

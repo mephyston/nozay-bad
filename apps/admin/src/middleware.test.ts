@@ -195,6 +195,18 @@ describe('Astro Auth Middleware', () => {
     });
   });
 
+  it('/reconnexion efface les cookies Access sans demander de jeton, puis renvoie vers l\'admin', async () => {
+    const next = vi.fn();
+    const response = await handleAuth(contextFor('https://admin.nozay-bad.fr/reconnexion'), next);
+    expect(response.status).toBe(200);
+    expect(next).not.toHaveBeenCalled();
+    expect(mockJwtVerify).not.toHaveBeenCalled();
+    const cookies = response.headers.getSetCookie().join('\n');
+    expect(cookies).toContain('CF_Authorization=; Path=/; Max-Age=0');
+    expect(cookies).toContain('CF_Authorization=; Domain=admin.nozay-bad.fr; Path=/; Max-Age=0');
+    expect(response.headers.get('Refresh')).toBe('2; url=/admin');
+  });
+
   it('refuse en 403 un compte non configuré', async () => {
     mockJwtVerify.mockResolvedValue({ payload: { email: 'inconnu@nozay-bad.fr' } });
     const next = vi.fn();
