@@ -7,9 +7,15 @@ order: 5
 
 La buvette repose sur deux applications : la **caisse**, utilisée par les bénévoles sur leur téléphone, et la **carte buvette**, que les clients ouvrent avec leur adresse e-mail. Licence ou non, tout le monde peut avoir une carte.
 
+Pour ouvrir sa carte, le client accepte les conditions d'utilisation de la carte buvette ; elles sont lisibles depuis la page de connexion, avec la politique de confidentialité et les mentions légales. La carte se charge uniquement à la buvette, en espèces ou par carte bancaire : il n'y a rien à payer en ligne.
+
+À sa première visite, l'app présente ses quatre onglets (carte, QR code, commande, compte) et rappelle que la carte se recharge à la buvette en présentant son QR code ; le client peut revoir ce guide depuis l'onglet **Compte**.
+
+Dans le **Catalogue buvette**, chaque article a un pictogramme, affiché en filigrane sur sa tuile dans la caisse et à côté de lui dans l'app. Il est choisi automatiquement d'après le nom (café, soda, sandwich, barre chocolatée…) ; le champ **Pictogramme** permet d'en imposer un autre. Un nom que rien ne reconnaît garde son initiale.
+
 ## Préparer le catalogue
 
-Dans **Buvette → Catalogue buvette**, ajoutez les articles avec leur prix et leur catégorie comptable. Un article qu'on ne vend plus se désactive avec **En vente** : les ventes passées y renvoient, il ne se supprime pas.
+Dans **Buvette → Catalogue buvette**, ajoutez les articles avec leur prix. La catégorie comptable ne se règle pas par article : elle se choisit à l'ouverture de chaque session (buvette du tournoi d'hiver, du forum des associations…), et tout ce que la session vend y est comptabilisé. Un article qu'on ne vend plus se désactive avec **En vente** : les ventes passées y renvoient, il ne se supprime pas.
 
 Le **plafond de solde** limite ce qu'une carte peut contenir. Une recharge qui le dépasserait est refusée à la caisse.
 
@@ -43,21 +49,33 @@ Le porteur peut aussi scanner sa carte avec son téléphone et la transférer su
 
 La vente reste en attente tant que SumUp n'a pas confirmé le paiement, et la caisse le vérifie à votre retour. Vous pouvez ensuite **Vérifier le paiement**, **Relancer le paiement CB** ou **Abandonner la vente**. La clôture est impossible tant qu'une vente attend.
 
-Si la caisse affiche **À rembourser dans SumUp**, de l'argent a été pris pour une vente abandonnée ou avec un mauvais montant. Remboursez-le depuis l'application SumUp.
+Si la caisse signale un **paiement CB arrivé sur une vente terminée**, de l'argent a été pris pour une vente abandonnée ou avec un mauvais montant. Touchez **Rembourser** : SumUp le rend sur la carte bancaire du client, sans passer par l'application. Si le remboursement a déjà été fait dans l'application, la caisse le constate et n'envoie rien. **Remboursement en cours** veut dire que SumUp n'a pas encore répondu : ne le refaites pas, la caisse le revérifie toute seule.
+
+## Suspendre la CB en urgence
+
+Si la CB se comporte mal (paiements en double, SumUp qui débloque, montant faux), ouvrez **Session de caisse** dans l'admin et touchez **Suspendre la CB**, puis confirmez. Toutes les caisses cessent aussitôt de proposer la CB, sans fermer la caisse : les bénévoles continuent en espèces et par carte buvette. Une caisse déjà ouverte sur l'écran de paiement voit la CB refusée avec un message. Pendant la suspension, le solde d'une carte se rend en espèces, et un remboursement CB attend. Les paiements déjà lancés restent vérifiés.
+
+La suspension tient après la clôture : pensez à **Rétablir la CB** une fois le problème réglé.
 
 ## Rembourser une vente
 
-En cas d'erreur, ouvrez l'onglet **Ventes** de la caisse, touchez la vente, puis **Rembourser cette vente**. Un écran annonce d'abord si vous aurez des espèces à remettre, puis la caisse vous demande de confirmer que vous les avez remises : la part payée par carte y revient, ou se rend en espèces si le client a supprimé sa carte ; les espèces se rendent ; une part payée en CB se rembourse dans l'application SumUp.
+En cas d'erreur, ouvrez l'onglet **Ventes** de la caisse, touchez la vente, puis **Rembourser cette vente**. Un écran annonce d'abord si vous aurez des espèces à remettre, puis la caisse vous demande de confirmer que vous les avez remises : la part payée par carte y revient, ou se rend en espèces si le client a supprimé sa carte ; les espèces se rendent ; une part payée en CB est remboursée par SumUp sur la carte bancaire du client. Si SumUp refuse, la caisse vous dit de le faire dans l'application. Le détail d'une vente montre son numéro de transaction SumUp.
+
+Les remboursements de solde de carte apparaissent aussi dans l'onglet **Ventes**, pour mémoire : ils ne se remboursent pas une seconde fois.
 
 ## Rembourser une carte
 
-La tuile **Rembourser une carte**, à côté de **Recharge carte**, rend tout le solde en espèces. Scannez le QR code à jour du client, ou saisissez le code affiché dessous si la caméra ne le lit pas : il doit être présent. Le titulaire reçoit un e-mail, et sa carte reste ouverte à 0 €. S'il a perdu son téléphone, il rouvre d'abord sa carte sur un autre appareil avec son adresse e-mail.
+La tuile **Rembourser une carte**, à côté de **Recharge carte**, rend tout le solde. Ce qui avait été chargé par CB revient d'abord sur cette carte bancaire, par SumUp ; le reste se rend en espèces. Avant de confirmer, puis après, la caisse affiche en grand les espèces à remettre, ou « Aucune espèce à remettre ». Scannez le QR code à jour du client, ou saisissez le code affiché dessous si la caméra ne le lit pas : il doit être présent. Sa carte reste ouverte à 0 €, et le remboursement apparaît dans son historique : aucun e-mail ne part, la buvette n'en envoie que pour le code de connexion. S'il a perdu son téléphone, il rouvre d'abord sa carte sur un autre appareil avec son adresse e-mail.
+
+## Historique des sessions
+
+**Buvette → Historique des sessions** liste les sessions, la plus récente d'abord, avec leur catégorie, leur chiffre et leur écart de caisse. En bas de page, les ventes par article sur toutes les sessions montrent ce qui part le mieux. Touchez une session pour son détail : ses totaux par moyen de paiement, les ventes par article, puis chaque vente et chaque remboursement de solde, avec l'heure, le bénévole et le numéro de transaction SumUp.
 
 ## En comptabilité
 
 La clôture pose une écriture de synthèse, pas une écriture par café :
 
-- **Articles** : une recette par catégorie et par moyen de paiement ;
+- **Articles** : une recette par moyen de paiement, dans la catégorie choisie pour la session ;
 - **Recharges et remboursements** : des virements avec le compte **Soldes des cartes buvette**, car l'argent reste dû au client tant qu'il n'est pas consommé ;
 - **CB** : sur le compte **À recevoir de SumUp**, à solder au virement reçu en banque, la commission étant saisie en dépense ;
 - **Écart de caisse** : une recette ou une dépense dans la catégorie **Écarts de caisse**.

@@ -1,4 +1,4 @@
-import { createSumUpClient, verifyPendingAttempts, type SumUpBindings } from '@nba/buvette-api';
+import { createSumUpClient, createSumUpRefunds, settlePendingRefunds, verifyPendingAttempts, type SumUpBindings } from '@nba/buvette-api';
 import { createDb } from '@nba/db';
 import { getClubFeatures, getClubSettings, localClock, type FeatureState } from '@nba/club/settings';
 import { getSeasonAtDate, type SeasonRow } from '@nba/accounting-api';
@@ -316,6 +316,11 @@ export async function handleScheduled(
       await verifyPendingAttempts(createDb(env.DB), createSumUpClient(env));
     } catch (error) {
       console.error('[buvette] vérification périodique des CB en échec', error);
+    }
+    try {
+      await settlePendingRefunds(createDb(env.DB), createSumUpRefunds(env));
+    } catch (error) {
+      console.error('[buvette] relecture des remboursements CB en échec', error);
     }
   }
 

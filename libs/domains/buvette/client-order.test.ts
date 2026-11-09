@@ -40,16 +40,16 @@ describe('commandes des clients', () => {
       code: '25-26', name: 'Saison 2025-2026', startDate: '2025-09-01', endDate: '2026-08-31', active: true, closedAt: null, createdAt: new Date()
     });
     category = (await db.select().from(categoriesTable).where(eq(categoriesTable.adminLabel, 'Buvettes')).get()).id;
-    coffee = await createItem(db, { name: 'Café', priceCents: 100, accountingCategoryId: category });
-    sandwich = await createItem(db, { name: 'Sandwich', priceCents: 400, accountingCategoryId: category });
-    sessionId = (await openSession(db, { openingFloatCents: 5000, openedByEmail: BY })).id;
+    coffee = await createItem(db, { name: 'Café', priceCents: 100 });
+    sandwich = await createItem(db, { name: 'Sandwich', priceCents: 400 });
+    sessionId = (await openSession(db, { openingFloatCents: 5000, accountingCategoryId: category, openedByEmail: BY })).id;
     client = await openCard(db, 'client@example.org');
   });
 
   const order = () => createOrder(db, client.cardId, client.deviceId, [{ itemId: coffee.id, quantity: 2 }, { itemId: sandwich.id, quantity: 1 }]);
 
   it('un article retiré de la vente disparaît du catalogue et ne se commande plus', async () => {
-    await updateItem(db, sandwich.id, { name: 'Sandwich', priceCents: 400, accountingCategoryId: category, active: false });
+    await updateItem(db, sandwich.id, { name: 'Sandwich', priceCents: 400, active: false });
     expect((await getCatalog(db)).items.map((i) => i.name)).toEqual(['Café']);
     await expect(order()).rejects.toThrow("n'est plus disponible");
   });
@@ -67,7 +67,7 @@ describe('commandes des clients', () => {
     expect([first!.number, second!.number]).toEqual([1, 2]);
 
     await closeSession(db, { sessionId, countedCashCents: 5000, closedByEmail: BY });
-    await openSession(db, { openingFloatCents: 0, openedByEmail: BY });
+    await openSession(db, { openingFloatCents: 0, accountingCategoryId: category, openedByEmail: BY });
     expect(await getCurrentOrder(db, client.cardId, client.deviceId)).toBeNull();
     const next = await createOrder(db, other.cardId, other.deviceId, [{ itemId: coffee.id, quantity: 2 }]);
     expect(next!.number).toBe(1);
@@ -145,7 +145,7 @@ describe('commandes des clients', () => {
     await collect(placed!.id, 0);
     const next = await createOrder(db, client.cardId, client.deviceId, [{ itemId: coffee.id, quantity: 1 }]);
     expect(next!.id).not.toBe(placed!.id);
-    const [sold] = await listSessionSales(db);
+    const [sold] = (await listSessionSales(db)).filter((entry) => entry.kind === 'sale');
     expect(sold.lines).toHaveLength(2);
   });
 
@@ -178,7 +178,7 @@ describe('commandes des clients', () => {
   it('une commande d\'un service passé ne s\'encaisse pas', async () => {
     const placed = await order();
     await closeSession(db, { sessionId, countedCashCents: 5000, closedByEmail: BY });
-    await openSession(db, { openingFloatCents: 0, openedByEmail: BY });
+    await openSession(db, { openingFloatCents: 0, accountingCategoryId: category, openedByEmail: BY });
     await expect(collect(placed!.id, 600)).rejects.toThrow('service précédent');
     expect(await listPendingOrders(db)).toEqual([]);
   });

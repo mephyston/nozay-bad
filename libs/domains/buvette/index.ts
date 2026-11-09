@@ -15,9 +15,13 @@ import { cardAttemptsRoute } from './verify-card-attempt/route';
 import { clientOrderRoute } from './client-order/route';
 import { listOrdersRoute } from './list-orders/route';
 import { paperCardsRoute } from './paper-cards/route';
+import { refundCardPaymentRoute } from './refund-card-payment/route';
+import { sessionHistoryRoute } from './session-history/route';
 
 export { verifyPendingAttempts } from './verify-card-attempt/handler';
 export { createSumUpClient, type SumUpBindings } from './shared/sumup';
+export { settlePendingRefunds } from './refund-card-payment/handler';
+export { createSumUpRefunds } from './shared/sumup-refunds';
 
 export type Bindings = {
   DB: D1Database;
@@ -31,12 +35,14 @@ export const buvetteRouter = new Hono<{ Bindings: Bindings }>();
 buvetteRouter.route('/', manageItemsRoute);
 buvetteRouter.route('/', manageSettingsRoute);
 buvetteRouter.route('/', listSessionSalesRoute);
+buvetteRouter.route('/', sessionHistoryRoute);
 buvetteRouter.route('/', getCurrentSessionRoute);
 buvetteRouter.route('/', openSessionRoute);
 buvetteRouter.route('/', closeSessionRoute);
 buvetteRouter.route('/', createSaleRoute);
 buvetteRouter.route('/', cancelSaleRoute);
 buvetteRouter.route('/', cardAttemptsRoute);
+buvetteRouter.route('/', refundCardPaymentRoute);
 buvetteRouter.route('/', listOrdersRoute);
 buvetteRouter.route('/', paperCardsRoute);
 // Avant `/cards/:id/…` : les routes fixes ne doivent pas tomber sur le paramètre.

@@ -8,11 +8,10 @@ describe('saisie du catalogue', () => {
     expect(parseEuros('2,505')).toBeNull();
   });
 
-  it('exige un nom, un prix et une catégorie', () => {
-    const valid = { name: 'Café', priceEuros: '1', accountingCategoryId: 6, active: true };
+  it('exige un nom et un prix', () => {
+    const valid = { name: 'Café', priceEuros: '1', active: true, icon: '' };
     expect(validateItem(valid)).toBeNull();
     expect(validateItem({ ...valid, name: ' ' })).toContain('nom');
     expect(validateItem({ ...valid, priceEuros: 'gratuit' })).toContain('prix');
-    expect(validateItem({ ...valid, accountingCategoryId: 0 })).toContain('catégorie');
   });
 });

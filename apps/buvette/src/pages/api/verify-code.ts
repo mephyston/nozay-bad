@@ -1,8 +1,8 @@
 import type { APIRoute } from 'astro';
 import { createApiClient } from '@nba/api-client';
-import { deliver } from '@nba/mailer';
 import { COOKIE_SECURE, IS_DEV, json, resolveEnv, sessionSecret } from '../../lib/http';
 import { checkCode, isLimited } from '../../lib/otp';
+import { TERMS_VERSION } from '../../lib/terms';
 import {
   cardCookie,
   clearPendingCookie,
@@ -11,7 +11,6 @@ import {
   signCardSession,
   verifyPending
 } from '../../lib/session';
-import { mailClub, newDeviceMail } from '../../lib/card-mails';
 
 export const POST: APIRoute = async ({ request, locals }) => {
   const env = resolveEnv<any>(locals);
@@ -46,17 +45,11 @@ export const POST: APIRoute = async ({ request, locals }) => {
   const res = await api.fetch('http://localhost/buvette/cards/open', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email })
+    // Le code n'a été envoyé qu'après acceptation des conditions (`request-code`).
+    body: JSON.stringify({ email, termsVersion: TERMS_VERSION })
   });
   if (!res.ok) return json({ ok: false, error: "La carte n'a pas pu être ouverte." }, 502);
   const { data } = (await res.json()) as { data: { cardId: number; deviceId: string; created: boolean } };
-
-  if (!data.created) {
-    const club = mailClub(locals);
-    await deliver(env, club, email, newDeviceMail(club.name), (mode) =>
-      console.info(`[buvette][${mode}] alerte de nouvel appareil non envoyée`)
-    );
-  }
 
   const headers = new Headers({ 'Content-Type': 'application/json' });
   headers.append('Set-Cookie', cardCookie(await signCardSession(data, secret), COOKIE_SECURE));

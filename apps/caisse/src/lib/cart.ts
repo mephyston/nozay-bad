@@ -3,6 +3,7 @@ export interface CatalogItem {
   name: string;
   priceCents: number;
   active: boolean;
+  icon?: string | null;
 }
 
 export type Cart = Map<number, number>;

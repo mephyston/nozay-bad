@@ -45,6 +45,7 @@
   <a href="/qr" class="bg-primary text-primary-foreground mt-4 flex min-h-12 items-center justify-center gap-2 rounded-xl font-semibold no-underline">
     <QrCode class="size-5" />Afficher mon QR code
   </a>
+  <p class="text-muted-foreground mt-3 text-sm">Pour charger votre carte, passez à la buvette : un bénévole la recharge en espèces ou par carte bancaire en scannant ce QR code.</p>
 </section>
 
 <section class="space-y-2">

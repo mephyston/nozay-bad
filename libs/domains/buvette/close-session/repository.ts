@@ -19,14 +19,14 @@ export class CloseSessionRepository {
     return db.select().from(buvetteSessionsTable).where(eq(buvetteSessionsTable.id, id)).get();
   }
 
-  async paidSales(db: DbOrTx, sessionId: number): Promise<ClosingSale[]> {
+  /** Toutes les lignes vont dans la catégorie de la session. */
+  async paidSales(db: DbOrTx, sessionId: number, accountingCategoryId: number): Promise<ClosingSale[]> {
     const sales = await db.select().from(buvetteSalesTable)
       .where(and(eq(buvetteSalesTable.sessionId, sessionId), eq(buvetteSalesTable.status, 'paid')))
       .all();
     const lines = await db
       .select({
         saleId: buvetteSaleLinesTable.saleId,
-        accountingCategoryId: buvetteSaleLinesTable.accountingCategoryId,
         amountCents: sql<number>`${buvetteSaleLinesTable.unitPriceCents} * ${buvetteSaleLinesTable.quantity}`
       })
       .from(buvetteSaleLinesTable)
@@ -40,7 +40,7 @@ export class CloseSessionRepository {
       cardCents: sale.cardCents,
       rechargeCents: sale.rechargeCents,
       lines: lines.filter((l) => l.saleId === sale.id).map((l) => ({
-        accountingCategoryId: l.accountingCategoryId,
+        accountingCategoryId,
         amountCents: Number(l.amountCents)
       }))
     }));
@@ -53,13 +53,17 @@ export class CloseSessionRepository {
     return Number(row?.total ?? 0);
   }
 
-  async refundsCents(db: DbOrTx, sessionId: number): Promise<number> {
+  /** Les soldes rendus : en espèces, ou sur la CB qui avait payé la recharge. */
+  async refundsCents(db: DbOrTx, sessionId: number): Promise<{ cashCents: number; cardCents: number }> {
     const row = await db
-      .select({ total: sql<number>`COALESCE(SUM(-${buvetteCardMovementsTable.amountCents}), 0)` })
+      .select({
+        cash: sql<number>`COALESCE(SUM(CASE WHEN ${buvetteCardMovementsTable.sumupAttemptId} IS NULL THEN -${buvetteCardMovementsTable.amountCents} END), 0)`,
+        card: sql<number>`COALESCE(SUM(CASE WHEN ${buvetteCardMovementsTable.sumupAttemptId} IS NOT NULL THEN -${buvetteCardMovementsTable.amountCents} END), 0)`
+      })
       .from(buvetteCardMovementsTable)
       .where(and(eq(buvetteCardMovementsTable.sessionId, sessionId), eq(buvetteCardMovementsTable.type, 'refund')))
       .get();
-    return Number(row?.total ?? 0);
+    return { cashCents: Number(row?.cash ?? 0), cardCents: Number(row?.card ?? 0) };
   }
 
   /** Ce qui bouge dès qu'une vente, une annulation ou un remboursement a lieu dans la session. */

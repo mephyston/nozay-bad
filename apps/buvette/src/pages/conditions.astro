@@ -1,0 +1,84 @@
+---
+import LegalPage from '../components/LegalPage.astro';
+
+// Changer ce texte oblige à changer `TERMS_VERSION` (lib/terms.ts) : la version acceptée est
+// enregistrée sur chaque carte.
+const nom = Astro.locals.club?.settings.name ?? "l'association";
+---
+
+<LegalPage title="Conditions d'utilisation de la carte buvette">
+  <section>
+    <h2>1. Objet</h2>
+    <p>
+      La carte buvette est une carte prépayée proposée par <strong>{nom}</strong>. Elle sert uniquement à payer à la buvette de l'association : ce n'est pas un moyen de paiement utilisable ailleurs. Elle est gratuite et ouverte à tous, adhérents ou non.
+    </p>
+  </section>
+
+  <section>
+    <h2>2. Ouverture et accès</h2>
+    <p>
+      La carte s'ouvre avec une adresse e-mail et un code reçu à cette adresse. La même adresse rouvre la même carte sur un autre téléphone : c'est ainsi qu'on la partage, par exemple avec son enfant, et qu'on la retrouve après une perte. Le titulaire répond de l'usage de sa carte sur les appareils où il l'a ouverte.
+    </p>
+  </section>
+
+  <section>
+    <h2>3. Chargement</h2>
+    <p>
+      <strong>La carte se charge uniquement à la buvette</strong>, auprès d'un bénévole, en espèces ou par carte bancaire. Aucun chargement n'est possible en ligne. Le solde est plafonné à un montant fixé par l'association, affiché à la buvette.
+    </p>
+  </section>
+
+  <section>
+    <h2>4. Paiement</h2>
+    <p>
+      Le client présente le QR code de sa carte, ou donne le code affiché dessous. Ils se renouvellent toutes les minutes : une capture d'écran ne permet pas de payer. Le montant est débité aussitôt. Si le solde ne suffit pas, le complément se règle en espèces ou par carte bancaire.
+    </p>
+  </section>
+
+  <section>
+    <h2>5. Solde et remboursement</h2>
+    <p>
+      Le solde n'expire pas et ne produit pas d'intérêts. Il est remboursable <strong>en totalité, en espèces, à la buvette</strong>, pendant ses heures d'ouverture, sur présentation de la carte. Une vente peut être remboursée tant que la caisse du jour n'est pas clôturée ; ensuite, il faut s'adresser au bureau de l'association.
+    </p>
+  </section>
+
+  <section>
+    <h2>6. Perte ou vol</h2>
+    <p>
+      En cas de perte d'un téléphone, le titulaire rouvre sa carte sur un autre appareil et choisit « Déconnecter les autres appareils » dans l'onglet Compte. L'association ne répond pas des achats faits avant cette déconnexion.
+    </p>
+  </section>
+
+  <section>
+    <h2>7. Cartes papier</h2>
+    <p>
+      Une carte papier se vend à sa valeur et ne se recharge pas. Elle est <strong>au porteur</strong> : perdue, son solde est perdu, sauf si elle a été rattachée à un compte en scannant son QR code. Elle n'est remboursée qu'une seule fois.
+    </p>
+  </section>
+
+  <section>
+    <h2>8. Suppression</h2>
+    <p>
+      Le titulaire peut supprimer sa carte depuis l'onglet Compte quand son solde est nul. Son adresse est alors effacée ; l'historique comptable est conservé.
+    </p>
+  </section>
+
+  <section>
+    <h2>9. Courriels</h2>
+    <p>
+      La buvette n'envoie qu'un seul courriel : le code de connexion. Recharges, achats et remboursements apparaissent dans l'historique de la carte.
+    </p>
+  </section>
+
+  <section>
+    <h2>10. Modification des conditions</h2>
+    <p>
+      L'association peut modifier ces conditions. La version acceptée est enregistrée à chaque ouverture de la carte, et une nouvelle version est présentée à la connexion suivante.
+    </p>
+  </section>
+
+  <section>
+    <h2>11. Droit applicable</h2>
+    <p>Ces conditions relèvent du droit français. Pour toute réclamation, adressez-vous d'abord à un bénévole de la buvette ou au bureau de l'association.</p>
+  </section>
+</LegalPage>

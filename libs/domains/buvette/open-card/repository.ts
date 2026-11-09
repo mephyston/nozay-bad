@@ -14,6 +14,10 @@ export class OpenCardRepository {
       .returning().get();
   }
 
+  recordTerms(db: DbOrTx, cardId: number, termsVersion: string, acceptedAt: Date) {
+    return db.update(buvetteCardsTable).set({ termsVersion, termsAcceptedAt: acceptedAt }).where(eq(buvetteCardsTable.id, cardId));
+  }
+
   addDevice(db: DbOrTx, cardId: number, id: string) {
     return db.insert(buvetteCardDevicesTable).values({ id, cardId, createdAt: new Date() }).returning().get();
   }

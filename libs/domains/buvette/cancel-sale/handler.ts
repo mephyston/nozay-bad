@@ -1,5 +1,6 @@
 import { AppError, type Db } from '@nba/db';
 import { isCardGone } from '../shared/queries.repository';
+import { SumUpRefundsRepository } from '../shared/sumup-refunds.repository';
 import { isClosedSessionError } from '../shared/validation';
 import { CancelSaleRepository } from './repository';
 import type { CancelSaleInput } from './dto';
@@ -9,6 +10,8 @@ import type { CancelSaleInput } from './dto';
  * perd ce qu'une recharge lui avait apporté. Si la carte a été supprimée, sa part sort en espèces. Une recharge déjà consommée fait échouer le CHECK
  * du solde et donc tout le lot. La clé des mouvements empêche d'annuler deux fois.
  */
+const refunds = new SumUpRefundsRepository();
+
 export async function cancelSale(db: Db, input: CancelSaleInput) {
   const repo = new CancelSaleRepository();
   const sale = await repo.getSale(db, input.saleId);
@@ -17,6 +20,10 @@ export async function cancelSale(db: Db, input: CancelSaleInput) {
   if (sale.status !== 'paid') throw new AppError('Cette vente est déjà annulée.', 409);
   const session = await repo.getSession(db, sale.sessionId);
   if (session?.status !== 'open') throw new AppError('La session de cette vente est clôturée : voyez avec la trésorerie.', 409);
+  // Une part de cette CB est déjà revenue au client avec le solde de sa carte : annuler rendrait le reste à tort.
+  if (sale.cardCents > 0 && (await refunds.hasCardBalanceRefund(db, sale.id))) {
+    throw new AppError('Le solde de cette recharge a déjà été remboursé sur la CB : la vente ne peut plus être annulée.', 409);
+  }
 
   const by = input.cancelledByEmail;
   const reverse = (suffix: string, cardId: number, amountCents: number) => [
@@ -70,6 +77,7 @@ export async function cancelSale(db: Db, input: CancelSaleInput) {
     sale: await repo.getSale(db, sale.id),
     cardCreditedCents: cardGone ? 0 : sale.prepaidCents,
     cashToReturnCents: sale.cashCents + (cardGone ? sale.prepaidCents : 0),
-    sumUpToRefundCents: sale.cardCents
+    sumUpToRefundCents: sale.cardCents,
+    cardAttemptId: sale.cardCents > 0 ? ((await repo.successfulAttemptId(db, sale.id)) ?? null) : null
   };
 }

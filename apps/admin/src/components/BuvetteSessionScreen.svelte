@@ -1,6 +1,6 @@
 <script lang="ts">
   import { PageHeader } from '@nba/ui';
-  import { BuvetteSession } from '@nba/buvette-ui';
+  import { BuvetteSession, CardPaymentsSwitch } from '@nba/buvette-ui';
   import EcranDistant from './EcranDistant.svelte';
 </script>
 
@@ -12,7 +12,8 @@
 <div class="mt-6">
   <EcranDistant domaine="buvette" ecran="session" variante="formulaire">
     {#snippet pret(d)}
-      <BuvetteSession current={d.current} cardsDebtCents={d.cardsDebtCents} canOpen={d.canOpen} canClose={d.canClose} canAbandon={d.canAbandon} />
+      <CardPaymentsSwitch enabled={d.cardPaymentsEnabled} canSwitch={d.canSwitchCard} />
+      <BuvetteSession current={d.current} categories={d.categories} cardsDebtCents={d.cardsDebtCents} canOpen={d.canOpen} canClose={d.canClose} canAbandon={d.canAbandon} />
     {/snippet}
   </EcranDistant>
 </div>

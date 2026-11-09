@@ -5,8 +5,8 @@
   "sourceRoot": "apps/caisse/src",
   // Nx ne lit pas les imports des fichiers .astro et .svelte (cf. scripts/check-nx-deps.js).
   "implicitDependencies": [
+    "@nba/buvette-api",
     "@nba/club",
-    "@nba/mailer",
     "@nba/runtime-env",
     "@nba/security-headers",
     "@nba/ui"

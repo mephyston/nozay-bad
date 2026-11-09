@@ -20,7 +20,7 @@ Une session de caisse suit un tiroir d'espèces de l'ouverture à la clôture. L
 
 **Ouverture et clôture au bureau.** Elles se font depuis l'administration, avec leur propre droit : elles engagent le comptage et la comptabilité. La caisse ne peut ni ouvrir ni clôturer, et affiche « fermée » sans session.
 
-**Ouverture.** Le responsable saisit le fond de caisse compté. La session ne s'ouvre que si les comptes et catégories de la buvette sont réglés.
+**Ouverture.** Le responsable saisit le fond de caisse compté et choisit la **catégorie comptable** de la session : une buvette sert un événement (tournoi d'hiver, tournoi d'été, forum des associations…), et tout ce qu'elle vend y est comptabilisé, quel que soit l'article. Tant que la session est ouverte, la catégorie peut être corrigée ; à la clôture, c'est celle du moment qui fait foi. La session ne s'ouvre que si les comptes et catégories de la buvette sont réglés.
 
 **Clôture.** Le responsable compte les espèces. L'écran affiche les espèces théoriques, l'écart de caisse, le total CB et le total débité sur les cartes. La clôture est refusée s'il reste une vente en cours, y compris « à vérifier ».
 
@@ -32,9 +32,9 @@ Une session de caisse suit un tiroir d'espèces de l'ouverture à la clôture. L
 
 | Fait | Écriture |
 |---|---|
-| Articles payés en espèces | Recette sur le compte de caisse, par catégorie |
-| Articles payés en CB | Recette sur le compte SumUp, par catégorie |
-| Articles payés par carte | Recette sur le compte de dette de cartes, par catégorie |
+| Articles payés en espèces | Recette sur le compte de caisse, dans la catégorie de la session |
+| Articles payés en CB | Recette sur le compte SumUp, dans la catégorie de la session |
+| Articles payés par carte | Recette sur le compte de dette de cartes, dans la catégorie de la session |
 | Recharge en espèces | Virement du compte de dette vers la caisse |
 | Recharge en CB | Virement du compte de dette vers le compte SumUp |
 | Remboursement de solde | Virement de la caisse vers le compte de dette |
@@ -47,6 +47,10 @@ Une session de caisse suit un tiroir d'espèces de l'ouverture à la clôture. L
 **Le total dû aux clients.** L'écran de session affiche la somme des soldes des cartes, session ouverte ou non : la clôture ne touche pas aux soldes, qui restent utilisables à la session suivante et restent une dette dans les comptes.
 
 **Une session clôturée ne se rouvre pas.** Une erreur se corrige par une régularisation (RF-BUV-002).
+
+---
+
+**Historique.** Le bureau retrouve chaque session passée : sa catégorie, ses totaux par moyen de paiement, l'écart de caisse, chaque vente avec ses articles, son moyen de paiement et son numéro de transaction SumUp, les soldes de carte rendus, et les ventes par article. Un rapport par article réunit aussi toutes les sessions. Les ventes remboursées n'y comptent pas.
 
 ---
 

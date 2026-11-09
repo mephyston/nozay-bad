@@ -14,6 +14,7 @@ import { cancelSale } from './cancel-sale/handler';
 import { refundCard } from './refund-card/handler';
 import { openCard } from './open-card/handler';
 import { abandonSale, retryAttempt, verifyAttempt, verifyPendingAttempts } from './verify-card-attempt/handler';
+import { CardAttemptRepository } from './verify-card-attempt/repository';
 
 const SECRET = 'secret-de-test';
 const BY = 'benevole@example.org';
@@ -42,8 +43,8 @@ describe('paiement par CB', () => {
       code: '25-26', name: 'Saison 2025-2026', startDate: '2025-09-01', endDate: '2026-08-31', active: true, closedAt: null, createdAt: new Date()
     });
     const category = await db.select().from(categoriesTable).where(eq(categoriesTable.adminLabel, 'Buvettes')).get();
-    sandwich = await createItem(db, { name: 'Sandwich', priceCents: 1200, accountingCategoryId: category.id });
-    sessionId = (await openSession(db, { openingFloatCents: 5000, openedByEmail: BY })).id;
+    sandwich = await createItem(db, { name: 'Sandwich', priceCents: 1200 });
+    sessionId = (await openSession(db, { openingFloatCents: 5000, accountingCategoryId: category.id, openedByEmail: BY })).id;
   });
 
   it('carte complétée par la CB : réservée, puis débitée à la confirmation de SumUp', async () => {
@@ -73,6 +74,19 @@ describe('paiement par CB', () => {
     expect(await card(c.cardId)).toMatchObject({ balanceCents: 0, reservedCents: 0 });
   });
 
+  it('deux vérifications simultanées ne signalent pas à tort un paiement tardif', async () => {
+    const { attempt } = await sellByCard({ lines: [{ itemId: sandwich.id, quantity: 1 }], expectedCashCents: 1200 });
+    // La page de retour règle la vente pendant que la caisse, elle, a déjà lu la tentative.
+    const getSale = CardAttemptRepository.prototype.getSale;
+    const spy = vi.spyOn(CardAttemptRepository.prototype, 'getSale').mockImplementationOnce(async function (this: any, ...args: any[]) {
+      spy.mockRestore();
+      await verifyAttempt(db, lookupOf(success(1200)), attempt!.foreignTxId);
+      return getSale.apply(this, args as any);
+    });
+    expect(await verifyAttempt(db, lookupOf(success(1200)), attempt!.foreignTxId)).toMatchObject({ saleStatus: 'paid', anomaly: null });
+    expect((await getCurrentSession(db))?.toRefund).toEqual([]);
+  });
+
   it('sans transaction réussie chez SumUp, rien n\'est payé', async () => {
     const { attempt } = await sellByCard({ lines: [{ itemId: sandwich.id, quantity: 1 }], expectedCashCents: 1200 });
     expect(await verifyAttempt(db, lookupOf({ status: 'unknown' }), attempt!.foreignTxId)).toMatchObject({ attemptStatus: 'pending', saleStatus: 'in_progress' });
@@ -81,7 +95,7 @@ describe('paiement par CB', () => {
   it('un montant différent ne paie pas la vente et se signale', async () => {
     const { attempt } = await sellByCard({ lines: [{ itemId: sandwich.id, quantity: 1 }], expectedCashCents: 1200 });
     expect(await verifyAttempt(db, lookupOf(success(120)), attempt!.foreignTxId)).toMatchObject({ saleStatus: 'in_progress', anomaly: 'amount' });
-    expect((await getCurrentSession(db))?.toRefund).toEqual([{ transactionCode: 'TAAA', amountCents: 1200, anomaly: 'amount' }]);
+    expect((await getCurrentSession(db))?.toRefund).toEqual([{ kind: 'stray', attemptId: expect.any(Number), transactionCode: 'TAAA', amountCents: 1200, anomaly: 'amount', refundStatus: null }]);
   });
 
   it('un échec libère le droit de relancer, sous un nouvel identifiant', async () => {
@@ -104,7 +118,7 @@ describe('paiement par CB', () => {
     const later = Date.now() + 2 * 60 * 1000 + 1000;
     await abandonSale(db, lookupOf({ status: 'unknown' }), sale.id, BY, later);
     expect(await verifyPendingAttempts(db, lookupOf(success(1200)), later + 60_000)).toBe(1);
-    expect((await getCurrentSession(db))?.toRefund).toEqual([{ transactionCode: 'TAAA', amountCents: 1200, anomaly: 'late' }]);
+    expect((await getCurrentSession(db))?.toRefund).toEqual([{ kind: 'stray', attemptId: expect.any(Number), transactionCode: 'TAAA', amountCents: 1200, anomaly: 'late', refundStatus: null }]);
     expect(attempt).toBeDefined();
   });
 
@@ -144,7 +158,7 @@ describe('paiement par CB', () => {
     expect((await abandonSale(db, down, sale.id, BY))?.status).toBe('cancelled');
     expect(await card(c.cardId)).toMatchObject({ balanceCents: 800, reservedCents: 0 });
     expect(await verifyPendingAttempts(db, lookupOf(success(400)), Date.now() + 61_000)).toBe(1);
-    expect((await getCurrentSession(db))?.toRefund).toEqual([{ transactionCode: 'TAAA', amountCents: 400, anomaly: 'late' }]);
+    expect((await getCurrentSession(db))?.toRefund).toEqual([{ kind: 'stray', attemptId: expect.any(Number), transactionCode: 'TAAA', amountCents: 400, anomaly: 'late', refundStatus: null }]);
     expect(await card(c.cardId)).toMatchObject({ balanceCents: 800, reservedCents: 0 });
   });
 

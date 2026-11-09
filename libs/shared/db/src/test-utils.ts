@@ -4,8 +4,10 @@ import { drizzle } from 'drizzle-orm/d1';
 
 // Topological sorting of tables (child tables dropped before parent tables to avoid foreign key errors)
 const tables = [
-    'buvette_card_attempts',
+    // Enfants des tentatives : ils partent avant elles.
+    'buvette_sumup_refunds',
     'buvette_card_movements',
+    'buvette_card_attempts',
     'buvette_sale_lines',
     'buvette_sales',
     'buvette_order_lines',

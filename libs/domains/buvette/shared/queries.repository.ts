@@ -1,4 +1,4 @@
-import { and, eq, sql } from 'drizzle-orm';
+import { and, eq, isNull, sql } from 'drizzle-orm';
 import { AppError, type DbOrTx } from '@nba/db';
 import { maskEmail } from './mask';
 import { closedPaperMessage, paperLabel, PAPER_DEVICE } from './paper-card';
@@ -15,6 +15,18 @@ import {
 /** Les lectures que plusieurs tranches du domaine partagent. */
 export function getSettings(db: DbOrTx) {
   return db.select().from(buvetteSettingsTable).where(eq(buvetteSettingsTable.id, 1)).get();
+}
+
+export const CARD_PAYMENTS_SUSPENDED = 'La CB est suspendue par le bureau : encaissez en espèces ou par carte buvette.';
+
+/** L'interrupteur d'urgence de la CB. Sans ligne de réglages, la CB reste permise. */
+export async function cardPaymentsEnabled(db: DbOrTx): Promise<boolean> {
+  return (await getSettings(db))?.cardPaymentsEnabled !== false;
+}
+
+/** Refuse tout nouvel envoi vers SumUp quand le bureau a coupé la CB. */
+export async function assertCardPaymentsEnabled(db: DbOrTx, message = CARD_PAYMENTS_SUSPENDED): Promise<void> {
+  if (!(await cardPaymentsEnabled(db))) throw new AppError(message, 409);
 }
 
 export function getOpenSession(db: DbOrTx) {
@@ -77,7 +89,7 @@ export function cardLabel(card: { id: number; email: string | null }): string {
   return card.email ? maskEmail(card.email) : paperLabel(card.id);
 }
 
-/** Fond de caisse, plus les espèces des ventes payées, moins les remboursements en espèces. */
+/** Fond de caisse, plus les espèces des ventes payées, moins les remboursements en espèces (pas ceux rendus sur CB). */
 export async function getExpectedCashCents(db: DbOrTx, sessionId: number, openingFloatCents: number): Promise<number> {
   const sales = await db
     .select({ total: sql<number>`COALESCE(SUM(${buvetteSalesTable.cashCents}), 0)` })
@@ -87,7 +99,7 @@ export async function getExpectedCashCents(db: DbOrTx, sessionId: number, openin
   const refunds = await db
     .select({ total: sql<number>`COALESCE(SUM(-${buvetteCardMovementsTable.amountCents}), 0)` })
     .from(buvetteCardMovementsTable)
-    .where(and(eq(buvetteCardMovementsTable.sessionId, sessionId), eq(buvetteCardMovementsTable.type, 'refund')))
+    .where(and(eq(buvetteCardMovementsTable.sessionId, sessionId), eq(buvetteCardMovementsTable.type, 'refund'), isNull(buvetteCardMovementsTable.sumupAttemptId)))
     .get();
   return openingFloatCents + Number(sales?.total ?? 0) - Number(refunds?.total ?? 0);
 }

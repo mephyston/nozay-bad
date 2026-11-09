@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { ItemIcon } from '@nba/buvette-ui';
   import { Minus, Plus } from '@lucide/svelte';
   import { Button } from '@nba/ui';
   import { euros } from '../lib/format';
@@ -7,6 +8,7 @@
     id: number;
     name: string;
     priceCents: number;
+    icon?: string | null;
   }
 
   interface Order {
@@ -104,6 +106,7 @@
     {#each items as item (item.id)}
       {@const quantity = cart.get(item.id) ?? 0}
       <li class="flex items-center gap-2 px-4 py-2.5">
+        <span class="bg-primary/10 text-primary flex size-10 shrink-0 items-center justify-center rounded-xl"><ItemIcon name={item.name} icon={item.icon} class="size-5" /></span>
         <span class="min-w-0 grow">
           <span class="block truncate text-sm font-semibold">{item.name}</span>
           <span class="text-muted-foreground text-xs tabular-nums">{euros(item.priceCents)}</span>

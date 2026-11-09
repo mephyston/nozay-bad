@@ -44,29 +44,46 @@ export function readTransaction(t: any): SumUpTransaction {
  * et peut être forgé. La clé reste dans ce Worker et donne un accès large au compte : elle n'en
  * sort jamais, pas même dans un message d'erreur.
  */
-export function createSumUpClient(env: SumUpBindings): SumUpLookup {
+/** La clé et le code marchand, résolu une fois : partagés par la vérification et le remboursement. */
+export function sumUpConnection(env: SumUpBindings) {
   const key = env.SUMUP_API_KEY;
-  if (!key) {
+  if (!key) return null;
+  const headers = { authorization: `Bearer ${key}` };
+  let merchantCode = env.SUMUP_MERCHANT_CODE;
+  return {
+    headers,
+    async merchantCode(): Promise<string> {
+      if (!merchantCode) {
+        const me = await fetch('https://api.sumup.com/v0.1/me', { headers });
+        if (!me.ok) throw new AppError('SumUp ne répond pas : réessayez dans un instant.', 502);
+        merchantCode = ((await me.json()) as any)?.merchant_profile?.merchant_code;
+        if (!merchantCode) throw new AppError('Code marchand SumUp introuvable.', 502);
+      }
+      return merchantCode!;
+    },
+    /** La transaction d'une tentative, ou `null` si SumUp ne la connaît pas. */
+    async transaction(foreignTxId: string): Promise<any | null> {
+      const code = encodeURIComponent(await this.merchantCode());
+      const res = await fetch(
+        `https://api.sumup.com/v2.1/merchants/${code}/transactions?foreign_transaction_id=${encodeURIComponent(foreignTxId)}`,
+        { headers }
+      );
+      if (res.status === 404) return null;
+      if (!res.ok) throw new AppError('SumUp ne répond pas : réessayez dans un instant.', 502);
+      return res.json();
+    }
+  };
+}
+
+export function createSumUpClient(env: SumUpBindings): SumUpLookup {
+  const connection = sumUpConnection(env);
+  if (!connection) {
     return async () => {
       throw new AppError("La vérification des CB n'est pas configurée (SUMUP_API_KEY).", 503);
     };
   }
-  const headers = { authorization: `Bearer ${key}` };
-  let merchantCode = env.SUMUP_MERCHANT_CODE;
-
   return async (foreignTxId) => {
-    if (!merchantCode) {
-      const me = await fetch('https://api.sumup.com/v0.1/me', { headers });
-      if (!me.ok) throw new AppError('SumUp ne répond pas : réessayez dans un instant.', 502);
-      merchantCode = ((await me.json()) as any)?.merchant_profile?.merchant_code;
-      if (!merchantCode) throw new AppError('Code marchand SumUp introuvable.', 502);
-    }
-    const res = await fetch(
-      `https://api.sumup.com/v2.1/merchants/${encodeURIComponent(merchantCode)}/transactions?foreign_transaction_id=${encodeURIComponent(foreignTxId)}`,
-      { headers }
-    );
-    if (res.status === 404) return { status: 'unknown' };
-    if (!res.ok) throw new AppError('SumUp ne répond pas : réessayez dans un instant.', 502);
-    return readTransaction(await res.json());
+    const transaction = await connection.transaction(foreignTxId);
+    return transaction ? readTransaction(transaction) : { status: 'unknown' };
   };
 }

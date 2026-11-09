@@ -17,7 +17,7 @@ Le domaine ne dépend d'aucun adhérent. La comptabilité reçoit une synthèse 
 
 | Terme Métier | Définition & Contexte | Type / Exemple |
 |---|---|---|
-| **Article** | Ce que vend la buvette, avec son prix et sa catégorie comptable. Distinct des produits de la boutique, qui suivent un parcours de commande et exigent un adhérent. | `Entity` (café, sandwich) |
+| **Article** | Ce que vend la buvette, avec son prix et son pictogramme. La catégorie comptable se choisit par session, pas par article. Distinct des produits de la boutique, qui suivent un parcours de commande et exigent un adhérent. | `Entity` (café, sandwich) |
 | **Carte buvette** | Le porte-monnaie d'un client, rattaché à une adresse électronique vérifiée. Elle est gratuite : ce qu'on achète, c'est sa recharge. Une carte par adresse. | `Entity` |
 | **Carte papier** | Carte imprimée au porteur, de 5 ou 10 €, sans adresse. Elle vaut de l'argent liquide : perdue, son solde est perdu, sauf si elle a été rattachée à un compte. | `kind = 'paper'` |
 | **Recharge** | Ligne de panier qui crédite une carte. Elle ne se paie jamais avec une carte buvette. | `integer` (centimes) |

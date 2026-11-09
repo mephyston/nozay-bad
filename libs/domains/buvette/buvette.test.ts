@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { eq } from 'drizzle-orm';
+import { eq, ne } from 'drizzle-orm';
 import { setupMockDb } from '@nba/db/test-utils';
 import { categoriesTable, ledgerEntriesTable, seasonsTable } from '@nba/accounting/schema';
 import { buvetteCardsTable } from './shared/schema';
@@ -7,10 +7,11 @@ import { getCardsDebtCents, getSettings } from './shared/queries.repository';
 import { signCardToken } from './shared/card-tokens';
 import { createItem } from './manage-items/handler';
 import { saveSettings } from './manage-settings/handler';
-import { openSession } from './open-session/handler';
+import { openSession, setSessionCategory } from './open-session/handler';
 import { getCurrentSession } from './get-current-session/handler';
 import { closeSession } from './close-session/handler';
 import { listSessionSales } from './list-session-sales/handler';
+import { getSessionReport, listSessionHistory } from './session-history/handler';
 import { CloseSessionRepository } from './close-session/repository';
 import { createSale } from './create-sale/handler';
 import { cancelSale } from './cancel-sale/handler';
@@ -49,24 +50,24 @@ describe('buvette', () => {
     });
     const category = await db.select().from(categoriesTable).where(eq(categoriesTable.adminLabel, 'Buvettes')).get();
     categoryId = category.id;
-    coffee = await createItem(db, { name: 'Café', priceCents: 100, accountingCategoryId: categoryId });
-    sandwich = await createItem(db, { name: 'Sandwich', priceCents: 400, accountingCategoryId: categoryId });
+    coffee = await createItem(db, { name: 'Café', priceCents: 100 });
+    sandwich = await createItem(db, { name: 'Sandwich', priceCents: 400 });
   });
 
   describe('session de caisse', () => {
     it('la migration règle la buvette : une session s\'ouvre sans configuration', async () => {
-      const session = await openSession(db, { openingFloatCents: 5000, openedByEmail: BY });
+      const session = await openSession(db, { openingFloatCents: 5000, accountingCategoryId: categoryId, openedByEmail: BY });
       expect(session.businessDate).toBe('2026-08-30');
     });
 
     it('une seule session ouverte à la fois', async () => {
-      await openSession(db, { openingFloatCents: 0, openedByEmail: BY });
-      await expect(openSession(db, { openingFloatCents: 0, openedByEmail: BY })).rejects.toThrow('déjà ouverte');
+      await openSession(db, { openingFloatCents: 0, accountingCategoryId: categoryId, openedByEmail: BY });
+      await expect(openSession(db, { openingFloatCents: 0, accountingCategoryId: categoryId, openedByEmail: BY })).rejects.toThrow('déjà ouverte');
     });
 
     it('refuse d\'ouvrir hors de tout exercice', async () => {
       vi.setSystemTime(new Date('2026-09-15T12:00:00Z'));
-      await expect(openSession(db, { openingFloatCents: 0, openedByEmail: BY })).rejects.toThrow('exercice');
+      await expect(openSession(db, { openingFloatCents: 0, accountingCategoryId: categoryId, openedByEmail: BY })).rejects.toThrow('exercice');
       vi.setSystemTime(new Date('2026-08-30T12:00:00Z'));
     });
 
@@ -84,7 +85,7 @@ describe('buvette', () => {
 
   describe('vente', () => {
     beforeEach(async () => {
-      await openSession(db, { openingFloatCents: 5000, openedByEmail: BY });
+      await openSession(db, { openingFloatCents: 5000, accountingCategoryId: categoryId, openedByEmail: BY });
     });
 
     it('paiement complet par carte', async () => {
@@ -205,7 +206,7 @@ describe('buvette', () => {
     });
 
     it('le détail d\'une transaction montre les articles, et seulement à sa carte', async () => {
-      await openSession(db, { openingFloatCents: 0, openedByEmail: BY });
+      await openSession(db, { openingFloatCents: 0, accountingCategoryId: categoryId, openedByEmail: BY });
       const c = await cardWith(300);
       await sale('vente-det-1', { lines: [{ itemId: sandwich.id, quantity: 1 }], prepaidScanToken: c.scanToken, expectedCashCents: 100 });
       const { deviceId } = await openCard(db, 'client@example.org');
@@ -231,6 +232,16 @@ describe('buvette', () => {
 
     it('masque l\'adresse', () => {
       expect(maskEmail('david@example.org')).toBe('da***@example.org');
+    });
+  });
+
+  describe('conditions d\'utilisation', () => {
+    it('garde la dernière version acceptée, à chaque ouverture', async () => {
+      const first = await openCard(db, 'cgu@example.org', '2026-11-08');
+      await openCard(db, 'cgu@example.org', '2027-01-15');
+      const card = await db.select().from(buvetteCardsTable).where(eq(buvetteCardsTable.id, first.cardId)).get();
+      expect(card).toMatchObject({ termsVersion: '2027-01-15' });
+      expect(card.termsAcceptedAt).toBeInstanceOf(Date);
     });
   });
 
@@ -264,7 +275,7 @@ describe('buvette', () => {
 
   describe('remboursement', () => {
     beforeEach(async () => {
-      await openSession(db, { openingFloatCents: 6000, openedByEmail: BY });
+      await openSession(db, { openingFloatCents: 6000, accountingCategoryId: categoryId, openedByEmail: BY });
     });
 
     const refund = (scanToken: string, clientId = 'remb-0001') =>
@@ -275,6 +286,12 @@ describe('buvette', () => {
       expect(await refund(card.scanToken)).toMatchObject({ amountCents: 1500, email: 'client@example.org', replayed: false });
       expect(await balance(card.cardId)).toBe(0);
       expect((await getCurrentSession(db))?.expectedCashCents).toBe(4500);
+    });
+
+    it('le remboursement apparaît dans les ventes de la caisse, pour mémoire', async () => {
+      const card = await cardWith(1500);
+      await refund(card.scanToken);
+      expect(await listSessionSales(db)).toEqual([expect.objectContaining({ kind: 'card_refund', amountCents: 1500, cardLabel: expect.stringContaining('@') })]);
     });
 
     it('un rejeu ne sort pas d\'espèces une seconde fois', async () => {
@@ -312,7 +329,7 @@ describe('buvette', () => {
     let sessionId: number;
 
     beforeEach(async () => {
-      sessionId = (await openSession(db, { openingFloatCents: 5000, openedByEmail: BY })).id;
+      sessionId = (await openSession(db, { openingFloatCents: 5000, accountingCategoryId: categoryId, openedByEmail: BY })).id;
     });
 
     const close = (countedCashCents: number) => closeSession(db, { sessionId, countedCashCents, closedByEmail: BY });
@@ -334,6 +351,35 @@ describe('buvette', () => {
       const legs = entries.filter((e: any) => e.type === 'transfert');
       expect(legs.map((e: any) => e.amountCents).sort()).toEqual([1600, 1600, 2000, 2000]);
       expect(entries.some((e: any) => e.type === 'depense')).toBe(false);
+    });
+
+    it('toutes les ventes vont dans la catégorie de la session, même changée en cours de route', async () => {
+      const autre = await db.select().from(categoriesTable).where(ne(categoriesTable.id, categoryId)).get();
+      await sale('vente-0111', { lines: [{ itemId: coffee.id, quantity: 1 }, { itemId: sandwich.id, quantity: 1 }], expectedCashCents: 500 });
+      await setSessionCategory(db, autre.id);
+      await close(5500);
+      const recettes = (await db.select().from(ledgerEntriesTable).all()).filter((e: any) => e.type === 'recette');
+      expect(recettes).toHaveLength(1);
+      expect(recettes[0]).toMatchObject({ categoryId: autre.id, amountCents: 500 });
+      await expect(setSessionCategory(db, categoryId)).rejects.toThrow('Aucune session');
+    });
+
+    it('l\'historique donne les totaux, chaque vente, les soldes rendus et les ventes par article', async () => {
+      const card = await cardWith(0);
+      await sale('vente-0121', { rechargeCents: 1000, rechargeScanToken: card.scanToken, expectedCashCents: 1000 });
+      await sale('vente-0122', { lines: [{ itemId: coffee.id, quantity: 2 }], expectedCashCents: 200 });
+      const { sale: annulee } = await sale('vente-0123', { lines: [{ itemId: sandwich.id, quantity: 1 }], expectedCashCents: 400 });
+      await cancelSale(db, { saleId: annulee.id, cancelledByEmail: BY });
+      await refundCard(db, SECRET, { clientId: 'remb-0121', scanToken: card.scanToken, createdByEmail: BY });
+      await close(5000 + 1000 + 200 - 1000);
+
+      const { sessions, items } = await listSessionHistory(db);
+      expect(sessions[0]).toMatchObject({ id: sessionId, status: 'closed', salesCount: 2, itemsCents: 200, rechargeCents: 1000, refundsCashCents: 1000, gapCents: 0 });
+      expect(items).toEqual([{ name: 'Café', quantity: 2, amountCents: 200 }]);
+      const report = await getSessionReport(db, sessionId);
+      expect(report.sales.map((s) => s.status).sort()).toEqual(['cancelled', 'paid', 'paid']);
+      expect(report.cardRefunds).toEqual([expect.objectContaining({ amountCents: 1000, byCard: false })]);
+      await expect(getSessionReport(db, 9999)).rejects.toThrow('introuvable');
     });
 
     it('une recharge seule ne pose aucune recette', async () => {
@@ -363,8 +409,8 @@ describe('buvette', () => {
 
       it('une vente qui passe pendant la clôture annule tout, et rien n\'est perdu', async () => {
         const original = CloseSessionRepository.prototype.paidSales;
-        vi.spyOn(CloseSessionRepository.prototype, 'paidSales').mockImplementationOnce(async function (this: any, d: any, id: number) {
-          const lues = await original.call(this, d, id);
+        vi.spyOn(CloseSessionRepository.prototype, 'paidSales').mockImplementationOnce(async function (this: any, d: any, id: number, categorie: number) {
+          const lues = await original.call(this, d, id, categorie);
           await sale('vente-0601', { lines: [{ itemId: coffee.id, quantity: 1 }], expectedCashCents: 100 });
           return lues;
         });
@@ -385,7 +431,7 @@ describe('buvette', () => {
       await sale('vente-0701', { lines: [{ itemId: coffee.id, quantity: 2 }], expectedCashCents: 200 });
       const { sale: last } = await sale('vente-0702', { lines: [{ itemId: sandwich.id, quantity: 1 }], expectedCashCents: 400 });
       await cancelSale(db, { saleId: last.id, cancelledByEmail: BY });
-      const sales = await listSessionSales(db);
+      const sales = (await listSessionSales(db)).filter((s) => s.kind === 'sale');
       expect(sales.map((s) => s.status)).toEqual(['cancelled', 'paid']);
       expect(sales[1]).toMatchObject({ cashCents: 200, lines: [{ name: 'Café', quantity: 2, unitPriceCents: 100 }] });
     });

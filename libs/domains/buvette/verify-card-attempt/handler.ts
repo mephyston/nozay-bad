@@ -1,5 +1,6 @@
 import { AppError, type Db } from '@nba/db';
 import { newForeignTxId, type SumUpLookup } from '../shared/sumup';
+import { assertCardPaymentsEnabled } from '../shared/queries.repository';
 import type { BuvetteCardAttempt, BuvetteSale } from '../shared/schema';
 import { CardAttemptRepository } from './repository';
 import type { AttemptState, NewAttempt } from './dto';
@@ -77,6 +78,9 @@ async function verifyOne(db: Db, lookup: SumUpLookup, attempt: BuvetteCardAttemp
   }
   // De l'argent a été pris pour une vente qui n'attendait plus : à rembourser, jamais à rattacher.
   if (sale.status !== 'in_progress') {
+    // Sauf si c'est ce paiement qui vient de la régler : la caisse et la page de retour vérifient
+    // souvent en même temps, et l'autre vérification a pu passer entre nos deux lectures.
+    if ((await repo.findByForeignId(db, attempt.foreignTxId))?.status === 'successful') return;
     await repo.markAttempt(db, attempt.id, { status: 'successful', anomaly: 'late', transactionCode: code });
     return;
   }
@@ -125,6 +129,7 @@ async function settlePendingOf(db: Db, lookup: SumUpLookup, saleId: number, now:
 /** Une nouvelle tentative n'existe qu'une fois établi que les précédentes n'ont pas abouti. */
 export async function retryAttempt(db: Db, lookup: SumUpLookup, saleId: number, now = Date.now()): Promise<NewAttempt> {
   const sale = await saleInProgress(db, saleId);
+  await assertCardPaymentsEnabled(db, 'La CB est suspendue par le bureau : abandonnez la vente et encaissez autrement.');
   const attempts = await settlePendingOf(db, lookup, saleId, now);
   if (attempts.some((a) => a.status === 'pending')) {
     throw new AppError('Le paiement précédent est encore à vérifier : patientez un instant.', 409);

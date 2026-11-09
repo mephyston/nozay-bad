@@ -1,10 +1,18 @@
 import { and, eq, sql } from 'drizzle-orm';
 import { type DbOrTx } from '@nba/db';
-import { buvetteCardMovementsTable, buvetteCardsTable, buvetteOrdersTable, buvetteSalesTable, buvetteSessionsTable } from '../shared/schema';
+import { buvetteCardAttemptsTable, buvetteCardMovementsTable, buvetteCardsTable, buvetteOrdersTable, buvetteSalesTable, buvetteSessionsTable } from '../shared/schema';
 
 export class CancelSaleRepository {
   getSale(db: DbOrTx, id: number) {
     return db.select().from(buvetteSalesTable).where(eq(buvetteSalesTable.id, id)).get();
+  }
+
+  /** Le paiement CB qui a réglé la vente : la caisse le fait rembourser par SumUp. */
+  async successfulAttemptId(db: DbOrTx, saleId: number): Promise<number | undefined> {
+    const row = await db.select({ id: buvetteCardAttemptsTable.id }).from(buvetteCardAttemptsTable)
+      .where(and(eq(buvetteCardAttemptsTable.saleId, saleId), eq(buvetteCardAttemptsTable.status, 'successful')))
+      .get();
+    return row?.id;
   }
 
   getCard(db: DbOrTx, id: number) {

@@ -1,6 +1,7 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import CardHome from '../components/CardHome.svelte';
+import WelcomeGuide from '../components/WelcomeGuide.svelte';
 import { walletOf } from '../lib/card-api';
 
 const wallet = await walletOf(Astro.locals);
@@ -8,4 +9,5 @@ const wallet = await walletOf(Astro.locals);
 
 <Layout title="Ma carte">
   <CardHome client:load initial={wallet} />
+  <WelcomeGuide client:load forceOpen={Astro.url.searchParams.has('guide')} />
 </Layout>

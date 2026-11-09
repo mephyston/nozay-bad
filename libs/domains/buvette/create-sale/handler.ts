@@ -1,6 +1,6 @@
 import { AppError, type Db } from '@nba/db';
 import { verifyCardToken } from '../shared/card-tokens';
-import { assertScannedCardUsable, availableCents, getCard, getOpenSession, getSettings } from '../shared/queries.repository';
+import { assertCardPaymentsEnabled, assertScannedCardUsable, availableCents, getCard, getOpenSession, getSettings } from '../shared/queries.repository';
 import { newForeignTxId } from '../shared/sumup';
 import { CreateSaleRepository } from './repository';
 import type { BuvetteSale } from '../shared/schema';
@@ -74,6 +74,7 @@ export async function createSale(db: Db, secret: string, input: CreateSaleInput)
   const prepaidCents = prepaidCard ? Math.min(availableCents(prepaidCard), itemsCents) : 0;
   const restCents = itemsCents + rechargeCents - prepaidCents;
   const byCard = Boolean(input.payRestByCard) && restCents > 0;
+  if (byCard) await assertCardPaymentsEnabled(db);
   const cashCents = byCard ? 0 : restCents;
   const cardCents = byCard ? restCents : 0;
   if (restCents !== input.expectedCashCents) {
@@ -117,8 +118,7 @@ export async function createSale(db: Db, secret: string, input: CreateSaleInput)
       itemId: item.id,
       name: item.name,
       unitPriceCents: item.priceCents,
-      quantity: line.quantity,
-      accountingCategoryId: item.accountingCategoryId
+      quantity: line.quantity
     }))
   ];
   const movement = (cardId: number, type: 'debit' | 'recharge', amountCents: number) => [

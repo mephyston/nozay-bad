@@ -7,3 +7,5 @@ export const saveSettingsSchema = Type.Object({
   cardPaymentMethodId: Type.Integer({ minimum: 1 }),
   gapCategoryId: Type.Integer({ minimum: 1 })
 });
+
+export const cardPaymentsSchema = Type.Object({ enabled: Type.Boolean() });

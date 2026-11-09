@@ -112,10 +112,33 @@ async function fetchActor(env: Record<string, string>, email: string): Promise<A
  */
 function refusedPage(email: string): Response {
   const safeEmail = email.replace(/[<>&"]/g, '');
+  return exitPage(
+    "Cette page n'est pas accessible à ce compte",
+    `Vous la consultez en tant que ${safeEmail}. Ce compte n'a pas le droit nécessaire à cet écran.`,
+    '/',
+    'Retour au tableau de bord'
+  );
+}
+
+/**
+ * Une adresse sans compte n'a pas de tableau de bord où revenir : la seule sortie est de
+ * fermer la session Cloudflare Access, pour se reconnecter avec une autre adresse.
+ */
+function unknownAccountPage(email: string): Response {
+  const safeEmail = email.replace(/[<>&"]/g, '');
+  return exitPage(
+    'Aucun compte pour cette adresse',
+    `Vous êtes connecté en tant que ${safeEmail}, qui n'a pas de compte sur cette administration.`,
+    '/cdn-cgi/access/logout',
+    'Se connecter avec une autre adresse'
+  );
+}
+
+function exitPage(title: string, message: string, href: string, label: string): Response {
   return new Response(
     `<!doctype html><html lang="fr"><head><meta charset="utf-8">` +
       `<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">` +
-      `<title>Accès refusé</title>` +
+      `<title>${title}</title>` +
       `<style>body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;` +
       `font-family:system-ui,sans-serif;background:#faf9f5;color:#3d3929;padding:2rem;text-align:center}` +
       `main{max-width:32rem}h1{font-size:1.25rem;margin:0 0 .75rem}p{margin:0 0 1.5rem;line-height:1.5;color:#6e6d68}` +
@@ -123,10 +146,9 @@ function refusedPage(email: string): Response {
       `text-decoration:none;font-weight:600}` +
       `@media(prefers-color-scheme:dark){body{background:#262624;color:#f1f1ef}p{color:#b7b5a9}}</style>` +
       `</head><body><main>` +
-      `<h1>Cette page n'est pas accessible à ce compte</h1>` +
-      `<p>Vous la consultez en tant que ${safeEmail}. Ce compte n'a pas le droit ` +
-      `nécessaire à cet écran.</p>` +
-      `<a href="/">Retour au tableau de bord</a>` +
+      `<h1>${title}</h1>` +
+      `<p>${message}</p>` +
+      `<a href="${href}">${label}</a>` +
       `</main></body></html>`,
     { status: 403, headers: { 'Content-Type': 'text/html; charset=utf-8' } }
   );
@@ -212,13 +234,14 @@ export const handleAuth = async (context: APIContext, next: MiddlewareNext) => {
   if (!actor) {
     // L'API a répondu, et cette adresse n'a pas de compte : même message qu'en
     // production, en développement comme ailleurs.
-    return new Response(
-      import.meta.env.DEV
-        ? `Accès refusé. Aucun compte pour ${email}.\n\n` +
-          `Utilisez une adresse déjà enregistrée (DEV_EMAIL=...), ou créez ce compte.`
-        : 'Accès refusé. Compte non configuré.',
-      { status: 403 }
-    );
+    if (import.meta.env.DEV) {
+      return new Response(
+        `Accès refusé. Aucun compte pour ${email}.\n\n` +
+          `Utilisez une adresse déjà enregistrée (DEV_EMAIL=...), ou créez ce compte.`,
+        { status: 403 }
+      );
+    }
+    return unknownAccountPage(email);
   }
 
   const realActor = actor;

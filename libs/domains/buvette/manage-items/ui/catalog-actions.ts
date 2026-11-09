@@ -7,16 +7,17 @@ export interface CatalogItem {
   id: number;
   name: string;
   priceCents: number;
-  accountingCategoryId: number;
   active: boolean;
   sortOrder: number;
+  icon: string | null;
 }
 
 export interface CatalogItemValues {
   name: string;
   priceEuros: string;
-  accountingCategoryId: number;
   active: boolean;
+  /** Vide : deviné d'après le nom. */
+  icon: string;
 }
 
 export { parseEuros };
@@ -33,7 +34,6 @@ async function ecrire(payload: Record<string, unknown>, echec: string): Promise<
 export function validateItem(values: CatalogItemValues): string | null {
   if (!values.name.trim()) return 'Donnez un nom à cet article.';
   if (parseEuros(values.priceEuros) === null) return 'Saisissez un prix en euros, par exemple 2,50.';
-  if (!values.accountingCategoryId) return 'Choisissez une catégorie comptable.';
   return null;
 }
 
@@ -44,9 +44,9 @@ export function saveItem(id: number | null, values: CatalogItemValues, sortOrder
       ...(id === null ? {} : { id }),
       name: values.name.trim(),
       priceCents: parseEuros(values.priceEuros),
-      accountingCategoryId: values.accountingCategoryId,
       active: values.active,
-      sortOrder
+      sortOrder,
+      icon: values.icon || null
     },
     "L'article n'a pas pu être enregistré."
   );

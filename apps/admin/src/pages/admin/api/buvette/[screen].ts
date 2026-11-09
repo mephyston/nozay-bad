@@ -7,9 +7,9 @@ function article(data: any) {
   return {
     name: data.name,
     priceCents: data.priceCents,
-    accountingCategoryId: data.accountingCategoryId,
     active: data.active,
-    sortOrder: data.sortOrder
+    sortOrder: data.sortOrder,
+    icon: data.icon ?? null
   };
 }
 
@@ -25,12 +25,35 @@ export const ECRANS: Record<string, Ecran> = {
       }
     }
   },
+  history: {
+    feature: 'buvette',
+    permission: 'buvette:sessions:read',
+    charger: async (lire) => {
+      const [history, categories] = await Promise.all([lire('/buvette/sessions/history'), lire('/accounting/categories')]);
+      return { sessions: history?.sessions ?? [], items: history?.items ?? [], categories: categories ?? [] };
+    },
+    ecritures: {}
+  },
+  'session-report': {
+    feature: 'buvette',
+    permission: 'buvette:sessions:read',
+    charger: async (lire, _locals, params) => {
+      const id = identifiant(params.get('id'), 'de session');
+      const [report, categories] = await Promise.all([lire(`/buvette/sessions/${id}/report`), lire('/accounting/categories')]);
+      return { report, categories: categories ?? [] };
+    },
+    ecritures: {}
+  },
   session: {
     feature: 'buvette',
     permission: 'buvette:sessions:read',
     charger: async (lire, locals) => ({
       current: (await lire('/buvette/sessions/current')) ?? null,
+      categories: ((await lire('/accounting/categories')) ?? []).filter((c: any) => c.active !== false),
       cardsDebtCents: (await lire('/buvette/cards/debt'))?.cardsDebtCents ?? 0,
+      // Jamais « actif » par défaut : une lecture ratée s'affiche comme telle.
+      cardPaymentsEnabled: (await lire('/buvette/settings/card-payments'))?.cardPaymentsEnabled ?? null,
+      canSwitchCard: can(locals, 'buvette:sessions:write'),
       canOpen: can(locals, 'buvette:sessions:write'),
       canClose: can(locals, 'buvette:sessions:close'),
       canAbandon: can(locals, 'buvette:sales:write')
@@ -38,7 +61,19 @@ export const ECRANS: Record<string, Ecran> = {
     ecritures: {
       open_session: {
         permission: 'buvette:sessions:write',
-        route: (data) => ({ chemin: '/buvette/sessions', method: 'POST', body: { openingFloatCents: data.openingFloatCents } })
+        route: (data) => ({
+          chemin: '/buvette/sessions',
+          method: 'POST',
+          body: { openingFloatCents: data.openingFloatCents, accountingCategoryId: data.accountingCategoryId }
+        })
+      },
+      set_card_payments: {
+        permission: 'buvette:sessions:write',
+        route: (data) => ({ chemin: '/buvette/settings/card-payments', method: 'PUT', body: { enabled: data.enabled === true } })
+      },
+      set_category: {
+        permission: 'buvette:sessions:write',
+        route: (data) => ({ chemin: '/buvette/sessions/current/category', method: 'PUT', body: { accountingCategoryId: data.accountingCategoryId } })
       },
       close_session: {
         permission: 'buvette:sessions:close',
@@ -58,14 +93,9 @@ export const ECRANS: Record<string, Ecran> = {
     feature: 'buvette',
     permission: 'buvette:items:read',
     charger: async (lire, locals) => {
-      const [items, categories, settings] = await Promise.all([
-        lire('/buvette/items'),
-        lire('/accounting/categories'),
-        lire('/buvette/settings')
-      ]);
+      const [items, settings] = await Promise.all([lire('/buvette/items'), lire('/buvette/settings')]);
       return {
         items: items ?? [],
-        categories: categories ?? [],
         settings: settings ?? {},
         canWrite: can(locals, 'buvette:items:write')
       };

@@ -91,8 +91,10 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: 'Buvette',
     feature: 'buvette',
+    beta: true,
     items: [
-      { name: 'Session de caisse', icon: 'Coins', href: '/admin/buvette/session', permission: 'buvette:sessions:read', keywords: ['buvette', 'ouvrir', 'cloturer', 'fond de caisse', 'especes', 'comptage'] },
+      { name: 'Session de caisse', icon: 'Coins', href: '/admin/buvette/session', permission: 'buvette:sessions:read', keywords: ['buvette', 'ouvrir', 'cloturer', 'fond de caisse', 'especes', 'comptage', 'suspendre la cb', 'urgence'] },
+      { name: 'Historique des sessions', icon: 'History', href: '/admin/buvette/history', permission: 'buvette:sessions:read', keywords: ['buvette', 'historique', 'ventes', 'rapport', 'articles', 'transactions', 'session'] },
       { name: 'Cartes papier', icon: 'Ticket', href: '/admin/buvette/paper-cards', permission: 'buvette:cards:write', keywords: ['buvette', 'carte', 'papier', 'imprimer', 'enfant', 'qr'] },
       { name: 'Catalogue buvette', icon: 'Package', href: '/admin/buvette/catalog', permission: 'buvette:items:read', keywords: ['buvette', 'caisse', 'article', 'cafe', 'sandwich', 'carte', 'plafond'] }
     ]
@@ -114,7 +116,6 @@ export const NAV_GROUPS: NavGroup[] = [
     // bien ce que le site affiche.
     label: 'Jeu libre',
     feature: 'open_play',
-    beta: true,
     items: [
       { name: 'Séances', icon: 'DoorOpen', href: '/admin/website/jeu-libre', permission: 'schedules:open-play:read', keywords: ['jeu libre', 'ouverture', 'gymnase', 'inscription'] },
       { name: 'Ouvreurs', icon: 'KeyRound', href: '/admin/website/jeu-libre/ouvreurs', permission: 'schedules:open-play:read', keywords: ['jeu libre', 'cle', 'responsable', 'ouverture'] }
@@ -133,7 +134,6 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: 'Interclubs',
     feature: 'teams',
-    beta: true,
     items: [
       { name: 'Équipes', icon: 'Trophy', href: '/admin/teams', permission: 'teams:teams:read', keywords: ['interclubs', 'championnat', 'equipe', 'capitaine', 'joueurs'] },
       { name: 'Contrôle des journées', icon: 'ShieldCheck', href: '/admin/teams/journees', permission: 'teams:lineups:read', keywords: ['interclubs', 'journee', 'composition', 'feuille de match', 'controle'] },

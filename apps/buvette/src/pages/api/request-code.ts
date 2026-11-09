@@ -12,9 +12,11 @@ export const POST: APIRoute = async ({ request, locals }) => {
   const secret = sessionSecret(env);
   if (!secret) return json({ ok: false, error: 'Erreur de configuration serveur.' }, 500);
 
-  const body = (await request.json().catch(() => null)) as { email?: string; turnstileToken?: string } | null;
+  const body = (await request.json().catch(() => null)) as { email?: string; turnstileToken?: string; acceptTerms?: boolean } | null;
   const email = (body?.email || '').trim().toLowerCase();
   if (!EMAIL.test(email) || email.length > 254) return json({ ok: false, error: 'Adresse invalide.' }, 400);
+  // Sans acceptation, pas de code : la carte ne s'ouvre qu'avec les conditions acceptées.
+  if (body?.acceptTerms !== true) return json({ ok: false, error: "Acceptez les conditions d'utilisation pour continuer." }, 400);
 
   const ip = request.headers.get('CF-Connecting-IP') || '127.0.0.1';
   const devBypass = IS_DEV && env.AUTH_RATE_LIMIT_DISABLED === 'true';

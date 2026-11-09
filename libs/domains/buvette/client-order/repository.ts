@@ -5,7 +5,7 @@ import { buvetteItemsTable, buvetteOrderLinesTable, buvetteOrdersTable } from '.
 export class ClientOrderRepository {
   activeItems(db: DbOrTx) {
     return db
-      .select({ id: buvetteItemsTable.id, name: buvetteItemsTable.name, priceCents: buvetteItemsTable.priceCents })
+      .select({ id: buvetteItemsTable.id, name: buvetteItemsTable.name, priceCents: buvetteItemsTable.priceCents, icon: buvetteItemsTable.icon })
       .from(buvetteItemsTable)
       .where(eq(buvetteItemsTable.active, true))
       .orderBy(asc(buvetteItemsTable.sortOrder), asc(buvetteItemsTable.name))
