@@ -1,5 +1,7 @@
 import { defineMiddleware } from 'astro:middleware';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
+import { loadClubContext } from '@nba/club/context';
+import { buvetteClosedResponse } from '@nba/buvette-ui';
 import { applySecurityHeaders } from './lib/security';
 import { isSameOrigin, IS_DEV, json, resolveEnv } from './lib/http';
 
@@ -44,5 +46,17 @@ export const onRequest = defineMiddleware(async (context, next) => {
   const email = await resolveEmail(context.request, env);
   if (!email) return applySecurityHeaders(json({ success: false, error: 'Accès non autorisé.' }, 401));
   context.locals.email = email;
+
+  // Éteinte par le club, la caisse le dit, au lieu d'un « ressource introuvable » sur chaque
+  // appel. Le contexte du club est gardé une minute : une lecture par minute, pas par requête.
+  const club = await loadClubContext(env as any, 'storefront');
+  if (club.features.buvette === false) {
+    return applySecurityHeaders(buvetteClosedResponse({
+      title: 'La caisse est désactivée',
+      message: 'La buvette a été désactivée dans les réglages du club.',
+      hint: "Un membre du bureau peut la réactiver dans l'admin : Réglages du club, puis Fonctionnalités.",
+      clubName: club.settings.name
+    }, context.request));
+  }
   return applySecurityHeaders(await next());
 });

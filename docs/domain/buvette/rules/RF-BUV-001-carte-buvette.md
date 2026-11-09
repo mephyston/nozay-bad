@@ -40,6 +40,8 @@ N'importe qui obtient une carte buvette en moins d'une minute, sans mot de passe
 
 **Un plafond de solde.** Le club le règle ; 100 € par défaut. Une recharge qui le dépasserait est refusée.
 
+**Buvette éteinte par le club.** Quand le club désactive la buvette dans ses fonctionnalités, l'app des clients affiche « La buvette est fermée » et rappelle que la carte et son solde sont conservés. La caisse affiche « La caisse est désactivée » et indique où la réactiver. Les deux répondent 503 (fermée pour le moment) et non 404, et les soldes ne bougent pas.
+
 **Une carte à solde nul peut être supprimée** à la demande du client. L'adresse est effacée, les appareils sont fermés et l'historique comptable est conservé. La même adresse peut ensuite ouvrir une nouvelle carte.
 
 ---

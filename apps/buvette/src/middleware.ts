@@ -1,5 +1,6 @@
 import { defineMiddleware } from 'astro:middleware';
 import { loadClubContext } from '@nba/club/context';
+import { buvetteClosedResponse } from '@nba/buvette-ui';
 import { applySecurityHeaders } from './lib/security';
 import { isSameOrigin, json, resolveEnv, sessionSecret } from './lib/http';
 import { CARD_COOKIE, readCookie, verifyCardSession } from './lib/session';
@@ -16,7 +17,12 @@ export const onRequest = defineMiddleware(async (context, next) => {
   context.locals.club = await loadClubContext(env as any, 'storefront');
   // Éteinte par le club, la buvette n'existe pas. Les soldes restent dus : ils ne bougent pas.
   if (context.locals.club.features.buvette === false) {
-    return applySecurityHeaders(new Response('Introuvable', { status: 404 }));
+    return applySecurityHeaders(buvetteClosedResponse({
+      title: 'La buvette est fermée',
+      message: "Elle n'est pas ouverte en ce moment.",
+      hint: 'Votre carte et son solde sont conservés : vous les retrouverez à la réouverture.',
+      clubName: context.locals.club.settings.name
+    }, context.request));
   }
 
   const secret = sessionSecret(env);

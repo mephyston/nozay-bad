@@ -6,3 +6,4 @@ export { default as SessionHistory } from '../session-history/ui/SessionHistory.
 export { default as SessionReportView } from '../session-history/ui/SessionReportView.svelte';
 export { default as BuvetteSession } from '../get-current-session/ui/BuvetteSession.svelte';
 export { default as CardPaymentsSwitch } from '../manage-settings/ui/CardPaymentsSwitch.svelte';
+export { buvetteClosedResponse } from './closed-page';
