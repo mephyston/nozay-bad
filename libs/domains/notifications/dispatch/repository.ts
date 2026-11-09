@@ -1,4 +1,4 @@
-import { and, eq, inArray, lt, sql } from 'drizzle-orm';
+import { and, eq, inArray, lt, or, sql } from 'drizzle-orm';
 import { type DbOrTx } from '@nba/db';
 import { pushDeliveriesTable, pushMessagesTable, pushSubscriptionsTable } from '../shared/schema';
 
@@ -16,12 +16,38 @@ export interface PendingDelivery {
 
 export class DispatchRepository {
   /**
-   * Livraisons à traiter, jointes à leur abonnement et à leur message.
+   * Réserve un lot de livraisons pour ce passage, puis les rend jointes à leur
+   * abonnement et à leur message.
    *
-   * Une livraison dont l'abonnement a disparu entre-temps est écartée par la
-   * jointure interne ; elle sera nettoyée par `failOrphans`.
+   * Deux drains tournent parfois en même temps (à l'heure pile, le cron horaire et
+   * celui des cinq minutes ; ou le bouton de l'admin). Sans réservation, chacun lisait
+   * les mêmes lignes `pending` et envoyait le message : les adhérents le recevaient
+   * en double (09/11/2026). Le `UPDATE … RETURNING` est une seule instruction, que D1
+   * sérialise : une ligne n'est rendue qu'à un seul passage.
+   *
+   * Une ligne restée `sending` au-delà de `staleBefore` (Worker coupé en route) est
+   * reprise. Une livraison dont l'abonnement a disparu n'est pas réservée ; elle sera
+   * soldée par `failOrphans`.
    */
-  async findPending(db: DbOrTx, limit: number): Promise<PendingDelivery[]> {
+  async claimPending(db: DbOrTx, limit: number, now: Date, staleBefore: Date): Promise<PendingDelivery[]> {
+    const claimable = or(
+      eq(pushDeliveriesTable.status, 'pending'),
+      and(eq(pushDeliveriesTable.status, 'sending'), lt(pushDeliveriesTable.updatedAt, staleBefore))
+    );
+    const candidates = db
+      .select({ id: pushDeliveriesTable.id })
+      .from(pushDeliveriesTable)
+      .innerJoin(pushSubscriptionsTable, eq(pushDeliveriesTable.subscriptionId, pushSubscriptionsTable.id))
+      .where(claimable)
+      .orderBy(pushDeliveriesTable.id)
+      .limit(limit);
+    const claimed = await db
+      .update(pushDeliveriesTable)
+      .set({ status: 'sending', updatedAt: now })
+      .where(and(inArray(pushDeliveriesTable.id, candidates), claimable))
+      .returning({ id: pushDeliveriesTable.id });
+    if (claimed.length === 0) return [];
+
     const rows = await db
       .select({
         deliveryId: pushDeliveriesTable.id,
@@ -37,18 +63,23 @@ export class DispatchRepository {
       .from(pushDeliveriesTable)
       .innerJoin(pushSubscriptionsTable, eq(pushDeliveriesTable.subscriptionId, pushSubscriptionsTable.id))
       .innerJoin(pushMessagesTable, eq(pushDeliveriesTable.messageId, pushMessagesTable.id))
-      .where(eq(pushDeliveriesTable.status, 'pending'))
+      .where(
+        inArray(
+          pushDeliveriesTable.id,
+          claimed.map((row) => row.id)
+        )
+      )
       .orderBy(pushDeliveriesTable.id)
-      .limit(limit)
       .all();
     return rows as PendingDelivery[];
   }
 
+  /** Ce qui reste à envoyer, réservé par un autre passage ou non. */
   async countPending(db: DbOrTx): Promise<number> {
     const row = await db
       .select({ count: sql<number>`count(*)` })
       .from(pushDeliveriesTable)
-      .where(eq(pushDeliveriesTable.status, 'pending'))
+      .where(inArray(pushDeliveriesTable.status, ['pending', 'sending']))
       .get();
     return Number(row?.count ?? 0);
   }
@@ -95,7 +126,7 @@ export class DispatchRepository {
       .where(
         and(
           eq(pushDeliveriesTable.subscriptionId, subscriptionId),
-          eq(pushDeliveriesTable.status, 'pending')
+          inArray(pushDeliveriesTable.status, ['pending', 'sending'])
         )
       )
       .run();
@@ -111,7 +142,7 @@ export class DispatchRepository {
 
   /**
    * Solde les livraisons dont l'abonnement n'existe plus : la jointure interne de
-   * `findPending` les ignore, elles resteraient sinon `pending` pour toujours.
+   * `claimPending` les ignore, elles resteraient sinon en file pour toujours.
    */
   async failOrphans(db: DbOrTx, now: Date): Promise<void> {
     await db
@@ -119,7 +150,7 @@ export class DispatchRepository {
       .set({ status: 'failed', lastError: 'Abonnement supprimé', updatedAt: now })
       .where(
         and(
-          eq(pushDeliveriesTable.status, 'pending'),
+          inArray(pushDeliveriesTable.status, ['pending', 'sending']),
           sql`${pushDeliveriesTable.subscriptionId} not in (select id from ${pushSubscriptionsTable})`
         )
       )

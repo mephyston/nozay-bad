@@ -87,7 +87,8 @@ export const pushDeliveriesTable = sqliteTable(
     id: integer('id').primaryKey({ autoIncrement: true }),
     messageId: integer('message_id').notNull(),
     subscriptionId: integer('subscription_id').notNull(),
-    status: text('status', { enum: ['pending', 'sent', 'failed'] })
+    // `sending` : réservée par un passage du drain, le temps de l'envoi (cf. `claimPending`).
+    status: text('status', { enum: ['pending', 'sending', 'sent', 'failed'] })
       .notNull()
       .default('pending'),
     attempts: integer('attempts').notNull().default(0),

@@ -1,4 +1,4 @@
-import { desc, eq, sql } from 'drizzle-orm';
+import { desc, eq, inArray, sql } from 'drizzle-orm';
 import { type DbOrTx } from '@nba/db';
 import { pushDeliveriesTable, pushMessagesTable, pushSubscriptionsTable } from '../shared/schema';
 
@@ -41,7 +41,7 @@ export class StatsRepository {
     const pending = await db
       .select({ count: sql<number>`count(*)` })
       .from(pushDeliveriesTable)
-      .where(eq(pushDeliveriesTable.status, 'pending'))
+      .where(inArray(pushDeliveriesTable.status, ['pending', 'sending']))
       .get();
 
     return {
@@ -64,7 +64,7 @@ export class StatsRepository {
         createdAt: pushMessagesTable.createdAt,
         sent: sql<number>`sum(case when ${pushDeliveriesTable.status} = 'sent' then 1 else 0 end)`,
         failed: sql<number>`sum(case when ${pushDeliveriesTable.status} = 'failed' then 1 else 0 end)`,
-        pending: sql<number>`sum(case when ${pushDeliveriesTable.status} = 'pending' then 1 else 0 end)`
+        pending: sql<number>`sum(case when ${pushDeliveriesTable.status} in ('pending', 'sending') then 1 else 0 end)`
       })
       .from(pushMessagesTable)
       .leftJoin(pushDeliveriesTable, eq(pushDeliveriesTable.messageId, pushMessagesTable.id))

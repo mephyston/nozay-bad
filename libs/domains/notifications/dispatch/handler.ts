@@ -10,6 +10,11 @@ import type { DispatchInput, DispatchOutput } from './dto';
 const DEFAULT_LIMIT = 40;
 /** Au-delà, la livraison est abandonnée : l'endpoint est durablement injoignable. */
 const MAX_ATTEMPTS = 3;
+/**
+ * Durée de la réservation d'un lot. Un passage envoie ses 40 livraisons en quelques
+ * secondes ; au-delà de dix minutes, il est mort en route et le lot est repris.
+ */
+const CLAIM_LEASE_MS = 10 * 60 * 1000;
 
 /**
  * Draine la file d'envoi. Appelé par le Cron Trigger de `nba-api`, et manuellement
@@ -24,7 +29,7 @@ export async function dispatchPendingNotifications(
   const repo = new DispatchRepository();
   const limit = Math.min(Math.max(input.limit ?? DEFAULT_LIMIT, 1), DEFAULT_LIMIT);
 
-  const pending = await repo.findPending(db, limit);
+  const pending = await repo.claimPending(db, limit, now, new Date(now.getTime() - CLAIM_LEASE_MS));
   const sentIds: number[] = [];
   let failed = 0;
   let pruned = 0;

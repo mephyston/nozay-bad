@@ -107,6 +107,36 @@ describe('dispatchPendingNotifications', () => {
     expect(result.remaining).toBe(5);
   });
 
+  it("n'envoie qu'une fois quand deux passages drainent en même temps", async () => {
+    await queueFor(['https://push.example.com/a', 'https://push.example.com/b']);
+    fetchMock.mockResolvedValue(new Response(null, { status: 201 }));
+
+    const [first, second] = await Promise.all([
+      dispatchPendingNotifications(db, vapid),
+      dispatchPendingNotifications(db, vapid)
+    ]);
+
+    expect(first.sent + second.sent).toBe(2);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    const deliveries = await db.select().from(pushDeliveriesTable).all();
+    expect(deliveries.every((d) => d.status === 'sent' && d.attempts === 1)).toBe(true);
+  });
+
+  it('reprend un lot réservé par un passage mort en route, passé le délai', async () => {
+    await queueFor(['https://push.example.com/a']);
+    const claimedAt = new Date('2026-08-30T12:00:00Z');
+    await db.update(pushDeliveriesTable).set({ status: 'sending', updatedAt: claimedAt }).run();
+    fetchMock.mockResolvedValue(new Response(null, { status: 201 }));
+
+    const tooSoon = await dispatchPendingNotifications(db, vapid, {}, new Date(claimedAt.getTime() + 60_000));
+    expect(tooSoon.sent).toBe(0);
+    expect(tooSoon.remaining).toBe(1);
+
+    const later = await dispatchPendingNotifications(db, vapid, {}, new Date(claimedAt.getTime() + 11 * 60_000));
+    expect(later.sent).toBe(1);
+    expect(later.remaining).toBe(0);
+  });
+
   it("solde les livraisons dont l'abonnement a disparu", async () => {
     await queueFor(['https://push.example.com/a']);
     await db.delete(pushSubscriptionsTable).run();
