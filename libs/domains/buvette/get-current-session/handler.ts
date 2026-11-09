@@ -1,5 +1,5 @@
 import { type Db } from '@nba/db';
-import { getExpectedCashCents, getOpenSession } from '../shared/queries.repository';
+import { cardPaymentsEnabled, getExpectedCashCents, getOpenSession } from '../shared/queries.repository';
 import { SumUpRefundsRepository } from '../shared/sumup-refunds.repository';
 import { GetCurrentSessionRepository } from './repository';
 import type { CurrentSession } from './dto';
@@ -14,6 +14,7 @@ export async function getCurrentSession(db: Db): Promise<CurrentSession | null> 
   return {
     session,
     expectedCashCents: await getExpectedCashCents(db, session.id, session.openingFloatCents),
+    cardPaymentsEnabled: await cardPaymentsEnabled(db),
     prepaidCents: Number(totals?.prepaidCents ?? 0),
     salesCount: Number(totals?.salesCount ?? 0),
     cardCents: Number(totals?.cardCents ?? 0),

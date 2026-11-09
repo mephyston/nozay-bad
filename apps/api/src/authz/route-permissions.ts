@@ -54,6 +54,9 @@ export const ROUTE_PERMISSIONS: RouteRule[] = [
   { method: 'PUT', path: '/buvette/items/:id', permission: 'buvette:items:write', feature: 'buvette' },
   { method: 'GET', path: '/buvette/settings', permission: 'buvette:settings:read', feature: 'buvette' },
   { method: 'PUT', path: '/buvette/settings', permission: 'buvette:settings:write', feature: 'buvette' },
+  // L'interrupteur d'urgence de la CB : à la main de qui tient la session, pas seulement du trésorier.
+  { method: 'GET', path: '/buvette/settings/card-payments', permission: 'buvette:sessions:read', feature: 'buvette' },
+  { method: 'PUT', path: '/buvette/settings/card-payments', permission: 'buvette:sessions:write', feature: 'buvette' },
   { method: 'GET', path: '/buvette/sessions/current', permission: 'buvette:sessions:read', callers: ['caisse'], feature: 'buvette' },
   // L'ouverture et la clôture restent au bureau, dans l'admin : pas d'appelant `caisse` ici.
   { method: 'GET', path: '/buvette/sessions/current/sales', permission: 'buvette:sessions:read', callers: ['caisse'], feature: 'buvette' },

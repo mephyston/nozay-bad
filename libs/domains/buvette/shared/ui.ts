@@ -5,3 +5,4 @@ export { default as PaperCardsPrinter } from '../paper-cards/ui/PaperCardsPrinte
 export { default as SessionHistory } from '../session-history/ui/SessionHistory.svelte';
 export { default as SessionReportView } from '../session-history/ui/SessionReportView.svelte';
 export { default as BuvetteSession } from '../get-current-session/ui/BuvetteSession.svelte';
+export { default as CardPaymentsSwitch } from '../manage-settings/ui/CardPaymentsSwitch.svelte';

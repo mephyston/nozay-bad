@@ -51,6 +51,12 @@ La vente reste en attente tant que SumUp n'a pas confirmé le paiement, et la ca
 
 Si la caisse signale un **paiement CB arrivé sur une vente terminée**, de l'argent a été pris pour une vente abandonnée ou avec un mauvais montant. Touchez **Rembourser** : SumUp le rend sur la carte bancaire du client, sans passer par l'application. Si le remboursement a déjà été fait dans l'application, la caisse le constate et n'envoie rien. **Remboursement en cours** veut dire que SumUp n'a pas encore répondu : ne le refaites pas, la caisse le revérifie toute seule.
 
+## Suspendre la CB en urgence
+
+Si la CB se comporte mal (paiements en double, SumUp qui débloque, montant faux), ouvrez **Session de caisse** dans l'admin et touchez **Suspendre la CB**, puis confirmez. Toutes les caisses cessent aussitôt de proposer la CB, sans fermer la caisse : les bénévoles continuent en espèces et par carte buvette. Une caisse déjà ouverte sur l'écran de paiement voit la CB refusée avec un message. Pendant la suspension, le solde d'une carte se rend en espèces, et un remboursement CB attend. Les paiements déjà lancés restent vérifiés.
+
+La suspension tient après la clôture : pensez à **Rétablir la CB** une fois le problème réglé.
+
 ## Rembourser une vente
 
 En cas d'erreur, ouvrez l'onglet **Ventes** de la caisse, touchez la vente, puis **Rembourser cette vente**. Un écran annonce d'abord si vous aurez des espèces à remettre, puis la caisse vous demande de confirmer que vous les avez remises : la part payée par carte y revient, ou se rend en espèces si le client a supprimé sa carte ; les espèces se rendent ; une part payée en CB est remboursée par SumUp sur la carte bancaire du client. Si SumUp refuse, la caisse vous dit de le faire dans l'application. Le détail d'une vente montre son numéro de transaction SumUp.

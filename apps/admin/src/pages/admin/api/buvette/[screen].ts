@@ -51,6 +51,9 @@ export const ECRANS: Record<string, Ecran> = {
       current: (await lire('/buvette/sessions/current')) ?? null,
       categories: ((await lire('/accounting/categories')) ?? []).filter((c: any) => c.active !== false),
       cardsDebtCents: (await lire('/buvette/cards/debt'))?.cardsDebtCents ?? 0,
+      // Jamais « actif » par défaut : une lecture ratée s'affiche comme telle.
+      cardPaymentsEnabled: (await lire('/buvette/settings/card-payments'))?.cardPaymentsEnabled ?? null,
+      canSwitchCard: can(locals, 'buvette:sessions:write'),
       canOpen: can(locals, 'buvette:sessions:write'),
       canClose: can(locals, 'buvette:sessions:close'),
       canAbandon: can(locals, 'buvette:sales:write')
@@ -63,6 +66,10 @@ export const ECRANS: Record<string, Ecran> = {
           method: 'POST',
           body: { openingFloatCents: data.openingFloatCents, accountingCategoryId: data.accountingCategoryId }
         })
+      },
+      set_card_payments: {
+        permission: 'buvette:sessions:write',
+        route: (data) => ({ chemin: '/buvette/settings/card-payments', method: 'PUT', body: { enabled: data.enabled === true } })
       },
       set_category: {
         permission: 'buvette:sessions:write',

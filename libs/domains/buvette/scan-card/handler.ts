@@ -2,7 +2,7 @@ import { AppError, type Db } from '@nba/db';
 import { findDeviceForCode, readCardCode, signCardToken, verifyCardToken } from '../shared/card-tokens';
 import { maskEmail } from '../shared/mask';
 import { closedPaperMessage, hashPaperCode, PAPER_DEVICE, paperLabel, readPaperCode } from '../shared/paper-card';
-import { availableCents, cardLabel, getActiveDevice, getCard, getPendingOrderId } from '../shared/queries.repository';
+import { availableCents, cardLabel, cardPaymentsEnabled, getActiveDevice, getCard, getPendingOrderId } from '../shared/queries.repository';
 import { planCardRefund } from '../shared/card-refund-plan';
 import { SumUpRefundsRepository } from '../shared/sumup-refunds.repository';
 import { ScanCardRepository } from './repository';
@@ -14,6 +14,8 @@ export { maskEmail };
 async function cbRefundable(db: Db, card: { id: number; balanceCents: number; reservedCents: number }): Promise<number> {
   // Le remboursement refuse une carte dont une vente attend sa CB : rien à prévoir alors.
   if (card.balanceCents <= 0 || card.reservedCents > 0) return 0;
+  // CB coupée par le bureau : le remboursement sortira tout en espèces.
+  if (!(await cardPaymentsEnabled(db))) return 0;
   const cardId = card.id;
   const balanceCents = card.balanceCents;
   const plan = planCardRefund(balanceCents, await new SumUpRefundsRepository().cardRechargePayments(db, cardId));

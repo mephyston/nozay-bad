@@ -1,6 +1,6 @@
 import { AppError, type Db } from '@nba/db';
 import { verifyCardToken } from '../shared/card-tokens';
-import { assertScannedCardUsable, getCard, getExpectedCashCents, getOpenSession } from '../shared/queries.repository';
+import { assertScannedCardUsable, cardPaymentsEnabled, getCard, getExpectedCashCents, getOpenSession } from '../shared/queries.repository';
 import { planCardRefund } from '../shared/card-refund-plan';
 import type { SumUpRefunds } from '../shared/sumup-refunds';
 import { SumUpRefundsRepository } from '../shared/sumup-refunds.repository';
@@ -87,7 +87,8 @@ export async function refundCard(db: Db, secret: string, input: RefundCardInput,
     if (card.reservedCents > 0) throw new AppError('Une vente est en cours sur cette carte : terminez-la avant de rembourser.', 409);
     balance = card.balanceCents;
     if (balance <= 0) throw new AppError("Il n'y a rien à rembourser sur cette carte.", 400);
-    const plan = sumup ? planCardRefund(balance, await refunds.cardRechargePayments(db, card.id)) : [];
+    // CB coupée par le bureau : tout le solde sort en espèces.
+    const plan = sumup && (await cardPaymentsEnabled(db)) ? planCardRefund(balance, await refunds.cardRechargePayments(db, card.id)) : [];
     const expected = await getExpectedCashCents(db, session.id, session.openingFloatCents);
     if (expected < balance - plan.reduce((sum, p) => sum + p.amountCents, 0)) throw new AppError("Il n'y a pas assez d'espèces dans la caisse pour ce remboursement.", 409);
     if (plan.length) {
@@ -108,14 +109,18 @@ export async function refundCard(db: Db, secret: string, input: RefundCardInput,
   // SumUp rembourse. Un refus se rend en espèces ; un doute reste sur la CB, relu par le cron.
   const sent: (Part & { status: 'done' | 'pending' })[] = [];
   const cashFallbacks: RefundCardOutput['cashFallbacks'] = [];
+  // CB coupée par le bureau : une part jamais envoyée sort en espèces ; une part déjà envoyée est
+  // seulement relue (`mayRefund` relit l'interrupteur juste avant tout envoi).
+  const mayRefund = () => cardPaymentsEnabled(db);
   for (const part of parts) {
     if (part.status === 'done') { sent.push({ ...part, status: 'done' }); continue; }
     if (part.status === 'pending' && part.requestedAt && now.getTime() - part.requestedAt.getTime() < REFUND_SETTLE_MS) {
       throw new AppError('SumUp traite encore ce remboursement : réessayez dans une minute.', 409);
     }
-    const run = part.status === 'pending' && sumup
-      ? await sendClaimedRefund(db, sumup, refunds, { attemptId: part.attemptId, foreignTxId: part.foreignTxId, requestedCents: part.amountCents, fresh: !part.requestedAt, now })
-      : { status: 'failed' as const, amountCents: part.amountCents, error: 'SumUp indisponible.' };
+    const send = part.status === 'pending' && sumup && (part.requestedAt || (await mayRefund()));
+    const run = send
+      ? await sendClaimedRefund(db, sumup!, refunds, { attemptId: part.attemptId, foreignTxId: part.foreignTxId, requestedCents: part.amountCents, fresh: !part.requestedAt, now, mayRefund })
+      : { status: 'failed' as const, amountCents: part.amountCents, error: sumup ? 'CB suspendue par le bureau.' : 'SumUp indisponible.' };
     if (run.status === 'failed') {
       await refunds.markCash(db, part.attemptId, run.error);
       cashFallbacks.push({ amountCents: part.amountCents, reason: run.error ?? 'SumUp a refusé.' });

@@ -90,6 +90,8 @@
   let current = $state<{
     session: { id: number };
     expectedCashCents: number;
+    /** Faux quand le bureau a coupé la CB depuis l'admin. */
+    cardPaymentsEnabled: boolean;
     salesCount: number;
     cardCents: number;
     inProgress: InProgress[];
@@ -155,6 +157,8 @@
       await action();
     } catch (e) {
       error = e instanceof Error ? e.message : 'Une erreur est survenue.';
+      // Le bureau vient de couper la CB : relire la session fait disparaître ses boutons.
+      if (/CB est suspendue/.test(error)) await refresh().catch(() => {});
     } finally {
       busy = false;
     }
@@ -692,10 +696,14 @@
             <QrCode class="size-7" />Carte buvette
           </button>
         {/if}
-        {#if affiliateKey && split.cashCents > 0}
+        {#if affiliateKey && split.cashCents > 0 && current?.cardPaymentsEnabled !== false}
           <button type="button" class="bg-card active:bg-muted flex items-center gap-4 rounded-2xl border p-5 text-lg font-semibold" disabled={busy} onclick={payByCard}>
             <CreditCard class="size-7" />CB
           </button>
+        {:else if affiliateKey && split.cashCents > 0}
+          <p class="text-muted-foreground flex items-center gap-4 rounded-2xl border border-dashed p-5 text-sm">
+            <CreditCard class="size-7 shrink-0" />CB suspendue par le bureau : espèces ou carte buvette.
+          </p>
         {/if}
         {#if split.cashCents > 0}
           <button type="button" class="bg-card active:bg-muted flex items-center gap-4 rounded-2xl border p-5 text-lg font-semibold" disabled={busy} onclick={() => { amountInput = ''; go('cash'); }}>
@@ -739,8 +747,10 @@
       {#if pendingSale.attemptStatus === 'pending' && pendingSale.foreignTxId}
         <Button size="lg" class="h-14 w-full text-lg" disabled={busy} onclick={verifyCard}>Vérifier le paiement</Button>
         <Button variant="outline" class="w-full" onclick={() => launchSumUp(pendingSale.foreignTxId!, pendingSale.cardCents)}>Rouvrir SumUp</Button>
-      {:else}
+      {:else if current?.cardPaymentsEnabled !== false}
         <Button size="lg" class="h-14 w-full text-lg" disabled={busy} onclick={retryCard}>Relancer le paiement CB</Button>
+      {:else}
+        <p class="text-muted-foreground text-center text-sm">CB suspendue par le bureau : abandonnez la vente et encaissez en espèces ou par carte buvette.</p>
       {/if}
       <Button variant="ghost" class="w-full" disabled={busy} onclick={abandonCard}>Abandonner la vente</Button>
     </main>

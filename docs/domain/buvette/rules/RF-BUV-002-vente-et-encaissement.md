@@ -46,6 +46,8 @@ Le bénévole compose un panier et encaisse depuis un seul écran. Le montant pa
 
 **Rembourser une CB.** La caisse rembourse elle-même la part CB, par l'API SumUp, sans passer par l'application : celle d'une vente remboursée, ou un paiement tardif, d'un appui. SumUp ne protège pas contre une demande envoyée deux fois. Une seule demande part donc par paiement, enregistrée avant l'envoi, et ce qui est déjà remboursé sur la transaction est relu avant : un remboursement fait dans l'application est constaté, pas refait. Sans réponse de SumUp, la demande reste « en cours » et n'est jamais renvoyée automatiquement. La vérification périodique la relit, puis la passe en échec si rien n'est remboursé. Un refus ou un échec se relance à la main, ou se fait dans l'application SumUp.
 
+**Interrupteur d'urgence de la CB.** Devant une anomalie (paiements en double, SumUp qui débloque), un responsable de session suspend la CB depuis l'écran de caisse de l'admin, sans fermer la caisse. Toutes les caisses cessent alors de la proposer, et le serveur refuse tout nouvel envoi vers SumUp : paiement, relance d'une tentative, remboursement d'une vente. Le solde d'une carte se rend tout en espèces. Ce qui est déjà en route continue d'être vérifié, et une vente qui attendait sa CB s'abandonne. L'interrupteur survit à la clôture : la session suivante s'ouvre CB suspendue tant qu'il n'a pas été rétabli. Un remboursement refusé pendant la suspension reste à faire, et se relance au rétablissement.
+
 **Application SumUp absente.** Si le lien n'ouvre rien, la tentative reste inconnue de SumUp et le bénévole choisit un autre moyen de paiement.
 
 **Annulation d'une vente réglée en CB.** La carte buvette est recréditée, et la part CB est remboursée par SumUp. Si SumUp refuse, la caisse dit de le faire dans l'application.
@@ -177,4 +179,21 @@ Fonctionnalité: Vente et encaissement
     Étant donné une caisse sur un téléphone sans l'application SumUp
     Quand le lien n'ouvre rien et que SumUp ne connaît pas la tentative après 2 minutes
     Alors le bénévole peut choisir un autre moyen de paiement
+
+  Scénario: CB suspendue par le bureau
+    Étant donné que le bureau a suspendu la CB pendant une session ouverte
+    Quand un bénévole veut encaisser un panier de 20,00 € en CB
+    Alors la caisse ne propose plus la CB
+    Et le serveur refuse le paiement, mais accepte les espèces et la carte buvette
+
+  Scénario: Solde rendu pendant la suspension
+    Étant donné une carte chargée de 20,00 € par CB et la CB suspendue
+    Quand un bénévole rembourse la carte
+    Alors les 20,00 € sont rendus en espèces, sans appel à SumUp
+
+  Scénario: Remboursement CB repoussé au rétablissement
+    Étant donné une vente CB de 20,00 € remboursée pendant la suspension
+    Quand le bénévole demande le remboursement de la part CB
+    Alors il est refusé et reste à faire
+    Et il part par SumUp une fois la CB rétablie
 ```

@@ -3,6 +3,8 @@ import type { BuvetteSession } from '../shared/schema';
 export interface CurrentSession {
   session: BuvetteSession;
   expectedCashCents: number;
+  /** Faux quand le bureau a coupé la CB : la caisse n'en propose plus. */
+  cardPaymentsEnabled: boolean;
   prepaidCents: number;
   salesCount: number;
   cardCents: number;

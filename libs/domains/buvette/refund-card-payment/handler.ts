@@ -2,6 +2,7 @@ import { AppError, type Db } from '@nba/db';
 import type { SumUpRefunds } from '../shared/sumup-refunds';
 import { SumUpRefundsRepository } from '../shared/sumup-refunds.repository';
 import { sendClaimedRefund } from '../shared/sumup-refund-runner';
+import { assertCardPaymentsEnabled, cardPaymentsEnabled } from '../shared/queries.repository';
 import type { CardPaymentRefundOutput } from './dto';
 
 import { REFUND_SETTLE_MS } from '../shared/sumup-refund-runner';
@@ -56,13 +57,17 @@ export async function refundCardPayment(
     return result('pending', requestedCents ?? attempt.amountCents);
   }
 
+  // Rien de neuf ne part vers SumUp quand le bureau a coupé la CB : le paiement reste à rembourser.
+  await assertCardPaymentsEnabled(db, 'La CB est suspendue par le bureau : ce remboursement attendra son rétablissement.');
   const claimed = existing
     ? await repo.reclaim(db, attempt.id, input.requestedByEmail, now)
     : await repo.claim(db, { attemptId: attempt.id, reason: 'payment', requestedCents: null, requestedByEmail: input.requestedByEmail, requestedAt: now });
   if (!claimed) return result('pending', requestedCents ?? attempt.amountCents);
 
   const run = await sendClaimedRefund(db, sumup, repo, {
-    attemptId: attempt.id, foreignTxId: attempt.foreignTxId, requestedCents, fresh: !existing, now
+    attemptId: attempt.id, foreignTxId: attempt.foreignTxId, requestedCents, fresh: !existing, now,
+    // La CB a pu être coupée entre le contrôle ci-dessus et l'envoi.
+    mayRefund: () => cardPaymentsEnabled(db)
   });
   return result(run.status, run.amountCents, run.error);
 }

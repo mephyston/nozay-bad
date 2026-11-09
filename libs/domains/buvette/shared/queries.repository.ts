@@ -17,6 +17,18 @@ export function getSettings(db: DbOrTx) {
   return db.select().from(buvetteSettingsTable).where(eq(buvetteSettingsTable.id, 1)).get();
 }
 
+export const CARD_PAYMENTS_SUSPENDED = 'La CB est suspendue par le bureau : encaissez en espèces ou par carte buvette.';
+
+/** L'interrupteur d'urgence de la CB. Sans ligne de réglages, la CB reste permise. */
+export async function cardPaymentsEnabled(db: DbOrTx): Promise<boolean> {
+  return (await getSettings(db))?.cardPaymentsEnabled !== false;
+}
+
+/** Refuse tout nouvel envoi vers SumUp quand le bureau a coupé la CB. */
+export async function assertCardPaymentsEnabled(db: DbOrTx, message = CARD_PAYMENTS_SUSPENDED): Promise<void> {
+  if (!(await cardPaymentsEnabled(db))) throw new AppError(message, 409);
+}
+
 export function getOpenSession(db: DbOrTx) {
   return db.select().from(buvetteSessionsTable).where(eq(buvetteSessionsTable.status, 'open')).get();
 }
