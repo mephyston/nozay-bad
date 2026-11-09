@@ -50,7 +50,7 @@
     "eslint": "^10.14.0",
     "eslint-plugin-svelte": "^3.23.1",
     "fast-xml-parser": "^5.11.2",
-    "globals": "^17.13.0",
+    "globals": "^17.14.0",
     "jsdom": "^26.0.0",
     "nx": "^23.2.0",
     "react": "^19.3.1",
@@ -66,7 +66,7 @@
     "workbox-core": "^7.4.1",
     "workbox-precaching": "^7.4.1",
     "workbox-window": "^7.4.1",
-    "wrangler": "^4.156.0"
+    "wrangler": "^4.156.1"
   },
   "overrides": {
     "devalue": "^5.9.3",
@@ -128,12 +128,12 @@
     "@tailwindcss/typography": "^0.5.20",
     "@tailwindcss/vite": "^4.3.3",
     "astro": "^7.4.4",
-    "bits-ui": "^2.20.2",
+    "bits-ui": "^2.20.3",
     "clsx": "^2.1.1",
     "drizzle-orm": "^0.45.4",
     "fflate": "^0.8.3",
-    "hono": "^4.13.14",
-    "jose": "^6.2.14",
+    "hono": "^4.13.16",
+    "jose": "^6.2.15",
     "jsqr": "^1.4.0",
     "mode-watcher": "^1.1.0",
     "pdf-lib": "^1.17.1",
