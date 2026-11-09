@@ -73,7 +73,6 @@ export interface GetLineupOutput {
   outsideTheoreticalWeek: boolean;
   venue: string | null;
   opponent: string | null;
-  home: boolean;
   /**
    * Rang de la rencontre dans la journée, 1 partout et 1 ou 2 en régional (art. 1.6.3).
    *

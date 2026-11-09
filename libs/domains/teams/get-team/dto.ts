@@ -52,7 +52,6 @@ export interface TeamCalendarDay {
   playedAt: string | null;
   venue: string | null;
   opponent: string | null;
-  home: boolean;
   /**
    * `bye` = équipe au repos, `forfeit` = forfait. Renvoyé pour que l'écran d'écriture le
    * fasse transiter inchangé : `saveFixture` réécrit la rencontre entière, si bien

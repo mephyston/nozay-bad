@@ -195,7 +195,6 @@ export async function getTeam(
         playedAt,
         venue: fixture?.venue ?? null,
         opponent: fixture?.opponent ?? null,
-        home: fixture?.home ?? true,
         status: fixture?.status ?? 'scheduled',
         outsideTheoreticalWeek: Boolean(
           fixture?.playedAt && mondayOf(fixture.playedAt.slice(0, 10)) !== day.weekStart

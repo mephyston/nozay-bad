@@ -60,7 +60,7 @@ const dayLabel = fixture ? (fixture.dayLabel ?? `Journée ${fixture.dayNumber}`)
 
       <p class="mt-1 text-sm text-foreground first-letter:uppercase">
         {when}
-        {fixture.opponent && <span> · {fixture.home ? 'contre' : 'chez'} {fixture.opponent}</span>}
+        {fixture.opponent && <span> · contre {fixture.opponent}</span>}
         {fixture.venue && <span class="text-muted-foreground"> · {fixture.venue}</span>}
       </p>
 

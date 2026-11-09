@@ -7,7 +7,6 @@ export interface SaveFixtureInput {
   status?: 'scheduled' | 'bye' | 'forfeit';
   /** Date et heure réelles du match, dans la semaine de la journée. */
   playedAt?: string | null;
-  home?: boolean;
   opponent?: string | null;
   venue?: string | null;
 }

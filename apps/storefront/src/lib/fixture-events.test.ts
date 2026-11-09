@@ -14,7 +14,6 @@ const base: MyFixture = {
   date: null,
   dateSource: null,
   opponent: null,
-  home: true,
   venue: null,
   selected: false,
   slotLabel: null,
@@ -64,11 +63,9 @@ describe('rencontres d’interclubs dans l’agenda', () => {
     expect(entry.event.registration).toBe('none');
   });
 
-  it('nomme l’adversaire et distingue domicile et extérieur', () => {
-    const [home] = toFixtureEntries([{ ...base, opponent: 'Massy 2' }]);
-    const [away] = toFixtureEntries([{ ...base, opponent: 'Massy 2', home: false }]);
+  it('nomme l’adversaire', () => {
+    const [entry] = toFixtureEntries([{ ...base, opponent: 'Massy 2' }]);
 
-    expect(home.event.title).toBe('NBA91-3 · J4 contre Massy 2');
-    expect(away.event.title).toBe('NBA91-3 · J4 chez Massy 2');
+    expect(entry.event.title).toBe('NBA91-3 · J4 contre Massy 2');
   });
 });

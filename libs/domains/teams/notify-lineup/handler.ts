@@ -77,7 +77,8 @@ export async function notifyLineup(
   const when = whenLabel(lineup);
   const day = lineup.dayLabel ?? `journée ${lineup.dayNumber}`;
   const against = lineup.opponent ? ` contre ${lineup.opponent}` : '';
-  const where = lineup.home ? 'à domicile' : "à l'extérieur";
+  // Le gymnase dit seul où l'on joue : il n'y a plus de drapeau domicile/extérieur.
+  const where = lineup.venue ? `, ${lineup.venue}` : '';
   const url = `/equipes/${team.id}/journee/${lineup.dayNumber}${lineup.slot > 1 ? `?r=${lineup.slot}` : ''}`;
 
   if (input.kind === 'withdrawn') {
@@ -108,7 +109,7 @@ export async function notifyLineup(
     selectedEmails,
     {
       title: `${lineup.teamName} — vous jouez ${day}`,
-      body: `Vous êtes aligné avec ${lineup.teamName}${against}, ${when}, ${where}. ${state}`,
+      body: `Vous êtes aligné avec ${lineup.teamName}${against}, ${when}${where}. ${state}`,
       url,
       source: 'teams:lineup',
       category: 'interclubs'

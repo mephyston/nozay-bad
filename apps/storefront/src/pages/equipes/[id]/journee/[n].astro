@@ -145,7 +145,7 @@ const frenchDate = (iso: string) =>
           <p class="text-xs text-muted-foreground mt-1">
             Semaine du {frenchDate(lineup.weekStart)} au {frenchDate(lineup.weekEnd)}
             {lineup.opponent ? ` · contre ${lineup.opponent}` : ''}
-            {lineup.home ? ' · à domicile' : ' · à l’extérieur'}
+            {lineup.venue ? ` · ${lineup.venue}` : ''}
           </p>
           {lineup.referenceEloDate && (
             <p class="text-xs text-muted-foreground">

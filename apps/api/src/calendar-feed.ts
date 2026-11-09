@@ -71,7 +71,7 @@ function openPlayItem(session: OpenPlaySessionListItem, domain: string): Calenda
 /** Une rencontre à la date encore inconnue n'en donne pas : elle n'a rien à faire dans un agenda. */
 function fixtureItem(fixture: MyFixture, domain: string): CalendarItem | null {
   if (!fixture.date) return null;
-  const against = fixture.opponent ? ` ${fixture.home ? 'contre' : 'chez'} ${fixture.opponent}` : '';
+  const against = fixture.opponent ? ` contre ${fixture.opponent}` : '';
   // Sans accord de genre : la phrase vise un profil dont le genre n'a pas à être supposé.
   const lineup = fixture.selected
     ? `Sur la feuille de match${fixture.slotLabel ? ` : ${fixture.slotLabel}` : ''}`

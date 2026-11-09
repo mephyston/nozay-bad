@@ -45,7 +45,7 @@ describe('rencontres', () => {
 
     const fixture = await saveFixture(
       db,
-      { teamId: team.id, dayId: day.id, opponent: 'BC Massy 2', home: true, playedAt: '2026-10-17T18:00' },
+      { teamId: team.id, dayId: day.id, opponent: 'BC Massy 2', playedAt: '2026-10-17T18:00' },
       NOW
     );
 

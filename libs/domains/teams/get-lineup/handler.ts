@@ -311,7 +311,6 @@ export async function loadLineup(
     opponent: fixture?.opponent ?? null,
     slot: fixtureSlot,
     fixturesPerDay: rules.fixturesPerDay,
-    home: fixture?.home ?? true,
     status: fixture?.status ?? 'scheduled',
     lineupStatus: storedSlots.length === 0
       ? null

@@ -170,7 +170,6 @@ export const ECRANS: Record<string, Ecran> = {
             playedAt: data.playedAt,
             venue: data.venue,
             opponent: data.opponent,
-            home: data.home,
             status: data.status
           }
         })

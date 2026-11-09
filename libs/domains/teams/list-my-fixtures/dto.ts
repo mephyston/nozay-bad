@@ -34,7 +34,6 @@ export interface MyFixture {
    */
   dateSource: 'captain' | 'committee' | null;
   opponent: string | null;
-  home: boolean;
   venue: string | null;
   /** L'adhérent est-il aligné sur cette rencontre, et sur quelle ligne ? */
   selected: boolean;

@@ -67,7 +67,6 @@ export async function saveFixture(
     slot,
     status: input.status ?? 'scheduled',
     playedAt: input.playedAt ?? null,
-    home: input.home ?? true,
     opponent: input.opponent ?? null,
     venue: input.venue ?? null,
     createdAt: now

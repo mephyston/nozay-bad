@@ -110,7 +110,6 @@ export async function listMyFixtures(
       date: fixture?.playedAt ?? day.matchDate ?? null,
       dateSource: fixture?.playedAt ? 'captain' : day.matchDate ? 'committee' : null,
       opponent: fixture?.opponent ?? null,
-      home: fixture?.home ?? true,
       venue: fixture?.venue ?? null,
       selected: slots.length > 0,
       slotLabel: lignes.length > 0 ? lignes.join(' et ') : null,

@@ -256,6 +256,12 @@ export const teamFixturesTable = sqliteTable(
      * en base : rien ne doit pouvoir s'y adosser.
      */
     playedAt: text('played_at'),
+    /**
+     * Abandonné : jamais saisissable, il valait toujours « domicile ». Le gymnase dit
+     * seul où l'on joue. Plus lu ni écrit ; colonne à supprimer dans une version
+     * ultérieure (expand/contract : la retirer tout de suite rendrait la version
+     * impossible à annuler).
+     */
     home: integer('home', { mode: 'boolean' }).notNull().default(true),
     opponent: text('opponent'),
     venue: text('venue'),

@@ -28,8 +28,7 @@
     number: number;
     dayId: number;
     slot: number;
-    /** Transmis inchangés : `saveFixture` réécrit la rencontre entière. */
-    home: boolean;
+    /** Transmis inchangé : `saveFixture` réécrit la rencontre entière. */
     status: 'scheduled' | 'bye' | 'forfeit';
     heading: string;
     weekStart: string;
@@ -47,7 +46,6 @@
       number: day.number,
       dayId: day.dayId,
       slot: day.slot,
-      home: day.home,
       status: day.status,
       heading: [day.label ?? `Journée ${day.number}`, day.fixtureLabel].filter(Boolean).join(' · '),
       weekStart: day.weekStart,
@@ -102,9 +100,8 @@
             playedAt: draft.playedAt || null,
             venue: draft.venue.trim() || null,
             opponent: draft.opponent.trim() || null,
-            // Réécrits à l'identique : sans eux, une rencontre au repos ou à
-            // l'extérieur repasserait en « programmée à domicile ».
-            home: draft.home,
+            // Réécrit à l'identique : sans lui, une rencontre au repos repasserait
+            // en « programmée ».
             status: draft.status
           })
         });

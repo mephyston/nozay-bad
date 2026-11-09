@@ -37,7 +37,6 @@ export class SaveFixtureRepository {
         set: {
           status: values.status,
           playedAt: values.playedAt ?? null,
-          home: values.home,
           opponent: values.opponent ?? null,
           venue: values.venue ?? null
         }

@@ -35,7 +35,7 @@ export function toFixtureEntries(fixtures: MyFixture[]): FixtureEntry[] {
 
     const dayLabel = fixture.dayLabel ?? `J${fixture.dayNumber}`;
     const against = fixture.opponent
-      ? ` ${fixture.home ? 'contre' : 'chez'} ${fixture.opponent}`
+      ? ` contre ${fixture.opponent}`
       : '';
 
     return {
