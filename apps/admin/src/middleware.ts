@@ -5,6 +5,7 @@ import { createApiClient } from '@nba/api-client';
 import { resolveEnv as resolveRuntimeEnv } from '@nba/runtime-env';
 import { can, resolvePermissions, isRole, DEFAULT_ROLE, type ActorDto, type Role } from '@nba/iam-ui';
 import { applySecurityHeaders } from './lib/security-headers';
+import { rejectedAccessToken } from './lib/access-reauth';
 import { PAGE_PERMISSIONS, PAGE_FEATURES, matchPagePattern, isPageRoute } from './lib/page-permissions';
 import { accepteEcriture } from './lib/page-writes';
 import { impersonationEnabled } from './lib/guard';
@@ -203,7 +204,8 @@ export const handleAuth = async (context: APIContext, next: MiddlewareNext) => {
       email = payload.email as string;
     } catch (err) {
       console.error('[auth] jeton invalide :', err);
-      return new Response('Authentification invalide ou expirée.', { status: 403 });
+      // Cookie effacé et connexion relancée une fois, plutôt qu'un refus sans issue.
+      return rejectedAccessToken(request);
     }
   }
 

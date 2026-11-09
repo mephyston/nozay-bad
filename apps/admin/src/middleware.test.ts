@@ -147,7 +147,7 @@ describe('Astro Auth Middleware', () => {
     expect(lastRequestedEmail).toBe('prod-user@nozay-bad.fr');
   });
 
-  it('refuse en 403 si le jeton est invalide', async () => {
+  it("ne laisse pas passer un jeton invalide : la connexion est relancée", async () => {
     mockJwtVerify.mockRejectedValue(new Error('Invalid signature'));
     const next = vi.fn();
 
@@ -158,8 +158,41 @@ describe('Astro Auth Middleware', () => {
       next
     );
 
-    expect(response.status).toBe(403);
+    expect(response.status).toBe(302);
     expect(next).not.toHaveBeenCalled();
+  });
+
+  describe('jeton Access périmé (domaine d\'équipe renommé)', () => {
+    const avecJeton = (url: string, cookie?: string) =>
+      contextFor(url, { headers: { 'Cf-Access-Jwt-Assertion': 'ancien-jeton', ...(cookie ? { cookie } : {}) } });
+
+    it('efface le cookie Access et relance la connexion sur une page', async () => {
+      mockJwtVerify.mockRejectedValue(new Error('unexpected "iss" claim value'));
+      const response = await handleAuth(avecJeton('https://admin.nozay-bad.fr/admin/members?tri=nom'), vi.fn());
+      expect(response.status).toBe(302);
+      expect(response.headers.get('Location')).toBe('/admin/members?tri=nom');
+      const cookies = response.headers.getSetCookie().join('\n');
+      expect(cookies).toContain('CF_Authorization=; Path=/; Max-Age=0');
+      expect(cookies).toContain('nba_reauth=1');
+    });
+
+    it("répond 401 « reauth » à un écran qui charge ses données", async () => {
+      mockJwtVerify.mockRejectedValue(new Error('unexpected "iss" claim value'));
+      const response = await handleAuth(avecJeton('https://admin.nozay-bad.fr/admin/api/members/list'), vi.fn());
+      expect(response.status).toBe(401);
+      expect(await response.json()).toMatchObject({ reauth: true });
+      expect(response.headers.getSetCookie().join('\n')).toContain('CF_Authorization=;');
+    });
+
+    it('ne relance qu\'une fois : un second refus s\'arrête sur une page qui le dit', async () => {
+      mockJwtVerify.mockRejectedValue(new Error('unexpected "iss" claim value'));
+      const page = await handleAuth(avecJeton('https://admin.nozay-bad.fr/admin', 'nba_reauth=1'), vi.fn());
+      expect(page.status).toBe(403);
+      expect(await page.text()).toContain('/cdn-cgi/access/logout');
+      const api = await handleAuth(avecJeton('https://admin.nozay-bad.fr/admin/api/me', 'nba_reauth=1'), vi.fn());
+      expect(api.status).toBe(403);
+      expect(api.headers.get('Set-Cookie')).toBeNull();
+    });
   });
 
   it('refuse en 403 un compte non configuré', async () => {

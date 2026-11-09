@@ -112,6 +112,12 @@
         ? `?${new URLSearchParams(Object.entries(parametres).map(([c, v]) => [c, String(v)]))}`
         : window.location.search;
       const res = await fetch(`/admin/api/${domaine}/${ecran}${recherche}`);
+      // Jeton Access périmé : le middleware a effacé le cookie (lib/access-reauth.ts). Seule
+      // une vraie navigation repasse par Access, une navigation douce n'y suffirait pas.
+      if (res.status === 401 && (await res.clone().json().catch(() => null))?.reauth) {
+        window.location.reload();
+        return;
+      }
       if (!res.ok) throw new Error(String(res.status));
       donnees = (await res.json()).data;
     } catch {
