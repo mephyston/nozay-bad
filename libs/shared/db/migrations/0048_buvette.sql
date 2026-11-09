@@ -9,7 +9,7 @@ CREATE TABLE `buvette_items` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`name` text NOT NULL,
 	`price_cents` integer NOT NULL,
-	`icon` text,
+	`accounting_category_id` integer NOT NULL,
 	`active` integer DEFAULT true NOT NULL,
 	`sort_order` integer DEFAULT 0 NOT NULL,
 	`created_at` integer NOT NULL,
@@ -37,8 +37,6 @@ CREATE TABLE `buvette_cards` (
 	`balance_cents` integer DEFAULT 0 NOT NULL,
 	`reserved_cents` integer DEFAULT 0 NOT NULL,
 	`created_at` integer NOT NULL,
-	`terms_version` text,
-	`terms_accepted_at` integer,
 	`deleted_at` integer,
 	CONSTRAINT `buvette_cards_balance_check` CHECK (`balance_cents` >= 0),
 	CONSTRAINT `buvette_cards_reserved_check` CHECK (`reserved_cents` >= 0 AND `reserved_cents` <= `balance_cents`),
@@ -64,7 +62,6 @@ CREATE TABLE `buvette_sessions` (
 	`status` text DEFAULT 'open' NOT NULL,
 	`business_date` text NOT NULL,
 	`opening_float_cents` integer NOT NULL,
-	`accounting_category_id` integer NOT NULL,
 	`opened_by_email` text NOT NULL,
 	`opened_at` integer NOT NULL,
 	CONSTRAINT `buvette_sessions_float_check` CHECK (`opening_float_cents` >= 0)
@@ -149,6 +146,7 @@ CREATE TABLE `buvette_sale_lines` (
 	`name` text NOT NULL,
 	`unit_price_cents` integer NOT NULL,
 	`quantity` integer NOT NULL,
+	`accounting_category_id` integer NOT NULL,
 	FOREIGN KEY (`sale_id`) REFERENCES `buvette_sales`(`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`item_id`) REFERENCES `buvette_items`(`id`) ON UPDATE no action ON DELETE no action,
 	CONSTRAINT `buvette_sale_lines_quantity_check` CHECK (`quantity` > 0)
@@ -181,7 +179,6 @@ CREATE TABLE `buvette_card_movements` (
 	`card_id` integer NOT NULL,
 	`session_id` integer,
 	`sale_id` integer,
-	`sumup_attempt_id` integer,
 	`type` text NOT NULL,
 	`amount_cents` integer NOT NULL,
 	`created_by_email` text NOT NULL,
@@ -189,7 +186,6 @@ CREATE TABLE `buvette_card_movements` (
 	FOREIGN KEY (`card_id`) REFERENCES `buvette_cards`(`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`session_id`) REFERENCES `buvette_sessions`(`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`sale_id`) REFERENCES `buvette_sales`(`id`) ON UPDATE no action ON DELETE no action,
-	FOREIGN KEY (`sumup_attempt_id`) REFERENCES `buvette_card_attempts`(`id`) ON UPDATE no action ON DELETE no action,
 	CONSTRAINT `buvette_card_movements_session_check` CHECK (`type` = 'transfer' OR `session_id` IS NOT NULL)
 );
 --> statement-breakpoint
@@ -198,23 +194,6 @@ CREATE UNIQUE INDEX `buvette_card_movements_client_id_unique` ON `buvette_card_m
 CREATE INDEX `buvette_card_movements_card_idx` ON `buvette_card_movements` (`card_id`);
 --> statement-breakpoint
 CREATE INDEX `buvette_card_movements_session_idx` ON `buvette_card_movements` (`session_id`);
---> statement-breakpoint
-CREATE TABLE `buvette_sumup_refunds` (
-	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
-	`attempt_id` integer NOT NULL,
-	`status` text NOT NULL,
-	`refund_client_id` text,
-	`reason` text DEFAULT 'payment' NOT NULL,
-	`requested_cents` integer,
-	`amount_cents` integer,
-	`error` text,
-	`requested_by_email` text NOT NULL,
-	`requested_at` integer NOT NULL,
-	`done_at` integer,
-	FOREIGN KEY (`attempt_id`) REFERENCES `buvette_card_attempts`(`id`) ON UPDATE no action ON DELETE no action
-);
---> statement-breakpoint
-CREATE UNIQUE INDEX `buvette_sumup_refunds_attempt_id_unique` ON `buvette_sumup_refunds` (`attempt_id`);
 --> statement-breakpoint
 INSERT OR IGNORE INTO `account_classes` (`code`, `label`, `type`, `created_at`) VALUES
 ('419', 'Clients, avances reçues', 'tresorerie', CAST(strftime('%s','now') AS INTEGER));

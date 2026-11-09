@@ -27,6 +27,12 @@ export const buvetteSettingsTable = sqliteTable('buvette_settings', {
   cardPaymentMethodId: integer('card_payment_method_id'),
   /** Catégorie des écarts de caisse. */
   gapCategoryId: integer('gap_category_id'),
+  /**
+   * Interrupteur d'urgence de la CB, coupé par le bureau devant une anomalie : plus aucun
+   * paiement ni remboursement ne part vers SumUp. Ce qui est déjà en route continue d'être
+   * vérifié par le cron.
+   */
+  cardPaymentsEnabled: integer('card_payments_enabled', { mode: 'boolean' }).notNull().default(true),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull()
 });
 

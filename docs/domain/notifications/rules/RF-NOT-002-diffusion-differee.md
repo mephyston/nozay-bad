@@ -20,6 +20,8 @@ Une notification est mise en file d'attente au moment où elle est décidée, pu
 
 **Drain par lots.** Un Cron Trigger passe toutes les cinq minutes et traite au plus 40 livraisons en attente — le plafond de 50 sous-requêtes par invocation du plan gratuit interdit d'en traiter davantage d'un coup. Le reliquat est repris au passage suivant. L'administration déclenche en plus un drain immédiat après un envoi manuel, pour ne pas attendre le passage suivant : une diffusion à l'échelle du club part donc par tranches de 40, la première immédiatement.
 
+**Un seul envoi par livraison.** Plusieurs drains peuvent tourner en même temps : à l'heure pile, le cron horaire et celui des cinq minutes, ou le bouton de l'administration. Chaque passage réserve d'abord son lot (statut `sending`) en une seule instruction ; une livraison réservée n'est rendue à aucun autre passage. Une réservation de plus de dix minutes est celle d'un passage mort en route : le lot est repris. Le 09/11/2026, sans cette réservation, l'anniversaire du jour est arrivé deux fois sur chaque téléphone.
+
 **Réessais bornés.** Une erreur temporaire (5xx, réseau) laisse la livraison en attente pour un nouvel essai. Après 3 tentatives infructueuses elle passe en échec définitif : une file qui boucle indéfiniment finirait par masquer les envois récents.
 
 **Ciblages.** `all` vise tous les appareils abonnés. `unpaid` vise les foyers dont la cotisation de la saison active n'est pas soldée — en incluant les emails des représentants légaux, puisqu'un adhérent mineur n'a pas d'adresse au dossier. `emails` vise une liste explicite, utilisée par les événements métier. L'historique conserve l'intention de ciblage, pas sa résolution en liste d'emails.
@@ -52,6 +54,16 @@ Fonctionnalité: Diffusion différée et fiabilisée des notifications
     Quand le cron draine la file
     Alors 40 notifications sont envoyées
     Et 5 livraisons restent en attente pour le passage suivant
+
+  Scénario: Deux drains simultanés
+    Étant donné 2 livraisons en attente
+    Quand deux passages drainent la file au même moment
+    Alors chaque notification est envoyée une seule fois
+
+  Scénario: Passage mort en route
+    Étant donné une livraison réservée par un passage il y a plus de dix minutes
+    Quand le cron draine la file
+    Alors la livraison est envoyée
 
   Scénario: Échec temporaire du service de push
     Étant donné une livraison en attente
