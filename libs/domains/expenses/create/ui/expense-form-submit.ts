@@ -45,18 +45,17 @@ export async function submitExpenseReport(params: {
       return { success: false, error: data.error || "Une erreur est survenue lors de l'envoi de la note de frais." };
     }
 
-    if (typeof window !== 'undefined' && (window as any).turnstile) {
-      (window as any).turnstile.reset();
-    }
-
+    /*
+      Plus d'appel à `turnstile.reset()` ici : le layout charge Turnstile pour la page de
+      connexion, mais ce formulaire n'a aucun widget. `reset()` levait donc après un envoi
+      réussi, le `catch` relevait à son tour, et le bouton restait sur « Soumission en
+      cours… » alors que la note était enregistrée.
+    */
     return {
       success: true,
       message: "Votre note de frais a été soumise avec succès ! Le trésorier procédera à sa validation et remboursement."
     };
   } catch (err: any) {
-    if (typeof window !== 'undefined' && (window as any).turnstile) {
-      (window as any).turnstile.reset();
-    }
     return { success: false, error: err.message || "Une erreur est survenue." };
   }
 }

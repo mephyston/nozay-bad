@@ -116,8 +116,10 @@
   async function handleSubmit(e: SubmitEvent) {
     e.preventDefault();
     errorMsg = null; envoi = null; submitting = true;
-    const res = await submitExpenseReport({ activeSeasonId, description, category, amountStr, pieces, emitterName, selectedMemberId });
-    submitting = false;
+    // `finally` : quoi qu'il arrive, le bouton ne reste jamais bloqué sur « en cours ».
+    const res = await submitExpenseReport({ activeSeasonId, description, category, amountStr, pieces, emitterName, selectedMemberId })
+      .catch((err: unknown) => ({ success: false, error: err instanceof Error ? err.message : 'Une erreur est survenue.', message: undefined }))
+      .finally(() => { submitting = false; });
 
     if (res.success) {
       envoi = {
