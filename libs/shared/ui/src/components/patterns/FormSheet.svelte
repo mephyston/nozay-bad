@@ -111,6 +111,12 @@
    * rendrait muet là où il sert vraiment.
    */
   const cercles = $derived(requete.current && !namedActions);
+
+  /* `onOpenChange` n'est pas appelé par bits-ui pour une fermeture écrite ici. */
+  function fermer() {
+    open = false;
+    onOpenChange?.(false);
+  }
 </script>
 
 <ResponsiveSheet bind:open {title} icon={Icon} {description} {size} footerHidden={cercles} {onOpenChange}>
@@ -120,7 +126,7 @@
         type="button"
         variant="ghost"
         disabled={isSubmitting}
-        onclick={() => (open = false)}
+        onclick={fermer}
         class="glass-surface size-11 rounded-full p-0"
         style="--glass-base: var(--card)"
         aria-label={cancelLabel}
@@ -174,7 +180,7 @@
           type="button"
           variant="outline"
           disabled={isSubmitting}
-          onclick={() => (open = false)}
+          onclick={fermer}
           class="w-full sm:w-auto"
         >
           {cancelLabel}

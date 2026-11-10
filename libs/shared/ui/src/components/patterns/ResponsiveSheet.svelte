@@ -101,6 +101,17 @@
 
   let contenu = $state<HTMLElement | null>(null);
 
+  /*
+    bits-ui ne prévient `onOpenChange` que des fermetures qu'il décide lui-même (voile,
+    Échap). Un `open = false` écrit ici passe par la liaison sans l'appeler : l'écran qui
+    tient l'ouverture d'un état à lui (la note qu'on modifie) n'en savait rien, gardait
+    l'ancienne valeur, et la feuille ne se rouvrait plus sur la suivante.
+  */
+  function fermer() {
+    open = false;
+    onOpenChange?.(false);
+  }
+
   /**
    * Les paliers sont posés depuis un effet, faute de pouvoir écrire `use:` sur un
    * composant. L'action s'endort au-dessus du seuil et rend alors l'élément à sa
@@ -114,7 +125,7 @@
       dismissible,
       enabled: estMobile,
       onDetent: (i) => (detent = i),
-      onDismiss: () => (open = false),
+      onDismiss: fermer,
     });
     return () => geste.destroy();
   });
