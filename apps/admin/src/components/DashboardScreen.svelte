@@ -31,7 +31,7 @@
     }}
   >
     {#snippet pret(d)}
-      <DashboardOverview data={d.data} {permissions} />
+      <DashboardOverview data={d.data} feeBreakdown={d.feeBreakdown ?? null} {permissions} />
     {/snippet}
   </EcranDistant>
 </div>

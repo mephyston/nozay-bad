@@ -50,6 +50,7 @@
     "0046_rosters_publication.sql": "60854bced530ef9e",
     "0047_calendar_feeds.sql": "840562d16c93b7b3",
     "0048_buvette.sql": "48e910d97d9deaad",
-    "0049_buvette_schema_final.sql": "98a482e1c6dd9fcf"
+    "0049_buvette_schema_final.sql": "98a482e1c6dd9fcf",
+    "0050_category_groups.sql": "03fd89aa97211fd7"
   }
 }

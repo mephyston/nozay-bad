@@ -16,9 +16,20 @@ Le **Tableau de bord** est la page d'accueil de l'administration. Il est accessi
 
 Chaque compteur renvoie vers l'écran concerné, **à condition que vous ayez le droit de l'ouvrir**. Sans ce droit, le chiffre reste affiché mais n'est pas cliquable.
 
+## Où va votre cotisation
+
+Cette carte montre ce que coûte un adhérent au club, poste par poste (encadrement, licences, volants…), et qui le finance : les cotisations, puis les stages, la buvette, les tournois ou les subventions. Quand les cotisations ne suffisent pas, elle dit combien il manquerait par adhérent sans ces autres ressources.
+
+Les chiffres viennent du **budget prévisionnel** de la saison s'il est saisi, sinon des comptes de la **saison précédente**. Un budget saisi est plus juste qu'un réalisé partiel : en novembre, deux mois de salaires pèsent peu face à des licences déjà toutes payées. Sous la carte, les dépenses déjà passées sont comparées à celles prévues.
+
+Chaque poste est une **rubrique**, que vous rangez dans **Configuration › Catégories et classes › Pôles**. Une rubrique qui encaisse plus qu'elle ne dépense (un tournoi, par exemple) passe du côté des ressources.
+
+> [!TIP]
+> Les adhérents peuvent voir la même carte sur la page « Ma cotisation » de leur espace, avec leur propre cotisation découpée. Elle est éteinte au départ : allumez « Où va ma cotisation » dans **Configuration › Club › Fonctionnalités** une fois les rubriques rangées.
+
 ## Le bilan des pôles d'activité
 
-En dessous, quatre cartes répartissent les recettes et dépenses de la saison entre les pôles **Compétition**, **Jeunes**, **Matériel** et **Fonctionnement**. La répartition est déduite du libellé de la catégorie comptable de chaque écriture : par exemple, une catégorie contenant « tournoi », « buvette » ou « interclub » alimente le pôle Compétition, une catégorie contenant « cordage » ou « volant » alimente le pôle Matériel.
+En dessous, une carte par pôle répartit les recettes et dépenses de la saison. Les pôles et leur ordre se règlent dans **Configuration › Catégories et classes › Pôles**, où chaque catégorie comptable choisit son pôle. Renommer une catégorie ne la fait plus changer de pôle.
 
 > [!NOTE]
-> Une catégorie dont le libellé ne correspond à aucun de ces mots-clés n'apparaît dans aucun pôle. Elle reste bien entendu comptée dans les rapports financiers, qui font foi.
+> Une catégorie rangée dans aucun pôle n'apparaît dans aucune carte. Elle reste bien entendu comptée dans les rapports financiers, qui font foi.

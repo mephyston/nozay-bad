@@ -2,6 +2,7 @@
   import { Users, Banknote, CreditCard, Activity, ArrowUpRight, ArrowDownRight, Package, Receipt, FolderKanban, Building, ChevronRight, Scale, Landmark, ExternalLink, Repeat, UserPlus, UserMinus, Info } from '@lucide/svelte';
   import { DashboardSummaryCard, DashboardPoleCard, CollapsibleSection, Table, ResponsiveSheet, ListView, ListRow } from '@nba/ui';
   import { can } from '@nba/iam-ui';
+  import { FeeBreakdownCard, type FeeBreakdown } from '@nba/accounting-ui';
   import AgePyramidList from './AgePyramidList.svelte';
   import { ENROLLED_STATUS_FILTER } from '@nba/members/membership-status';
   import {
@@ -12,7 +13,7 @@
     ligneDePerte
   } from '../lib/dashboard-rows';
 
-  let { data, permissions = [] }: { data: any; permissions?: string[] } = $props();
+  let { data, feeBreakdown = null, permissions = [] }: { data: any; feeBreakdown?: FeeBreakdown | null; permissions?: string[] } = $props();
 
   const formatAmount = (cents: number) => {
     return (cents / 100).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });
@@ -75,16 +76,20 @@
   const renewalByGroup = $derived<RenewalRow[]>(data.members.renewalByGroup ?? []);
   const lapsedByGroup = $derived<LapsedRow[]>(data.members.lapsedByGroup ?? []);
   /*
-    Ce qui distingue un pôle d'un autre : sa clé dans les données et la nature de ses
-    mouvements. Le reste — la carte, les trois rangées, le détail par catégorie — est
-    rendu par un seul snippet.
+    Les pôles sont ceux du bureau (réglages › Catégories et classes), dans son ordre. Leur
+    allure se prend dans une suite fixe, par position : le même pôle garde la même icône
+    tant qu'on ne le déplace pas.
   */
-  const POLES = [
-    { cle: 'events', titre: 'Pôle Compétition', icone: Activity, classeIcone: 'text-destructive bg-destructive/10', recettes: 'Recettes (inscriptions, buvette)', depenses: 'Dépenses (lots, frais)' },
-    { cle: 'youth', titre: 'Pôle Jeunes', icone: Users, classeIcone: 'text-warning bg-warning/10', recettes: 'Recettes générées', depenses: "Coûts d'encadrement/actions" },
-    { cle: 'material', titre: 'Pôle Matériel', icone: Package, classeIcone: 'text-primary bg-primary/10', recettes: 'Ventes (Boutique, etc.)', depenses: 'Achats fournisseurs' },
-    { cle: 'operations', titre: 'Pôle Fonctionnement', icone: Building, classeIcone: 'text-info bg-info/10', recettes: 'Recettes (adhésions, subventions)', depenses: 'Dépenses (salaires, licences)' }
+  const ALLURES = [
+    { icone: Activity, classeIcone: 'text-destructive bg-destructive/10' },
+    { icone: Users, classeIcone: 'text-warning bg-warning/10' },
+    { icone: Package, classeIcone: 'text-primary bg-primary/10' },
+    { icone: Building, classeIcone: 'text-info bg-info/10' },
+    { icone: FolderKanban, classeIcone: 'text-success bg-success/10' }
   ] as const;
+  type Pole = { id: number; label: string; recettes: number; depenses: number; solde: number; details: any[] };
+  const poles = $derived<Pole[]>(Array.isArray(data.poles) ? data.poles : []);
+  const canConfigure = $derived(can(permissions, 'accounting:config:read'));
 
   let cohortsOpen = $state(false);
   const pct = pourcentage;
@@ -110,9 +115,9 @@
 {/snippet}
 
 <!--
-  Les quatre pôles, une seule fois.
+  Les pôles, une seule fois.
 
-  Les quatre cartes étaient recopiées mot pour mot : mêmes rangées, mêmes classes, seuls
+  Les quatre cartes d'autrefois étaient recopiées mot pour mot : mêmes rangées, mêmes classes, seuls
   changeaient la clé des données et les deux libellés qui disent ce que le pôle encaisse
   et ce qu'il dépense. Quarante lignes en quatre exemplaires, donc quatre endroits où
   corriger la même chose — et trois occasions de l'oublier.
@@ -366,20 +371,36 @@
     </div>
   {/if}
 
-  <div class="mt-10">
-    <h2 class="text-xl font-bold tracking-tight mb-4 flex items-center gap-2"><Activity class="text-primary"/> Bilan des Pôles d'Activité</h2>
-    <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-      {#each POLES as p (p.cle)}
-        <DashboardPoleCard
-          title={p.titre}
-          icon={p.icone}
-          href={canReadAccounting ? '/admin/accounting/ledger' : undefined}
-          iconClass={p.classeIcone}
-        >
-          {@render pole(data.poles[p.cle], p.recettes, p.depenses)}
-        </DashboardPoleCard>
-      {/each}
+  {#if feeBreakdown}
+    <div class="mt-10">
+      <FeeBreakdownCard data={feeBreakdown} showDetails />
     </div>
+  {/if}
+
+  <div class="mt-10">
+    <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
+      <h2 class="text-xl font-bold tracking-tight flex items-center gap-2"><Activity class="text-primary"/> Bilan des Pôles d'Activité</h2>
+      {#if canConfigure}
+        <a href="/admin/settings/accounting?view=regroupements" class="text-sm text-primary hover:underline">Ranger les catégories</a>
+      {/if}
+    </div>
+    {#if poles.length === 0}
+      <p class="text-sm text-muted-foreground">Aucun pôle n'est défini.</p>
+    {:else}
+      <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        {#each poles as p, i (p.id)}
+          {@const allure = ALLURES[i % ALLURES.length]}
+          <DashboardPoleCard
+            title={p.label}
+            icon={allure.icone}
+            href={canReadAccounting ? '/admin/accounting/ledger' : undefined}
+            iconClass={allure.classeIcone}
+          >
+            {@render pole(p, 'Recettes', 'Dépenses')}
+          </DashboardPoleCard>
+        {/each}
+      </div>
+    {/if}
   </div>
 </div>
 

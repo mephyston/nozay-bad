@@ -825,13 +825,15 @@ export const ECRANS: Record<string, Ecran> = {
   config: {
     permission: 'accounting:config:read',
     charger: async (lire) => {
-      const [categories, classes, comptes] = await Promise.all([
+      const [categories, classes, comptes, regroupements] = await Promise.all([
         lire('/accounting/categories'),
         lire('/accounting/account-classes'),
         // Les comptes du club, en lecture seule : l'écran dit où chacun se range dans le plan.
-        lire('/accounting/accounts')
+        lire('/accounting/accounts'),
+        // Pôles et rubriques du tableau de bord.
+        lire('/accounting/category-groups')
       ]);
-      return { categories: categories ?? [], accountClasses: classes ?? [], accounts: comptes ?? [] };
+      return { categories: categories ?? [], accountClasses: classes ?? [], accounts: comptes ?? [], categoryGroups: regroupements ?? [] };
     },
     ecritures: {
       create_category: {
@@ -860,6 +862,33 @@ export const ECRANS: Record<string, Ecran> = {
         permission: 'accounting:config:write',
         route: (data) => ({
           chemin: `/accounting/categories/${identifiant(data.id, 'de catégorie')}`,
+          method: 'DELETE'
+        })
+      },
+      create_category_group: {
+        permission: 'accounting:config:write',
+        route: (data) => ({
+          chemin: '/accounting/category-groups',
+          method: 'POST',
+          body: { kind: data.kind, label: data.label }
+        })
+      },
+      update_category_group: {
+        permission: 'accounting:config:write',
+        route: (data) => ({
+          chemin: `/accounting/category-groups/${identifiant(data.id, 'de regroupement')}`,
+          method: 'PUT',
+          body: {
+            ...(data.updates?.label !== undefined ? { label: data.updates.label } : {}),
+            ...(data.updates?.position !== undefined ? { position: data.updates.position } : {}),
+            ...(data.updates?.membershipFees !== undefined ? { membershipFees: data.updates.membershipFees } : {})
+          }
+        })
+      },
+      delete_category_group: {
+        permission: 'accounting:config:write',
+        route: (data) => ({
+          chemin: `/accounting/category-groups/${identifiant(data.id, 'de regroupement')}`,
           method: 'DELETE'
         })
       },

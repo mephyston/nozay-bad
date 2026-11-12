@@ -96,6 +96,10 @@ export const ROUTE_PERMISSIONS: RouteRule[] = [
 
   // ── Tableau de bord ────────────────────────────────────────────────────────
   { method: 'GET', path: '/dashboard/overview', permission: 'dashboard:overview:read' },
+  { method: 'GET', path: '/dashboard/fee-breakdown', permission: 'dashboard:overview:read' },
+  // « Où va votre cotisation », pour le seul storefront : des totaux par rubrique, rien de
+  // nominatif. Le club l'allume quand il est prêt à montrer ses comptes à ses adhérents.
+  { method: 'GET', path: '/dashboard/members/fee-breakdown', permission: 'dashboard:overview:read', service: true, feature: 'fee_breakdown' },
   // La recherche de l'espace adhérent : elle ne rend que ce que l'espace affiche déjà,
   // et chaque rubrique s'éteint avec sa fonctionnalité — l'annuaire compris.
   { method: 'GET', path: '/search', permission: null, service: true },
@@ -168,6 +172,10 @@ export const ROUTE_PERMISSIONS: RouteRule[] = [
   { method: 'POST', path: '/accounting/categories', permission: 'accounting:config:write' },
   { method: 'PUT', path: '/accounting/categories/:id', permission: 'accounting:config:write' },
   { method: 'DELETE', path: '/accounting/categories/:id', permission: 'accounting:config:write' },
+  { method: 'GET', path: '/accounting/category-groups', permission: 'accounting:config:read' },
+  { method: 'POST', path: '/accounting/category-groups', permission: 'accounting:config:write' },
+  { method: 'PUT', path: '/accounting/category-groups/:id', permission: 'accounting:config:write' },
+  { method: 'DELETE', path: '/accounting/category-groups/:id', permission: 'accounting:config:write' },
   // Les comptes de trésorerie, pour les sélecteurs et l'écran des soldes initiaux.
   { method: 'GET', path: '/accounting/accounts', permission: 'accounting:config:read' },
   // Comptes de trésorerie et moyens de paiement : la configuration, gardée comme les

@@ -7,6 +7,7 @@ import { env } from 'cloudflare:workers';
 import { createApiClient } from '@nba/api-client';
 import { listSeasons, displaySeason } from '../../lib/season';
 import { chargerCompte, eur, montantsDeCotisation } from '../../lib/compte';
+import { FeeBreakdownCard, type FeeBreakdown } from '@nba/accounting-ui';
 
 /** Ma cotisation, sur sa propre page : ce qu'on vient y vérifier est « suis-je à jour ? ». */
 const session = Astro.locals.session;
@@ -14,10 +15,20 @@ const active = session?.members.find((m) => m.id === session.activeMemberId);
 
 let cotisation: any = null;
 let seasonName = '';
+let repartition: FeeBreakdown | null = null;
+// « Où va votre cotisation » : le club l'allume quand ses rubriques sont rangées.
+const avecRepartition = Astro.locals.club?.features?.fee_breakdown === true;
 if (active) {
   const season = displaySeason(await listSeasons(env), session?.seasonCode);
   seasonName = season?.name || '';
   const api = createApiClient(env);
+  if (avecRepartition) {
+    const requete = season?.code ? `?seasonId=${encodeURIComponent(season.code)}` : '';
+    // En cas d'échec, la page reste celle d'hier : montants dus et réglés, sans la carte.
+    repartition = await api.fetch(`/dashboard/members/fee-breakdown${requete}`)
+      .then(async (res) => (res.ok ? ((await res.json()) as { data: FeeBreakdown }).data : null))
+      .catch(() => null);
+  }
   const donnees = await chargerCompte(
     api.fetch.bind(api),
     {
@@ -70,6 +81,10 @@ const { du, recu, restant, aJour } = montantsDeCotisation(cotisation);
           <span class={`text-sm font-semibold ${restant > 0 ? 'text-destructive' : 'text-success'}`}>{eur(restant)}</span>
         </div>
       </div>
+
+      {repartition && (
+        <FeeBreakdownCard data={repartition} feeCents={du > 0 ? du : undefined} />
+      )}
 
       {/* Trois chiffres en rangées, et non en colonnes : sur un téléphone, trois
           colonnes centrées coupent « Montant dû » en deux lignes et « Restant » en

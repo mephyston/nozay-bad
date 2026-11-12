@@ -29,8 +29,8 @@
     titre: string;
     description: string;
     /** Vue ouverte à défaut ; `?view=` de l'URL la remplace si elle est permise. */
-    view: 'seasons' | 'compta' | 'classes' | 'shop';
-    allowedViews: ('seasons' | 'compta' | 'classes' | 'shop')[];
+    view: 'seasons' | 'compta' | 'regroupements' | 'classes' | 'shop';
+    allowedViews: ('seasons' | 'compta' | 'regroupements' | 'classes' | 'shop')[];
     /**
      * Monté dans un tiroir : celui-ci porte déjà le titre et la description.
      *
@@ -86,6 +86,7 @@
         accountClasses={d.accountClasses ?? []}
         accounts={d.accounts ?? []}
         productCategories={d.productCategories ?? []}
+        categoryGroups={d.categoryGroups ?? []}
         seasonId=""
         view={vue}
         {allowedViews}

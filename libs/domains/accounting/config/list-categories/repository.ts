@@ -22,6 +22,8 @@ export class ListCategoriesRepository {
         expenseCode: ec.code,
         expenseLabel: ec.label,
         active: categoriesTable.active,
+        poleId: categoriesTable.poleId,
+        rubriqueId: categoriesTable.rubriqueId,
         createdAt: categoriesTable.createdAt
       })
       .from(categoriesTable)

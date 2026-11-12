@@ -30,6 +30,7 @@ export const FEATURES = [
   'invoices',
   'checks',
   'expenses',
+  'fee_breakdown',
   // — Boutique —
   'shop',
   'buvette',
@@ -112,6 +113,14 @@ export const FEATURE_CATALOG: Record<Feature, FeatureInfo> = {
   expenses: {
     label: 'Notes de frais',
     description: "Notes de frais déposées par les adhérents autorisés et validées par la trésorerie.",
+    group: 'Comptabilité'
+  },
+  fee_breakdown: {
+    label: 'Où va ma cotisation',
+    description:
+      "Sur la page « Ma cotisation » de l'espace adhérent : ce que coûte un adhérent par rubrique (encadrement, licences, volants…) " +
+      "et ce que financent, à côté des cotisations, les stages, la buvette et les tournois. Le tableau de bord le montre au bureau dans tous les cas. " +
+      'Éteint à son arrivée : à allumer une fois les rubriques rangées (réglages › Catégories et classes).',
     group: 'Comptabilité'
   },
   shop: {
@@ -197,6 +206,7 @@ export const FEATURE_PREREQUISITES: Partial<Record<Feature, readonly Feature[]>>
   // Les factures ne sont pas listées : elles s'émettent sans grand livre — seul leur
   // règlement en demande un, et c'est l'écriture qui le dira.
   checks: ['accounting'],
+  fee_breakdown: ['accounting'],
   reminder_unpaid: ['push'],
   reminder_rankings: ['push', 'teams'],
   reminder_lineups: ['push', 'teams'],

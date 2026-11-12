@@ -5,7 +5,8 @@
   import CategoriesConfig from "./CategoriesConfig.svelte";
   import AccountClassesConfig from "./AccountClassesConfig.svelte";
   import ProductCategoriesConfig from "./ProductCategoriesConfig.svelte";
-  import type { Season, Category, AccountClass, ProductCategory, TreasuryAccount } from "./settings-types";
+  import CategoryGroupsConfig from "./CategoryGroupsConfig.svelte";
+  import type { Season, Category, AccountClass, ProductCategory, TreasuryAccount, CategoryGroup } from "./settings-types";
   import * as api from "./settings-api";
 
   let {
@@ -14,6 +15,7 @@
     accountClasses = [],
     accounts = [],
     productCategories = [],
+    categoryGroups = [],
     seasonId,
     view = 'seasons',
     allowedViews = ['seasons', 'compta', 'classes', 'shop']
@@ -23,9 +25,10 @@
     accountClasses?: AccountClass[];
     accounts?: TreasuryAccount[];
     productCategories?: ProductCategory[];
+    categoryGroups?: CategoryGroup[];
     seasonId: string;
-    view?: 'seasons' | 'compta' | 'classes' | 'shop';
-    allowedViews?: ('seasons' | 'compta' | 'classes' | 'shop')[];
+    view?: 'seasons' | 'compta' | 'regroupements' | 'classes' | 'shop';
+    allowedViews?: ('seasons' | 'compta' | 'regroupements' | 'classes' | 'shop')[];
   } = $props();
 
   let viewState = $state<api.SettingsState>({
@@ -113,6 +116,7 @@
   const TOUS_LES_ONGLETS = [
     { value: 'seasons', court: 'Saisons', label: 'Saisons comptables' },
     { value: 'compta', court: 'Catégories', label: 'Catégories comptables' },
+    { value: 'regroupements', court: 'Pôles', label: 'Pôles et rubriques' },
     { value: 'classes', court: 'Plan comptable', label: 'Plan comptable' },
     { value: 'shop', court: 'Produits', label: 'Catégories de produits' }
   ] as const;
@@ -120,7 +124,7 @@
   const onglets = $derived(TOUS_LES_ONGLETS.filter((o) => (allowedViews as string[]).includes(o.value)));
 
   function handleViewChange(newView: string) {
-    activeView = newView as 'seasons' | 'compta' | 'classes' | 'shop';
+    activeView = newView as 'seasons' | 'compta' | 'regroupements' | 'classes' | 'shop';
     if (typeof window !== 'undefined') {
       const url = new URL(window.location.href);
       url.searchParams.set('view', newView);
@@ -192,6 +196,13 @@
           onDeleteCategory={handleDeleteCategory}
           onCreateCategory={handleCreateCategory}
         />
+      {/if}
+    </Tabs.Content>
+
+    <!-- VIEW: PÔLES ET RUBRIQUES DU TABLEAU DE BORD -->
+    <Tabs.Content value="regroupements">
+      {#if activeView === 'regroupements'}
+        <CategoryGroupsConfig {categories} groups={categoryGroups} settings={viewState} />
       {/if}
     </Tabs.Content>
 

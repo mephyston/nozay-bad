@@ -1,10 +1,24 @@
 import { Hono } from 'hono';
 import { buildMembersDashboardStatsStmt, buildMembersAgePyramidStmt, buildMembersLapsedByGroupStmt, buildMembersRenewalByGroupStmt, agePyramid, seasonReferenceYear } from '@nba/members-api';
-import { buildAccountingDashboardStatsStmts } from '@nba/accounting-api';
 import { buildExpensesDashboardStatsStmt } from '@nba/expenses-api';
 import { buildShopDashboardStatsStmt } from '@nba/shop-api';
+import { buildAccountingDashboardStatsStmts, createGetFeeBreakdownRoute } from '@nba/accounting-api';
+import { assemblePoles } from './dashboard-poles';
 
 export const dashboardRouter = new Hono<{ Bindings: { DB: D1Database } }>();
+
+/**
+ * L'effectif d'une saison, pour « Où va votre cotisation » : la même règle que le compteur
+ * du tableau de bord (dossiers suspendus exclus), lue chez les adhérents.
+ */
+const countMembers = (d1: D1Database) => async (seasonId: number) => {
+  const row = await buildMembersDashboardStatsStmt(d1, seasonId, null).first<{ currentTotal: number | null }>();
+  return row?.currentTotal ?? 0;
+};
+
+// Le bureau voit le détail par catégorie ; l'espace adhérent, les seules rubriques.
+dashboardRouter.route('/', createGetFeeBreakdownRoute({ countMembers, withDetails: true }));
+dashboardRouter.route('/members', createGetFeeBreakdownRoute({ countMembers, withDetails: false }));
 
 dashboardRouter.get('/overview', async (c) => {
   const db = c.env.DB;
@@ -78,57 +92,7 @@ dashboardRouter.get('/overview', async (c) => {
     const referenceYear = seasonReferenceYear({ startDate: seasonStartDate, code: seasonCode });
     const ageCategories = referenceYear === null ? [] : agePyramid(agesRes, referenceYear);
 
-    const poles = {
-      events: { recettes: 0, depenses: 0, solde: 0, details: [] as any[] },
-      youth: { recettes: 0, depenses: 0, solde: 0, details: [] as any[] },
-      material: { recettes: 0, depenses: 0, solde: 0, details: [] as any[] },
-      operations: { recettes: 0, depenses: 0, solde: 0, details: [] as any[] }
-    };
-
-    for (const row of polesRes) {
-      const lbl = (row.label || '').toLowerCase();
-      const amount = row.total || 0;
-      const type = row.type;
-
-      let pole: keyof typeof poles | null = null;
-      if (lbl.includes('tournoi') || lbl.includes('blackminton') || lbl.includes('buvette') || lbl.includes('championnat') || lbl.includes('interclub')) {
-        pole = 'events';
-      } else if (lbl.includes('stage') || lbl.includes('jeune')) {
-        pole = 'youth';
-      } else if (lbl.includes('cordage') || lbl.includes('volant') || lbl.includes('textile') || lbl.includes('boutique') || lbl.includes('matériel') || lbl.includes('materiel')) {
-        pole = 'material';
-      } else if (lbl.includes('salaire') || lbl.includes('charge') || lbl.includes('licence') || lbl.includes('adhésion') || lbl.includes('adhesion') || lbl.includes('cotisation') || lbl.includes('affiliation') || lbl.includes('subvention')) {
-        pole = 'operations';
-      }
-
-      if (pole) {
-        if (type === 'recette') poles[pole].recettes += amount;
-        if (type === 'depense') poles[pole].depenses += amount;
-        
-        const detail = poles[pole].details.find(d => d.label === row.label);
-        if (detail) {
-           if (type === 'recette') detail.recettes += amount;
-           if (type === 'depense') detail.depenses += amount;
-        } else {
-           poles[pole].details.push({
-             label: row.label,
-             recettes: type === 'recette' ? amount : 0,
-             depenses: type === 'depense' ? amount : 0
-           });
-        }
-      }
-    }
-
-    for (const p of Object.values(poles)) {
-      p.solde = p.recettes - p.depenses;
-      if ('details' in p && Array.isArray(p.details)) {
-        for (const d of p.details) {
-           d.solde = d.recettes - d.depenses;
-        }
-        // sort by most active
-        p.details.sort((a, b) => (b.recettes + b.depenses) - (a.recettes + a.depenses));
-      }
-    }
+    const poles = assemblePoles(polesRes);
 
     return c.json({
       success: true,

@@ -103,6 +103,8 @@ const tables = [
     'season_balances',
     'season_category_budgets',
     'categories',
+    // Après les catégories, qui pointent leur pôle et leur rubrique.
+    'category_groups',
     'users',
     'seasons',
     'payment_methods',

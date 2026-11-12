@@ -34,6 +34,8 @@ Le bouton **Nouvelle catégorie** ouvre le formulaire ; le menu de chaque ligne 
 - La catégorie d'**adhésion** a un rôle particulier : un encaissement rattaché à un adhérent et imputé à cette catégorie met à jour le montant reçu de sa cotisation.
 
 > [!NOTE]
-> Certaines automatisations reconnaissent une catégorie à son libellé (« volant », « cordage », « matériel »…). Renommer largement une catégorie peut donc changer le comportement des suggestions de rapprochement ou la répartition par pôle du tableau de bord.
+> Certaines automatisations reconnaissent une catégorie à son libellé (« volant », « cordage », « matériel »…). Renommer largement une catégorie peut donc changer le comportement des suggestions de rapprochement.
+>
+> Le pôle et la rubrique du tableau de bord, eux, se choisissent dans l'onglet **Pôles** : renommer une catégorie ne les change pas.
 >
 > Ce n'est **plus** le cas des virements internes : ils se reconnaissent désormais à leur nature, pas à un libellé. La catégorie « Virements Internes » a été désactivée et ne peut plus être attribuée.

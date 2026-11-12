@@ -21,12 +21,8 @@ const VIDE = () => ({
   accounting: { pendingChecks: 0, pendingDeposits: 0, pendingInvoices: 0 },
   expenses: { pendingReports: 0 },
   shop: { pendingOrders: 0 },
-  poles: {
-    events: { recettes: 0, depenses: 0, solde: 0 },
-    youth: { recettes: 0, depenses: 0, solde: 0 },
-    material: { recettes: 0, depenses: 0, solde: 0 },
-    operations: { recettes: 0, depenses: 0, solde: 0 }
-  }
+  // Les pôles sont ceux du bureau : sans agrégat, on n'en connaît aucun.
+  poles: []
 });
 
 export const ECRANS: Record<string, Ecran> = {
@@ -36,9 +32,11 @@ export const ECRANS: Record<string, Ecran> = {
       const demandee = params.get('season') ?? '';
       const requete = demandee ? `?seasonId=${encodeURIComponent(demandee)}` : '';
 
-      const [recap, saisons] = await Promise.all([
+      const [recap, saisons, repartition] = await Promise.all([
         lire(`/dashboard/overview${requete}`),
-        lire('/accounting/seasons')
+        lire('/accounting/seasons'),
+        // « Où va votre cotisation » : absente si le calcul échoue, l'écran s'en passe.
+        lire(`/dashboard/fee-breakdown${requete}`)
       ]);
 
       const data = recap ?? VIDE();
@@ -46,6 +44,7 @@ export const ECRANS: Record<string, Ecran> = {
       return {
         data,
         seasons,
+        feeBreakdown: repartition ?? null,
         /*
           La page est figée : aucune identité n'y est rendue. Les droits qui décident
           quelles lignes sont des liens voyagent donc avec les chiffres.

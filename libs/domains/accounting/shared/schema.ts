@@ -62,6 +62,33 @@ export const paymentMethodsTable = sqliteTable('payment_methods', {
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
 });
 
+/**
+ * Les regroupements de catégories que lisent les indicateurs du tableau de bord.
+ *
+ * Deux familles, une seule table : les **pôles** (bilan recettes / dépenses par activité)
+ * et les **rubriques** de « Où va votre cotisation ». Avant elles, les pôles se
+ * reconnaissaient à des mots du libellé des catégories : renommer « Volants » en
+ * « Consommables » faisait sortir la catégorie du pôle Matériel sans un mot. Le bureau
+ * range désormais chaque catégorie lui-même, une fois.
+ *
+ * `membership_fees` désigne la rubrique des cotisations : c'est elle que l'indicateur
+ * rapporte au coût d'un adhérent. Sans objet pour un pôle.
+ */
+export const CATEGORY_GROUP_KINDS = ['pole', 'rubrique'] as const;
+export type CategoryGroupKind = (typeof CATEGORY_GROUP_KINDS)[number];
+
+export const categoryGroupsTable = sqliteTable('category_groups', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  kind: text('kind', { enum: CATEGORY_GROUP_KINDS }).notNull(),
+  label: text('label').notNull(),
+  position: integer('position').notNull().default(0),
+  membershipFees: integer('membership_fees', { mode: 'boolean' }).notNull().default(false),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
+}, (table) => ({
+  kindLabelIdx: uniqueIndex('category_groups_kind_label_idx').on(table.kind, table.label),
+  kindCheck: check('category_groups_kind_check', sql`${table.kind} IN ('pole', 'rubrique')`)
+}));
+
 export const categoriesTable = sqliteTable('categories', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   // Unique : rend `INSERT OR IGNORE` du seed de référence réellement idempotent
@@ -72,6 +99,10 @@ export const categoriesTable = sqliteTable('categories', {
   receiptAccountClassId: integer('receipt_account_class_id').references(() => accountClassesTable.id),
   expenseAccountClassId: integer('expense_account_class_id').references(() => accountClassesTable.id),
   active: integer('active', { mode: 'boolean' }).notNull().default(true),
+  /** Pôle du tableau de bord ; sans pôle, la catégorie n'apparaît dans aucun bilan de pôle. */
+  poleId: integer('pole_id').references(() => categoryGroupsTable.id, { onDelete: 'set null' }),
+  /** Rubrique de « Où va votre cotisation » ; sans rubrique, elle compte dans « Autres ». */
+  rubriqueId: integer('rubrique_id').references(() => categoryGroupsTable.id, { onDelete: 'set null' }),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
 });
 

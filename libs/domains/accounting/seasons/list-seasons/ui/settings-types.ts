@@ -29,6 +29,20 @@ export interface Category {
   active?: boolean;
   receiptCode?: string | null;
   expenseCode?: string | null;
+  poleId?: number | null;
+  rubriqueId?: number | null;
+}
+
+export type CategoryGroupKind = 'pole' | 'rubrique';
+
+/** Un pôle ou une rubrique du tableau de bord, tel que le rend `/accounting/category-groups`. */
+export interface CategoryGroup {
+  id: number;
+  kind: CategoryGroupKind;
+  label: string;
+  position: number;
+  membershipFees: boolean;
+  categoryCount: number;
 }
 
 export interface AccountClass {

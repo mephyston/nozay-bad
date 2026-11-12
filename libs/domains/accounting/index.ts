@@ -58,6 +58,9 @@ import { listChecksRoute } from './checks/list-checks/route';
 import { recordCheckTransactionRoute } from './checks/record-check-ledger-entry/route';
 import { createBankCheckDepositRoute } from './checks/create-bank-check-deposit/route';
 import { generateDepositSlipRoute } from './checks/generate-deposit-slip/route';
+import { listCategoryGroupsRoute } from './config/list-category-groups/route';
+import { saveCategoryGroupRoute } from './config/save-category-group/route';
+import { deleteCategoryGroupRoute } from './config/delete-category-group/route';
 
 // AI Routes
 import { generateAiAnalysisRoute } from './ai/generate-analysis/route';
@@ -99,6 +102,9 @@ accountingRouter.route('/', deleteCategoryRoute);
 accountingRouter.route('/', createAccountClassRoute);
 accountingRouter.route('/', updateAccountClassRoute);
 accountingRouter.route('/', deleteAccountClassRoute);
+accountingRouter.route('/', listCategoryGroupsRoute);
+accountingRouter.route('/', saveCategoryGroupRoute);
+accountingRouter.route('/', deleteCategoryGroupRoute);
 
 // 3. INVOICES ROUTES
 accountingRouter.route('/', listInvoicesRoute);
@@ -132,6 +138,8 @@ accountingRouter.route('/', generateDepositSlipRoute);
 
 export { normalizeCategory, cleanName } from './shared/helpers';
 export { getSeasonReports } from './seasons/get-season-reports/handler';
+export { createGetFeeBreakdownRoute } from './seasons/get-fee-breakdown/route';
+export type { FeeBreakdown, FeeBreakdownLine, FeeBreakdownSource } from './seasons/get-fee-breakdown/dto';
 
 import { CreateLedgerEntryRepository } from './ledger/create-ledger-entry/repository';
 export { CreateLedgerEntryRepository };

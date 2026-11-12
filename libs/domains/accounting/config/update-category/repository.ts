@@ -1,9 +1,14 @@
 import { categoriesTable } from '@nba/accounting/schema';
 import { type DbOrTx } from '@nba/db';
 import { eq } from 'drizzle-orm';
-import { accountClassesTable } from '../../shared/schema';
+import { accountClassesTable, categoryGroupsTable, type CategoryGroupKind } from '../../shared/schema';
 
 export class UpdateCategoryRepository {
+  async groupKind(db: DbOrTx, id: number): Promise<CategoryGroupKind | undefined> {
+    const row = await db.select({ kind: categoryGroupsTable.kind }).from(categoryGroupsTable).where(eq(categoryGroupsTable.id, id)).get();
+    return row?.kind;
+  }
+
   async updateCategory(db: DbOrTx, id: number, values: {
     adminLabel?: string;
     adherentLabel?: string;
@@ -13,12 +18,16 @@ export class UpdateCategoryRepository {
     receiptCode?: string | null;
     expenseCode?: string | null;
     active?: boolean;
+    poleId?: number | null;
+    rubriqueId?: number | null;
   }): Promise<any> {
     const updateData: any = {};
     if (values.adminLabel !== undefined) updateData.adminLabel = values.adminLabel;
     if (values.adherentLabel !== undefined) updateData.adherentLabel = values.adherentLabel;
     if (values.hideInExpenses !== undefined) updateData.hideInExpenses = values.hideInExpenses;
     if (values.active !== undefined) updateData.active = values.active;
+    if (values.poleId !== undefined) updateData.poleId = values.poleId;
+    if (values.rubriqueId !== undefined) updateData.rubriqueId = values.rubriqueId;
 
     if (values.receiptAccountClassId !== undefined) {
       updateData.receiptAccountClassId = values.receiptAccountClassId;

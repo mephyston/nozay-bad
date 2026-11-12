@@ -7,3 +7,5 @@ export { default as GeneralMeetingReport } from '../seasons/get-season-reports/u
 export { default as SettingsManager } from '../seasons/list-seasons/ui/SettingsManager.svelte';
 export { default as InvoicesManager } from '../invoices/list-invoices/ui/InvoicesManager.svelte';
 export { default as TreasuryConfig } from '../config/save-account/ui/TreasuryConfig.svelte';
+export { default as FeeBreakdownCard } from '../seasons/get-fee-breakdown/ui/FeeBreakdownCard.svelte';
+export type { FeeBreakdown, FeeBreakdownLine } from '../seasons/get-fee-breakdown/dto';
