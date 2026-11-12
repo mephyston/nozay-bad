@@ -65,10 +65,19 @@ export async function deleteCategoryGroup(state: SettingsState, group: CategoryG
   });
 }
 
-/** Range une catégorie dans un pôle ou une rubrique ; null l'en retire. */
-export function assignCategory(state: SettingsState, categoryId: number, updates: { poleId?: number | null; rubriqueId?: number | null }) {
-  return runSettingsAction(state, {
-    body: { action: 'update_category', id: categoryId, updates },
-    success: ''
+/**
+ * Range une catégorie dans un pôle ou une rubrique ; null l'en retire.
+ *
+ * Sans rechargement, à la différence des autres écritures de l'écran : on range une
+ * vingtaine de catégories à la suite, au glisser-déposer, et l'écran les montre déjà à
+ * leur nouvelle place. Lève si le serveur refuse : l'appelant remet la catégorie où elle
+ * était et l'annonce.
+ */
+export async function saveCategoryPlacement(categoryId: number, updates: { poleId?: number | null; rubriqueId?: number | null }) {
+  const res = await fetch(RELAIS, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'update_category', id: categoryId, updates })
   });
+  if (!res.ok) throw new Error(await readApiError(res, 'La catégorie n’a pas pu être rangée.'));
 }

@@ -8,6 +8,9 @@ export class Category {
   receiptAccountClassId?: number | null;
   expenseAccountClassId?: number | null;
   active: boolean;
+  /** Pôle et rubrique du tableau de bord (`category_groups`). */
+  poleId: number | null;
+  rubriqueId: number | null;
 
   constructor(data: {
     id: number;
@@ -19,6 +22,8 @@ export class Category {
     receiptAccountClassId?: number | null;
     expenseAccountClassId?: number | null;
     active?: boolean;
+    poleId?: number | null;
+    rubriqueId?: number | null;
   }) {
     this.id = data.id;
     this.adminLabel = data.adminLabel;
@@ -29,6 +34,8 @@ export class Category {
     this.receiptAccountClassId = data.receiptAccountClassId ?? null;
     this.expenseAccountClassId = data.expenseAccountClassId ?? null;
     this.active = data.active ?? true;
+    this.poleId = data.poleId ?? null;
+    this.rubriqueId = data.rubriqueId ?? null;
   }
 
   canBeExpense(): boolean {

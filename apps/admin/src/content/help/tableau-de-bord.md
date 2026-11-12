@@ -22,14 +22,24 @@ Cette carte montre ce que coûte un adhérent au club, poste par poste (encadrem
 
 Les chiffres viennent du **budget prévisionnel** de la saison s'il est saisi, sinon des comptes de la **saison précédente**. Un budget saisi est plus juste qu'un réalisé partiel : en novembre, deux mois de salaires pèsent peu face à des licences déjà toutes payées. Sous la carte, les dépenses déjà passées sont comparées à celles prévues.
 
-Chaque poste est une **rubrique**, que vous rangez dans **Configuration › Catégories et classes › Pôles**. Une rubrique qui encaisse plus qu'elle ne dépense (un tournoi, par exemple) passe du côté des ressources.
+Chaque poste est une **rubrique**, que vous composez dans **Configuration › Catégories et classes › Pôles et rubriques** (voir plus bas). Une rubrique qui encaisse plus qu'elle ne dépense (un tournoi, par exemple) passe du côté des ressources.
 
 > [!TIP]
 > Les adhérents peuvent voir la même carte sur la page « Ma cotisation » de leur espace, avec leur propre cotisation découpée. Elle est éteinte au départ : allumez « Où va ma cotisation » dans **Configuration › Club › Fonctionnalités** une fois les rubriques rangées.
 
 ## Le bilan des pôles d'activité
 
-En dessous, une carte par pôle répartit les recettes et dépenses de la saison. Les pôles et leur ordre se règlent dans **Configuration › Catégories et classes › Pôles**, où chaque catégorie comptable choisit son pôle. Renommer une catégorie ne la fait plus changer de pôle.
+En dessous, une carte par pôle répartit les recettes et dépenses de la saison. Les pôles se règlent dans **Configuration › Catégories et classes › Pôles et rubriques**. Renommer une catégorie ne la fait plus changer de pôle.
+
+## Ranger les catégories
+
+L'onglet **Pôles et rubriques** montre deux tableaux : les pôles, puis les rubriques. Chaque colonne affiche ses catégories. La dernière réunit celles qui ne sont pas rangées.
+
+- **À la souris** : glissez une catégorie d'une colonne à l'autre.
+- **Au doigt** : « Ajouter une catégorie » sous une colonne, ou la croix d'une catégorie pour l'en retirer.
+- Les **⋯** d'une colonne la déplacent, la suppriment ou, pour une rubrique, la désignent comme celle des cotisations. Son libellé se modifie directement dans son titre.
+
+Chaque déplacement est enregistré aussitôt.
 
 > [!NOTE]
 > Une catégorie rangée dans aucun pôle n'apparaît dans aucune carte. Elle reste bien entendu comptée dans les rapports financiers, qui font foi.

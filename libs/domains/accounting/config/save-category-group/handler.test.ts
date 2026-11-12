@@ -6,6 +6,7 @@ import { createCategoryGroup, updateCategoryGroup } from './handler';
 import { deleteCategoryGroup } from '../delete-category-group/handler';
 import { listCategoryGroups } from '../list-category-groups/handler';
 import { updateCategory } from '../update-category/handler';
+import { listCategories } from '../list-categories/handler';
 
 describe('pôles et rubriques', () => {
   let db: Db;
@@ -60,6 +61,9 @@ describe('pôles et rubriques', () => {
 
     await expect(updateCategory(db, volants!.id, { poleId: rubrique.id })).rejects.toThrow(/Pôle inconnu/);
     await updateCategory(db, volants!.id, { poleId: pole.id, rubriqueId: rubrique.id });
+    // L'écran de rangement lit la liste des catégories : le rangement doit y voyager.
+    const listed = (await listCategories(db) as any[]).find((c) => c.id === volants!.id);
+    expect(listed).toMatchObject({ poleId: pole.id, rubriqueId: rubrique.id });
 
     await deleteCategoryGroup(db, pole.id);
     const after = await db.get<{ pole_id: number | null; rubrique_id: number | null }>(sql`SELECT pole_id, rubrique_id FROM categories WHERE id = ${volants!.id}`);
