@@ -25,9 +25,16 @@ if (active) {
   if (avecRepartition) {
     const requete = season?.code ? `?seasonId=${encodeURIComponent(season.code)}` : '';
     // En cas d'échec, la page reste celle d'hier : montants dus et réglés, sans la carte.
-    repartition = await api.fetch(`/dashboard/members/fee-breakdown${requete}`)
-      .then(async (res) => (res.ok ? ((await res.json()) as { data: FeeBreakdown }).data : null))
-      .catch(() => null);
+    repartition = await api.fetch(`http://localhost/dashboard/members/fee-breakdown${requete}`)
+      .then(async (res) => {
+        if (res.ok) return ((await res.json()) as { data: FeeBreakdown }).data;
+        console.error(`[cotisation] répartition : l'API a répondu ${res.status}`);
+        return null;
+      })
+      .catch((err) => {
+        console.error('[cotisation] répartition illisible :', err);
+        return null;
+      });
   }
   const donnees = await chargerCompte(
     api.fetch.bind(api),
