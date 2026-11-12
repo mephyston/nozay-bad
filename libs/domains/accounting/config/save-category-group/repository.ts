@@ -9,11 +9,6 @@ export class SaveCategoryGroupRepository {
     return db.select().from(categoryGroupsTable).where(eq(categoryGroupsTable.id, id)).get();
   }
 
-  async findByLabel(db: Db, kind: CategoryGroupKind, label: string): Promise<GroupRow | undefined> {
-    return db.select().from(categoryGroupsTable)
-      .where(and(eq(categoryGroupsTable.kind, kind), eq(categoryGroupsTable.label, label))).get();
-  }
-
   async nextPosition(db: Db, kind: CategoryGroupKind): Promise<number> {
     const row = await db.get<{ p: number | null }>(sql`SELECT MAX(position) AS p FROM category_groups WHERE kind = ${kind}`);
     return (row?.p ?? 0) + 1;
