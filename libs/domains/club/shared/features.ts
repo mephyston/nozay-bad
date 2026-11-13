@@ -31,6 +31,7 @@ export const FEATURES = [
   'checks',
   'expenses',
   'fee_breakdown',
+  'cash_receipts',
   // — Boutique —
   'shop',
   'buvette',
@@ -113,6 +114,13 @@ export const FEATURE_CATALOG: Record<Feature, FeatureInfo> = {
   expenses: {
     label: 'Notes de frais',
     description: "Notes de frais déposées par les adhérents autorisés et validées par la trésorerie.",
+    group: 'Comptabilité'
+  },
+  cash_receipts: {
+    label: 'Encaissement d’espèces',
+    description:
+      "Reçus d'espèces signés sur place par le payeur (QR code dans l'espace adhérent, code par courriel ou signature au doigt), " +
+      "espèces en circulation par personne et remise au trésorier. Éteint, l'écran « Espèces » de l'admin et « Scanner un reçu » de l'espace adhérent disparaissent.",
     group: 'Comptabilité'
   },
   fee_breakdown: {
@@ -207,6 +215,7 @@ export const FEATURE_PREREQUISITES: Partial<Record<Feature, readonly Feature[]>>
   // règlement en demande un, et c'est l'écriture qui le dira.
   checks: ['accounting'],
   fee_breakdown: ['accounting'],
+  cash_receipts: ['accounting'],
   reminder_unpaid: ['push'],
   reminder_rankings: ['push', 'teams'],
   reminder_lineups: ['push', 'teams'],

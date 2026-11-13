@@ -13,7 +13,7 @@ import { listHeldCashReceipts } from '../list-cash-receipts/handler';
 import { listCashInHand } from '../list-cash-in-hand/handler';
 import { openCashHandover } from '../open-cash-handover/handler';
 import { cancelCashHandover } from '../cancel-cash-handover/handler';
-import { confirmCashHandover, signCashHandover } from './handler';
+import { confirmCashHandover, depositOwnCash, signCashHandover } from './handler';
 
 /**
  * L'encaissement d'espèces de bout en bout (RF-ACC-003) : un reçu signé des deux parties
@@ -106,9 +106,8 @@ describe('encaissement d’espèces', () => {
     }
     expect(await listCashInHand(db)).toMatchObject([{ collectorEmail: COACH, count: 3, totalCents: 450_00 }]);
 
-    // Un écart sans catégorie est refusé ; on ne se remet pas d'espèces à soi-même.
+    // Un écart sans catégorie est refusé.
     await expect(openCashHandover(db, TRESORIER, { collectorEmail: COACH, countedCents: 350_00 })).rejects.toThrow(/écart/);
-    await expect(openCashHandover(db, COACH, { collectorEmail: COACH, countedCents: 450_00 })).rejects.toThrow(/soi-même/);
 
     const before = await entries();
     const handover = await openCashHandover(db, TRESORIER, { collectorEmail: COACH, countedCents: 350_00, gapCategoryId: ecart });
@@ -130,6 +129,24 @@ describe('encaissement d’espèces', () => {
     // Signer deux fois n'écrit rien deux fois.
     await expect(signCashHandover(db, handover.id, SIGNATURE)).rejects.toThrow(/n’attend plus/);
     expect(await entries()).toBe(before + 4);
+  });
+
+  it('laisse le trésorier déposer seul ses propres espèces, et personne d’autre', async () => {
+    const { receipt } = await openCashReceipt(db, TRESORIER, { payerMemberId: alex, amountCents: 80_00, categoryId: cotisation, collectorName: 'Trésorier' });
+    await signWithSignature(db, mailer, TRESORIER, receipt.id, SIGNATURE);
+    const before = await entries();
+
+    const own = await openCashHandover(db, TRESORIER, { collectorEmail: TRESORIER, countedCents: 80_00 });
+    // Un entraîneur ne dépose pas sans seconde signature ce qui n'est pas à lui.
+    await expect(depositOwnCash(db, COACH, own.id)).rejects.toMatchObject({ status: 403 });
+    expect(await depositOwnCash(db, TRESORIER, own.id)).toMatchObject({ status: 'sealed', receipts: 1 });
+    expect(await entries()).toBe(before + 1);
+
+    // La remise d'un entraîneur, elle, exige toujours sa signature.
+    const coach = await ouvrir(30_00);
+    await signWithSignature(db, mailer, COACH, coach.receipt.id, SIGNATURE);
+    const remise = await openCashHandover(db, TRESORIER, { collectorEmail: COACH, countedCents: 30_00 });
+    await expect(depositOwnCash(db, TRESORIER, remise.id)).rejects.toMatchObject({ status: 403 });
   });
 
   it('rend ses reçus à l’encaisseur quand la remise est abandonnée', async () => {

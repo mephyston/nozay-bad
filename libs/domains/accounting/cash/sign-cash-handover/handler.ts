@@ -73,6 +73,20 @@ export async function confirmCashHandover(db: Db, actorEmail: string, qr: string
   return await seal(db, handover, { signatureMethod: 'admin', signatureData: null }, now);
 }
 
+/**
+ * Le trésorier dépose en Caisse les espèces qu'il a lui-même encaissées : il a compté,
+ * il valide. Pas de seconde signature — c'est son rôle de mettre l'argent en caisse. La
+ * remise le dit (`treasurer`), et les reçus des payeurs restent signés.
+ */
+export async function depositOwnCash(db: Db, actorEmail: string, id: number, now = new Date()) {
+  const handover = await findHandover(db, id);
+  const actor = actorEmail.toLowerCase();
+  if (!handover || handover.treasurerEmail !== actor || handover.collectorEmail !== actor) {
+    throw new AppError('Seules vos propres espèces se déposent sans seconde signature.', 403);
+  }
+  return await seal(db, handover, { signatureMethod: 'treasurer', signatureData: null }, now);
+}
+
 /** Dernier recours : l'encaisseur signe au doigt sur l'écran du trésorier. */
 export async function signCashHandover(db: Db, id: number, signature: string, now = new Date()) {
   if (!isSignatureImage(signature)) throw new AppError('Signature illisible.', 400);

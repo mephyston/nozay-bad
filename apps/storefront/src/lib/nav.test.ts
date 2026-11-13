@@ -17,7 +17,7 @@ describe('storefrontNavGroups', () => {
 
   it('retire ce que le club a éteint et ce que le profil ne peut pas voir', () => {
     const groups = storefrontNavGroups({
-      features: { shop: false, teams: false, attestations: false, push: false, accounting: false },
+      features: { shop: false, teams: false, attestations: false, push: false, cash_receipts: false },
       session: { ...session, members: [{ ...session.members[0], expenseAuthorized: false }] }
     });
     expect(groups[0].items.map((i) => i.name)).toEqual(['Accueil', 'Actualités', 'Calendrier']);

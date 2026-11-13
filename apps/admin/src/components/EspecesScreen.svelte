@@ -27,9 +27,15 @@
       <div class="mt-6 grid gap-6 lg:grid-cols-2">
         <CashReceiptDesk members={d.members} categories={d.categories} collectorName={d.collectorName} onSealed={recharger} />
         <div class="space-y-6">
-          <HeldCashReceipts receipts={d.held.receipts} totalCents={d.held.totalCents} onHandedOver={recharger} />
+          <HeldCashReceipts receipts={d.held.receipts} totalCents={d.held.totalCents} canReceive={d.canReceive} onHandedOver={recharger} />
           {#if d.canReceive}
-            <CashInHandBoard lines={d.cashInHand} categories={d.gapCategories} onOpened={(handover, collectorName) => (remise = { handover, collectorName })} />
+            <CashInHandBoard
+              lines={d.cashInHand}
+              categories={d.gapCategories}
+              selfEmail={d.collectorEmail}
+              onOpened={(handover, collectorName) => (remise = { handover, collectorName })}
+              onDeposited={recharger}
+            />
           {/if}
         </div>
       </div>

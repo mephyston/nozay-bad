@@ -54,9 +54,9 @@ const FEATURE_PAGES: [string, Feature][] = [
   ['/api/attestation', 'attestations'],
   ['/calendrier', 'calendar_feed'],
   ['/api/agenda', 'calendar_feed'],
-  // Reçus d'espèces : la remise passe par la comptabilité du club.
-  ['/mon-compte/recu', 'accounting'],
-  ['/api/recu', 'accounting']
+  // Reçus d'espèces : masquables par le club (fonctionnalité « Encaissement d'espèces »).
+  ['/mon-compte/recu', 'cash_receipts'],
+  ['/api/recu', 'cash_receipts']
 ];
 
 function featureOf(path: string): Feature | undefined {

@@ -129,7 +129,7 @@ export const PAGE_FEATURES: Record<string, Feature> = {
   '/admin/accounting/reports': 'accounting',
   '/admin/accounting/reports/[report]': 'accounting',
 
-  '/admin/accounting/especes': 'accounting',
+  '/admin/accounting/especes': 'cash_receipts',
   '/admin/expenses': 'expenses',
 
   '/admin/shop/products': 'shop',

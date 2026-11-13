@@ -10,9 +10,11 @@
    * C'est aussi d'ici qu'il signe sa remise : il scanne le QR code affiché chez le
    * trésorier, connecté avec son propre compte (§3.6).
    */
-  let { receipts = [], totalCents = 0, onHandedOver }: {
+  let { receipts = [], totalCents = 0, canReceive = false, onHandedOver }: {
     receipts: CashReceiptView[];
     totalCents: number;
+    /** Le trésorier dépose ses propres espèces depuis « Espèces en circulation » : pas de scan. */
+    canReceive?: boolean;
     onHandedOver?: () => void;
   } = $props();
 
@@ -64,7 +66,11 @@
           </li>
         {/each}
       </ul>
-      <Button variant="outline" onclick={() => { done = null; scanning = true; }}><ScanLine data-icon="inline-start" />Scanner la remise du trésorier</Button>
+      {#if canReceive}
+        <p class="text-xs text-muted-foreground">Vous êtes trésorier : déposez-les en Caisse depuis « Espèces en circulation », ligne à votre nom.</p>
+      {:else}
+        <Button variant="outline" onclick={() => { done = null; scanning = true; }}><ScanLine data-icon="inline-start" />Scanner la remise du trésorier</Button>
+      {/if}
     {/if}
   </Card.Content>
 </Card.Root>

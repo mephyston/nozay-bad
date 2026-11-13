@@ -14,12 +14,20 @@
   let {
     lines = [],
     categories = [],
-    onOpened
+    selfEmail = '',
+    onOpened,
+    onDeposited
   }: {
     lines: { collectorEmail: string; collectorName: string; count: number; totalCents: number; heldSince: string | null }[];
     categories: { id: number; label: string; adminLabel?: string }[];
     onOpened: (handover: OpenedHandover, collectorName: string) => void;
+    /** Le compte connecté : sur sa propre ligne, le trésorier dépose seul en Caisse. */
+    selfEmail?: string;
+    /** Ses propres espèces sont passées en Caisse. */
+    onDeposited?: () => void;
   } = $props();
+
+  const isSelf = (email: string) => !!selfEmail && email === selfEmail.toLowerCase();
 
   let selected = $state<string | null>(null);
   let counted = $state('');
@@ -52,7 +60,17 @@
         gapCategoryId: gap !== 0 ? Number(gapCategoryId) || null : null
       });
       selected = null;
-      onOpened(h, ligne.collectorName);
+      if (isSelf(ligne.collectorEmail)) {
+        // Ses propres espèces : le trésorier a compté, il dépose. Pas de seconde signature.
+        // Un dépôt refusé ne doit pas laisser une remise ouverte qui retiendrait ses reçus.
+        await cashAction('deposit_own', { id: h.id }).catch(async (err) => {
+          await cashAction('cancel_handover', { id: h.id }).catch(() => undefined);
+          throw err;
+        });
+        onDeposited?.();
+      } else {
+        onOpened(h, ligne.collectorName);
+      }
     } catch (err) {
       error = err instanceof Error ? err.message : 'Une erreur est survenue.';
     } finally {
@@ -81,7 +99,7 @@
               <span class="block text-xs {days(l.heldSince) > 7 ? 'text-destructive' : 'text-muted-foreground'}">{l.count} reçu(s) · depuis {days(l.heldSince)} jour(s)</span>
             </span>
             <span class="tabular-nums font-semibold text-foreground">{euros(l.totalCents)}</span>
-            <Button size="sm" variant="outline" onclick={() => choisir(l.collectorEmail)}>Recevoir</Button>
+            <Button size="sm" variant="outline" onclick={() => choisir(l.collectorEmail)}>{isSelf(l.collectorEmail) ? 'Déposer en caisse' : 'Recevoir'}</Button>
           </li>
         {/each}
       </ul>
@@ -89,7 +107,9 @@
 
     {#if ligne}
       <form class="space-y-3 rounded-xl border border-border p-4" onsubmit={ouvrir}>
-        <p class="text-sm text-foreground">Remise de <strong>{ligne.collectorName}</strong> : {ligne.count} reçu(s) pour {euros(ligne.totalCents)}. Comptez l'enveloppe.</p>
+        <p class="text-sm text-foreground">
+          {#if isSelf(ligne.collectorEmail)}Vos propres espèces{:else}Remise de <strong>{ligne.collectorName}</strong>{/if} : {ligne.count} reçu(s) pour {euros(ligne.totalCents)}. Comptez l'enveloppe.
+        </p>
         {#if error}<ErrorAlert message={error} />{/if}
         <FormField id="counted" label="Montant compté (€)">
           <Input id="counted" inputmode="decimal" bind:value={counted} placeholder="0,00" class="tabular-nums font-semibold" required />
@@ -104,7 +124,7 @@
           </FormField>
         {/if}
         <div class="flex gap-2">
-          <Button type="submit" disabled={busy || !counted || !Number.isFinite(cents) || (gap !== 0 && !gapCategoryId)}>Ouvrir la remise</Button>
+          <Button type="submit" disabled={busy || !counted || !Number.isFinite(cents) || (gap !== 0 && !gapCategoryId)}>{isSelf(ligne.collectorEmail) ? 'Déposer en caisse' : 'Ouvrir la remise'}</Button>
           <Button type="button" variant="ghost-muted" onclick={() => (selected = null)}>Annuler</Button>
         </div>
       </form>

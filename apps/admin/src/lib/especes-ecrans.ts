@@ -23,7 +23,7 @@ const montant = (valeur: unknown): number => {
 export const ECRANS_ESPECES: Record<string, Ecran> = {
   especes: {
     permission: ENCAISSER,
-    feature: 'accounting',
+    feature: 'cash_receipts',
     charger: async (lire, locals) => {
       const seasons: any[] = sortSeasons((await lire('/accounting/seasons')) ?? []);
       const season = currentSeasonCode(seasons);
@@ -131,6 +131,10 @@ export const ECRANS_ESPECES: Record<string, Ecran> = {
           body: { signature: String(data.signature ?? '') }
         })
       },
+      deposit_own: {
+        permission: RECEVOIR,
+        route: (data) => ({ chemin: `/accounting/cash-handovers/${identifiant(data.id, 'de remise')}/deposit`, method: 'POST' })
+      },
       cancel_handover: {
         permission: RECEVOIR,
         route: (data) => ({ chemin: `/accounting/cash-handovers/${identifiant(data.id, 'de remise')}`, method: 'DELETE' })
@@ -140,7 +144,7 @@ export const ECRANS_ESPECES: Record<string, Ecran> = {
 
   'cash-receipt': {
     permission: ENCAISSER,
-    feature: 'accounting',
+    feature: 'cash_receipts',
     charger: async (lire, _locals, params) => ({
       receipt: await lire(`/accounting/cash-receipts/${identifiant(params.get('id'), 'de reçu')}`)
     })
@@ -148,7 +152,7 @@ export const ECRANS_ESPECES: Record<string, Ecran> = {
 
   'cash-handover': {
     permission: RECEVOIR,
-    feature: 'accounting',
+    feature: 'cash_receipts',
     charger: async (lire, _locals, params) => ({
       handover: await lire(`/accounting/cash-handovers/${identifiant(params.get('id'), 'de remise')}`)
     })

@@ -52,7 +52,7 @@ export function storefrontNavGroups({ features, session }: StorefrontNavContext)
       ...(licence ? [{ name: 'Ma fiche', icon: 'IdCard', href: `/adherents/${licence}`, keywords: ['profil', 'photo', 'portrait', 'licence', 'classement'] }] : []),
       { name: 'Ma cotisation', icon: 'Wallet', href: '/mon-compte/cotisation', keywords: ['paiement', 'licence', 'adhesion', 'reglement', 'facture'] },
       // Signer un reçu d'espèces : le QR code s'affiche chez celui qui encaisse (RF-ACC-003).
-      ...(on(features, 'accounting')
+      ...(on(features, 'cash_receipts')
         ? [{ name: 'Scanner un reçu', icon: 'ScanLine', href: '/mon-compte/recu', keywords: ['especes', 'liquide', 'paiement', 'qr', 'signer', 'recu', 'gymnase'] }]
         : []),
       { name: 'Historique de commandes', icon: 'History', href: '/mon-compte/commandes', keywords: ['commandes', 'boutique', 'achats', 'suivi'] },

@@ -325,7 +325,8 @@ export const seasonCategoryBudgetsTable = sqliteTable('season_category_budgets',
  * L'encaisseur signe en scannant le QR code de la remise depuis l'admin (`admin`), ou au
  * doigt sur l'écran du trésorier (`signature`).
  */
-export const CASH_SIGNATURE_METHODS = ['qr', 'code', 'signature', 'admin'] as const;
+// `treasurer` : le trésorier dépose en Caisse les espèces qu'il a lui-même encaissées, seul.
+export const CASH_SIGNATURE_METHODS = ['qr', 'code', 'signature', 'admin', 'treasurer'] as const;
 export type CashSignatureMethod = (typeof CASH_SIGNATURE_METHODS)[number];
 
 export const cashHandoversTable = sqliteTable('cash_handovers', {

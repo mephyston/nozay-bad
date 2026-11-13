@@ -9,6 +9,8 @@ La rubrique **Espèces** remplace le bordereau papier en double exemplaire. Chaq
 
 Elle est ouverte aux entraîneurs, au trésorier et au président. Encaisser n'écrit rien en comptabilité : les recettes sont passées à la remise, par le trésorier.
 
+Le club peut la masquer : **Configuration › Club › Fonctionnalités**, ligne **Encaissement d'espèces**. Éteinte, la rubrique disparaît de l'admin, et « Scanner un reçu » de l'espace adhérent.
+
 ## Encaisser des espèces
 
 1. Dans **Comptabilité › Espèces**, carte **Encaisser des espèces**, choisissez l'**adhérent qui paie** (ou pour qui l'on paie), le **montant** et le **motif** : cotisation, stage, volants, cordage, maillot…
@@ -37,6 +39,10 @@ La carte **Espèces en ma possession** liste vos reçus signés, pas encore remi
 
 1. Le trésorier compte votre enveloppe et ouvre la remise (voir ci-dessous). Un QR code s'affiche sur son écran.
 2. Sur votre téléphone, dans **Espèces**, appuyez sur **Scanner la remise du trésorier** et visez son QR code. La remise est signée.
+
+## Déposer vos propres espèces (trésorier)
+
+Les espèces que vous avez vous-même encaissées apparaissent dans **Espèces en circulation**, sur la ligne à votre nom. Appuyez sur **Déposer en caisse**, saisissez le montant compté, et validez : les recettes passent en Caisse sans seconde signature.
 
 ## Recevoir une remise (trésorier)
 

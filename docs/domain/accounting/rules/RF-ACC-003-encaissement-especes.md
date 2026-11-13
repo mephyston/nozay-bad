@@ -21,6 +21,8 @@ Chaque passage de main devient un **reçu électronique signé des deux parties,
 - Seul le droit **« Recevoir une remise d'espèces »**, donné au trésorier, ouvre une remise et passe les écritures.
 - L'encaissement est **toujours lancé par celui qui reçoit l'argent**, depuis l'admin, connecté avec son propre compte. Cette saisie authentifiée et horodatée est **sa signature** : il ne peut plus nier avoir reçu l'argent.
 
+- La fonctionnalité de club **« Encaissement d'espèces »** (`cash_receipts`, allumée par défaut, suppose la comptabilité) masque l'ensemble : écran de l'admin, « Scanner un reçu », routes de l'API.
+
 ### 3.2 Ce que l'on encaisse
 - **Un payeur.** C'est un adhérent ou un membre de son foyer, par exemple un parent qui paie pour son enfant.
 - **Un montant**, en euros, strictement positif.
@@ -55,6 +57,7 @@ Abandonné avant signature, l'encaissement est annulé et ne laisse aucune écri
 ### 3.6 La remise au trésorier
 - Le trésorier ouvre une remise pour un encaisseur. Elle reprend tous ses reçus non remis. Il **compte l'enveloppe** et saisit le montant compté. L'écran affiche en face la somme des reçus.
 - **Les deux signent sur place.** Le trésorier signe par sa saisie. L'encaisseur scanne le QR code de la remise depuis l'admin, connecté avec son propre compte, ou signe au doigt en dernier recours.
+- **Les espèces que le trésorier a lui-même encaissées**, il les dépose seul en Caisse : il compte, il valide (« Déposer en caisse »). C'est son rôle de mettre l'argent en caisse ; la remise est marquée `treasurer`, et les reçus des payeurs restent signés. Personne d'autre ne dépose sans la signature de l'encaisseur.
 - La signature au doigt se fait sur l'écran du trésorier : elle ne prouve rien de plus que sa parole. Elle est enregistrée comme telle (`signature`), et le bureau doit la tenir pour l'exception.
 - **Écritures, passées par le trésorier à la signature de la remise :**
   - une recette par reçu, en Caisse, dans la catégorie du reçu, rattachée à l'adhérent et datée du jour du reçu ;
@@ -95,6 +98,12 @@ Fonctionnalité: Encaissement d'espèces signé par les deux parties
   Scénario: Le reçu ne passe aucune écriture
     Étant donné un reçu de 150 € scellé par Camille
     Alors le grand livre n'a aucune écriture nouvelle tant que la remise n'est pas signée
+
+  Scénario: Le trésorier dépose ses propres espèces
+    Étant donné le trésorier détenant 80 € d'un reçu qu'il a lui-même encaissé
+    Quand il compte 80 € et dépose en caisse
+    Alors la recette est passée en Caisse sans seconde signature
+    Et un entraîneur ne peut pas déposer ainsi les espèces d'un autre
 
   Scénario: Payeur sans téléphone
     Quand Camille fait signer le payeur au doigt sur son écran

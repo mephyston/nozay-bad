@@ -8,12 +8,15 @@ export interface OpenCashHandoverInput { collectorEmail: string; countedCents: n
  * Le trésorier ouvre la remise d'un encaisseur : il a compté l'enveloppe, l'écran met en
  * face la somme des reçus. Tous les reçus détenus y entrent ; une seule remise en attente
  * par encaisseur. L'écart, s'il y en a un, se passera dans la catégorie choisie.
+ *
+ * Ouverte sur ses propres reçus, c'est le dépôt en Caisse du trésorier : son statut l'y
+ * autorise, il la scelle seul.
  */
 export async function openCashHandover(db: Db, treasurerEmail: string, input: OpenCashHandoverInput, now = new Date()) {
   if (!treasurerEmail) throw new AppError('Trésorier inconnu.', 401);
   const repo = new OpenCashHandoverRepository();
   const collectorEmail = input.collectorEmail.trim().toLowerCase();
-  if (collectorEmail === treasurerEmail.toLowerCase()) throw new AppError('On ne se remet pas des espèces à soi-même.', 400);
+  // Le trésorier peut ouvrir sa propre remise : il dépose alors seul en Caisse (`depositOwnCash`).
 
   const seasonId = await repo.activeSeasonId(db);
   if (!seasonId) throw new AppError('Aucune saison active.', 400);
