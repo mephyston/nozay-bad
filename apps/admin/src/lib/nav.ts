@@ -77,6 +77,7 @@ export const NAV_GROUPS: NavGroup[] = [
         réglés dans l'administration, et le menu en tire une entrée chacun à cette place
         (`menuAccountItems`, ci-dessous). `page-permissions` connaît leur page par son motif.
       */
+      { name: 'Espèces', icon: 'Banknote', href: '/admin/accounting/especes', permission: 'accounting:cash-receipts:write', feature: 'accounting', keywords: ['liquide', 'encaisser', 'reçu', 'gymnase', 'remise', 'enveloppe'] },
       { name: 'Notes de frais', icon: 'Coins', href: '/admin/expenses', permission: 'expenses:reports:read', feature: 'expenses', keywords: ['remboursement', 'depense', 'frais', 'benevole'] }
     ]
   },

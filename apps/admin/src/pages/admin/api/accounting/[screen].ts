@@ -2,6 +2,7 @@ import { can } from '../../../../lib/guard';
 import { oublierClub } from '../../../../lib/club';
 import { creerRelais, identifiant, Refus, type Ecran, type Lecteur } from '../../../../lib/relais';
 import { currentSeasonCode, sortSeasons } from '../../../../lib/seasons';
+import { ECRANS_ESPECES } from '../../../../lib/especes-ecrans';
 
 /**
  * Les écrans du domaine « comptabilité ».
@@ -1171,4 +1172,4 @@ export const ECRANS: Record<string, Ecran> = {
   }
 };
 
-export const { GET, POST } = creerRelais(ECRANS);
+export const { GET, POST } = creerRelais({ ...ECRANS, ...ECRANS_ESPECES });

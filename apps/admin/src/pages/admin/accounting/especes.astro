@@ -1,0 +1,19 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import AdminLayout from '../../../components/AdminLayout.svelte';
+import EspecesScreen from '../../../components/EspecesScreen.svelte';
+
+/*
+  Page figée, comme les autres écrans en coquille : l'îlot demande ses données au relais
+  de la comptabilité (`/admin/api/accounting/especes`).
+*/
+export const prerender = true;
+---
+
+<Layout title="Espèces">
+  <AdminLayout client:idle breadcrumb="Comptabilité / Espèces">
+    <div class="space-y-6">
+      <EspecesScreen client:load />
+    </div>
+  </AdminLayout>
+</Layout>

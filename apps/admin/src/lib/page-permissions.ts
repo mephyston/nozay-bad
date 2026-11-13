@@ -46,6 +46,7 @@ export const PAGE_PERMISSIONS: Record<string, Permission | null> = {
   '/admin/accounting/reports': 'accounting:reports:read',
   '/admin/accounting/reports/[report]': 'accounting:reports:read',
 
+  '/admin/accounting/especes': 'accounting:cash-receipts:write',
   '/admin/expenses': 'expenses:reports:read',
 
   '/admin/shop/products': 'shop:products:read',
@@ -128,6 +129,7 @@ export const PAGE_FEATURES: Record<string, Feature> = {
   '/admin/accounting/reports': 'accounting',
   '/admin/accounting/reports/[report]': 'accounting',
 
+  '/admin/accounting/especes': 'accounting',
   '/admin/expenses': 'expenses',
 
   '/admin/shop/products': 'shop',

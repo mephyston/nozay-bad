@@ -62,7 +62,8 @@ export class SignCashHandoverRepository {
       await db.batch(statements as [any, ...any[]]);
       return true;
     } catch (err) {
-      if (/CHECK constraint failed/i.test(String((err as any)?.cause?.message ?? (err as Error)?.message ?? err))) return false;
+      // Seule la contrainte de garde dit « déjà signée » ; toute autre violation est un vrai défaut.
+      if (/cash_handovers_counted_check/.test(String((err as any)?.cause?.message ?? (err as Error)?.message ?? err))) return false;
       throw err;
     }
   }

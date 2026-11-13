@@ -7,5 +7,5 @@ export async function cancelCashHandover(db: Db, id: number): Promise<void> {
   const h = await findHandover(db, id);
   if (!h) throw new AppError('Remise introuvable.', 404);
   if (h.status !== 'pending') throw new AppError('Une remise signée ne s’annule pas.', 409);
-  await new CancelCashHandoverRepository().cancel(db, id);
+  if (!(await new CancelCashHandoverRepository().cancel(db, id))) throw new AppError('Cette remise vient d’être signée.', 409);
 }

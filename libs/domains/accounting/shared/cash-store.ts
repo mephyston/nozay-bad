@@ -101,6 +101,17 @@ export async function sealReceipt(
   return rows.length === 1;
 }
 
+/** Annule un reçu encore en attente ; faux s'il a été signé entre-temps. */
+export async function cancelPendingReceipt(db: DbOrTx, id: number): Promise<boolean> {
+  const rows = await db
+    .update(cashReceiptsTable)
+    .set({ status: 'cancelled', tokenHash: null, tokenExpiresAt: null, codeHash: null, codeExpiresAt: null })
+    .where(and(eq(cashReceiptsTable.id, id), eq(cashReceiptsTable.status, 'pending')))
+    .returning({ id: cashReceiptsTable.id })
+    .all();
+  return rows.length === 1;
+}
+
 /** Les reçus scellés qu'un encaisseur détient encore : pas encore remis. */
 export async function heldReceipts(db: DbOrTx, collectorEmail: string) {
   return db

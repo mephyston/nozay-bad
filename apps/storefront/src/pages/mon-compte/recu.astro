@@ -1,0 +1,27 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Header from '../../components/Header.astro';
+import PageTitle from '../../components/PageTitle.astro';
+import MobileNav from '../../components/MobileNav.svelte';
+import { ScanCashReceipt } from '@nba/accounting-ui';
+
+/**
+ * Signer un reçu d'espèces (RF-ACC-003) : l'adhérent connecté scanne le QR code affiché
+ * par celui qui encaisse. Le scan se fait ici, dans l'espace adhérent, et non avec
+ * l'appareil photo du téléphone : sur iPhone, celui-ci ouvrirait le navigateur, où
+ * l'adhérent n'est pas connecté.
+ */
+---
+
+<Layout title="Scanner un reçu">
+  <Header currentPath="/mon-compte" />
+  <main class="w-full flex-1 p-3 pb-nav sm:p-6 md:pb-6">
+    <div class="mx-auto max-w-md space-y-4">
+      <PageTitle title="Scanner un reçu" retour={{ href: '/mon-compte', label: 'Mon compte' }}>
+        <p class="text-sm text-muted-foreground">Signez sur place le reçu des espèces que vous remettez.</p>
+      </PageTitle>
+      <ScanCashReceipt client:load />
+    </div>
+  </main>
+  <MobileNav client:idle features={Astro.locals.club?.features ?? {}} currentPath="/mon-compte" />
+</Layout>

@@ -5,6 +5,7 @@
     PanelBottom,
     LayoutDashboard,
     Coins,
+    Banknote,
     Users,
     UploadCloud,
     BarChart3,
@@ -77,7 +78,7 @@
   // où l'on ne veut pas charger de composants Svelte.
   const ICONS: Record<string, any> = {
     LayoutDashboard, Users, BarChart3, BookOpen, FileCheck, Scale,
-    Landmark, Wallet, Coins, Package, ShoppingCart, Bell, Megaphone, Image, FileText, Newspaper, CalendarClock, CalendarDays, PanelBottom, Settings, User, HelpCircle,
+    Landmark, Wallet, Coins, Banknote, Package, ShoppingCart, Bell, Megaphone, Image, FileText, Newspaper, CalendarClock, CalendarDays, PanelBottom, Settings, User, HelpCircle,
     Trophy, ChartNoAxesColumn, ShieldCheck, Signpost, DoorOpen, KeyRound, CreditCard, Dumbbell, Ticket, Receipt, Activity, History,
     Menu: MenuIcon
   };

@@ -55,6 +55,7 @@ Abandonné avant signature, l'encaissement est annulé et ne laisse aucune écri
 ### 3.6 La remise au trésorier
 - Le trésorier ouvre une remise pour un encaisseur. Elle reprend tous ses reçus non remis. Il **compte l'enveloppe** et saisit le montant compté. L'écran affiche en face la somme des reçus.
 - **Les deux signent sur place.** Le trésorier signe par sa saisie. L'encaisseur scanne le QR code de la remise depuis l'admin, connecté avec son propre compte, ou signe au doigt en dernier recours.
+- La signature au doigt se fait sur l'écran du trésorier : elle ne prouve rien de plus que sa parole. Elle est enregistrée comme telle (`signature`), et le bureau doit la tenir pour l'exception.
 - **Écritures, passées par le trésorier à la signature de la remise :**
   - une recette par reçu, en Caisse, dans la catégorie du reçu, rattachée à l'adhérent et datée du jour du reçu ;
   - s'il y a un écart, une écriture dans la catégorie d'écart choisie par le trésorier (dépense s'il manque de l'argent, recette s'il y en a trop), rattachée à la remise et donc à la personne.

@@ -57,6 +57,7 @@ describe('UserMenu', () => {
       'Mon compte',
       'Ma fiche',
       'Ma cotisation',
+      'Scanner un reçu',
       'Mon attestation CSE',
       'Notifications',
       'Notes de frais'
@@ -135,6 +136,7 @@ describe('UserMenu', () => {
       'Mon compte',
       'Ma fiche',
       'Ma cotisation',
+      'Scanner un reçu',
       'Mon attestation CSE',
       'Notifications',
       'Notes de frais'

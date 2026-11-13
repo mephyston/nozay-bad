@@ -115,3 +115,7 @@ export { default as PwaInstallBanner } from './components/patterns/PwaInstallBan
 export { default as DashboardSummaryCard } from './components/patterns/DashboardSummaryCard.svelte';
 export { default as DashboardPoleCard } from './components/patterns/DashboardPoleCard.svelte';
 export { readCollapseState, writeCollapseState } from './lib/collapse-state';
+// Reçus signés des deux parties (espèces) : lire un QR code, en montrer un, signer au doigt.
+export { default as QrScanner } from "./components/patterns/QrScanner.svelte";
+export { default as QrCode } from "./components/patterns/QrCode.svelte";
+export { default as SignaturePad } from "./components/patterns/SignaturePad.svelte";

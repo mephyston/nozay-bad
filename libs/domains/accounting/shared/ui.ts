@@ -9,3 +9,9 @@ export { default as InvoicesManager } from '../invoices/list-invoices/ui/Invoice
 export { default as TreasuryConfig } from '../config/save-account/ui/TreasuryConfig.svelte';
 export { default as FeeBreakdownCard } from '../seasons/get-fee-breakdown/ui/FeeBreakdownCard.svelte';
 export type { FeeBreakdown, FeeBreakdownLine } from '../seasons/get-fee-breakdown/dto';
+// Encaissement d'espèces (RF-ACC-003).
+export { default as CashReceiptDesk } from '../cash/open-cash-receipt/ui/CashReceiptDesk.svelte';
+export { default as HeldCashReceipts } from '../cash/list-cash-receipts/ui/HeldCashReceipts.svelte';
+export { default as CashInHandBoard } from '../cash/list-cash-in-hand/ui/CashInHandBoard.svelte';
+export { default as HandoverSigning } from '../cash/open-cash-handover/ui/HandoverSigning.svelte';
+export { default as ScanCashReceipt } from '../cash/confirm-cash-receipt/ui/ScanCashReceipt.svelte';

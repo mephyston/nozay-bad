@@ -53,7 +53,10 @@ const FEATURE_PAGES: [string, Feature][] = [
   ['/attestation', 'attestations'],
   ['/api/attestation', 'attestations'],
   ['/calendrier', 'calendar_feed'],
-  ['/api/agenda', 'calendar_feed']
+  ['/api/agenda', 'calendar_feed'],
+  // Reçus d'espèces : la remise passe par la comptabilité du club.
+  ['/mon-compte/recu', 'accounting'],
+  ['/api/recu', 'accounting']
 ];
 
 function featureOf(path: string): Feature | undefined {

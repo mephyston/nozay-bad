@@ -15,6 +15,20 @@ const invalid = (result: { success: boolean }, c: any) => {
 export const createConfirmCashReceiptRoute = (deps: CashMailDeps) => {
   const route = new Hono<{ Bindings: Bindings }>();
 
+  /*
+    Réservées à l'espace adhérent. La table d'autorisation ouvre une route « service » au
+    site public et aux comptes d'administration aussi ; or c'est la session de l'adhérent,
+    tenue par le storefront, qui fait de la confirmation une signature.
+  */
+  route.use('/cash-receipts/preview', async (c, next) => {
+    if (c.req.header('x-caller') !== 'storefront') return c.json({ success: false, error: 'Accès refusé' }, 403);
+    await next();
+  });
+  route.use('/cash-receipts/confirm', async (c, next) => {
+    if (c.req.header('x-caller') !== 'storefront') return c.json({ success: false, error: 'Accès refusé' }, 403);
+    await next();
+  });
+
   route.post('/cash-receipts/preview', tbValidator('json', confirmCashReceiptSchema, invalid), async (c) => {
     if (!c.env?.DB) return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
     const { qr, email, memberIds } = c.req.valid('json');

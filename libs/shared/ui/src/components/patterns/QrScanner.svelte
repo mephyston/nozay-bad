@@ -1,14 +1,32 @@
 <script lang="ts">
+  /**
+   * Lecteur de QR code par la caméra arrière, jsQR chargé à la demande (Safari n'a pas de
+   * BarcodeDetector). Né dans la caisse de la buvette ; partagé depuis qu'on y scanne
+   * aussi les reçus d'espèces, dans l'espace adhérent et dans l'admin.
+   */
   import { onDestroy, onMount } from 'svelte';
-  import { Button, Input } from '@nba/ui';
+  import { Button } from '../ui/button';
+  import { Input } from '../ui/input';
 
   interface Props {
     title: string;
+    /** Ce qu'il faut viser, dit à celui qui tient le téléphone. */
+    hint?: string;
+    /** Saisie à la main du contenu, quand la caméra ne lit pas : absente si `null`. */
+    manualPlaceholder?: string | null;
+    manualLabel?: string;
     onScan: (value: string) => void;
     onCancel: () => void;
   }
 
-  let { title, onScan, onCancel }: Props = $props();
+  let {
+    title,
+    hint = 'Visez le QR code.',
+    manualPlaceholder = null,
+    manualLabel = 'Code affiché sous le QR code',
+    onScan,
+    onCancel
+  }: Props = $props();
 
   let video = $state<HTMLVideoElement>();
   let error = $state('');
@@ -73,11 +91,13 @@
   {:else}
     <!-- svelte-ignore a11y_media_has_caption -->
     <video bind:this={video} class="bg-muted aspect-square w-full rounded-lg object-cover" playsinline muted></video>
-    <p class="text-muted-foreground text-sm">Visez le QR code affiché sur le téléphone du client.</p>
+    <p class="text-muted-foreground text-sm">{hint}</p>
   {/if}
-  <form class="flex gap-2" onsubmit={(event) => { event.preventDefault(); if (typedCode.trim()) { stop(); onScan(typedCode.trim()); } }}>
-    <Input bind:value={typedCode} placeholder="Ou le code de la carte" autocapitalize="characters" autocomplete="off" aria-label="Code affiché sous le QR code, ou imprimé sur la carte papier" />
-    <Button type="submit" variant="outline" disabled={!typedCode.trim()}>Valider</Button>
-  </form>
+  {#if manualPlaceholder !== null}
+    <form class="flex gap-2" onsubmit={(event) => { event.preventDefault(); if (typedCode.trim()) { stop(); onScan(typedCode.trim()); } }}>
+      <Input bind:value={typedCode} placeholder={manualPlaceholder} autocapitalize="characters" autocomplete="off" aria-label={manualLabel} />
+      <Button type="submit" variant="outline" disabled={!typedCode.trim()}>Valider</Button>
+    </form>
+  {/if}
   <Button variant="outline" class="w-full" onclick={onCancel}>Annuler</Button>
 </div>

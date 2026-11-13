@@ -1,11 +1,10 @@
 <script lang="ts">
   import { onDestroy, onMount } from 'svelte';
   import { Banknote, Check, ChevronLeft, ChevronRight, CreditCard, Plus, QrCode, RotateCcw, ScanLine, ShoppingBasket } from '@lucide/svelte';
-  import { Button, Input } from '@nba/ui';
+  import { Button, Input, QrScanner } from '@nba/ui';
   import MoneyHandover from './MoneyHandover.svelte';
   import { ItemIcon } from '@nba/buvette-ui';
   import CaisseNav from './CaisseNav.svelte';
-  import QrScanner from './QrScanner.svelte';
   import { isIosDevice, sumUpLink } from '../lib/sumup-link';
   import { callApi, formatEuros, itemsTotal, newClientId, parseEuros, splitPayment, suggestedNotes, type CatalogItem } from '../lib/cart';
 
@@ -571,6 +570,9 @@
     <main class="p-4">
       <QrScanner
         title={scanPurpose === 'recharge' ? 'Carte à recharger' : scanPurpose === 'refund' ? 'Carte à rembourser' : scanPurpose === 'order' ? 'QR du client' : 'Carte du client'}
+        hint="Visez le QR code affiché sur le téléphone du client."
+        manualPlaceholder="Ou le code de la carte"
+        manualLabel="Code affiché sous le QR code, ou imprimé sur la carte papier"
         {onScan}
         onCancel={cancelScan}
       />

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Home, ShoppingCart, Newspaper, CalendarDays, User, IdCard, Wallet, History, FileText, Bell, Receipt, Trophy, Users, Package, Loader2 } from '@lucide/svelte';
+  import { Home, ShoppingCart, Newspaper, CalendarDays, User, IdCard, Wallet, History, FileText, Bell, Receipt, Trophy, Users, Package, Loader2, ScanLine } from '@lucide/svelte';
   import { searchNav, MenuSearchResults, type NavSearchHit, type SearchableNavGroup } from '@nba/ui';
   import { searchContent, type ContentSearchGroup } from '../lib/search';
 
@@ -25,7 +25,7 @@
     onPick: (href: string) => void;
   } = $props();
 
-  const ICONS: Record<string, any> = { Home, Newspaper, CalendarDays, ShoppingCart, Trophy, Users, User, IdCard, Wallet, History, FileText, Bell, Receipt, Package };
+  const ICONS: Record<string, any> = { Home, Newspaper, CalendarDays, ShoppingCart, Trophy, Users, User, IdCard, Wallet, History, FileText, Bell, Receipt, Package, ScanLine };
   const KIND_ICONS: Record<string, any> = { member: User, post: Newspaper, event: CalendarDays, team: Trophy, product: Package };
 
   let content = $state<ContentSearchGroup[]>([]);

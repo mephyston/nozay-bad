@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { User, IdCard, Wallet, FileText, Bell, Receipt, LogOut, Check, ChevronDown, ChevronRight } from '@lucide/svelte';
+  import { User, IdCard, Wallet, FileText, Bell, Receipt, LogOut, Check, ChevronDown, ChevronRight, ScanLine } from '@lucide/svelte';
   import { Sheet } from '@nba/ui';
 
   interface Member {
@@ -68,6 +68,7 @@
       { href: '/mon-compte', label: 'Mon compte', icon: User },
       { href: `/adherents/${licence8}`, label: 'Ma fiche', icon: IdCard },
       { href: '/mon-compte/cotisation', label: 'Ma cotisation', icon: Wallet },
+      ...(features.accounting !== false ? [{ href: '/mon-compte/recu', label: 'Scanner un reçu', icon: ScanLine }] : []),
       ...(features.attestations !== false ? [{ href: '/attestation', label: 'Mon attestation CSE', icon: FileText }] : []),
       ...(features.push !== false ? [{ href: '/notifications', label: 'Notifications', icon: Bell }] : []),
       ...(active?.expenseAuthorized && features.expenses !== false
