@@ -313,3 +313,82 @@ export const seasonCategoryBudgetsTable = sqliteTable('season_category_budgets',
 }, (table) => ({
   seasonCategoryIdx: uniqueIndex('season_category_idx').on(table.seasonId, table.categoryId, table.type),
 }));
+
+/**
+ * Remise d'espèces : un encaisseur rend au trésorier les espèces de ses reçus.
+ *
+ * C'est elle qui passe les écritures, de la main du trésorier — l'entraîneur et la
+ * présidence n'écrivent jamais au grand livre. `expected_cents` est la somme des reçus
+ * rattachés à l'ouverture, `counted_cents` ce que le trésorier a compté : leur différence
+ * est l'écart, passé dans `gap_category_id` et rattaché à cette remise, donc à la personne.
+ *
+ * L'encaisseur signe en scannant le QR code de la remise depuis l'admin (`admin`), ou au
+ * doigt sur l'écran du trésorier (`signature`).
+ */
+export const CASH_SIGNATURE_METHODS = ['qr', 'code', 'signature', 'admin'] as const;
+export type CashSignatureMethod = (typeof CASH_SIGNATURE_METHODS)[number];
+
+export const cashHandoversTable = sqliteTable('cash_handovers', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  seasonId: integer('season_id').notNull().references(() => seasonsTable.id),
+  collectorEmail: text('collector_email').notNull(),
+  treasurerEmail: text('treasurer_email').notNull(),
+  expectedCents: integer('expected_cents').notNull(),
+  countedCents: integer('counted_cents').notNull(),
+  gapCategoryId: integer('gap_category_id').references(() => categoriesTable.id),
+  status: text('status', { enum: ['pending', 'sealed', 'cancelled'] }).notNull().default('pending'),
+  tokenHash: text('token_hash'),
+  tokenExpiresAt: integer('token_expires_at', { mode: 'timestamp' }),
+  signatureMethod: text('signature_method', { enum: CASH_SIGNATURE_METHODS }),
+  signatureData: text('signature_data'),
+  signedAt: integer('signed_at', { mode: 'timestamp' }),
+  gapLedgerEntryId: integer('gap_ledger_entry_id').references(() => ledgerEntriesTable.id),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
+}, (table) => ({
+  collectorIdx: index('cash_handovers_collector_idx').on(table.collectorEmail, table.status),
+  countedCheck: check('cash_handovers_counted_check', sql`${table.countedCents} >= 0`)
+}));
+
+/**
+ * Reçu d'espèces : un payeur remet de l'argent à un encaisseur, au gymnase.
+ *
+ * Il n'existe qu'une fois signé des deux parties (`sealed`). L'encaisseur signe en
+ * l'ouvrant, connecté à l'admin ; le payeur par le QR code scanné dans son espace
+ * adhérent (`qr`), par un code reçu par courriel (`code`), ou au doigt (`signature`).
+ *
+ * Le jeton du QR code et le code ne sont gardés que hachés, à usage unique et pour une
+ * durée courte. Aucune écriture comptable ici : `ledger_entry_id` est posé à la remise.
+ */
+export const cashReceiptsTable = sqliteTable('cash_receipts', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  seasonId: integer('season_id').notNull().references(() => seasonsTable.id),
+  collectorEmail: text('collector_email').notNull(),
+  collectorName: text('collector_name').notNull(),
+  /** Adhésion du payeur (`memberships.id`) ; absente pour un payeur extérieur au club. */
+  payerMemberId: integer('payer_member_id'),
+  payerName: text('payer_name').notNull(),
+  /** Où partent le code et le reçu : l'adresse du foyer, ou celle donnée par un payeur extérieur. */
+  payerEmail: text('payer_email'),
+  amountCents: integer('amount_cents').notNull(),
+  categoryId: integer('category_id').notNull().references(() => categoriesTable.id),
+  description: text('description').notNull().default(''),
+  status: text('status', { enum: ['pending', 'sealed', 'cancelled'] }).notNull().default('pending'),
+  tokenHash: text('token_hash'),
+  tokenExpiresAt: integer('token_expires_at', { mode: 'timestamp' }),
+  codeHash: text('code_hash'),
+  codeExpiresAt: integer('code_expires_at', { mode: 'timestamp' }),
+  codeAttempts: integer('code_attempts').notNull().default(0),
+  signatureMethod: text('signature_method', { enum: CASH_SIGNATURE_METHODS }),
+  /** Qui a signé côté payeur : l'adresse du foyer connecté, ou celle qui a reçu le code. */
+  signedBy: text('signed_by'),
+  /** Signature au doigt, en image PNG base64. */
+  signatureData: text('signature_data'),
+  signedAt: integer('signed_at', { mode: 'timestamp' }),
+  handoverId: integer('handover_id').references(() => cashHandoversTable.id),
+  ledgerEntryId: integer('ledger_entry_id').references(() => ledgerEntriesTable.id),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
+}, (table) => ({
+  collectorIdx: index('cash_receipts_collector_idx').on(table.collectorEmail, table.status, table.handoverId),
+  tokenIdx: index('cash_receipts_token_idx').on(table.tokenHash),
+  amountCheck: check('cash_receipts_amount_check', sql`${table.amountCents} > 0`)
+}));

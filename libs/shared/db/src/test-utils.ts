@@ -79,6 +79,9 @@ const tables = [
     // survit pas au batch qui suit, et la purge échouait alors dans le `beforeEach`
     // du test *suivant*, loin de sa cause.
     'checks',
+    // Les reçus avant les remises, qui les rassemblent ; les deux avant le grand livre.
+    'cash_receipts',
+    'cash_handovers',
     'ledger_entries',
     // `internal_transfers` après `ledger_entries` : ce sont les jambes qui le référencent, pas
     // l'inverse. Oublier cette table ici ne fait pas échouer la purge — elle survit simplement au

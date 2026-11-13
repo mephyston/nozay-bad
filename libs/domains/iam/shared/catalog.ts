@@ -37,6 +37,8 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   'accounting:reports:export': 'Exporter les rapports (PDF, archive)',
   'accounting:config:read': 'Consulter le plan comptable et les catégories',
   'accounting:config:write': 'Modifier le plan comptable et les catégories',
+  'accounting:cash-receipts:write': 'Encaisser des espèces (reçu signé par le payeur)',
+  'accounting:cash-handovers:approve': "Recevoir une remise d'espèces et la comptabiliser",
 
   'expenses:reports:read': 'Consulter les notes de frais',
   'expenses:reports:write': 'Saisir et modifier une note de frais',

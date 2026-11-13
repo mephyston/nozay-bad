@@ -23,6 +23,7 @@ import { authorize } from './authz/middleware';
 import { cacheSharedReads } from './shared-read-cache';
 import { platformRouter } from './platform-usage';
 import { calendarFeedRouter } from './calendar-feed';
+import { cashRouter } from './cash';
 
 type Bindings = {
   DB: D1Database;
@@ -105,6 +106,7 @@ app.get('/health', (c) => {
 app.route('/', searchRouter);
 app.route('/members', membersRouter);
 app.route('/accounting', accountingRouter);
+app.route('/accounting', cashRouter);
 app.route('/expenses', expensesRouter);
 app.route('/shop', shopRouter);
 app.route('/buvette', buvetteRouter);

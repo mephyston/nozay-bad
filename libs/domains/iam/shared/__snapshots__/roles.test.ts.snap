@@ -3,6 +3,7 @@
 exports[`matrice des droits > correspond à l’instantané validé 1`] = `
 {
   "coach": [
+    "accounting:cash-receipts:write",
     "accounting:config:read",
     "accounting:seasons:read",
     "cms:pages:read",
@@ -67,6 +68,7 @@ exports[`matrice des droits > correspond à l’instantané validé 1`] = `
     "accounting:bank:read",
     "accounting:budget:read",
     "accounting:budget:write",
+    "accounting:cash-receipts:write",
     "accounting:checks:read",
     "accounting:config:read",
     "accounting:invoices:read",
@@ -170,6 +172,8 @@ exports[`matrice des droits > correspond à l’instantané validé 1`] = `
     "accounting:bank:reconcile",
     "accounting:budget:read",
     "accounting:budget:write",
+    "accounting:cash-handovers:approve",
+    "accounting:cash-receipts:write",
     "accounting:checks:delete",
     "accounting:checks:read",
     "accounting:checks:write",
@@ -264,6 +268,8 @@ exports[`matrice des droits > correspond à l’instantané validé 1`] = `
     "accounting:bank:reconcile",
     "accounting:budget:read",
     "accounting:budget:write",
+    "accounting:cash-handovers:approve",
+    "accounting:cash-receipts:write",
     "accounting:checks:delete",
     "accounting:checks:read",
     "accounting:checks:write",

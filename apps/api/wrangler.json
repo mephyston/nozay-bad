@@ -42,7 +42,10 @@
     "VAPID_SUBJECT": "mailto:contact@nozaybad.fr",
     "VAPID_PUBLIC_KEY": "BGLR2qQYt7FsbrqkNjx2p9p--tZuvKCBwj7YBZ5Di7Un1uwkiVXY3SWHi33zuZWltVAOJTsBsAZNaz7bRolHXo4",
     "SCHEDULED_SENDS_ENABLED": "true",
-    "CLOUDFLARE_ACCOUNT_ID": "4f2da32c6c3c548f14fd56434f1d0fe4"
+    "CLOUDFLARE_ACCOUNT_ID": "4f2da32c6c3c548f14fd56434f1d0fe4",
+    "EMAIL_FROM": "Nozay Badminton Association <tresorier@nozaybad.fr>",
+    "EMAIL_MODE": "live",
+    "EMAIL_ALLOWLIST": ""
   },
   "env": {
     "staging": {
@@ -62,7 +65,10 @@
         "VAPID_SUBJECT": "mailto:contact@nozaybad.fr",
         "VAPID_PUBLIC_KEY": "BJiMPuOGVz144IXpSHoh_XthNFdB-uSV0qGEMc2D-FeheQqVaBmfCUIVa2notPKe3AI2Z4cpP3bgb6dlS5jyLUw",
         "SCHEDULED_SENDS_ENABLED": "false",
-        "CLOUDFLARE_ACCOUNT_ID": "4f2da32c6c3c548f14fd56434f1d0fe4"
+        "CLOUDFLARE_ACCOUNT_ID": "4f2da32c6c3c548f14fd56434f1d0fe4",
+        "EMAIL_FROM": "Nozay Badminton Association <tresorier@nozaybad.fr>",
+        "EMAIL_MODE": "allowlist",
+        "EMAIL_ALLOWLIST": "david.pagnacco@gmail.com,meyharts@gmail.com,rouxjuliee@gmail.com,justine.couvidat@gmail.com,bienf007@gmail.com,r_thai2001@hotmail.com,cyril.tetevuide@orange.fr,meunieralexandre051@gmail.com,fofix@hotmail.fr,t.s.madrange@orange.fr,banssejoel@gmail.com"
       },
       "d1_databases": [
         {

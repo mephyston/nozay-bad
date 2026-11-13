@@ -44,6 +44,8 @@ export const ALL_PERMISSIONS = [
   'accounting:reports:export',
   'accounting:config:read', // catégories et classes de compte
   'accounting:config:write',
+  'accounting:cash-receipts:write', // encaisser des espèces au gymnase, reçu signé des deux parties
+  'accounting:cash-handovers:approve', // recevoir une remise d'espèces et passer ses écritures
 
   // — Notes de frais —
   'expenses:reports:read',

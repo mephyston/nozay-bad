@@ -8,7 +8,7 @@ Chaque passage de main devient un **reçu électronique signé des deux parties,
 ---
 
 ## 2. Domaine Fonctionnel
-- **Domaine** : accounting (encaissement), members (payeur), iam (droit d'encaisser)
+- **Domaine** : accounting (encaissement et remise), members (payeur), iam (droits d'encaisser et de recevoir une remise)
 - **Agrégat / Entité clé** : Reçu d'espèces, Remise d'espèces
 - **Statut** : Validé (12/11/2026), phase 1 en cours
 
@@ -18,6 +18,7 @@ Chaque passage de main devient un **reçu électronique signé des deux parties,
 
 ### 3.1 Qui encaisse
 - Seuls les comptes ayant le droit **« Encaisser des espèces »** peuvent ouvrir un encaissement. Ce droit est donné aux rôles entraîneur, trésorier et président.
+- Seul le droit **« Recevoir une remise d'espèces »**, donné au trésorier, ouvre une remise et passe les écritures.
 - L'encaissement est **toujours lancé par celui qui reçoit l'argent**, depuis l'admin, connecté avec son propre compte. Cette saisie authentifiée et horodatée est **sa signature** : il ne peut plus nier avoir reçu l'argent.
 
 ### 3.2 Ce que l'on encaisse
@@ -41,21 +42,22 @@ L'encaissement **n'existe pas** tant que le payeur ne l'a pas signé. L'écran d
 Abandonné avant signature, l'encaissement est annulé et ne laisse aucune écriture.
 
 ### 3.4 Une fois signé
-- **Le reçu est scellé.** Il n'est plus modifiable. Une erreur se corrige par un reçu d'annulation signé de la même façon.
+- **Le reçu est scellé.** Il n'est plus modifiable. Une erreur se corrige à la remise : le trésorier compte ce qu'il reçoit, et l'écart se voit.
 - **Le payeur reçoit son reçu par courriel** : son exemplaire.
-- **La recette est passée** dans sa catégorie, sur le compte de trésorerie **« Espèces en circulation »**. Une cotisation passe à « réglée », comme pour tout autre règlement.
 - **L'argent est « en main de »** l'encaisseur.
+- **Aucune écriture comptable n'est passée à ce stade.** L'entraîneur et la présidence n'écrivent jamais au grand livre (séparation des tâches). La recette naît à la remise, de la main du trésorier.
+- Le statut « réglée » d'une cotisation vient de l'import Poona, jamais de l'application : le reçu n'y touche pas. Il se consulte sur la fiche de l'adhérent.
 
 ### 3.5 Espèces en circulation
-- Un écran montre, par personne : la somme détenue, depuis quand, et les reçus qui la composent.
-- Au-delà de **7 jours** de détention, le trésorier est alerté.
+- Les espèces détenues sont la somme des reçus scellés et pas encore remis. Un écran les montre par personne : la somme, depuis quand, et les reçus qui la composent.
+- Au-delà de **7 jours** de détention, le trésorier est alerté (phase 2).
 
 ### 3.6 La remise au trésorier
-- Le trésorier ouvre une remise pour un encaisseur. Il **compte l'enveloppe** et saisit le montant compté. L'écran affiche en face la somme des reçus détenus.
-- **Les deux signent sur place** : le trésorier par sa saisie, l'encaisseur par un QR code ou la signature au doigt (il est lui aussi connecté à l'admin).
-- **Écritures :**
-  - un virement interne du montant compté, d'« Espèces en circulation » vers la Caisse ;
-  - s'il y a un écart, une écriture en « Écarts de caisse », rattachée à la remise et donc à la personne.
+- Le trésorier ouvre une remise pour un encaisseur. Elle reprend tous ses reçus non remis. Il **compte l'enveloppe** et saisit le montant compté. L'écran affiche en face la somme des reçus.
+- **Les deux signent sur place.** Le trésorier signe par sa saisie. L'encaisseur scanne le QR code de la remise depuis l'admin, connecté avec son propre compte, ou signe au doigt en dernier recours.
+- **Écritures, passées par le trésorier à la signature de la remise :**
+  - une recette par reçu, en Caisse, dans la catégorie du reçu, rattachée à l'adhérent et datée du jour du reçu ;
+  - s'il y a un écart, une écriture dans la catégorie d'écart choisie par le trésorier (dépense s'il manque de l'argent, recette s'il y en a trop), rattachée à la remise et donc à la personne.
 - Les reçus remis sortent de la détention de l'encaisseur.
 
 ### 3.7 Ce que l'outil ne peut pas voir
@@ -76,19 +78,22 @@ Fonctionnalité: Encaissement d'espèces signé par les deux parties
     Quand Camille encaisse 150 € pour la cotisation d'Alex
     Et qu'Alex scanne le QR code dans son espace et confirme
     Alors le reçu est scellé, signé par Camille et par le foyer d'Alex
-    Et la cotisation d'Alex est réglée
     Et Alex reçoit son reçu par courriel
     Et Camille détient 150 € d'espèces en circulation
 
   Scénario: Pas de signature, pas d'encaissement
     Étant donné un encaissement de 150 € ouvert par Camille
     Quand personne ne le confirme et que Camille l'abandonne
-    Alors aucune écriture n'est passée et la cotisation reste due
+    Alors l'encaissement est annulé et ne laisse aucune trace en détention
 
   Scénario: QR code scanné par un autre foyer
     Étant donné un encaissement ouvert pour le foyer d'Alex
     Quand un adhérent d'un autre foyer scanne le QR code
     Alors la confirmation est refusée
+
+  Scénario: Le reçu ne passe aucune écriture
+    Étant donné un reçu de 150 € scellé par Camille
+    Alors le grand livre n'a aucune écriture nouvelle tant que la remise n'est pas signée
 
   Scénario: Payeur sans téléphone
     Quand Camille fait signer le payeur au doigt sur son écran
@@ -97,8 +102,9 @@ Fonctionnalité: Encaissement d'espèces signé par les deux parties
   Scénario: Remise avec un écart
     Étant donné Camille détenant 450 € en trois reçus
     Quand le trésorier compte 350 € et que les deux signent la remise
-    Alors 350 € passent en Caisse
-    Et un écart de 100 € est enregistré au nom de Camille sur cette remise
+    Alors trois recettes, de 450 € en tout, sont passées en Caisse
+    Et une dépense de 100 € est passée en écart de caisse, rattachée à la remise de Camille
+    Et Camille ne détient plus rien
 ```
 
 ---

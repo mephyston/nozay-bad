@@ -105,7 +105,8 @@ describe('définition des rôles', () => {
       'members:members:read',
       'shop:products:read', 'shop:products:write', 'shop:categories:write',
       'shop:orders:read', 'shop:orders:write', 'shop:orders:approve',
-      'schedules:indiv:read', 'schedules:indiv:write'
+      'schedules:indiv:read', 'schedules:indiv:write',
+      'accounting:cash-receipts:write'
     ]) {
       expect(coach, p).toContain(p);
     }
@@ -115,7 +116,9 @@ describe('définition des rôles', () => {
       'shop:payments:write',
       'members:members:write', 'members:members:import', 'members:members:export',
       'accounting:ledger:read', 'accounting:ledger:write',
-      'expenses:reports:read', 'notifications:messages:send'
+      'expenses:reports:read', 'notifications:messages:send',
+      // Recevoir une remise passe les écritures : c'est la trésorerie.
+      'accounting:cash-handovers:approve'
     ]) {
       expect(coach, p).not.toContain(p);
     }

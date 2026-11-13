@@ -172,6 +172,32 @@ export const ROUTE_PERMISSIONS: RouteRule[] = [
   { method: 'POST', path: '/accounting/categories', permission: 'accounting:config:write' },
   { method: 'PUT', path: '/accounting/categories/:id', permission: 'accounting:config:write' },
   { method: 'DELETE', path: '/accounting/categories/:id', permission: 'accounting:config:write' },
+  // ── Encaissement d'espèces (RF-ACC-003) ─────────────────────────────────────
+  // L'encaisseur ne voit et ne signe que ses propres reçus : le handler compare au
+  // `x-user-email`. Aucune de ces routes n'écrit au grand livre, sauf la signature
+  // d'une remise, que le trésorier a ouverte et chiffrée.
+  { method: 'GET', path: '/accounting/cash-receipts', permission: 'accounting:cash-receipts:write' },
+  { method: 'POST', path: '/accounting/cash-receipts', permission: 'accounting:cash-receipts:write' },
+  { method: 'GET', path: '/accounting/cash-receipts/:id', permission: 'accounting:cash-receipts:write' },
+  { method: 'DELETE', path: '/accounting/cash-receipts/:id', permission: 'accounting:cash-receipts:write' },
+  { method: 'POST', path: '/accounting/cash-receipts/:id/token', permission: 'accounting:cash-receipts:write' },
+  { method: 'POST', path: '/accounting/cash-receipts/:id/code', permission: 'accounting:cash-receipts:write' },
+  { method: 'POST', path: '/accounting/cash-receipts/:id/code/verify', permission: 'accounting:cash-receipts:write' },
+  { method: 'POST', path: '/accounting/cash-receipts/:id/signature', permission: 'accounting:cash-receipts:write' },
+  // Le payeur signe depuis son espace adhérent : le storefront transmet l'adresse et les
+  // adhésions de la session, et l'API refuse un reçu qui n'est pas pour ce foyer. Rien de
+  // nominatif d'un autre foyer ne sort : un QR code étranger répond « introuvable ».
+  { method: 'POST', path: '/accounting/cash-receipts/preview', permission: 'members:members:read', service: true },
+  { method: 'POST', path: '/accounting/cash-receipts/confirm', permission: 'members:members:read', service: true },
+  { method: 'GET', path: '/accounting/cash-in-hand', permission: 'accounting:cash-handovers:approve' },
+  { method: 'POST', path: '/accounting/cash-handovers', permission: 'accounting:cash-handovers:approve' },
+  { method: 'GET', path: '/accounting/cash-handovers/:id', permission: 'accounting:cash-handovers:approve' },
+  { method: 'DELETE', path: '/accounting/cash-handovers/:id', permission: 'accounting:cash-handovers:approve' },
+  { method: 'POST', path: '/accounting/cash-handovers/:id/token', permission: 'accounting:cash-handovers:approve' },
+  { method: 'POST', path: '/accounting/cash-handovers/:id/signature', permission: 'accounting:cash-handovers:approve' },
+  // L'encaisseur scelle la remise en scannant son QR code, connecté avec son compte :
+  // le handler exige que ce soit bien sa remise.
+  { method: 'POST', path: '/accounting/cash-handovers/confirm', permission: 'accounting:cash-receipts:write' },
   { method: 'GET', path: '/accounting/category-groups', permission: 'accounting:config:read' },
   { method: 'POST', path: '/accounting/category-groups', permission: 'accounting:config:write' },
   { method: 'PUT', path: '/accounting/category-groups/:id', permission: 'accounting:config:write' },

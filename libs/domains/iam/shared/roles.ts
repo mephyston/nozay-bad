@@ -89,6 +89,9 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
   president: [
     ...BASE,
     ...ACCOUNTING_CONTEXT,
+    // Encaisser des espèces n'écrit rien au grand livre : la recette naît à la remise,
+    // de la main du trésorier. La séparation des tâches tient.
+    'accounting:cash-receipts:write',
     // Lecture intégrale : la présidence doit pouvoir tout consulter.
     'members:members:read',
     'members:members:export',
@@ -168,6 +171,10 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
   tresorier: [
     ...BASE,
     ...ACCOUNTING_FULL,
+    // Espèces : il encaisse au gymnase comme les autres, et lui seul reçoit les remises,
+    // dont il passe les écritures.
+    'accounting:cash-receipts:write',
+    'accounting:cash-handovers:approve',
     // Rattacher une écriture à un adhérent, éditer une attestation fiscale CSE.
     'members:members:read',
     'members:attestations:read',
@@ -256,6 +263,9 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
   coach: [
     ...BASE,
     ...ACCOUNTING_CONTEXT,
+    // Il reçoit les espèces au gymnase, contre un reçu signé par le payeur. Aucune
+    // écriture : il les remet au trésorier, qui comptabilise.
+    'accounting:cash-receipts:write',
     // Suivre et équiper ses joueurs : consultation du fichier, sans modification.
     'members:members:read',
     // La boutique : catalogue, catégories, et passage de commandes pour un adhérent.

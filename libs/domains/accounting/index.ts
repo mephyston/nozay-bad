@@ -139,6 +139,8 @@ accountingRouter.route('/', generateDepositSlipRoute);
 export { normalizeCategory, cleanName } from './shared/helpers';
 export { getSeasonReports } from './seasons/get-season-reports/handler';
 export { createGetFeeBreakdownRoute } from './seasons/get-fee-breakdown/route';
+export { createCashRouter } from './cash/router';
+export type { CashMailer, CashMail } from './shared/cash';
 export type { FeeBreakdown, FeeBreakdownLine, FeeBreakdownSource } from './seasons/get-fee-breakdown/dto';
 
 import { CreateLedgerEntryRepository } from './ledger/create-ledger-entry/repository';

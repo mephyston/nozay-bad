@@ -51,6 +51,7 @@
     "0047_calendar_feeds.sql": "840562d16c93b7b3",
     "0048_buvette.sql": "48e910d97d9deaad",
     "0049_buvette_schema_final.sql": "98a482e1c6dd9fcf",
-    "0050_category_groups.sql": "03fd89aa97211fd7"
+    "0050_category_groups.sql": "03fd89aa97211fd7",
+    "0051_cash_receipts.sql": "b58cf2bee1dab0e4"
   }
 }
