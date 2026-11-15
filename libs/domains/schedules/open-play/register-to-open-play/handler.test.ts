@@ -264,7 +264,7 @@ describe('désinscription', () => {
       updatedAt: NOW
     });
 
-    // Se retirer d'une liste devenue sans objet est légitime, et c'est ce que l'ouvreur
+    // Se retirer d'une liste devenue sans objet est légitime, et c'est ce que le bénévole
     // a besoin de savoir si la séance est finalement rouverte.
     expect(await unregisterFromOpenPlay(db, { sessionId: cancelled, memberId: 1 })).toEqual({
       removed: true

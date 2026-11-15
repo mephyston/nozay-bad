@@ -18,7 +18,7 @@ Cette règle décrit pourquoi l'invité est **nommé**, et ce qu'il pèse dans l
 
 ## 3. Définition de la Règle Métier
 
-**Un invité porte un prénom et un nom.** Deux raisons qui n'existaient pas pour un accompagnant d'événement : le bénévole qui ouvre le gymnase doit savoir qui franchit la porte, et un invité non licencié pose une question d'assurance que « 2 accompagnants » ne permet pas de traiter. Un invité dont le prénom ou le nom est vide est refusé — il ne dirait rien à l'ouvreur.
+**Un invité porte un prénom et un nom.** Deux raisons qui n'existaient pas pour un accompagnant d'événement : le bénévole qui ouvre le gymnase doit savoir qui franchit la porte, et un invité non licencié pose une question d'assurance que « 2 accompagnants » ne permet pas de traiter. Un invité dont le prénom ou le nom est vide est refusé — il ne dirait rien au bénévole.
 
 **Il n'existe que rattaché à son hôte.** Il n'a ni compte, ni licence, ni existence propre : la seule façon de l'annoncer est depuis l'inscription d'un adhérent connecté. Retirer l'inscription retire les invités avec elle.
 

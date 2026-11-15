@@ -47,7 +47,7 @@ export interface OpenPlaySession {
 
 export interface OpenPlayView {
   sessions: OpenPlaySession[];
-  /** La licence lue figure-t-elle parmi les ouvreurs désignés de la saison ? */
+  /** La licence lue figure-t-elle parmi les bénévoles désignés de la saison ? */
   canOpen: boolean;
 }
 

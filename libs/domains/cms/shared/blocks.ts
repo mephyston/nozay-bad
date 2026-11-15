@@ -302,7 +302,7 @@ export const eventsBlockSchema = Type.Object(
  * séances. Les inscriptions changent d'heure en heure ; une page qui les figerait
  * mentirait dès le premier inscrit.
  *
- * Ce que le site en montre — « Camille D. », les invités comptés, l'ouvreur ou
+ * Ce que le site en montre — « Camille D. », les invités comptés, le bénévole ou
  * l'annonce qu'on le cherche encore — n'est pas réglable ici : c'est une décision du
  * club sur des données personnelles, pas un choix de mise en page. Elle vit dans la
  * tranche `list-public-open-play` du domaine des créneaux.

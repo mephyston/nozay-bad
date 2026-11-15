@@ -35,7 +35,7 @@ describe('OpenPlayOpenerButton', () => {
     expect(host.textContent).toContain('Assez de joueurs, mais personne pour ouvrir');
   });
 
-  it('nomme l’ouvreur en place, sans proposer de le remplacer', () => {
+  it('nomme le bénévole en place, sans proposer de le remplacer', () => {
     render({ openerName: 'Marie D.', iAmOpener: false });
     expect(host.textContent).toContain('Marie D. ouvre cette séance');
     expect(host.querySelector('button')).toBeNull();

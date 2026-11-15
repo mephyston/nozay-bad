@@ -76,7 +76,7 @@ const HISTORY_RETENTION_DAYS = 90;
 const ORDER_REMINDER_AFTER_DAYS = 7;
 
 /**
- * Horizon de l'appel aux ouvreurs, en jours.
+ * Horizon de l'appel aux bénévoles, en jours.
  *
  * Une semaine : assez tôt pour qu'un bénévole s'organise, assez tard pour que l'affluence
  * soit connue. Au-delà, l'alerte partirait sur des séances encore vides qui trouveront
@@ -198,7 +198,7 @@ export async function sendRankingUpdateReminders(
 }
 
 /**
- * Appelle les ouvreurs pour les séances qui cherchent encore preneur.
+ * Appelle les bénévoles pour les séances qui cherchent encore preneur.
  *
  * La composition se fait ici, et non dans le domaine des créneaux : celui-ci est feuille
  * — il ne connaît ni les adhérents ni les notifications, et ne sait donc résoudre ni une
@@ -218,7 +218,7 @@ export async function sendOpenPlayOpenerReminders(
   const { sessions } = await listOpenPlaySessions(
     db,
     // Plus de filtre de saison : une séance est une date, et la fenêtre de quelques jours
-    // qui suit `parisToday` est déjà dans la saison en cours. Les ouvreurs, eux, restent
+    // qui suit `parisToday` est déjà dans la saison en cours. Les bénévoles, eux, restent
     // lus par saison — c'est leur mandat qui l'est.
     { from: parisToday, needsOpenerWithinDays: OPEN_PLAY_HORIZON_DAYS },
     now
@@ -227,7 +227,7 @@ export async function sendOpenPlayOpenerReminders(
 
   const openers = await listOpenPlayOpeners(db, { seasonCode: season.code });
   if (openers.length === 0) {
-    console.log('[push] jeu libre : aucun ouvreur désigné, rien à envoyer');
+    console.log('[push] jeu libre : aucun bénévole désigné, rien à envoyer');
     return;
   }
 
@@ -237,7 +237,7 @@ export async function sendOpenPlayOpenerReminders(
     openers.map((opener) => opener.licence)
   );
   if (emails.length === 0) {
-    console.log('[push] jeu libre : ouvreurs désignés sans adresse joignable');
+    console.log('[push] jeu libre : bénévoles désignés sans adresse joignable');
     return;
   }
 
@@ -256,7 +256,7 @@ export async function sendOpenPlayOpenerReminders(
       url: '/jeu-libre',
       target: { kind: 'emails', emails },
       targetLabel: 'emails',
-      targetDetail: 'ouvreurs désignés',
+      targetDetail: 'bénévoles désignés',
       source: 'schedules:open-play-opener-reminder',
       category: 'open_play',
       // Un Cron Trigger peut être invoqué plus d'une fois pour la même échéance.

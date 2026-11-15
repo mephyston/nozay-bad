@@ -164,7 +164,7 @@ export const FEATURE_CATALOG: Record<Feature, FeatureInfo> = {
   },
   open_play: {
     label: 'Jeu libre',
-    description: 'Séances de jeu libre : inscriptions des adhérents, invités et bénévoles ouvreurs.',
+    description: 'Séances de jeu libre : inscriptions des adhérents, invités et bénévoles.',
     group: 'Activités'
   },
   indiv: {
@@ -198,8 +198,8 @@ export const FEATURE_CATALOG: Record<Feature, FeatureInfo> = {
     group: 'Envois programmés'
   },
   reminder_open_play: {
-    label: 'Rappel des ouvreurs',
-    description: 'Chaque matin, aux ouvreurs désignés, les séances de jeu libre des sept prochains jours sans personne pour ouvrir.',
+    label: 'Rappel des bénévoles',
+    description: 'Chaque matin, aux bénévoles désignés, les séances de jeu libre des sept prochains jours sans personne pour ouvrir.',
     group: 'Envois programmés'
   },
   reminder_open_play_board: {

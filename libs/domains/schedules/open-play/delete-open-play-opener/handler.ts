@@ -12,7 +12,7 @@ import type { DeleteOpenPlayOpenerInput, DeleteOpenPlayOpenerOutput } from './dt
  * Ne libère pas non plus les séances **à venir** qu'il tient déjà. Le retrait signifie
  * « ne lui en confie plus », pas « annule ce qu'il a promis » — et une séance qui
  * redeviendrait « à pourvoir » dans le dos de tout le monde ferait venir des gens devant
- * une porte close. Le bureau retire l'ouvreur séance par séance s'il le faut.
+ * une porte close. Le bureau retire le bénévole séance par séance s'il le faut.
  *
  * Tolérant à l'absence, comme les autres suppressions du domaine.
  */

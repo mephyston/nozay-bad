@@ -437,14 +437,14 @@ export const ROUTE_PERMISSIONS: RouteRule[] = [
   // adhérent choisit de venir parce que ses partenaires viennent, pas pour l'annuaire.
   { method: 'GET', path: '/schedules/open-play/:id/attendees', permission: 'schedules:open-play:read', service: true, feature: 'open_play' },
   // Ce que montre le bloc « Jeu libre » du site public : les prochaines séances, les
-  // inscrits en « Camille D. », l'ouvreur sous la même forme, les invités comptés. La
+  // inscrits en « Camille D. », le bénévole sous la même forme, les invités comptés. La
   // réduction des noms est faite par le handler — le site ne reçoit jamais de nom
   // complet, ni licence, ni consigne du bureau.
   { method: 'GET', path: '/schedules/open-play/public', permission: 'schedules:open-play:read', service: true, feature: 'open_play' },
 
-  // Ouvreurs. Prendre et rendre une séance sont ouverts au service : c'est l'espace
+  // Bénévoles. Prendre et rendre une séance sont ouverts au service : c'est l'espace
   // adhérent qui appelle, avec la licence de la session — le navigateur ne peut pas
-  // prétendre à une autre, et le refus « vous n'êtes pas ouvreur » est de toute façon
+  // prétendre à une autre, et le refus « vous n'êtes pas bénévole » est de toute façon
   // rendu par le handler. La liste des détenteurs de badge, elle, ne l'est pas : elle
   // n'a aucune raison de descendre dans un navigateur d'adhérent.
   { method: 'GET', path: '/schedules/open-play/openers', permission: 'schedules:open-play:read', feature: 'open_play' },

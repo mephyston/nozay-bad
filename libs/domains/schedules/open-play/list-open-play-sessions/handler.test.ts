@@ -84,7 +84,7 @@ describe('compteurs', () => {
   });
 });
 
-describe('seuil et ouvreur', () => {
+describe('seuil et bénévole', () => {
   it('signale « à pourvoir » dès le seuil atteint', async () => {
     const sessionId = await seedSession({ minPlayers: 4 });
     await register(sessionId, 1);
@@ -115,7 +115,7 @@ describe('seuil et ouvreur', () => {
     expect((await listOpenPlaySessions(db, {}, NOW)).sessions[0].needsOpener).toBe(false);
   });
 
-  it('ne réclame pas d’ouvreur quand il y en a un', async () => {
+  it('ne réclame pas de bénévole quand il y en a un', async () => {
     const sessionId = await seedSession({
       minPlayers: 1,
       status: 'confirmed',
@@ -129,7 +129,7 @@ describe('seuil et ouvreur', () => {
     expect(sessions[0].needsOpener).toBe(false);
   });
 
-  it('ne réclame pas d’ouvreur pour une séance annulée', async () => {
+  it('ne réclame pas de bénévole pour une séance annulée', async () => {
     const sessionId = await seedSession({
       minPlayers: 1,
       status: 'cancelled',
@@ -172,7 +172,7 @@ describe('lecture au nom d’un adhérent', () => {
     expect(JSON.stringify(sessions)).not.toContain('Sacha');
   });
 
-  it('reconnaît un ouvreur désigné, et lui seul', async () => {
+  it('reconnaît un bénévole désigné, et lui seul', async () => {
     await seedSession();
     await db
       .insert(openPlayOpenersTable)
@@ -184,7 +184,7 @@ describe('lecture au nom d’un adhérent', () => {
     expect((await listOpenPlaySessions(db, {}, NOW)).canOpen).toBe(false);
   });
 
-  it('dit à l’ouvreur qu’il tient CETTE séance', async () => {
+  it('dit au bénévole qu’il tient CETTE séance', async () => {
     const mine = await seedSession({
       date: '2026-03-21',
       status: 'confirmed',

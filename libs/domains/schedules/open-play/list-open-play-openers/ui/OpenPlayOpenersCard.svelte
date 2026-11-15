@@ -135,7 +135,7 @@
 <ListView
   items={openers}
   emptyIcon={KeyRound}
-  emptyTitle="Aucun ouvreur"
+  emptyTitle="Aucun bénévole"
   emptyDescription="Personne ne détient de clé : aucune séance ne pourra être confirmée."
 >
   {#snippet listRow(opener)}
@@ -160,7 +160,7 @@
 
 <!--
   L'attribution dans un tiroir, et non sous la liste : le champ y était atteint après
-  avoir défilé tous les ouvreurs, et ses propositions poussaient la page à chaque
+  avoir défilé tous les bénévoles, et ses propositions poussaient la page à chaque
   frappe. Ici la recherche est en haut, sous le pouce, et les résultats sont une liste
   comme les autres.
 -->

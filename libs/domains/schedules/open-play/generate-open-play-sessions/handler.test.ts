@@ -101,7 +101,7 @@ describe('génération en lot', () => {
 
   it('NE DÉFAIT PAS une séance déjà pourvue', async () => {
     // Le test central : un `DO UPDATE` au lieu d'un `DO NOTHING` remettrait le statut à
-    // « ouverte » et effacerait l'ouvreur — des gens viendraient devant une porte close.
+    // « ouverte » et effacerait le bénévole — des gens viendraient devant une porte close.
     await seedSlot(6);
     await generateOpenPlaySessions(db, { from: '2026-03-16', to: '2026-03-29' }, NOW);
     await saveOpenPlayOpener(db, { seasonCode: '25-26', licence: '00000009' }, NOW);

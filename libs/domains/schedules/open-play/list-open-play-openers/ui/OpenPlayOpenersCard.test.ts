@@ -74,7 +74,7 @@ describe('OpenPlayOpenersCard', () => {
   });
 
   it('affiche une licence inconnue de l’annuaire plutôt que de la masquer', () => {
-    // Un ouvreur qui n'a pas repris sa licence doit se voir : c'est l'information utile.
+    // Un bénévole qui n'a pas repris sa licence doit se voir : c'est l'information utile.
     render({ openers: [{ id: 1, licence: '00000099', sessionsOpened: 0, name: null }] });
     expect(host.textContent).toContain('Licence 00000099');
     expect(host.textContent).toContain('licence inconnue');

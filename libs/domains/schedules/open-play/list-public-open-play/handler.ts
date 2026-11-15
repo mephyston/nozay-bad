@@ -25,7 +25,7 @@ export const MAX_PUBLIC_OPEN_PLAY_LIMIT = 60;
  *  - les adhérents inscrits, en « Camille D. » — prénom, initiale du nom ;
  *  - les invités, **comptés** mais jamais nommés : ce ne sont pas des adhérents, ils
  *    n'ont rien accepté du club ;
- *  - l'ouvreur, sous la même forme, ou son absence.
+ *  - le bénévole, sous la même forme, ou son absence.
  *
  * La réduction du nom se fait **ici**, côté API, et non au rendu : un nom complet qui
  * transiterait jusqu'au site pour y être tronqué finirait tôt ou tard dans un attribut,
@@ -80,8 +80,8 @@ export async function listPublicOpenPlay(
       guestCount,
       players: names,
       // L'identité recopiée fait foi : c'est elle qui dit qui a pris la séance, même
-      // si la personne a quitté la liste des ouvreurs depuis. Une séance annulée n'a
-      // plus d'ouvreur à montrer.
+      // si la personne a quitté la liste des bénévoles depuis. Une séance annulée n'a
+      // plus de bénévole à montrer.
       opener:
         row.status !== 'cancelled' && row.openerFirstName !== null
           ? publicName(row.openerFirstName, row.openerLastName ?? '')

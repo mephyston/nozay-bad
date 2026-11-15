@@ -101,7 +101,7 @@ export class NotTheOpenerError extends AppError {
 }
 
 export class MissingOpenerError extends AppError {
-  constructor(message = 'Une séance ne peut être confirmée sans ouvreur.') {
+  constructor(message = 'Une séance ne peut être confirmée sans bénévole.') {
     super(message, 409);
     this.name = 'MissingOpenerError';
   }

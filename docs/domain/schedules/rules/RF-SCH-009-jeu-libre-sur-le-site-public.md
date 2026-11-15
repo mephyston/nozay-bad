@@ -2,9 +2,9 @@
 
 ## 1. Description et Objectif Métier
 
-Le bloc de contenu **« Jeu libre »** affiche, sur une page du site public, les prochaines séances de jeu libre : qui s'y est inscrit, et si un bénévole a pris l'ouverture du gymnase. Sans ouvreur, le bloc annonce qu'on en cherche toujours un.
+Le bloc de contenu **« Jeu libre »** affiche, sur une page du site public, les prochaines séances de jeu libre : qui s'y est inscrit, et si un bénévole a pris l'ouverture du gymnase. Sans bénévole, le bloc annonce qu'on en cherche toujours un.
 
-L'objectif est de donner envie de venir — on vient jouer parce que ses partenaires viennent — et de rendre visible, au-delà de l'espace adhérent, qu'une séance attend encore son ouvreur.
+L'objectif est de donner envie de venir — on vient jouer parce que ses partenaires viennent — et de rendre visible, au-delà de l'espace adhérent, qu'une séance attend encore son bénévole.
 
 Le site public est lu par n'importe qui et indexé par les moteurs de recherche. Cette règle fixe donc **ce qui peut en sortir**.
 
@@ -28,13 +28,13 @@ Le site public est lu par n'importe qui et indexé par les moteurs de recherche.
 
 **Les invités sont comptés, jamais nommés.** Ce ne sont pas des adhérents. Le bloc affiche « + 2 invités » à la suite des inscrits, et les invités comptent dans le nombre de joueurs, comme pour le seuil d'ouverture.
 
-**L'ouvreur est nommé sous la même forme** (« Robert M. ») dès qu'il s'est engagé. Tant qu'aucun ouvreur ne s'est engagé, le bloc affiche **« On cherche toujours un bénévole pour ouvrir »**. Le mot « ouvreur » reste celui du bureau : face au public et aux adhérents, on parle du bénévole qui ouvre.
+**Le bénévole est nommé sous la même forme** (« Robert M. ») dès qu'il s'est engagé. Tant qu'aucun bénévole ne s'est engagé, le bloc affiche **« On cherche toujours un bénévole pour ouvrir »**.
 
 **Une séance annulée reste affichée, barrée**, avec la mention « Séance annulée ». Son motif, lui, n'est pas repris : il est rédigé pour les inscrits, pas pour le public. Les consignes du bureau (« clé chez Robert ») ne sont jamais affichées.
 
 **S'inscrire.** Sauf si le rédacteur le masque, le bloc porte un bouton « S'inscrire au jeu libre » qui mène au calendrier de l'espace adhérent filtré sur le jeu libre (`/agenda?vue=jeu-libre`). Le site public n'inscrit personne : l'inscription se fait dans l'espace adhérent, au nom de la session. Un visiteur non connecté est d'abord conduit à la connexion, qui le ramène à ce calendrier.
 
-**Fraîcheur.** Une page qui porte ce bloc est gardée **une minute** en cache au lieu d'une journée : une inscription ou un engagement d'ouvreur y apparaît donc au plus une minute plus tard. Les pages sans ce bloc ne sont pas concernées.
+**Fraîcheur.** Une page qui porte ce bloc est gardée **une minute** en cache au lieu d'une journée : une inscription ou un engagement de bénévole y apparaît donc au plus une minute plus tard. Les pages sans ce bloc ne sont pas concernées.
 
 **Fonctionnalité éteinte.** Si le club n'a pas activé le jeu libre, le bloc affiche « Aucune séance de jeu libre de prévue pour le moment. »
 
@@ -64,13 +64,13 @@ Fonctionnalité: Le jeu libre sur le site public
     Alors il lit « 3 joueurs » et « + 2 invités »
     Et ni « Paul » ni « Zoé » n'apparaissent dans la page
 
-  Scénario: L'ouvreur identifié est affiché
+  Scénario: Le bénévole identifié est affiché
     Étant donné que Robert Moreau s'est engagé à ouvrir la séance
     Quand un visiteur ouvre la page
     Alors il lit « Ouvert par Robert M. »
 
-  Scénario: Aucun ouvreur ne s'est encore engagé
-    Étant donné qu'aucun ouvreur ne s'est engagé pour la séance
+  Scénario: Aucun bénévole ne s'est encore engagé
+    Étant donné qu'aucun bénévole ne s'est engagé pour la séance
     Quand un visiteur ouvre la page
     Alors il lit « On cherche toujours un bénévole pour ouvrir »
 

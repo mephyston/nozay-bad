@@ -18,7 +18,7 @@ import type { RegisterToOpenPlayInput, RegisterToOpenPlayOutput } from './dto';
  * celui où il clique, le bureau a pu annuler.
  *
  * Pas de refus « séance pleine » — il n'y a pas de plafond, seulement un seuil bas. Pas
- * de refus « séance confirmée » non plus : une séance qui a trouvé son ouvreur reste
+ * de refus « séance confirmée » non plus : une séance qui a trouvé son bénévole reste
  * ouverte, c'est même tout son intérêt.
  */
 export async function registerToOpenPlay(

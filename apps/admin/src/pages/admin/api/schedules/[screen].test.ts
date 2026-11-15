@@ -41,7 +41,7 @@ vi.mock('../../../../lib/api', () => ({
   })
 }));
 
-// Le référentiel des saisons est lu à part par l'écran des ouvreurs.
+// Le référentiel des saisons est lu à part par l'écran des bénévoles.
 vi.mock('../../../../lib/seasons', () => ({
   fetchSeasons: () => Promise.resolve({ seasons: [{ code: '25-26', active: 1 }], errorMsg: null }),
   currentSeasonCode: (seasons: any[]) => seasons[0]?.code ?? ''

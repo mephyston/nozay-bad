@@ -7,7 +7,7 @@
    *
    * Rien à choisir séance par séance — les inscriptions bougent d'heure en heure. On
    * règle un titre et un nombre de semaines ; le site montre ce qui vient, semaine par
-   * semaine, avec les inscrits en « Camille D. » et l'ouvreur, ou l'annonce qu'on le
+   * semaine, avec les inscrits en « Camille D. » et le bénévole, ou l'annonce qu'on le
    * cherche encore.
    */
   let { block = $bindable() } = $props<{ block: OpenPlayBlock }>();

@@ -50,7 +50,7 @@ const tables = [
     'open_play_guests',
     'open_play_registrations',
     'open_play_sessions',
-    // Sans clé étrangère, mais rangée avec les siennes : c'est la liste des ouvreurs.
+    // Sans clé étrangère, mais rangée avec les siennes : c'est la liste des bénévoles.
     'open_play_openers',
     'schedule_slots',
     'club_event_registrations',

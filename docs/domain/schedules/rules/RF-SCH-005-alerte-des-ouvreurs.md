@@ -4,14 +4,14 @@
 
 Une séance peut réunir assez de joueurs et rester fermée, faute d'un bénévole pour ouvrir le gymnase. Le bureau devait le repérer lui-même en relisant le tableur, puis relancer par SMS.
 
-Cette règle décrit **quand le club sollicite ses ouvreurs**, comment, et ce qui garantit qu'il ne les harcèle pas.
+Cette règle décrit **quand le club sollicite ses bénévoles**, comment, et ce qui garantit qu'il ne les harcèle pas.
 
 ---
 
 ## 2. Domaine Fonctionnel
 
 - **Domaine** : schedules (émission), notifications (acheminement), members (adressage)
-- **Agrégat / Entité clé** : Séance (`open_play_sessions`), Ouvreur (`open_play_openers`)
+- **Agrégat / Entité clé** : Séance (`open_play_sessions`), Bénévole (`open_play_openers`)
 - **Statut** : Validé
 
 ---
@@ -24,9 +24,9 @@ Cette règle décrit **quand le club sollicite ses ouvreurs**, comment, et ce qu
 
 **Un seul message, agrégé.** Trois notifications à sept heures du matin font désinstaller l'application. Le message annonce combien de séances cherchent preneur, en nomme deux au plus, et ouvre la page où le détail se lit.
 
-**Elle ne s'adresse qu'aux ouvreurs désignés** de la saison, à leur adresse et à celle de leurs représentants légaux. Aucune liste d'adresses n'est recopiée : elles sont résolues à l'envoi depuis les licences, parce qu'une adresse recopiée périme en silence — le bénévole ne reçoit plus rien, et personne ne s'en aperçoit.
+**Elle ne s'adresse qu'aux bénévoles désignés** de la saison, à leur adresse et à celle de leurs représentants légaux. Aucune liste d'adresses n'est recopiée : elles sont résolues à l'envoi depuis les licences, parce qu'une adresse recopiée périme en silence — le bénévole ne reçoit plus rien, et personne ne s'en aperçoit.
 
-**Trois silences volontaires** : aucune séance au seuil, aucun ouvreur désigné, ou aucun ouvreur joignable. Dans les trois cas rien ne part, et le fait est journalisé — un envoi qui n'a pas eu lieu doit se constater.
+**Trois silences volontaires** : aucune séance au seuil, aucun bénévole désigné, ou aucun bénévole joignable. Dans les trois cas rien ne part, et le fait est journalisé — un envoi qui n'a pas eu lieu doit se constater.
 
 **Elle ne peut pas se répéter dans la journée.** Un Cron Trigger peut être invoqué plusieurs fois pour la même échéance ; un message de même origine émis dans les vingt dernières heures suffit à annuler l'envoi.
 
@@ -36,7 +36,7 @@ Cette règle décrit **quand le club sollicite ses ouvreurs**, comment, et ce qu
 
 **Le bureau est prévenu la veille.** Chaque matin, à la même heure, les séances du **lendemain** encore ouvertes et sans personne pour les ouvrir font l'objet d'une alerte aux **fonctions du club** (bureau, CA, entraîneurs, tels que saisis dans « Dirigeants »). Elle porte sur toutes ces séances, **seuil atteint ou non** : l'appel aux bénévoles cherche quelqu'un pour une séance qui le mérite, l'alerte au bureau lui laisse le temps de trouver quelqu'un ou d'annuler avant que des joueurs ne viennent devant une porte close. Une séance annulée ne compte pas. Un seul message, qui ne se répète pas dans la journée, rangé sous la catégorie « Jeu libre ». Elle a son propre interrupteur, **Alerte au bureau : séance sans bénévole**, indépendant de l'appel aux bénévoles. Sans fonction du club renseignée, rien ne part et le fait est journalisé.
 
-**Le domaine des créneaux n'envoie rien lui-même.** Il ne connaît ni les adhérents ni les notifications : il expose deux lectures — les séances à pourvoir, les ouvreurs de la saison — et c'est l'application qui les croise. C'est ce qui le maintient sans dépendance.
+**Le domaine des créneaux n'envoie rien lui-même.** Il ne connaît ni les adhérents ni les notifications : il expose deux lectures — les séances à pourvoir, les bénévoles de la saison — et c'est l'application qui les croise. C'est ce qui le maintient sans dépendance.
 
 ---
 
@@ -47,11 +47,11 @@ Cette règle décrit **quand le club sollicite ses ouvreurs**, comment, et ce qu
 
 Fonctionnalité: Alerte « créneau à pourvoir »
 
-  Scénario: Une séance atteint son seuil sans ouvreur
+  Scénario: Une séance atteint son seuil sans bénévole
     Étant donné une séance dans six jours, avec quatre joueurs attendus et un seuil de quatre
-    Et Marie désignée comme ouvreuse de la saison
+    Et Marie désignée comme bénévole de la saison
     Quand l'alerte quotidienne s'exécute
-    Alors Marie est prévenue qu'un créneau cherche un ouvreur
+    Alors Marie est prévenue qu'un créneau cherche un bénévole
     Et la notification ouvre la page du jeu libre
 
   Scénario: Sous le seuil, rien ne part
@@ -65,22 +65,22 @@ Fonctionnalité: Alerte « créneau à pourvoir »
     Alors aucune notification n'est émise
 
   Scénario: Au-delà de la semaine, rien ne part
-    Étant donné une séance dans six semaines, au seuil et sans ouvreur
+    Étant donné une séance dans six semaines, au seuil et sans bénévole
     Quand l'alerte quotidienne s'exécute
     Alors aucune notification n'est émise
 
-  Scénario: Aucun ouvreur désigné
-    Étant donné une séance au seuil et sans ouvreur
+  Scénario: Aucun bénévole désigné
+    Étant donné une séance au seuil et sans bénévole
     Et aucun adhérent porteur d'une clé
     Quand l'alerte quotidienne s'exécute
     Alors aucune notification n'est émise
     Et le fait est journalisé
 
   Scénario: Plusieurs séances, un seul message
-    Étant donné trois séances de la semaine au seuil et sans ouvreur
+    Étant donné trois séances de la semaine au seuil et sans bénévole
     Quand l'alerte quotidienne s'exécute
     Alors une seule notification est émise
-    Et elle annonce que trois séances cherchent un ouvreur
+    Et elle annonce que trois séances cherchent un bénévole
 
   Scénario: Le cron rejoué ne double pas l'envoi
     Étant donné une alerte déjà émise ce matin
@@ -105,8 +105,8 @@ Fonctionnalité: Alerte « créneau à pourvoir »
     Quand l'alerte quotidienne s'exécute
     Alors le bureau ne reçoit rien
 
-  Scénario: Un ouvreur se désabonne
-    Étant donné Marie, ouvreuse désignée, qui a coupé la catégorie « Jeu libre »
+  Scénario: Un bénévole se désabonne
+    Étant donné Marie, bénévole désignée, qui a coupé la catégorie « Jeu libre »
     Quand l'alerte quotidienne s'exécute
     Alors Marie ne reçoit rien
     Et ses autres notifications continuent de lui parvenir

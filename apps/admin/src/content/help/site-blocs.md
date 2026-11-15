@@ -19,7 +19,7 @@ Une page du site public se compose en empilant des **blocs**. Cet article décri
 | Montrer plusieurs photos | **Galerie** |
 | Mettre un PDF en téléchargement | **Document** |
 | Afficher les horaires d'entraînement | **Créneaux** |
-| Montrer les prochaines séances de jeu libre, leurs inscrits et leur ouvreur | **Jeu libre** |
+| Montrer les prochaines séances de jeu libre, leurs inscrits et leur bénévole | **Jeu libre** |
 | Reprendre les dernières actualités | **Actualités** |
 | Intégrer une vidéo ou un agenda extérieur | **Intégration** |
 | Présenter le bureau ou les encadrants | **Personnes** *(pas encore affiché)* |
@@ -273,13 +273,13 @@ Les prochaines séances de jeu libre, avec **qui s'y est inscrit** et **qui ouvr
 | **Afficher le bouton « S'inscrire »** | Coché par défaut. Mène au calendrier de l'espace adhérent, filtré sur le jeu libre |
 
 > [!IMPORTANT]
-> Comme le bloc **Créneaux**, celui-ci **n'enregistre aucune séance**. Il affiche celles tenues dans [Jeu libre](/admin/help/creneaux) : ouvrir, annuler ou désigner les ouvreurs se fait là-bas, et toutes les pages suivent.
+> Comme le bloc **Créneaux**, celui-ci **n'enregistre aucune séance**. Il affiche celles tenues dans [Jeu libre](/admin/help/creneaux) : ouvrir, annuler ou désigner les bénévoles se fait là-bas, et toutes les pages suivent.
 
 Le bloc se lit comme la grille des **Créneaux** : **une rangée par semaine** (« Cette semaine », « Semaine du 28 septembre »…), et dans chaque semaine **une colonne par jour qui a une séance** — un jour sans jeu libre n'ouvre pas de colonne vide. Une semaine sans aucune séance l'annonce : « Pas de jeu libre cette semaine. » Sur téléphone, et dans une colonne de page, les jours s'empilent les uns sous les autres.
 
 Dans la colonne d'un jour, chaque séance donne l'horaire et le gymnase, puis :
 
-- **l'ouvreur** — « Ouvert par Robert M. » dès qu'un bénévole s'est engagé, et sinon **« On cherche toujours un bénévole pour ouvrir »** ;
+- **le bénévole** — « Ouvert par Robert M. » dès qu'un bénévole s'est engagé, et sinon **« On cherche toujours un bénévole pour ouvrir »** ;
 - **le nombre de joueurs**, invités compris, et ce qu'il manque pour atteindre le seuil d'ouverture ;
 - **la liste des inscrits**, un par ligne sous la forme « Camille D. », suivie de « + 2 invités » quand il y en a.
 
@@ -288,7 +288,7 @@ Dans la colonne d'un jour, chaque séance donne l'horaire et le gymnase, puis :
 
 Le bouton **« S'inscrire au jeu libre »** ouvre le calendrier de l'espace adhérent, déjà filtré sur le jeu libre. Un visiteur non connecté passe d'abord par la connexion, puis arrive directement sur ce calendrier : c'est là, et seulement là, qu'on s'inscrit et qu'on annonce ses invités.
 
-Une inscription ou l'engagement d'un ouvreur apparaît sur le site **en moins d'une minute**, sans republier la page. S'il n'y a aucune séance à venir, le bloc affiche « Aucune séance de jeu libre de prévue pour le moment. »
+Une inscription ou l'engagement d'un bénévole apparaît sur le site **en moins d'une minute**, sans republier la page. S'il n'y a aucune séance à venir, le bloc affiche « Aucune séance de jeu libre de prévue pour le moment. »
 
 ---
 

@@ -15,11 +15,11 @@ import { UpdateOpenPlaySessionRepository } from './repository';
 import type { UpdateOpenPlaySessionInput, UpdateOpenPlaySessionOutput } from './dto';
 
 /**
- * L'outil du bureau : corriger une séance, désigner son ouvreur, l'annuler.
+ * L'outil du bureau : corriger une séance, désigner son bénévole, l'annuler.
  *
- * Cette tranche est le seul endroit où l'ouvreur se pose autrement que par le bouton de
+ * Cette tranche est le seul endroit où le bénévole se pose autrement que par le bouton de
  * l'adhérent — le cas réel étant celui du bénévole qui a dit oui par SMS. Elle porte donc
- * l'invariant du domaine : **`confirmed` si et seulement si un ouvreur est renseigné**.
+ * l'invariant du domaine : **`confirmed` si et seulement si un bénévole est renseigné**.
  */
 export async function updateOpenPlaySession(
   db: Db,
@@ -41,7 +41,7 @@ export async function updateOpenPlaySession(
     throw new VenueNotFoundError();
   }
 
-  // Désigner quelqu'un hors de la liste des ouvreurs ferait de cette liste une
+  // Désigner quelqu'un hors de la liste des bénévoles ferait de cette liste une
   // décoration : le bureau désigne PARMI ses détenteurs de clé.
   if (input.openerLicence) {
     const eligible = await repo.isOpener(db, seasonCodeForDate(session.date), input.openerLicence);
@@ -56,7 +56,7 @@ export async function updateOpenPlaySession(
     assign
   );
 
-  // Retirer l'ouvreur rouvre la séance : les deux vont toujours ensemble, c'est ce qui
+  // Retirer le bénévole rouvre la séance : les deux vont toujours ensemble, c'est ce qui
   // tient l'invariant.
   if (input.openerLicence !== undefined) {
     values.openerLicence = input.openerLicence;

@@ -20,7 +20,7 @@ const ouvreur = (patch: Partial<OuvreurLike> = {}): OuvreurLike => ({
   ...patch
 });
 
-describe('projection d’un ouvreur', () => {
+describe('projection d’un bénévole', () => {
   it('prend le nom pour titre, et la licence pour détail', () => {
     expect(nomDOuvreur(ouvreur())).toBe('Robert Dupont');
     expect(detailDOuvreur(ouvreur())).toBe('01234567');
@@ -28,7 +28,7 @@ describe('projection d’un ouvreur', () => {
 
   it('montre la licence quand l’annuaire ne la connaît pas', () => {
     /*
-      Faire disparaître la ligne serait perdre l'information utile : un ouvreur qui n'a
+      Faire disparaître la ligne serait perdre l'information utile : un bénévole qui n'a
       pas repris sa licence doit se voir.
     */
     const inconnu = ouvreur({ name: null });

@@ -31,7 +31,7 @@ beforeEach(async () => {
 });
 
 describe('création d’une séance', () => {
-  it('naît ouverte, sans ouvreur, au seuil du club', async () => {
+  it('naît ouverte, sans bénévole, au seuil du club', async () => {
     const session = await createOpenPlaySession(db, { venueId, ...SATURDAY }, NOW);
 
     expect(session).toMatchObject({

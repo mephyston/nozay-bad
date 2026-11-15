@@ -30,7 +30,7 @@ export class GenerateOpenPlaySessionsRepository {
    * L'instruction d'insertion d'une séance, à passer au lot.
    *
    * `ON CONFLICT DO NOTHING` sur la clé naturelle, et surtout **pas** `DO UPDATE` : la
-   * mise à jour remettrait `status` à `open` et effacerait l'ouvreur d'une séance déjà
+   * mise à jour remettrait `status` à `open` et effacerait le bénévole d'une séance déjà
    * confirmée. Rejouer une période doit être sans effet, pas destructeur.
    */
   buildInsert(db: DbOrTx, values: typeof openPlaySessionsTable.$inferInsert) {

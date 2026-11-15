@@ -26,7 +26,7 @@ Cette règle décrit **qui peut s'inscrire**, ce que le club apprend d'une inscr
 
 **Une séance reste inscriptible jusqu'à minuit**, la comparaison portant sur la date seule. L'adhérent qui arrive en cours de séance doit pouvoir se compter — c'est même à ce moment-là que le compte importe le plus.
 
-**Il n'y a pas de refus « séance pleine »** : le club n'a pas de jauge. Ni de refus « séance confirmée » : une séance qui a trouvé son ouvreur reste ouverte, c'est son intérêt.
+**Il n'y a pas de refus « séance pleine »** : le club n'a pas de jauge. Ni de refus « séance confirmée » : une séance qui a trouvé son bénévole reste ouverte, c'est son intérêt.
 
 **Se désinscrire est plus permissif que s'inscrire.** Le seul refus est l'inexistence de la séance ; se retirer d'une séance **annulée** reste possible, puisqu'on veut légitimement quitter une liste devenue sans objet. L'opération est **tolérante à l'absence** : se désinscrire deux fois, ou sans avoir été inscrit, n'est pas une erreur — l'appelant demande un état, « je ne viens pas », et cet état est atteint dans les deux cas.
 

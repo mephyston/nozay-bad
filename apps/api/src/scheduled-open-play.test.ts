@@ -7,7 +7,7 @@ import { insertMemberFixture } from '@nba/members/test-fixtures';
 import { sendOpenPlayOpenerReminders } from './scheduled';
 
 /**
- * L'appel du matin aux ouvreurs.
+ * L'appel du matin aux bénévoles.
  *
  * La composition vit ici parce que le domaine des créneaux est feuille : il ne sait
  * résoudre ni une adresse ni un envoi. Ces tests portent donc sur le croisement — quelles
@@ -26,7 +26,7 @@ const reminders = async () =>
     (m: any) => m.source === 'schedules:open-play-opener-reminder'
   );
 
-/** Une séance, et assez de joueurs pour qu'elle réclame un ouvreur. */
+/** Une séance, et assez de joueurs pour qu'elle réclame un bénévole. */
 async function seedSessionNeedingOpener(date: string, players = 4) {
   const { openPlayRegistrationsTable, openPlaySessionsTable } = await import(
     '@nba/schedules/schema'
@@ -94,8 +94,8 @@ beforeEach(async () => {
   venueId = venue.id;
 });
 
-describe('appel aux ouvreurs', () => {
-  it('prévient les ouvreurs désignés d’une séance à pourvoir', async () => {
+describe('appel aux bénévoles', () => {
+  it('prévient les bénévoles désignés d’une séance à pourvoir', async () => {
     await seedSessionNeedingOpener('2026-03-21');
     await seedOpener('07000009', 'marie@example.org');
 

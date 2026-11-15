@@ -138,7 +138,7 @@ export const SECTION_SPECS: SectionSpec[] = [
     usedIn: 'Cron des notifications, mails de l’espace adhérent, page d’accueil de l’espace adhérent.',
     fields: [
       { key: 'timezone', label: 'Fuseau horaire', kind: 'select', options: TIMEZONES, required: true },
-      { key: 'dailySendHour', label: 'Heure des envois quotidiens', kind: 'number', min: 0, max: 23, help: 'Anniversaires, rappels de compositions et d’ouvreurs.' },
+      { key: 'dailySendHour', label: 'Heure des envois quotidiens', kind: 'number', min: 0, max: 23, help: 'Anniversaires, rappels de compositions et de bénévoles.' },
       { key: 'weeklySendDay', label: 'Jour des envois hebdomadaires', kind: 'select', options: WEEKDAYS, required: true },
       { key: 'weeklySendHour', label: 'Heure des envois hebdomadaires', kind: 'number', min: 0, max: 23, help: 'Rappel de cotisation et de commande à régler.' },
       { key: 'unpaidReminderDelayDays', label: 'Délai avant de relancer une commande (jours)', kind: 'number', min: 1, max: 90 },

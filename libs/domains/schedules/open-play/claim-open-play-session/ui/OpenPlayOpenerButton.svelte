@@ -6,13 +6,13 @@
    *
    * Rendu seulement aux détenteurs de clé — mais ce n'est qu'un confort d'affichage :
    * le refus qui compte est celui du serveur, qui vérifie la licence de la session contre
-   * la liste des ouvreurs. Un navigateur qui forgerait la requête se ferait refuser.
+   * la liste des bénévoles. Un navigateur qui forgerait la requête se ferait refuser.
    *
    * Comme l'îlot d'inscription, il ignore l'identité : la page qui le porte la tient.
    */
   let {
     sessionId,
-    /** Nom de l'ouvreur en place, ou `null` si la séance cherche encore preneur. */
+    /** Nom du bénévole en place, ou `null` si la séance cherche encore preneur. */
     openerName = null,
     /** Suis-je celui qui la tient ? Décide entre s'engager et se rétracter. */
     iAmOpener = false,

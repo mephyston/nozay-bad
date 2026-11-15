@@ -84,8 +84,8 @@ export function listScheduledNotifications(ctx: RegistryContext): ScheduledNotif
     {
       id: 'schedules:open-play-opener-reminder',
       title: 'Créneaux de jeu libre à pourvoir',
-      body: "Séances des sept prochains jours qui ont assez de joueurs mais personne pour ouvrir. Envoyée aux ouvreurs désignés, en un seul message agrégé.",
-      schedule: `${daily}, si au moins une séance cherche un ouvreur`,
+      body: "Séances des sept prochains jours qui ont assez de joueurs mais personne pour ouvrir. Envoyée aux bénévoles désignés, en un seul message agrégé.",
+      schedule: `${daily}, si au moins une séance cherche un bénévole`,
       trigger: 'cron',
       category: 'open_play',
       enabled: on('reminder_open_play'),

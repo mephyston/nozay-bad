@@ -3,7 +3,7 @@
  *
  * `seasons` appartient à la comptabilité, avec ses vraies dates d'ouverture et de
  * clôture, et la VSA proscrit le SQL qui traverse les domaines. Or le jeu libre a besoin
- * d'un code de saison pour une seule question : **de quelle saison relève l'ouvreur qui
+ * d'un code de saison pour une seule question : **de quelle saison relève le bénévole qui
  * peut prendre cette séance ?** `open_play_openers` est la seule table du domaine qui
  * porte encore une saison, parce qu'un trousseau de clés se confie pour une année.
  *

@@ -74,7 +74,7 @@ beforeEach(async () => {
 });
 
 describe('séances de jeu libre', () => {
-  it('naît ouverte, sans ouvreur, avec le seuil du club', async () => {
+  it('naît ouverte, sans bénévole, avec le seuil du club', async () => {
     const { session } = await seedSession();
     expect(session.status).toBe('open');
     expect(session.minPlayers).toBe(4);
@@ -205,7 +205,7 @@ describe('créneau récurrent supprimé', () => {
   });
 });
 
-describe('liste des ouvreurs', () => {
+describe('liste des bénévoles', () => {
   it('ne désigne pas deux fois la même personne sur une saison', async () => {
     await db
       .insert(openPlayOpenersTable)

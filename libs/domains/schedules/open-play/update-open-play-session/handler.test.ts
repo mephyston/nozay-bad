@@ -60,7 +60,7 @@ describe('corrections du bureau', () => {
   });
 });
 
-describe('désignation manuelle de l’ouvreur', () => {
+describe('désignation manuelle du bénévole', () => {
   it('confirme la séance et recopie le nom', async () => {
     const updated = await updateOpenPlaySession(db, { sessionId, ...MARIE }, NOW);
     expect(updated).toMatchObject({
@@ -72,13 +72,13 @@ describe('désignation manuelle de l’ouvreur', () => {
   });
 
   it('refuse quelqu’un qui n’est pas de la liste', async () => {
-    // Sans quoi la liste des ouvreurs ne serait qu'une décoration.
+    // Sans quoi la liste des bénévoles ne serait qu'une décoration.
     await expect(
       updateOpenPlaySession(db, { sessionId, openerLicence: '00000001' }, NOW)
     ).rejects.toThrow(NotAnOpenerError);
   });
 
-  it('rouvre la séance quand on retire l’ouvreur', async () => {
+  it('rouvre la séance quand on retire le bénévole', async () => {
     await updateOpenPlaySession(db, { sessionId, ...MARIE }, NOW);
     const reopened = await updateOpenPlaySession(db, { sessionId, openerLicence: null }, NOW);
 
@@ -90,14 +90,14 @@ describe('désignation manuelle de l’ouvreur', () => {
     });
   });
 
-  it('refuse de confirmer une séance sans ouvreur', async () => {
+  it('refuse de confirmer une séance sans bénévole', async () => {
     // C'est l'invariant du domaine : « confirmée » veut dire « quelqu'un ouvrira ».
     await expect(
       updateOpenPlaySession(db, { sessionId, status: 'confirmed' }, NOW)
     ).rejects.toThrow(MissingOpenerError);
   });
 
-  it('accepte de confirmer quand l’ouvreur arrive dans la même écriture', async () => {
+  it('accepte de confirmer quand le bénévole arrive dans la même écriture', async () => {
     await expect(
       updateOpenPlaySession(db, { sessionId, status: 'confirmed', ...MARIE }, NOW)
     ).resolves.toMatchObject({ status: 'confirmed' });

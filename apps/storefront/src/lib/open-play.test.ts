@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { formatSessionDate, sessionStatusLabel, type OpenPlaySession } from './open-play';
 
-/** Une séance à venir, sans inscrit ni ouvreur. */
+/** Une séance à venir, sans inscrit ni bénévole. */
 function session(over: Partial<OpenPlaySession> = {}): OpenPlaySession {
   return {
     id: 1,
@@ -56,14 +56,14 @@ describe('phrase d’état', () => {
     });
   });
 
-  it('réclame un ouvreur dès le seuil atteint', () => {
+  it('réclame un bénévole dès le seuil atteint', () => {
     expect(sessionStatusLabel(session({ playerCount: 4, needsOpener: true }))).toEqual({
       text: 'On cherche toujours un bénévole pour ouvrir',
       tone: 'pending'
     });
   });
 
-  it('nomme l’ouvreur, prénom et initiale', () => {
+  it('nomme le bénévole, prénom et initiale', () => {
     // Le nom complet n'a pas à s'afficher : l'adhérent veut savoir que quelqu'un ouvre,
     // pas lire un annuaire.
     expect(

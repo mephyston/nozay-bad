@@ -9,7 +9,7 @@ Il ne faut pas le confondre avec deux voisins :
 - l'**Agenda** (`events`) porte les rendez-vous **annoncés** du club — compétitions, stages, animations. Un événement existe même sans inscrit ; une séance de jeu libre n'existe que si assez de monde s'inscrit et qu'un bénévole vient ouvrir ;
 - le **CMS** publie les pages du site. Les blocs `schedule` et `open_play` d'une page ne portent **qu'une requête**, jamais des lignes.
 
-Le domaine est **feuille** : il ne dépend d'aucun autre. Il ne connaît donc pas les adhérents — il enregistre l'identité qu'on lui présente, et c'est l'application appelante qui garantit qu'elle vient d'une session authentifiée. C'est aussi ce qui permet au refus « vous n'êtes pas ouvreur » d'être rendu **par le handler** plutôt que par un écran contournable.
+Le domaine est **feuille** : il ne dépend d'aucun autre. Il ne connaît donc pas les adhérents — il enregistre l'identité qu'on lui présente, et c'est l'application appelante qui garantit qu'elle vient d'une session authentifiée. C'est aussi ce qui permet au refus « vous n'êtes pas bénévole » d'être rendu **par le handler** plutôt que par un écran contournable.
 
 ---
 
@@ -23,14 +23,14 @@ Le domaine est **feuille** : il ne dépend d'aucun autre. Il ne connaît donc pa
 | **Séance de jeu libre** | **Occurrence datée** : « le samedi 21 mars, de 14 h à 17 h, à Pierre-Dupuis ». Créée à la main, ou générée depuis un créneau récurrent. | `Aggregate` (`open_play_sessions`) |
 | **Seuil d'ouverture** | Nombre de **joueurs** — pas de licences — en dessous duquel le club ne mobilise pas de bénévole. Porté par la séance, et figé au moment de la décision. | `min_players` (défaut `4`) |
 | **Joueurs attendus** | Inscrits **et** invités. Le seul chiffre qui décide de l'ouverture. | `playerCount` |
-| **À pourvoir** | Le seuil est atteint et personne ne s'est déclaré ouvreur. **État dérivé**, jamais stocké. | `needsOpener` |
-| **Ouvreur** | Détenteur de clé désigné par le bureau, qui s'engage à ouvrir le gymnase. | `Entity` (`open_play_openers`) |
-| **Séance confirmée** | Un ouvreur s'est engagé. Équivaut exactement à « `opener_licence` n'est pas nul ». | `status = 'confirmed'` |
+| **À pourvoir** | Le seuil est atteint et personne ne s'est déclaré bénévole. **État dérivé**, jamais stocké. | `needsOpener` |
+| **Bénévole** | Détenteur de clé désigné par le bureau, qui s'engage à ouvrir le gymnase. Anciennement « ouvreur » ; le code garde le nom technique `opener`. | `Entity` (`open_play_openers`) |
+| **Séance confirmée** | Un bénévole s'est engagé. Équivaut exactement à « `opener_licence` n'est pas nul ». | `status = 'confirmed'` |
 | **Séance annulée** | Retirée du jeu, **avec son motif** — que l'adhérent inscrit doit pouvoir lire. Reste visible, barrée. | `status = 'cancelled'` |
 | **Inscription** | Engagement d'un adhérent à venir, avec les personnes qu'il amène. | `Entity` (`open_play_registrations`) |
 | **Invité** | Personne **nommée** qu'un adhérent amène. N'existe que rattachée à son hôte, et compte dans le seuil. | `Entity` (`open_play_guests`) |
 | **Liste d'appel** | La liste nominative des inscrits et de leurs invités. Lecture réservée à l'administration. | `schedules:registrations:read` |
-| **Nom public** | Forme sous laquelle le site public nomme un inscrit ou un ouvreur : le prénom, puis l'initiale du nom. Les invités n'en ont pas — ils sont seulement comptés. | `publicName()` → « Camille D. » |
+| **Nom public** | Forme sous laquelle le site public nomme un inscrit ou un bénévole : le prénom, puis l'initiale du nom. Les invités n'en ont pas — ils sont seulement comptés. | `publicName()` → « Camille D. » |
 | **Séance individuelle** | **Soirée datée** où l'entraîneur prend, au début de l'entraînement compétiteurs, une ou deux personnes par créneau de trente minutes. Créée à la main ou générée depuis un créneau marqué `indiv` dans la grille. | `Aggregate` (`indiv_sessions`) |
 | **Créneau d'indiv** | Le k-ième tiers d'heure de la soirée. **Dérivé** de `start_time`, `slot_count` et `slot_minutes`, jamais stocké. | `slotWindows()` |
 | **Candidature** | Demande d'un compétiteur pour la soirée, avec sa **préférence** de créneau (ou « indifférent ») et un mot pour l'entraîneur. Une par adhérent et par soirée. | `Entity` (`indiv_requests`) |
@@ -43,7 +43,7 @@ Le domaine est **feuille** : il ne dépend d'aucun autre. Il ne connaît donc pa
 
 ## Ce que le domaine ne fait pas
 
-- **Il ne connaît pas les adhérents.** `member_id` désigne une *adhésion* (`memberships.id`), sans clé étrangère, conformément à l'[ADR-0006](../../architecture/ADR-0006-personne-et-adhesion.md) ; l'ouvreur est désigné par sa **licence**, clé naturelle stable. Prénom et nom sont **recopiés** là où ils constituent une trace (qui s'était inscrit, qui a ouvert), et **jamais** dans la liste courante des ouvreurs, où ils divergeraient.
+- **Il ne connaît pas les adhérents.** `member_id` désigne une *adhésion* (`memberships.id`), sans clé étrangère, conformément à l'[ADR-0006](../../architecture/ADR-0006-personne-et-adhesion.md) ; le bénévole est désigné par sa **licence**, clé naturelle stable. Prénom et nom sont **recopiés** là où ils constituent une trace (qui s'était inscrit, qui a ouvert), et **jamais** dans la liste courante des bénévoles, où ils divergeraient.
 - **Il ne notifie personne.** Le domaine est feuille : la composition avec `members` et `notifications` se fait dans `apps/api`.
 - **Il ne plafonne pas les places** du jeu libre. Il n'y a qu'un seuil bas. Une jauge imposerait une course à l'inscription, une liste d'attente et un repêchage, pour un problème que le club n'a pas. Les séances individuelles, elles, ont des places — mais c'est l'entraîneur qui les attribue, personne ne court.
 - **Il ne sait pas qui est compétiteur.** L'appelant lui présente le libellé du groupe d'adhésion, et le handler applique la règle du mot « compétiteur ». L'âge et le classement, qui aident l'entraîneur à choisir, sont joints par l'administration à partir des domaines `members` et `teams`.
@@ -57,9 +57,9 @@ Le domaine est **feuille** : il ne dépend d'aucun autre. Il ne connaît donc pa
 | [RF-SCH-001](./rules/RF-SCH-001-seances-de-jeu-libre.md) | Ouverture d'une séance de jeu libre |
 | [RF-SCH-002](./rules/RF-SCH-002-inscription-a-une-seance.md) | Inscription d'un adhérent |
 | [RF-SCH-003](./rules/RF-SCH-003-invites-nommes.md) | Invités nommés |
-| [RF-SCH-004](./rules/RF-SCH-004-benevole-ouvreur.md) | Ouvreurs désignés et confirmation d'une séance |
+| [RF-SCH-004](./rules/RF-SCH-004-benevole-ouvreur.md) | Bénévoles désignés et confirmation d'une séance |
 | [RF-SCH-005](./rules/RF-SCH-005-alerte-des-ouvreurs.md) | Alerte « créneau à pourvoir » |
 | [RF-SCH-006](./rules/RF-SCH-006-seances-individuelles.md) | Soirées d'indiv : créneaux dérivés, génération, annulation |
 | [RF-SCH-007](./rules/RF-SCH-007-candidature-indiv.md) | Candidature d'un compétiteur, une soirée à la fois |
 | [RF-SCH-008](./rules/RF-SCH-008-selection-et-annonce.md) | Équité, sélection, annonce et notifications |
-| [RF-SCH-009](./rules/RF-SCH-009-jeu-libre-sur-le-site-public.md) | Le jeu libre sur le site public : inscrits, invités, ouvreur |
+| [RF-SCH-009](./rules/RF-SCH-009-jeu-libre-sur-le-site-public.md) | Le jeu libre sur le site public : inscrits, invités, bénévole |

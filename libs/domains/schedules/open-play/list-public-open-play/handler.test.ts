@@ -79,7 +79,7 @@ describe('le jeu libre, tel que le site public le montre', () => {
     expect(JSON.stringify(first)).not.toContain('Paul');
   });
 
-  it("montre l'ouvreur quand il est identifié, `null` sinon", async () => {
+  it("montre le bénévole quand il est identifié, `null` sinon", async () => {
     await session({
       date: '2026-03-21',
       status: 'confirmed',

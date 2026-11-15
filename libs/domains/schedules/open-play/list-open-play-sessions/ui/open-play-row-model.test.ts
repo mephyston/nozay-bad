@@ -66,7 +66,7 @@ describe('ton du remplissage', () => {
   });
 });
 
-describe('ouvreur', () => {
+describe('bénévole', () => {
   it('abrège le nom', () => {
     expect(ouvreurDeSeance(seance({ openerFirstName: 'Robert', openerLastName: 'Dupont' }))).toBe(
       'Robert D.'
@@ -96,13 +96,13 @@ describe('pastille', () => {
     ).toBeUndefined();
   });
 
-  it('signale l’annulation et le manque d’ouvreur', () => {
+  it('signale l’annulation et le manque de bénévole', () => {
     expect(pastilleDeSeance(seance({ status: 'cancelled' }))?.texte).toBe('Annulée');
     expect(pastilleDeSeance(seance({ needsOpener: true }))?.texte).toBe('À pourvoir');
   });
 
-  it('dit l’annulation avant le manque d’ouvreur', () => {
-    // Une séance annulée n'a plus besoin d'ouvreur : le dire serait un appel à l'aide
+  it('dit l’annulation avant le manque de bénévole', () => {
+    // Une séance annulée n'a plus besoin de bénévole : le dire serait un appel à l'aide
     // pour une séance qui n'aura pas lieu.
     expect(pastilleDeSeance(seance({ status: 'cancelled', needsOpener: true }))?.texte).toBe(
       'Annulée'

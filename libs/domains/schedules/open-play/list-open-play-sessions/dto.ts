@@ -10,7 +10,7 @@ export interface ListOpenPlaySessionsInput {
   memberId?: number;
   /** Imposé par la session du storefront : résout `canOpen` et `iAmOpener`. */
   licence?: string;
-  /** Ce que lit le cron : les séances au seuil, sans ouvreur, dans les N jours. */
+  /** Ce que lit le cron : les séances au seuil, sans bénévole, dans les N jours. */
   needsOpenerWithinDays?: number;
   sessionIds?: number[];
   /** Défaut : les séances annulées restent visibles — l'adhérent doit lire pourquoi. */
@@ -26,7 +26,7 @@ export interface OpenPlaySessionListItem extends OpenPlaySessionRow {
   guestCount: number;
   /** Le chiffre du seuil : des raquettes, pas des licences. */
   playerCount: number;
-  /** Dérivé, jamais stocké : ouverte, sans ouvreur, et le seuil est atteint. */
+  /** Dérivé, jamais stocké : ouverte, sans bénévole, et le seuil est atteint. */
   needsOpener: boolean;
   /**
    * Mes invités, ou `null` si je ne suis pas inscrit.
@@ -41,7 +41,7 @@ export interface OpenPlaySessionListItem extends OpenPlaySessionRow {
 export interface ListOpenPlaySessionsOutput {
   sessions: OpenPlaySessionListItem[];
   /**
-   * L'adhérent interrogé figure-t-il parmi les ouvreurs de la saison ?
+   * L'adhérent interrogé figure-t-il parmi les bénévoles de la saison ?
    *
    * Confort d'affichage uniquement : le refus qui compte est le 403 du handler de prise
    * d'ouverture. Un navigateur qui forgerait la requête se ferait refuser tout de même.

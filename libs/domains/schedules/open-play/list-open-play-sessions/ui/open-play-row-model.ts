@@ -49,7 +49,7 @@ export const tonDeRemplissage = (s: SeanceLike): Tone => {
   return s.playerCount >= s.minPlayers ? 'success' : 'muted';
 };
 
-/** L'ouvreur en version courte, `null` quand personne ne s'est encore proposé. */
+/** Le bénévole en version courte, `null` quand personne ne s'est encore proposé. */
 export const ouvreurDeSeance = (s: SeanceLike): string | undefined => {
   if (!s.openerFirstName) return undefined;
   const initiale = (s.openerLastName ?? '').trim().charAt(0);
@@ -59,9 +59,9 @@ export const ouvreurDeSeance = (s: SeanceLike): string | undefined => {
 /**
  * La pastille, et seulement pour une exception.
  *
- * Le tableau badgeait les quatre états, ouvreur nommé compris. Sur une ligne de
+ * Le tableau badgeait les quatre états, bénévole nommé compris. Sur une ligne de
  * téléphone, une pastille à chaque rangée ne distingue plus rien et mange le titre :
- * une séance ouverte et pourvue est le cas courant, elle ne se signale pas. L'ouvreur
+ * une séance ouverte et pourvue est le cas courant, elle ne se signale pas. Le bénévole
  * n'a pas disparu pour autant — il passe sous le remplissage, où il se lit.
  */
 export const pastilleDeSeance = (

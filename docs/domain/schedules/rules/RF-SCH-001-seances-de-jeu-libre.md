@@ -31,10 +31,10 @@ Une **séance** est une occurrence **datée** : une date, un horaire, un gymnase
 | État | Ce qu'il emporte |
 |---|---|
 | `open` | Les adhérents s'inscrivent et se désinscrivent |
-| `confirmed` | Un ouvreur s'est engagé. Les inscriptions **restent ouvertes** — c'est même le but |
+| `confirmed` | Un bénévole s'est engagé. Les inscriptions **restent ouvertes** — c'est même le but |
 | `cancelled` | Plus personne ne s'ajoute. La séance **reste visible**, barrée, avec son motif |
 
-`confirmed` équivaut exactement à « un ouvreur est renseigné » : c'est une dénormalisation assumée, gardée parce qu'elle rend `cancelled` représentable et que l'écran du bureau filtre sur une colonne plutôt que sur trois. **« Seuil atteint » n'est pas un état** : c'est un calcul refait à chaque lecture, sans quoi il faudrait écrire à chaque désinscription — celle qu'on oublie.
+`confirmed` équivaut exactement à « un bénévole est renseigné » : c'est une dénormalisation assumée, gardée parce qu'elle rend `cancelled` représentable et que l'écran du bureau filtre sur une colonne plutôt que sur trois. **« Seuil atteint » n'est pas un état** : c'est un calcul refait à chaque lecture, sans quoi il faudrait écrire à chaque désinscription — celle qu'on oublie.
 
 **L'annulation exige un motif.** Contrairement à un événement annulé, que le site masque, la séance reste affichée à l'adhérent : celui qui s'était inscrit n'apprendrait rien d'une ligne disparue, il doit lire pourquoi il ne joue pas. Rouvrir efface le motif.
 
@@ -44,7 +44,7 @@ Les séances peuvent être **déroulées** depuis les créneaux hebdomadaires de
 
 Ne sont déroulés que les créneaux **actifs** : masquer un créneau est justement la façon dont le bureau retire un horaire qu'il ne tient plus.
 
-**L'opération est rejouable.** La clé naturelle rend chaque insertion sans effet si la séance existe déjà — le bureau peut donc étendre la période au fil de la saison sans se souvenir de ce qu'il a généré. Et surtout : une séance déjà pourvue n'est **jamais** défaite. Remettre son statut à « ouverte » et effacer son ouvreur ferait venir des gens devant une porte close.
+**L'opération est rejouable.** La clé naturelle rend chaque insertion sans effet si la séance existe déjà — le bureau peut donc étendre la période au fil de la saison sans se souvenir de ce qu'il a généré. Et surtout : une séance déjà pourvue n'est **jamais** défaite. Remettre son statut à « ouverte » et effacer son bénévole ferait venir des gens devant une porte close.
 
 Le résultat annonce ce qui a été créé **et** ce qui existait déjà. Sans ce second chiffre, une génération rejouée passerait pour une panne.
 
@@ -68,7 +68,7 @@ Fonctionnalité: Ouverture d'une séance de jeu libre
     Quand le bureau ouvre une séance le samedi 21 mars de 14 h à 17 h
     Alors la séance est ouverte aux inscriptions
     Et son seuil d'ouverture est de 4 joueurs
-    Et elle n'a pas d'ouvreur
+    Et elle n'a pas de bénévole
 
   Scénario: Deux séances identiques sont refusées
     Étant donné une séance le 21 mars à 14 h à « Pierre Dupuis »
@@ -123,7 +123,7 @@ Fonctionnalité: Ouverture d'une séance de jeu libre
     Étant donné une séance générée, qu'un bénévole s'est engagé à ouvrir
     Quand le bureau génère de nouveau une période qui l'englobe
     Alors la séance reste confirmée
-    Et elle garde le nom de son ouvreur
+    Et elle garde le nom de son bénévole
 
   Scénario: Un créneau masqué n'est pas déroulé
     Étant donné un créneau de jeu libre masqué du site

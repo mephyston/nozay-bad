@@ -10,7 +10,7 @@ export class ReleaseOpenPlaySessionRepository {
   /**
    * Libère la séance, **si c'est bien nous qui la tenions** — même verrou optimiste qu'à
    * la prise. La condition dans le `WHERE` évite qu'une rétractation partie en même temps
-   * qu'une reprise n'efface l'ouvreur suivant.
+   * qu'une reprise n'efface le bénévole suivant.
    */
   async release(
     db: DbOrTx,

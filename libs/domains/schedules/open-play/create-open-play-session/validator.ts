@@ -3,7 +3,7 @@ import { Type } from '@sinclair/typebox';
 /**
  * Bornes de saisie d'une séance.
  *
- * `minPlayers` accepte 1 : un créneau peut n'attendre personne d'autre que son ouvreur
+ * `minPlayers` accepte 1 : un créneau peut n'attendre personne d'autre que son bénévole
  * — le club en ouvre parfois pour un entraînement individuel. Le plafond à 40 n'est pas
  * une jauge de gymnase, c'est un garde-fou de frappe.
  */

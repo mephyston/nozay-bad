@@ -14,7 +14,7 @@ import type { CreateOpenPlaySessionInput, CreateOpenPlaySessionOutput } from './
  * Ouvre une séance de jeu libre à une date.
  *
  * Le cas courant est celui que la grille hebdomadaire ne couvre pas : un samedi de
- * vacances, un jour férié. La séance naît sans ouvreur — c'est l'affluence qui décidera
+ * vacances, un jour férié. La séance naît sans bénévole — c'est l'affluence qui décidera
  * s'il en faut un.
  */
 export async function createOpenPlaySession(

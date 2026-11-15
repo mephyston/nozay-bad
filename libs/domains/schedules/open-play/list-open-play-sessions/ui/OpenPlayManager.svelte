@@ -34,7 +34,7 @@
    * Les séances de jeu libre, vues du bureau.
    *
    * Ce que le tableur ne donnait pas : combien de joueurs sont réellement attendus
-   * (invités compris), lesquelles ont franchi leur seuil sans trouver d'ouvreur, et qui
+   * (invités compris), lesquelles ont franchi leur seuil sans trouver de bénévole, et qui
    * vient — à la demande, parce qu'une liste nominative n'a pas à descendre avec la page.
    */
 
@@ -426,7 +426,7 @@
     <Table.Head>Horaire</Table.Head>
     <Table.Head>Gymnase</Table.Head>
     <Table.Head>Joueurs</Table.Head>
-    <Table.Head>Ouvreur</Table.Head>
+    <Table.Head>Bénévole</Table.Head>
     <Table.Head class="text-right">Actions</Table.Head>
   {/snippet}
 
@@ -535,7 +535,7 @@
 <FormSheet
   bind:open={showGenerateSheet}
   title="Programmer les séances récurrentes"
-  description="Transforme les créneaux hebdomadaires de jeu libre en séances datées. Rejouable sans risque : les séances déjà créées sont laissées telles quelles, ouvreur compris."
+  description="Transforme les créneaux hebdomadaires de jeu libre en séances datées. Rejouable sans risque : les séances déjà créées sont laissées telles quelles, bénévole compris."
   icon={CalendarPlus}
   error={errorMsg}
   isSubmitting={busy}
@@ -675,7 +675,7 @@
   <SwitchField
     id="filter-a-pourvoir"
     label="Seulement les séances à pourvoir"
-    hint="Celles qui ont franchi leur seuil de joueurs sans qu'un ouvreur se soit proposé."
+    hint="Celles qui ont franchi leur seuil de joueurs sans qu'un bénévole se soit proposé."
     checked={onlyToStaff}
     onChange={(v) => (onlyToStaff = v)}
   />

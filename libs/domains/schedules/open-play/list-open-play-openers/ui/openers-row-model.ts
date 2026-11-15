@@ -49,7 +49,7 @@ export const pastilleDOuvreur = (o: OuvreurLike): string | undefined =>
 export type GestesDOuvreur = { onRemove: (o: OuvreurLike) => void };
 
 /**
- * Ce qu'on peut faire d'un ouvreur : lui reprendre sa clé, et c'est tout.
+ * Ce qu'on peut faire d'un bénévole : lui reprendre sa clé, et c'est tout.
  *
  * Une seule action, et elle est destructrice — alors que la règle veut la réversible
  * en tête, puisque c'est elle qu'un balayage long exécute. La parade n'est pas de

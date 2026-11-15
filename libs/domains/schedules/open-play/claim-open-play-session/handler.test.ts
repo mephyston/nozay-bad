@@ -56,7 +56,7 @@ beforeEach(async () => {
 });
 
 describe('prendre une séance', () => {
-  it('confirme la séance et recopie le nom de l’ouvreur', async () => {
+  it('confirme la séance et recopie le nom du bénévole', async () => {
     const claimed = await claimOpenPlaySession(db, { sessionId, ...MARIE }, NOW);
 
     expect(claimed).toMatchObject({
@@ -157,7 +157,7 @@ describe('rendre une séance', () => {
   });
 });
 
-describe('liste des ouvreurs', () => {
+describe('liste des bénévoles', () => {
   it('désigner deux fois n’est pas une erreur', async () => {
     await saveOpenPlayOpener(db, { seasonCode: '25-26', licence: MARIE.licence }, NOW);
     expect(await listOpenPlayOpeners(db, { seasonCode: '25-26' })).toHaveLength(2);
@@ -188,7 +188,7 @@ describe('liste des ouvreurs', () => {
     expect(session).toMatchObject({ status: 'confirmed', openerFirstName: 'Marie' });
   });
 
-  it('tolère le retrait d’un ouvreur inexistant', async () => {
+  it('tolère le retrait d’un bénévole inexistant', async () => {
     expect(await deleteOpenPlayOpener(db, { openerId: 9999 })).toEqual({ removed: false });
   });
 

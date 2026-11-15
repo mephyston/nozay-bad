@@ -97,7 +97,7 @@ export function daysBetween(from: string, to: string): number {
  */
 export const MAX_GENERATION_DAYS = 366;
 
-/** Un invité doit porter un prénom **et** un nom : « ␣ » ne dit rien à l'ouvreur. */
+/** Un invité doit porter un prénom **et** un nom : « ␣ » ne dit rien au bénévole. */
 export function isNamedGuest(guest: { firstName: string; lastName: string }): boolean {
   return guest.firstName.trim().length > 0 && guest.lastName.trim().length > 0;
 }

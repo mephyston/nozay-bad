@@ -6,7 +6,7 @@ import { insertMemberFixture } from './test-fixtures';
 import { getContactEmailsForLicences } from './queries';
 
 /**
- * Résolution licence → adresses, ce que réclame l'alerte aux ouvreurs : le domaine des
+ * Résolution licence → adresses, ce que réclame l'alerte aux bénévoles : le domaine des
  * créneaux ne connaît que des licences, et ne peut pas traverser jusqu'ici.
  */
 

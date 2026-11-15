@@ -7,7 +7,7 @@ import { creerRelais, Refus, identifiant, type Ecran } from '../../../../lib/rel
  * Les écrans du domaine « séances », et ce que chacun expose.
  *
  * Groupé par **domaine** et non par rubrique de menu : les créneaux, le jeu libre et les
- * ouvreurs vivent sous « Site web » dans la barre latérale, mais ils ne relèvent pas du
+ * bénévoles vivent sous « Site web » dans la barre latérale, mais ils ne relèvent pas du
  * CMS — tenir des séances et publier des pages sont deux métiers, avec deux jeux de
  * permissions. Les mêler aurait fait d'une réorganisation du menu une réécriture de
  * relais.
@@ -354,7 +354,7 @@ export const ECRANS: Record<string, Ecran> = {
           openers: [],
           members: [],
           errorMsg:
-            seasonsError ?? "Aucune saison n'est ouverte : la liste des ouvreurs se tient par saison."
+            seasonsError ?? "Aucune saison n'est ouverte : la liste des bénévoles se tient par saison."
         };
       }
 
@@ -365,7 +365,7 @@ export const ECRANS: Record<string, Ecran> = {
         ? null
         : reponse.status === 404
           ? 'Le jeu libre est éteint dans la configuration du club (Réglages → Fonctionnalités).'
-          : `Impossible de charger les ouvreurs (erreur ${reponse.status}).`;
+          : `Impossible de charger les bénévoles (erreur ${reponse.status}).`;
 
       /*
         `season` n'est pas facultatif : `/members` rend des ADHÉSIONS, une ligne par
@@ -405,7 +405,7 @@ export const ECRANS: Record<string, Ecran> = {
       removeOpener: {
         permission: 'schedules:open-play:write',
         route: (data) => ({
-          chemin: `/schedules/open-play/openers/${identifiant(data.id, "d'ouvreur")}`,
+          chemin: `/schedules/open-play/openers/${identifiant(data.id, "de bénévole")}`,
           method: 'DELETE'
         })
       }

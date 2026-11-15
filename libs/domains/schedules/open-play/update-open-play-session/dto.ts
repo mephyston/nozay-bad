@@ -2,7 +2,7 @@ import type { OpenPlaySessionRow, OpenPlayStatus } from '../../shared/open-play-
 
 /**
  * Tous les champs sont optionnels : **absent = ne rien changer**, convention des autres
- * mises à jour du dépôt. `openerLicence: null` retire explicitement l'ouvreur.
+ * mises à jour du dépôt. `openerLicence: null` retire explicitement le bénévole.
  */
 export interface UpdateOpenPlaySessionInput {
   sessionId: number;

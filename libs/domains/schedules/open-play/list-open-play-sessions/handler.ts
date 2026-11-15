@@ -45,7 +45,7 @@ export async function listOpenPlaySessions(
   const mine = input.memberId ? await repo.registrationsOf(db, input.memberId) : new Map();
   const venueById = new Map(venues.map((venue) => [venue.id, venue]));
 
-  // Un seul contrôle d'ouvreur pour toute la liste, et il porte sur la saison **en
+  // Un seul contrôle de bénévole pour toute la liste, et il porte sur la saison **en
   // cours** : « puis-je ouvrir ? » est une question au présent. Elle se lisait avant sur
   // la première séance rendue, ce qui donnait la mauvaise réponse à l'administration, qui
   // remonte l'historique depuis 2000 — la saison de la plus vieille séance de la liste.

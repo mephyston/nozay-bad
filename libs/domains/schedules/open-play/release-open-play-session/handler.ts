@@ -11,7 +11,7 @@ import type { ReleaseOpenPlaySessionInput, ReleaseOpenPlaySessionOutput } from '
 /**
  * « Je ne peux plus ouvrir. »
  *
- * Réservé à l'ouvreur en place : on ne libère pas la séance d'un autre. Le bureau, lui,
+ * Réservé au bénévole en place : on ne libère pas la séance d'un autre. Le bureau, lui,
  * le peut — par la mise à jour de la séance, qui est son outil.
  *
  * Refusé une fois la séance passée : se rétracter après coup n'a pas de sens, et

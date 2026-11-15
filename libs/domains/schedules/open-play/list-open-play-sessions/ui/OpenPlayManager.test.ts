@@ -88,7 +88,7 @@ describe('OpenPlayManager', () => {
     expect(host.textContent).toContain('À pourvoir');
   });
 
-  it('nomme l’ouvreur quand il y en a un', () => {
+  it('nomme le bénévole quand il y en a un', () => {
     render({
       sessions: [
         session({ status: 'confirmed', openerFirstName: 'Marie', openerLastName: 'Dupuis' })

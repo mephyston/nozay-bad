@@ -15,11 +15,11 @@ import type { ClaimOpenPlaySessionInput, ClaimOpenPlaySessionOutput } from './dt
  * « J'ouvre ce créneau. »
  *
  * Le geste qui remplace la recherche de bénévole par SMS. Le refus « vous n'êtes pas
- * ouvreur » est rendu **ici** et non par l'écran : c'est ce qui le rend incontournable,
+ * bénévole » est rendu **ici** et non par l'écran : c'est ce qui le rend incontournable,
  * un navigateur qui forgerait la requête se faisant refuser tout de même.
  *
  * L'identité est recopiée sur la séance parce qu'elle y devient une trace : retirer plus
- * tard cette personne de la liste des ouvreurs ne doit pas effacer son nom des séances
+ * tard cette personne de la liste des bénévoles ne doit pas effacer son nom des séances
  * qu'elle a tenues.
  */
 export async function claimOpenPlaySession(
@@ -35,7 +35,7 @@ export async function claimOpenPlaySession(
   if (!isUpcomingDate(session.date, now)) throw new OpenPlaySessionPassedError();
 
   const licence = input.licence.trim();
-  // La séance est datée ; la liste d'ouvreurs qui s'applique est celle de sa saison.
+  // La séance est datée ; la liste de bénévoles qui s'applique est celle de sa saison.
   if (!(await repo.isOpener(db, seasonCodeForDate(session.date), licence))) {
     throw new NotAnOpenerError();
   }

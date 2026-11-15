@@ -428,7 +428,7 @@ export interface PublicOpenPlaySessionView {
 }
 
 /**
- * Les prochaines séances de jeu libre, avec leurs inscrits et leur ouvreur.
+ * Les prochaines séances de jeu libre, avec leurs inscrits et leur bénévole.
  *
  * Lecture **volatile** : elle n'est pas rangée sous la version de contenu, que les
  * inscriptions n'incrémentent pas, et elle raccourcit la vie de la page au bord.

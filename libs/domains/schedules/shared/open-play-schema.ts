@@ -74,7 +74,7 @@ export const openPlaySessionsTable = sqliteTable(
      * dénormalisation assumée. On la garde parce qu'elle rend `cancelled` représentable,
      * ce qu'un booléen dérivé ne permettrait pas, et parce que l'écran du bureau filtre
      * « à pourvoir » sur une colonne plutôt que sur trois. L'invariant est tenu par les
-     * seuls handlers qui écrivent l'ouvreur, et verrouillé par un test.
+     * seuls handlers qui écrivent le bénévole, et verrouillé par un test.
      *
      * « Seuil atteint » n'est **pas** un état : c'est `inscrits + invités >=
      * min_players`, recalculé à chaque lecture. Le stocker obligerait à écrire à chaque
@@ -93,7 +93,7 @@ export const openPlaySessionsTable = sqliteTable(
      * l'était que par saison.
      *
      * L'identité est recopiée parce qu'elle est ici une **trace** : qui a réellement
-     * ouvert le gymnase en novembre. Retirer quelqu'un de la liste des ouvreurs ne doit
+     * ouvert le gymnase en novembre. Retirer quelqu'un de la liste des bénévoles ne doit
      * pas effacer son nom des séances qu'il a tenues. Même raison que
      * `club_event_registrations` — à ne pas confondre avec `open_play_openers`, qui est
      * une liste *courante* et ne recopie rien.
@@ -157,7 +157,7 @@ export const openPlayRegistrationsTable = sqliteTable(
     /**
      * Licence, **en plus** de ce que porte `events`.
      *
-     * Deux usages : c'est par elle qu'on reconnaît l'ouvreur parmi les inscrits, et
+     * Deux usages : c'est par elle qu'on reconnaît le bénévole parmi les inscrits, et
      * c'est ce que le bénévole doit pouvoir relire à la porte du gymnase — un adhérent
      * assuré est un adhérent licencié.
      */
@@ -234,15 +234,15 @@ export const openPlayGuestsTable = sqliteTable(
  * Pourquoi pas une valeur de `CLUB_FUNCTIONS` : l'unique `(season_id, licence)` de
  * `member_club_functions` **interdit le cumul** — un adhérent ne porte qu'une fonction
  * par saison. Or les détenteurs de clé *sont* les gens du bureau : il faudrait choisir
- * entre « président » et « ouvreur ». Et ce n'est pas la même nature de chose — une
+ * entre « président » et « bénévole ». Et ce n'est pas la même nature de chose — une
  * fonction se décide en assemblée générale, un trousseau change quand la mairie refait
  * les serrures.
  *
- * La liste vit ici, et non dans `members`, pour que le refus « vous n'êtes pas ouvreur »
+ * La liste vit ici, et non dans `members`, pour que le refus « vous n'êtes pas bénévole »
  * soit rendu **par le handler**. Ailleurs, il remonterait dans l'application et
  * deviendrait contournable par un appel direct à l'API.
  *
- * Pas de colonne `active` : retirer un ouvreur, c'est supprimer la ligne. La liste
+ * Pas de colonne `active` : retirer un bénévole, c'est supprimer la ligne. La liste
  * compte cinq personnes, deux façons d'être absent en vaudraient une de trop.
  */
 export const openPlayOpenersTable = sqliteTable(

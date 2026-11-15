@@ -119,7 +119,7 @@ export const NAV_GROUPS: NavGroup[] = [
     feature: 'open_play',
     items: [
       { name: 'Séances', icon: 'DoorOpen', href: '/admin/website/jeu-libre', permission: 'schedules:open-play:read', keywords: ['jeu libre', 'ouverture', 'gymnase', 'inscription'] },
-      { name: 'Ouvreurs', icon: 'KeyRound', href: '/admin/website/jeu-libre/ouvreurs', permission: 'schedules:open-play:read', keywords: ['jeu libre', 'cle', 'responsable', 'ouverture'] }
+      { name: 'Bénévoles', icon: 'KeyRound', href: '/admin/website/jeu-libre/ouvreurs', permission: 'schedules:open-play:read', keywords: ['jeu libre', 'cle', 'responsable', 'ouverture'] }
     ]
   },
   {
