@@ -34,6 +34,8 @@ Cette règle décrit **quand le club sollicite ses ouvreurs**, comment, et ce qu
 
 **Elle est désabonnable**, sous sa propre catégorie. Elle ne se range ni sous « Relances » — un bénévole qui coupe les rappels de cotisation couperait du même geste les appels à ouvrir le gymnase, sans comprendre pourquoi le club ne le prévient plus — ni sous « Communications du bureau », n'étant pas une communication mais une sollicitation opérationnelle. Comme toutes les catégories, elle est **active tant que l'adhérent ne l'a pas coupée**.
 
+**Le bureau est prévenu la veille.** Chaque matin, à la même heure, les séances du **lendemain** encore ouvertes et sans personne pour les ouvrir font l'objet d'une alerte aux **fonctions du club** (bureau, CA, entraîneurs, tels que saisis dans « Dirigeants »). Elle porte sur toutes ces séances, **seuil atteint ou non** : l'appel aux bénévoles cherche quelqu'un pour une séance qui le mérite, l'alerte au bureau lui laisse le temps de trouver quelqu'un ou d'annuler avant que des joueurs ne viennent devant une porte close. Une séance annulée ne compte pas. Un seul message, qui ne se répète pas dans la journée, rangé sous la catégorie « Jeu libre ». Elle a son propre interrupteur, **Alerte au bureau : séance sans bénévole**, indépendant de l'appel aux bénévoles. Sans fonction du club renseignée, rien ne part et le fait est journalisé.
+
 **Le domaine des créneaux n'envoie rien lui-même.** Il ne connaît ni les adhérents ni les notifications : il expose deux lectures — les séances à pourvoir, les ouvreurs de la saison — et c'est l'application qui les croise. C'est ce qui le maintient sans dépendance.
 
 ---
@@ -89,6 +91,19 @@ Fonctionnalité: Alerte « créneau à pourvoir »
     Étant donné un environnement où l'interrupteur des alertes de jeu libre n'est pas activé
     Quand l'alerte quotidienne s'exécute
     Alors aucune notification n'est émise, quelles que soient les séances
+
+  Scénario: Le bureau est prévenu la veille d'une séance sans bénévole
+    Étant donné une séance demain, avec un seul joueur inscrit et personne pour l'ouvrir
+    Et Paul, président de la saison
+    Quand l'alerte quotidienne s'exécute
+    Alors Paul est prévenu qu'une séance de demain n'a pas de bénévole
+
+  Scénario: Le bureau n'est pas prévenu d'une séance pourvue, annulée ou lointaine
+    Étant donné une séance demain que Marie s'est engagée à ouvrir
+    Et une séance demain annulée
+    Et une séance dans deux jours sans personne pour l'ouvrir
+    Quand l'alerte quotidienne s'exécute
+    Alors le bureau ne reçoit rien
 
   Scénario: Un ouvreur se désabonne
     Étant donné Marie, ouvreuse désignée, qui a coupé la catégorie « Jeu libre »

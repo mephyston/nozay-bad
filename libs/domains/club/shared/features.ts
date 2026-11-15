@@ -50,7 +50,8 @@ export const FEATURES = [
   'reminder_unpaid',
   'reminder_rankings',
   'reminder_lineups',
-  'reminder_open_play'
+  'reminder_open_play',
+  'reminder_open_play_board'
 ] as const;
 
 export type Feature = (typeof FEATURES)[number];
@@ -200,6 +201,11 @@ export const FEATURE_CATALOG: Record<Feature, FeatureInfo> = {
     label: 'Rappel des ouvreurs',
     description: 'Chaque matin, aux ouvreurs désignés, les séances de jeu libre des sept prochains jours sans personne pour ouvrir.',
     group: 'Envois programmés'
+  },
+  reminder_open_play_board: {
+    label: 'Alerte au bureau : séance sans bénévole',
+    description: 'Chaque matin, aux fonctions du club, les séances de jeu libre du lendemain que personne ne s’est engagé à ouvrir, seuil atteint ou non.',
+    group: 'Envois programmés'
   }
 };
 
@@ -219,7 +225,8 @@ export const FEATURE_PREREQUISITES: Partial<Record<Feature, readonly Feature[]>>
   reminder_unpaid: ['push'],
   reminder_rankings: ['push', 'teams'],
   reminder_lineups: ['push', 'teams'],
-  reminder_open_play: ['push', 'open_play']
+  reminder_open_play: ['push', 'open_play'],
+  reminder_open_play_board: ['push', 'open_play']
 };
 
 export type FeatureState = Record<Feature, boolean>;

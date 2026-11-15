@@ -49,11 +49,13 @@ Deux sections l'organisent.
 | **Commande à régler** | Le lundi vers 9-10h, pour les commandes validées depuis plus de 7 jours |
 | **Classements à mettre à jour** | Le jeudi précédant chaque journée d'interclubs régionale, **aux dirigeants du club** |
 | **Composition à valider** | Chaque jour de la veille de la journée jusqu'à la première rencontre, aux capitaines |
+| **Créneaux de jeu libre à pourvoir** | Chaque matin, aux bénévoles désignés, les séances des sept prochains jours qui ont assez de joueurs et personne pour ouvrir |
+| **Demain : séance sans bénévole** | Chaque matin, **aux dirigeants du club**, les séances du lendemain que personne ne s'est engagé à ouvrir, seuil atteint ou non : trouvez quelqu'un ou annulez |
 
 Une notification désactivée indique la variable du Worker API qui l'active. C'est un réglage technique, hors de cet écran.
 
 > [!NOTE]
-> Le rappel « Classements à mettre à jour » est adressé aux **fonctions au club** de la saison — bureau, comité d'administration, entraîneurs. Si aucune n'est saisie, le message ne part à personne : voir [Dirigeants](/admin/help/dirigeants).
+> Le rappel « Classements à mettre à jour » et l'alerte « Demain : séance sans bénévole » sont adressés aux **fonctions au club** de la saison — bureau, comité d'administration, entraîneurs. Si aucune n'est saisie, ces messages ne partent à personne : voir [Dirigeants](/admin/help/dirigeants).
 
 **Notifications sur événement** — déclenchées par une action métier, et toujours actives :
 

@@ -92,6 +92,16 @@ export function listScheduledNotifications(ctx: RegistryContext): ScheduledNotif
       flag: 'reminder_open_play'
     },
     {
+      id: 'schedules:open-play-board-alert',
+      title: 'Demain : séance sans bénévole',
+      body: "Séances de jeu libre du lendemain que personne ne s'est engagé à ouvrir, seuil atteint ou non. Envoyée aux fonctions du club (bureau, CA, entraîneurs), en un seul message.",
+      schedule: `${daily}, si au moins une séance du lendemain n'a pas de bénévole`,
+      trigger: 'cron',
+      category: 'open_play',
+      enabled: on('reminder_open_play_board'),
+      flag: 'reminder_open_play_board'
+    },
+    {
       id: 'teams:lineup-reminder',
       title: 'Composition à valider',
       body: "Rappel aux capitaines et vice-capitaines tant que la composition n'est pas validée — uniquement dans les championnats où le club aligne plusieurs équipes (risque de valeur d'équipe).",

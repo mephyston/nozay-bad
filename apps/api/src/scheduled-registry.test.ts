@@ -23,7 +23,8 @@ describe('registre des notifications automatiques', () => {
         'reminder:order-awaiting-payment',
         'teams:ranking-reminder',
         'teams:lineup-reminder',
-        'schedules:open-play-opener-reminder'
+        'schedules:open-play-opener-reminder',
+        'schedules:open-play-board-alert'
       ].sort()
     );
     for (const entry of entries.filter((e) => e.trigger === 'cron')) {

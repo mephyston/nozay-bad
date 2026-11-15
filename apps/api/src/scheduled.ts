@@ -19,6 +19,7 @@ import {
   resolveVapid,
   type VapidEnv
 } from '@nba/notifications-api';
+import { sendOpenPlayBoardAlert } from './open-play-board-alert';
 
 export type ScheduledBindings = SumUpBindings & {
   DB: D1Database;
@@ -368,6 +369,9 @@ export async function handleScheduled(
         }
         if (on('reminder_open_play')) {
           await sendOpenPlayOpenerReminders(db, season, now, clock.date);
+        }
+        if (on('reminder_open_play_board')) {
+          await sendOpenPlayBoardAlert(db, season, now, clock.date);
         }
         if (on('reminder_lineups')) {
           const { reminded } = await remindMissingLineups(
