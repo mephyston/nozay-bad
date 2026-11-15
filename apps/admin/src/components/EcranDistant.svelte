@@ -97,6 +97,11 @@
   */
   let squelette = $state(true);
   let donnees = $state<Record<string, any> | null>(null);
+  /*
+    Un écran que le relais dit introuvable (404) — fonctionnalité éteinte par le club, en
+    général — ne reviendra pas en réessayant : on affiche son message, sans bouton.
+  */
+  let absent = $state<string | null>(null);
 
   /** Durée minimale d'affichage du squelette, une fois montré. */
   const MINIMUM_MS = 300;
@@ -107,6 +112,7 @@
     const debut = Date.now();
 
     let suite: 'pret' | 'erreur' = 'pret';
+    absent = null;
     try {
       const recherche = parametres
         ? `?${new URLSearchParams(Object.entries(parametres).map(([c, v]) => [c, String(v)]))}`
@@ -117,6 +123,10 @@
       if (res.status === 401 && (await res.clone().json().catch(() => null))?.reauth) {
         window.location.reload();
         return;
+      }
+      if (res.status === 404) {
+        const corps = await res.json().catch(() => null);
+        absent = corps?.error || 'Cet écran n’existe pas.';
       }
       if (!res.ok) throw new Error(String(res.status));
       donnees = (await res.json()).data;
@@ -144,8 +154,12 @@
 {:else if etat === 'erreur'}
   <Card.Root>
     <Card.Content class="flex flex-col items-start gap-3 p-6">
-      <p class="text-sm text-destructive">Impossible de charger cet écran.</p>
-      <Button variant="outline" onclick={charger}>Réessayer</Button>
+      {#if absent}
+        <p class="text-sm text-muted-foreground">{absent}</p>
+      {:else}
+        <p class="text-sm text-destructive">Impossible de charger cet écran.</p>
+        <Button variant="outline" onclick={charger}>Réessayer</Button>
+      {/if}
     </Card.Content>
   </Card.Root>
 {:else if attente}
