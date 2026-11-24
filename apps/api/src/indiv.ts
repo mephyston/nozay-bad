@@ -14,7 +14,7 @@ import { enqueueNotification } from '@nba/notifications-api';
  * seul appel à faire. Même précédent que `notificationsSendRouter`.
  *
  * Montée sur `/schedules` **avant** le routeur du domaine : Hono retient la première
- * correspondance, et le drapeau `INDIV_ENABLED` couvre le préfixe entier.
+ * correspondance, et la fonctionnalité « indiv » du club couvre le préfixe entier.
  */
 
 export type IndivBindings = { DB: D1Database };

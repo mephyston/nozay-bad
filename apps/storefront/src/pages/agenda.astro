@@ -12,7 +12,6 @@ import { EventSignup, EventAttendees } from '@nba/events-ui';
 import { dateDuRendezVous } from '../lib/agenda';
 import { OpenPlaySignup, OpenPlayOpenerButton, OpenPlayAttendees } from '@nba/schedules-ui';
 import { featureOn } from '@nba/club/context';
-import { resolveEnv } from '../lib/request-context';
 import { fetchOpenPlaySessions, formatSessionDate, OPEN_PLAY_HORIZON_DAYS } from '../lib/open-play';
 import { fetchNextIndivSession } from '../lib/indiv';
 import { env } from 'cloudflare:workers';
@@ -77,9 +76,9 @@ if (Astro.request.method === 'POST') {
      * et le handler de l'API le revérifie de son côté.
      */
     if (body.indivId !== undefined) {
-      // Drapeau baissé : la fonctionnalité n'existe pas, y compris pour qui forgerait la
-      // requête. 404 et non 403, comme l'API — une fonctionnalité en bêta ne s'annonce pas.
-      if (resolveEnv<{ INDIV_ENABLED?: string }>(Astro.locals).INDIV_ENABLED !== 'true' || !featureOn(Astro.locals.club, 'indiv')) {
+      // Fonctionnalité éteinte par le club : elle n'existe pas, y compris pour qui forgerait
+      // la requête. 404 et non 403, comme l'API — une fonctionnalité éteinte ne s'annonce pas.
+      if (!featureOn(Astro.locals.club, 'indiv')) {
         return new Response(JSON.stringify({ success: false, error: 'Ressource introuvable.' }), {
           status: 404,
           headers: { 'Content-Type': 'application/json' }
@@ -249,7 +248,7 @@ const active = session?.members.find((m) => m.id === session.activeMemberId);
  * fois de deux façons.
  */
 const openPlayEnabled = featureOn(Astro.locals.club, 'open_play');
-const indivEnabled = resolveEnv<{ INDIV_ENABLED?: string }>(Astro.locals).INDIV_ENABLED === 'true' && featureOn(Astro.locals.club, 'indiv');
+const indivEnabled = featureOn(Astro.locals.club, 'indiv');
 
 const [events, myFixtures, annonces, openPlay, indiv] = await Promise.all([
   fetchUpcomingEvents(env, 50, session?.activeMemberId),

@@ -16,7 +16,6 @@ import { fetchUpcomingEvents } from '../lib/agenda';
 import { fetchOpenPlaySessions, OPEN_PLAY_HORIZON_DAYS } from '../lib/open-play';
 import { fetchNextIndivSession } from '../lib/indiv';
 import { featureOn } from '@nba/club/context';
-import { resolveEnv } from '../lib/request-context';
 import { fetchTodayBirthdays } from '../lib/birthdays';
 import { fetchMyFixtures, normalizeLicence } from '../lib/my-fixtures';
 
@@ -40,10 +39,9 @@ const status = await getActiveMemberStatus(env, session);
 // la prochaine — l'agenda porte les suivantes.
 const licence = normalizeLicence(active?.licence);
 
-// Le jeu libre suit la configuration du club ; les indiv restent en plus derrière le
-// drapeau de livraison `INDIV_ENABLED` de cette application (voir .env.example).
+// Le jeu libre et les indiv suivent la configuration du club (Réglages → Fonctionnalités).
 const openPlayEnabled = featureOn(Astro.locals.club, 'open_play');
-const indivEnabled = resolveEnv<{ INDIV_ENABLED?: string }>(Astro.locals).INDIV_ENABLED === 'true' && featureOn(Astro.locals.club, 'indiv');
+const indivEnabled = featureOn(Astro.locals.club, 'indiv');
 
 /*
  * Deux lectures d'actualités, et non plus une : trois articles à afficher, et l'index des
