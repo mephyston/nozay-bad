@@ -1,5 +1,5 @@
 ---
-import { dayShort, fixtureWhenShort, teamColor, type ClubFixture } from '../lib/club-fixtures';
+import { dayShort, fixtureWhenShort, teamColor, venueShort, type ClubFixture } from '../lib/club-fixtures';
 
 interface Props {
   fixtures: ClubFixture[];
@@ -44,9 +44,11 @@ const { fixtures, weekend, today } = Astro.props;
               </span>
             </span>
             <span class="mt-0.5 text-xs text-muted-foreground">{fixture.championshipLabel} · {dayShort(fixture)}</span>
-            <span class="mt-2 text-sm font-medium text-foreground">{fixtureWhenShort(fixture, today)}</span>
+            {/* Quand et où sur une ligne : « 20 h 30 à Palaiseau ». */}
+            <span class="mt-2 truncate text-sm text-foreground">
+              <span class="font-medium">{fixtureWhenShort(fixture, today)}</span>{fixture.venue && <span class="text-muted-foreground"> à {venueShort(fixture.venue)}</span>}
+            </span>
             {!fixture.opponent && <span class="text-xs text-muted-foreground">Adversaire à préciser</span>}
-            {fixture.venue && <span class="mt-0.5 truncate text-xs text-muted-foreground">{fixture.venue}</span>}
           </a>
         </li>
       ))}

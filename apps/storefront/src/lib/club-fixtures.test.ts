@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
-import { dayShort, fixtureWhen, fixtureWhenShort, homeFixturesWindow, teamColor } from './club-fixtures';
+import { dayShort, fixtureWhen, fixtureWhenShort, homeFixturesWindow, teamColor, venueShort } from './club-fixtures';
 
 describe("rencontres du club dans l'espace adhérent", () => {
   it("annonce le week-end dès le vendredi, et le jour même en semaine", () => {
@@ -23,6 +23,14 @@ describe("rencontres du club dans l'espace adhérent", () => {
     expect(fixtureWhenShort({ date: '2026-11-29T10:00' }, '2026-11-27')).toBe('Dimanche · 10 h');
     expect(dayShort({ dayLabel: null, dayNumber: 3 })).toBe('J3');
     expect(dayShort({ dayLabel: 'Barrages aller', dayNumber: 9 })).toBe('Barrages aller');
+  });
+
+  it("réduit le lieu à la ville, quelle que soit la saisie", () => {
+    expect(venueShort('Palaiseau')).toBe('Palaiseau');
+    expect(venueShort('Halle des sports, Nozay')).toBe('Nozay');
+    expect(venueShort('Gymnase Biodiversité, 44 rue Marcel Bontemps, 92100 Boulogne Billancourt')).toBe('Boulogne Billancourt');
+    expect(venueShort('Brétigny  s/Orge')).toBe('Brétigny s/Orge');
+    expect(venueShort(null)).toBeNull();
   });
 
   it('donne toujours la même couleur à une équipe', () => {

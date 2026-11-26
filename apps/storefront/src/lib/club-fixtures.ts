@@ -98,3 +98,14 @@ export function fixtureWhenShort(fixture: Pick<ClubFixture, 'date'>, today: stri
 export function dayShort(fixture: Pick<ClubFixture, 'dayLabel' | 'dayNumber'>): string {
   return fixture.dayLabel ?? `J${fixture.dayNumber}`;
 }
+
+/**
+ * Le lieu au plus court, pour l'encart de l'accueil : la ville. Le capitaine saisit librement
+ * (« Palaiseau », « Halle des sports, Nozay », une adresse complète) : on garde le dernier
+ * morceau après la virgule, sans code postal. L'adresse entière reste dans le calendrier.
+ */
+export function venueShort(venue: string | null): string | null {
+  if (!venue) return null;
+  const last = venue.split(',').pop()!.replace(/\b\d{5}\b/g, '').replace(/\s+/g, ' ').trim();
+  return last || venue.trim();
+}
