@@ -33,7 +33,7 @@ const { fixtures, weekend, today } = Astro.props;
       {fixtures.map((fixture) => (
         <li class="w-60 shrink-0 snap-start">
           <a
-            href={`/equipes/${fixture.teamId}/journee/${fixture.dayNumber}`}
+            href={`/equipes/${fixture.teamId}/journee/${fixture.dayNumber}${fixture.slot > 1 ? `?r=${fixture.slot}` : ''}`}
             class="flex h-full flex-col rounded-lg border border-border bg-background px-3 py-2.5 hover:bg-muted/50"
           >
             {/* Le match en titre : « NBA91-1 vs Orsay 3 », tel que le capitaine a saisi l'adversaire. */}

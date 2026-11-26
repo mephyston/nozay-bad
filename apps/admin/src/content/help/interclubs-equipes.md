@@ -100,6 +100,8 @@ C'est le même enregistrement que celui du capitaine depuis son espace : le capi
 connaît son calendrier, le bureau a celui du comité. La différence est le droit — ici il
 faut **Modifier les équipes**, là-bas il faut être capitaine ou capitaine adjoint.
 
+Le régional et les vétérans jouent **deux rencontres par journée**. Quand la poule compte un nombre impair d'équipes, l'une d'elles n'en joue qu'une : activez **Pas de rencontre ce rang-ci (exempt)** sur le rang concerné. Il disparaît alors des rencontres annoncées aux adhérents, des rappels de composition et du rappel des volants.
+
 Seules les lignes réellement modifiées sont envoyées à l'enregistrement. Les rencontres au
 **repos** ou perdues par **forfait** conservent leur état : les rouvrir est un geste
 explicite, jamais un effet de bord d'une saisie de date.

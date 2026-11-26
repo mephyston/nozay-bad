@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { FormSheet, Input, Badge, uiAlert } from '@nba/ui';
+  import { FormSheet, Input, Badge, SwitchField, uiAlert } from '@nba/ui';
   import { CalendarX } from '@lucide/svelte';
   import type { GetTeamOutput } from '../../get-team/dto';
 
@@ -28,8 +28,10 @@
     number: number;
     dayId: number;
     slot: number;
-    /** Transmis inchangé : `saveFixture` réécrit la rencontre entière. */
+    /** `saveFixture` réécrit la rencontre entière : un forfait est transmis inchangé. */
     status: 'scheduled' | 'bye' | 'forfeit';
+    /** La journée compte plusieurs rencontres : un rang peut y être exempt (poule impaire). */
+    multiple: boolean;
     heading: string;
     weekStart: string;
     playedAt: string;
@@ -47,6 +49,7 @@
       dayId: day.dayId,
       slot: day.slot,
       status: day.status,
+      multiple: day.fixtureLabel !== null,
       heading: [day.label ?? `Journée ${day.number}`, day.fixtureLabel].filter(Boolean).join(' · '),
       weekStart: day.weekStart,
       // `datetime-local` n'accepte ni fuseau ni secondes : on tronque à la minute.
@@ -66,6 +69,7 @@
     const day = detail?.calendar.find((d) => d.number === draft.number && d.slot === draft.slot);
     if (!day) return false;
     return (
+      day.status !== draft.status ||
       (day.playedAt ? day.playedAt.slice(0, 16) : '') !== draft.playedAt ||
       (day.venue ?? '') !== draft.venue.trim() ||
       (day.opponent ?? '') !== draft.opponent.trim()
@@ -155,7 +159,22 @@
                 </Badge>
               </div>
 
-              {#if canWrite}
+              {#if canWrite && draft.multiple && draft.status !== 'forfeit'}
+                <!--
+                  Deux rencontres par journée (régional, vétérans), mais une poule impaire en laisse
+                  parfois une seule : le rang sans rencontre se déclare exempt. Il disparaît alors des
+                  rencontres annoncées, des rappels de composition et du rappel des volants.
+                -->
+                <SwitchField
+                  id={`bye-${draft.number}-${draft.slot}`}
+                  label="Pas de rencontre ce rang-ci (exempt)"
+                  hint="Poule impaire : l'équipe ne joue qu'une rencontre sur cette journée."
+                  checked={draft.status === 'bye'}
+                  disabled={saving}
+                  onChange={(exempt) => (draft.status = exempt ? 'bye' : 'scheduled')}
+                />
+              {/if}
+              {#if canWrite && draft.status !== 'bye'}
                 <div class="grid gap-2 sm:grid-cols-3">
                   <Input
                     type="datetime-local"
@@ -176,6 +195,8 @@
                     aria-label={`Adversaire de ${draft.heading}`}
                   />
                 </div>
+              {:else if draft.status === 'bye'}
+                <p class="text-xs text-muted-foreground">Exempt : pas de rencontre sur ce rang.</p>
               {:else}
                 <p class="text-xs text-muted-foreground">
                   {draft.playedAt ? draft.playedAt.replace('T', ' à ') : 'Date non fixée'}

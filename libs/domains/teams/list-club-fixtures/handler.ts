@@ -36,9 +36,17 @@ export async function listClubFixtures(db: DbOrTx, input: ListClubFixturesInput,
   const rows: ClubFixture[] = teams.flatMap((team) =>
     days
       .filter((day) => day.championship === team.championship)
-      .map((day) => ({ day, fixture: fixtures.find((f) => f.teamId === team.id && f.dayId === day.id) ?? null }))
+      // Chaque rang de la journée : deux rencontres en régional et chez les vétérans. Un rang
+      // déclaré exempt (poule impaire, équipe au repos) ne se montre pas.
+      .flatMap((day) =>
+        Array.from({ length: CHAMPIONSHIP_RULES[team.championship].fixturesPerDay }, (_, i) => i + 1).map((slot) => ({
+          day,
+          slot,
+          fixture: fixtures.find((f) => f.teamId === team.id && f.dayId === day.id && f.slot === slot) ?? null
+        }))
+      )
       .filter(({ fixture }) => fixture?.status !== 'bye')
-      .flatMap(({ day, fixture }) => {
+      .flatMap(({ day, slot, fixture }) => {
         const date = fixture?.playedAt ?? day.matchDate ?? null;
         if (!inRange((date ?? '').slice(0, 10), day.weekEnd, day.weekStart, date !== null)) return [];
         const division = getDivision(team.championship, team.division);
@@ -50,6 +58,7 @@ export async function listClubFixtures(db: DbOrTx, input: ListClubFixturesInput,
           championshipShortLabel: CHAMPIONSHIP_SHORT_LABELS[team.championship],
           divisionLabel: division?.label ?? team.division,
           dayNumber: day.number,
+          slot,
           dayLabel: day.label,
           weekStart: day.weekStart,
           weekEnd: day.weekEnd,
@@ -63,7 +72,7 @@ export async function listClubFixtures(db: DbOrTx, input: ListClubFixturesInput,
 
   // Par date, puis semaine pour celles qui n'en ont pas encore, puis numéro d'équipe.
   const key = (f: ClubFixture) => f.date ?? f.weekStart;
-  rows.sort((a, b) => key(a).localeCompare(key(b)) || a.teamNumber - b.teamNumber);
+  rows.sort((a, b) => key(a).localeCompare(key(b)) || a.teamNumber - b.teamNumber || a.slot - b.slot);
 
   return {
     fixtures: rows,

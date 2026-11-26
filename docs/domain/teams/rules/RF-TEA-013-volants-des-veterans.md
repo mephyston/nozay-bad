@@ -20,7 +20,7 @@ Aux interclubs vétérans, c'est au capitaine de prévoir les boîtes de volants
 
 **Quand.** Le jeudi à 19 h 30, heure du club, au début de l'entraînement. Le rappel vaut pour les rencontres datées du vendredi au dimanche qui suivent : le dimanche, ou le samedi par dérogation. Il part une fois ; si le passage de 19 h 30 est manqué, il se rattrape jusqu'à 19 h 59.
 
-**Quelle date.** Celle du capitaine, sinon le jour commun fixé par le comité. Sans date, rien ne part. Une équipe au repos ou forfait ne joue pas.
+**Quelle date.** Celle du capitaine, sinon le jour commun fixé par le comité. Sans date, rien ne part. Une équipe au repos ou forfait ne joue pas. Une journée à deux rencontres ne donne qu'un rappel, pour la première qui se joue ; un rang exempt ne compte pas.
 
 **Où.** Notification de la catégorie « Mes équipes interclubs », qui mène à la journée. Sur l'écran de composition de la journée, le capitaine et le vice-capitaine lisent aussi « Volants à prévoir ».
 

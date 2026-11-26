@@ -14,6 +14,8 @@ export interface MyFixture {
   championshipShortLabel: string;
   divisionLabel: string;
   dayNumber: number;
+  /** Rang de la rencontre dans la journée : 2 pour la seconde (régional, vétérans). */
+  slot: number;
   /** « Barrages aller », ou `null` pour une journée régulière. */
   dayLabel: string | null;
   /** Semaine théorique : toujours connue, c'est elle que fixe le comité. */

@@ -56,10 +56,19 @@ export async function remindShuttles(db: Db, input: RemindShuttlesInput, now: Da
   const due = teams.flatMap((team) =>
     days
       .filter((day) => day.championship === team.championship)
-      .map((day) => ({ team, day, fixture: fixtures.find((f) => f.teamId === team.id && f.dayId === day.id) ?? null }))
-      .filter(({ fixture }) => !fixture || fixture.status === 'scheduled')
-      .map((entry) => ({ ...entry, matchDay: (entry.fixture?.playedAt ?? entry.day.matchDate ?? '').slice(0, 10) }))
-      .filter(({ matchDay }) => matchDay >= first && matchDay <= last)
+      .flatMap((day) => {
+        // Une journée peut compter deux rencontres (vétérans) : un seul rappel, pour la
+        // première qui se joue. Un rang exempt ou forfait ne compte pas ; un rang encore
+        // sans rencontre saisie suit le jour commun du comité.
+        const ranks = Array.from({ length: CHAMPIONSHIP_RULES[team.championship].fixturesPerDay }, (_, i) => i + 1);
+        const dates = ranks
+          .map((rank) => fixtures.find((f) => f.teamId === team.id && f.dayId === day.id && f.slot === rank) ?? null)
+          .filter((fixture) => !fixture || fixture.status === 'scheduled')
+          .map((fixture) => (fixture?.playedAt ?? day.matchDate ?? '').slice(0, 10))
+          .filter((date) => date >= first && date <= last)
+          .sort();
+        return dates.length > 0 ? [{ team, day, matchDay: dates[0] }] : [];
+      })
   );
   if (due.length === 0) return { reminded };
 

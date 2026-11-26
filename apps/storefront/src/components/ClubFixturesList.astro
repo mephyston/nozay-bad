@@ -28,7 +28,7 @@ const mine = new Set(myTeamIds);
       return (
         <li>
           <a
-            href={`/equipes/${fixture.teamId}/journee/${fixture.dayNumber}`}
+            href={`/equipes/${fixture.teamId}/journee/${fixture.dayNumber}${fixture.slot > 1 ? `?r=${fixture.slot}` : ''}`}
             class:list={[
               'flex items-start gap-3 rounded-xl border p-3 sm:p-4',
               own ? 'border-border bg-card shadow-sm' : 'border-border/60 bg-card/50'

@@ -68,23 +68,27 @@ export async function listMyFixtures(
     .flatMap((team) =>
       days
         .filter((day) => day.championship === team.championship)
-        .map((day) => ({
-          team,
-          day,
-          fixture: fixtures.find((f) => f.teamId === team.id && f.dayId === day.id) ?? null
-        }))
+        // Chaque rang de la journée : deux rencontres en régional et chez les vétérans.
+        .flatMap((day) =>
+          Array.from({ length: CHAMPIONSHIP_RULES[team.championship].fixturesPerDay }, (_, i) => i + 1).map((rank) => ({
+            team,
+            day,
+            rank,
+            fixture: fixtures.find((f) => f.teamId === team.id && f.dayId === day.id && f.slot === rank) ?? null
+          }))
+        )
     )
     .filter(({ fixture }) => fixture?.status !== 'bye')
     .filter(({ fixture, day }) => sortKey(fixture?.playedAt ?? null, day.matchDate, day.weekEnd) >= today)
     .sort((a, b) =>
       sortKey(a.fixture?.playedAt ?? null, a.day.matchDate, a.day.weekStart).localeCompare(
         sortKey(b.fixture?.playedAt ?? null, b.day.matchDate, b.day.weekStart)
-      )
+      ) || a.rank - b.rank
     )
     .slice(0, input.limit ?? Number.MAX_SAFE_INTEGER);
 
   const withLineups: MyFixture[] = [];
-  for (const { team, day, fixture } of upcoming) {
+  for (const { team, day, rank, fixture } of upcoming) {
     const rules = CHAMPIONSHIP_RULES[team.championship];
     const division = getDivision(team.championship, team.division);
 
@@ -105,6 +109,7 @@ export async function listMyFixtures(
       championshipShortLabel: CHAMPIONSHIP_SHORT_LABELS[team.championship],
       divisionLabel: division?.label ?? team.division,
       dayNumber: day.number,
+      slot: rank,
       dayLabel: day.label,
       weekStart: day.weekStart,
       weekEnd: day.weekEnd,

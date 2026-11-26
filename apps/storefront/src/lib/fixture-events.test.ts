@@ -7,7 +7,7 @@ const base: MyFixture = {
   teamName: 'NBA91-3',
   championshipLabel: 'Départemental Mixte', championshipShortLabel: 'ICD Mixte',
   divisionLabel: 'D2',
-  dayNumber: 4,
+  dayNumber: 4, slot: 1,
   dayLabel: null,
   weekStart: '2026-11-02',
   weekEnd: '2026-11-08',

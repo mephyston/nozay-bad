@@ -475,7 +475,7 @@ const today = new Date().toISOString().slice(0, 10);
                           : " composition pas encore saisie par votre capitaine"}
                       {' · '}
                       <a
-                        href={`/equipes/${entry.fixture.teamId}/journee/${entry.fixture.dayNumber}`}
+                        href={`/equipes/${entry.fixture.teamId}/journee/${entry.fixture.dayNumber}${entry.fixture.slot > 1 ? `?r=${entry.fixture.slot}` : ''}`}
                         class="font-semibold text-primary hover:underline"
                       >
                         voir la composition
@@ -486,7 +486,7 @@ const today = new Date().toISOString().slice(0, 10);
 
                 {/* Une rencontre sans date ne s'ajoute pas : il n'y aurait rien de juste à inscrire. */}
                 {entry
-                  ? !entry.provisional && <AddToCalendar item={{ kind: 'fixture', teamId: entry.fixture.teamId, dayNumber: entry.fixture.dayNumber }} />
+                  ? !entry.provisional && <AddToCalendar item={{ kind: 'fixture', teamId: entry.fixture.teamId, dayNumber: entry.fixture.dayNumber, slot: entry.fixture.slot }} />
                   : <AddToCalendar item={{ kind: 'event', id: event.id }} />}
               </EventRow>
             </li>

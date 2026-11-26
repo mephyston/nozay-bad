@@ -85,9 +85,12 @@ export function isAndroid(userAgent: string): boolean {
 export type CalendarItemRef =
   | { kind: 'event'; id: number }
   | { kind: 'open-play'; id: number }
-  | { kind: 'fixture'; teamId: number; dayNumber: number };
+  | { kind: 'fixture'; teamId: number; dayNumber: number; slot?: number };
 
 export function calendarItemQuery(item: CalendarItemRef): string {
-  const ref = item.kind === 'fixture' ? `${item.teamId}-${item.dayNumber}` : String(item.id);
+  const ref =
+    item.kind === 'fixture'
+      ? `${item.teamId}-${item.dayNumber}${item.slot && item.slot > 1 ? `-${item.slot}` : ''}`
+      : String(item.id);
   return new URLSearchParams({ kind: item.kind, ref }).toString();
 }

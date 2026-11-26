@@ -80,7 +80,8 @@ function fixtureItem(fixture: MyFixture, domain: string): CalendarItem | null {
       ? 'Pas sur la feuille de match de cette journée'
       : 'Composition pas encore publiée';
   return {
-    uid: `fixture-${fixture.teamId}-${fixture.dayNumber}@${domain}`,
+    // La première rencontre garde l'identifiant d'avant les deux rangs : pas de doublon chez les abonnés.
+    uid: `fixture-${fixture.teamId}-${fixture.dayNumber}${fixture.slot > 1 ? `-r${fixture.slot}` : ''}@${domain}`,
     title: `${fixture.teamName} · ${fixture.dayLabel ?? `J${fixture.dayNumber}`}${against}`,
     start: fixture.date,
     end: null,
@@ -137,9 +138,10 @@ async function singleItem(
     item = sessions[0] ? openPlayItem(sessions[0], domain) : null;
   }
   if (kind === 'fixture' && features.teams && profile.membership) {
-    const [teamId, dayNumber] = ref.split('-').map(Number);
+    // « équipe-journée », ou « équipe-journée-rang » pour la seconde rencontre d'une journée.
+    const [teamId, dayNumber, slot = 1] = ref.split('-').map(Number);
     const { fixtures } = await listMyFixtures(db, { licence: profile.licence, seasonCode: profile.membership.seasonCode }, now);
-    const found = fixtures.find((f) => f.teamId === teamId && f.dayNumber === dayNumber);
+    const found = fixtures.find((f) => f.teamId === teamId && f.dayNumber === dayNumber && f.slot === slot);
     item = found ? fixtureItem(found, domain) : null;
   }
   return item && isValidLocalDate(item.start) ? item : null;
@@ -151,7 +153,7 @@ const itemQuerySchema = Type.Object({
   licence: Type.String({ minLength: 1, maxLength: 20 }),
   kind: Type.Union([Type.Literal('event'), Type.Literal('open-play'), Type.Literal('fixture')]),
   // « 12 » pour un événement ou une séance, « équipe-journée » pour une rencontre.
-  ref: Type.String({ pattern: '^[0-9]{1,9}(-[0-9]{1,9})?$' })
+  ref: Type.String({ pattern: '^[0-9]{1,9}(-[0-9]{1,9}){0,2}$' })
 });
 
 // Littérale : avant `/:hash`.
@@ -195,7 +197,7 @@ function clubFixtureItem(fixture: ClubFixture, domain: string): CalendarItem | n
   if (!fixture.date) return null;
   const against = fixture.opponent ? ` contre ${fixture.opponent}` : '';
   return {
-    uid: `club-fixture-${fixture.teamId}-${fixture.dayNumber}@${domain}`,
+    uid: `club-fixture-${fixture.teamId}-${fixture.dayNumber}${fixture.slot > 1 ? `-r${fixture.slot}` : ''}@${domain}`,
     title: `${fixture.teamName} · ${fixture.dayLabel ?? `J${fixture.dayNumber}`}${against}`,
     start: fixture.date,
     end: null,

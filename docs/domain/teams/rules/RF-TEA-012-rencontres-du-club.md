@@ -18,6 +18,8 @@ Les adhérents ne voyaient que les rencontres de leurs propres équipes. Certain
 
 **Ce qui se montre.** Pour chaque rencontre : l'équipe, le championnat, la journée, la date (heure comprise si le capitaine l'a saisie), l'adversaire et le gymnase. **Jamais la composition** : qui joue ne regarde que l'équipe (RF-TEA-011).
 
+**Chaque rencontre de la journée.** Le régional et les vétérans jouent deux rencontres par journée (vétérans : « 1 ou 2 », art. 3.2) : chacune est une ligne. Un rang déclaré exempt (poule impaire) n'apparaît pas.
+
 **Seulement ce qui est publié.** Un championnat dont les effectifs ne sont pas publiés n'a pas d'équipe pour les adhérents : ses rencontres n'apparaissent pas. Une équipe au repos ne joue pas et n'apparaît pas.
 
 **La date.** Mêmes règles que pour les rencontres de l'adhérent : la date du capitaine fait foi, puis le jour commun fixé par le comité ; à défaut, seule la semaine est connue et la rencontre s'affiche « semaine du … ».

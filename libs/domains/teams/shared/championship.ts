@@ -78,7 +78,10 @@ export interface ChampionshipRules {
   /** Mutés admis par rencontre. `null` : aucune limite (vétérans, art. 6.1.4). */
   maxMuted: number | null;
   maxMatchesPerPlayer: number;
-  /** Rencontres par journée : 2 en régional (art. 1.6.3), 1 ailleurs. */
+  /**
+   * Rencontres par journée : 2 en régional (art. 1.6.3) et chez les vétérans (art. 3.2, 1 ou 2),
+   * 1 ailleurs. Un rang sans rencontre (poule impaire) se déclare exempt sur la rencontre.
+   */
   fixturesPerDay: number;
   /**
    * Le capitaine récupère les boîtes de volants avant la journée : rappel au staff trois
@@ -221,7 +224,10 @@ export const CHAMPIONSHIP_RULES: Record<Championship, ChampionshipRules> = {
     // Art. 6.1.4 : aucune limitation du nombre de mutés.
     maxMuted: null,
     maxMatchesPerPlayer: 2,
-    fixturesPerDay: 1,
+    // Art. 3.2 : « le nombre de rencontres par journées sera de 1 ou 2 », fixé par la CCA.
+    // Deux rangs, comme en régional ; une poule impaire laisse une équipe exempte d'un rang,
+    // que le coach ou le capitaine déclare (`team_fixtures.status = 'bye'`).
+    fixturesPerDay: 2,
     // Aux vétérans, c'est au capitaine de prévoir les volants de la journée.
     shuttlesReminder: true,
     // « Le jour retenu pour jouer les rencontres est le dimanche » ; le samedi est

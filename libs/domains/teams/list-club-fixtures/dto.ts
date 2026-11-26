@@ -20,6 +20,8 @@ export interface ClubFixture {
   championshipShortLabel: string;
   divisionLabel: string;
   dayNumber: number;
+  /** Rang de la rencontre dans la journée : 2 pour la seconde (régional, vétérans). */
+  slot: number;
   dayLabel: string | null;
   weekStart: string;
   weekEnd: string;

@@ -62,9 +62,23 @@ describe('rappel des volants aux vétérans', () => {
     expect((await remindShuttles(db, { seasonCode: SEASON, today: '2026-11-19' }, NOW)).reminded).toEqual([]);
   });
 
-  it('se tait pour une équipe au repos', async () => {
-    await playOn('2026-11-29T09:00', 'bye');
+  it('se tait pour une équipe exempte des deux rencontres de la journée', async () => {
+    const day = (await db.select().from(championshipDaysTable).all())[0];
+    await db.insert(teamFixturesTable).values([
+      { teamId, dayId: day.id, slot: 1, playedAt: '2026-11-29T09:00', status: 'bye', createdAt: NOW },
+      { teamId, dayId: day.id, slot: 2, playedAt: '2026-11-29T14:00', status: 'bye', createdAt: NOW }
+    ]);
     expect((await remindShuttles(db, { seasonCode: SEASON, today: '2026-11-26' }, NOW)).reminded).toEqual([]);
+  });
+
+  it('un seul rappel pour une journée à deux rencontres, même si la première est exempte', async () => {
+    const day = (await db.select().from(championshipDaysTable).all())[0];
+    await db.insert(teamFixturesTable).values([
+      { teamId, dayId: day.id, slot: 1, playedAt: '2026-11-29T09:00', status: 'bye', createdAt: NOW },
+      { teamId, dayId: day.id, slot: 2, playedAt: '2026-11-29T14:00', createdAt: NOW }
+    ]);
+    expect((await remindShuttles(db, { seasonCode: SEASON, today: '2026-11-26' }, NOW)).reminded).toEqual([{ teamId, dayNumber: 2 }]);
+    expect(await messages()).toHaveLength(1);
   });
 
   it("ne concerne pas les championnats qui ne le demandent pas", async () => {

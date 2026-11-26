@@ -63,6 +63,24 @@ describe('rencontres de toutes les équipes du club', () => {
     expect(monday.fixtures.map((f) => f.teamNumber)).toEqual([2]);
   });
 
+  it('annonce les deux rencontres d\'une journée de vétérans, et tait le rang exempt', async () => {
+    await publishRosters(db, { seasonCode: SEASON, championship: 'icd_veterans', published: true }, NOW);
+    const vets = await saveTeam(db, { seasonCode: SEASON, championship: 'icd_veterans', division: 'D1', number: 1 }, NOW);
+    const other = await saveTeam(db, { seasonCode: SEASON, championship: 'icd_veterans', division: 'D1', number: 2 }, NOW);
+    await saveChampionshipDays(db, { seasonCode: SEASON, championship: 'icd_veterans', days: [{ number: 1, weekStart: '2026-11-23' }] }, NOW);
+    const day = (await db.select().from(championshipDaysTable).all()).find((d) => d.championship === 'icd_veterans')!;
+    await db.insert(teamFixturesTable).values([
+      { teamId: vets.id, dayId: day.id, slot: 1, playedAt: '2026-11-29T09:00', opponent: 'A', createdAt: NOW },
+      { teamId: vets.id, dayId: day.id, slot: 2, playedAt: '2026-11-29T14:00', opponent: 'B', createdAt: NOW },
+      // Poule impaire : l'équipe 2 ne joue qu'une rencontre.
+      { teamId: other.id, dayId: day.id, slot: 2, status: 'bye', createdAt: NOW }
+    ]);
+
+    const { fixtures } = await listClubFixtures(db, { seasonCode: SEASON }, NOW);
+    const shown = fixtures.filter((f) => f.championshipShortLabel === 'ICD Vétérans').map((f) => [f.teamNumber, f.slot, f.opponent]);
+    expect(shown).toEqual([[2, 1, null], [1, 1, 'A'], [1, 2, 'B']]);
+  });
+
   it('lit toute une saison sans dépasser la limite de variables de D1', async () => {
     const one = await team(1);
     const days = Array.from({ length: 120 }, (_, i) => ({ number: i + 1, weekStart: new Date(Date.UTC(2026, 9, 5 + 7 * (i % 40))).toISOString().slice(0, 10) }));

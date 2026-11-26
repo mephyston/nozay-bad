@@ -44,8 +44,8 @@ export function toFixtureEntries(fixtures: MyFixture[]): FixtureEntry[] {
       event: {
         // Identifiant négatif : ces lignes ne sont pas des événements du club, et rien ne
         // doit pouvoir les confondre avec un identifiant réel.
-        id: -(fixture.teamId * 1000 + fixture.dayNumber),
-        slug: `interclubs-${fixture.teamId}-${fixture.dayNumber}`,
+        id: -(fixture.teamId * 10000 + fixture.dayNumber * 10 + fixture.slot),
+        slug: `interclubs-${fixture.teamId}-${fixture.dayNumber}${fixture.slot > 1 ? `-r${fixture.slot}` : ''}`,
         title: `${fixture.teamName} · ${dayLabel}${against}`,
         startsAt: timed ? day : `${day.slice(0, 10)}T00:00`,
         endsAt: null,
