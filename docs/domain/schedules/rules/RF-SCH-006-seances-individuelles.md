@@ -18,6 +18,8 @@ Cette règle décrit **ce qu'est une soirée d'indiv**, comment elle naît, et c
 
 ## 3. Définition de la Règle Métier
 
+**L'heure de début proposée suit le jour choisi** : 10 h le dimanche, 19 h 30 les autres jours, tant qu'elle n'a pas été touchée. Le nombre de créneaux, leur durée (par quarts d'heure) et les places se choisissent dans une liste.
+
 **Une soirée d'indiv est une date, une heure de début et des créneaux dérivés.** Le k-ième créneau va de `start_time + (k-1) × slot_minutes` à `start_time + k × slot_minutes`. Les créneaux ne sont jamais stockés : ils se calculent, et une seule fonction connaît cette arithmétique. Le club en tient deux de trente minutes, avec deux places chacun — mais ces trois réglages sont **portés par la soirée**, pour que changer l'habitude l'an prochain ne réécrive pas celles déjà tenues.
 
 **La soirée tient dans la journée.** Une heure de début valide dont la fin dépasserait minuit est refusée.

@@ -24,6 +24,8 @@ Une **séance** est une occurrence **datée** : une date, un horaire, un gymnase
 
 **Créer une séance déjà présente est refusé**, plutôt que de renvoyer silencieusement celle qui existe : le bureau croirait avoir créé la sienne, avec les horaires qu'il vient de saisir, alors qu'il regarderait ceux d'une autre.
 
+**L'horaire proposé suit le jour choisi.** À la création, le formulaire propose 10 h à 13 h le dimanche, et 19 h 30 à 22 h 30 les autres jours, samedi compris. Il suit la date tant que les heures n'ont pas été touchées ; une séance modifiée garde les siennes.
+
 **Le seuil d'ouverture est porté par la séance**, avec quatre joueurs par défaut. Il n'est pas un réglage global, pour deux raisons : un dimanche matin de vacances ne demande pas le même monde qu'un samedi après-midi, et la colonne **fige la valeur au moment où la décision a été prise** — changer le défaut l'an prochain ne réécrit pas l'histoire des séances déjà tenues.
 
 **Trois états, dont un seul ne se déduise pas.**

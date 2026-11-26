@@ -27,6 +27,7 @@
     type SwipeAction
   } from '@nba/ui';
   import { DEFAULT_MIN_PLAYERS } from '../../../shared/open-play';
+  import { defaultOpenPlayHours } from '../../../shared/session-hours';
   import OpenPlaySessionsList from './OpenPlaySessionsList.svelte';
   import { gestesPourSeance, type SeanceLike } from './open-play-row-model';
 
@@ -75,8 +76,10 @@
 
   let editingId = $state<number | null>(null);
   let date = $state('');
-  let startTime = $state('14:00');
-  let endTime = $state('17:00');
+  let startTime = $state(defaultOpenPlayHours('').startTime);
+  let endTime = $state(defaultOpenPlayHours('').endTime);
+  // Tant que les heures n'ont pas été touchées, elles suivent le jour : dimanche matin, ou le soir.
+  let hoursTouched = false;
   let venueId = $state(venues[0] ? String(venues[0].id) : '');
   let minPlayers = $state(String(DEFAULT_MIN_PLAYERS));
   let label = $state('');
@@ -130,13 +133,17 @@
   function resetForm() {
     editingId = null;
     date = '';
-    startTime = '14:00';
-    endTime = '17:00';
+    ({ startTime, endTime } = defaultOpenPlayHours(''));
+    hoursTouched = false;
     venueId = venues[0] ? String(venues[0].id) : '';
     minPlayers = String(DEFAULT_MIN_PLAYERS);
     label = '';
     notes = '';
     errorMsg = '';
+  }
+
+  function onDateChange() {
+    if (!hoursTouched) ({ startTime, endTime } = defaultOpenPlayHours(date));
   }
 
   function openAddForm() {
@@ -149,6 +156,7 @@
     date = row.date;
     startTime = row.startTime;
     endTime = row.endTime;
+    hoursTouched = true;
     venueId = String(row.venueId);
     minPlayers = String(row.minPlayers);
     label = row.label ?? '';
@@ -597,15 +605,15 @@
   onSubmit={save}
 >
   <FormField id="op-date" label="Date">
-    <Input id="op-date" type="date" bind:value={date} />
+    <Input id="op-date" type="date" bind:value={date} onchange={onDateChange} />
   </FormField>
 
   <div class="grid grid-cols-2 gap-3">
     <FormField id="op-start" label="Début">
-      <Input id="op-start" type="time" bind:value={startTime} />
+      <Input id="op-start" type="time" bind:value={startTime} oninput={() => (hoursTouched = true)} />
     </FormField>
     <FormField id="op-end" label="Fin">
-      <Input id="op-end" type="time" bind:value={endTime} />
+      <Input id="op-end" type="time" bind:value={endTime} oninput={() => (hoursTouched = true)} />
     </FormField>
   </div>
 

@@ -35,9 +35,18 @@
 	  (« Ex : Maillot du club… »), utiles à la souris où le libellé est visible
 	  au-dessus, mais qui laisseraient un champ sans nom une fois celui-ci masqué.
 	*/
+	/*
+	  Seul un champ de texte montre son invite. Une date ou une heure n'en affiche jamais (Safari
+	  comme Chrome y dessinent leur propre gabarit), et un nombre arrive presque toujours
+	  pré-rempli : l'intitulé absorbé disparaissait alors, et le formulaire d'une soirée d'indiv
+	  n'alignait plus au téléphone que « 19:30 », « 2 », « 30 », « 2 », sans dire quoi est quoi.
+	  Ces champs gardent leur libellé au-dessus.
+	*/
+	const TYPES_TEXTE = new Set([undefined, "text", "email", "tel", "url", "search", "password"]);
+
 	const champ = getContext<ContexteChamp | undefined>(CLE_CHAMP);
 	const requete = creerIsMobile();
-	const absorbable = $derived(!!champ && champ.absorbable && requete.current && type !== "file");
+	const absorbable = $derived(!!champ && champ.absorbable && requete.current && TYPES_TEXTE.has(type));
 	const invite = $derived(absorbable ? champ!.label : placeholder);
 
 	$effect(() => {

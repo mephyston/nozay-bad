@@ -2,6 +2,7 @@
   import { Dumbbell } from '@lucide/svelte';
   import { ChoiceField, Input, Textarea, FormField, FormSheet, submitForm, flashAndReload } from '@nba/ui';
   import { DEFAULT_CAPACITY_PER_SLOT, DEFAULT_SLOT_COUNT, DEFAULT_SLOT_MINUTES, MAX_CAPACITY_PER_SLOT, MAX_SLOT_COUNT, MAX_SLOT_MINUTES, isValidLayout } from '../../../shared/indiv';
+  import { defaultIndivStartTime } from '../../../shared/session-hours';
   import type { SessionRow } from './IndivManager.svelte';
 
   /**
@@ -27,12 +28,24 @@
   let notes = $state('');
   let error = $state<string | null>(null);
   let submitting = $state(false);
+  // Tant que l'heure n'a pas été touchée, elle suit le jour choisi : 10 h le dimanche, 19 h 30 sinon.
+  let startTouched = false;
+
+  /** Des listes plutôt qu'une saisie libre : au doigt, on choisit parmi quelques valeurs. */
+  const range = (from: number, to: number, step = 1) => Array.from({ length: Math.floor((to - from) / step) + 1 }, (_, i) => from + i * step);
+  const COUNT_OPTIONS = range(1, MAX_SLOT_COUNT).map((n) => ({ value: String(n), label: n === 1 ? '1 créneau' : `${n} créneaux` }));
+  const MINUTES_OPTIONS = range(15, MAX_SLOT_MINUTES, 15).map((n) => ({ value: String(n), label: `${n} min` }));
+  const CAPACITY_OPTIONS = range(1, MAX_CAPACITY_PER_SLOT).map((n) => ({ value: String(n), label: n === 1 ? '1 place' : `${n} places` }));
+  /** Une valeur enregistrée hors de la liste (25 min, par exemple) reste choisie et visible. */
+  const withValue = (options: { value: string; label: string }[], value: string, unit: string) =>
+    options.some((o) => o.value === value) ? options : [...options, { value, label: `${value} ${unit}` }].sort((a, b) => Number(a.value) - Number(b.value));
 
   // À l'ouverture, le formulaire reflète la soirée éditée — ou l'habitude du club.
   $effect(() => {
     if (!open) return;
     date = session?.date ?? '';
-    startTime = session?.startTime ?? '19:30';
+    startTime = session?.startTime ?? defaultIndivStartTime(date);
+    startTouched = Boolean(session);
     venueId = String(session?.venueId ?? venues[0]?.id ?? '');
     slotCount = String(session?.slotCount ?? DEFAULT_SLOT_COUNT);
     slotMinutes = String(session?.slotMinutes ?? DEFAULT_SLOT_MINUTES);
@@ -41,6 +54,10 @@
     notes = session?.notes ?? '';
     error = null;
   });
+
+  function onDateChange() {
+    if (!startTouched) startTime = defaultIndivStartTime(date);
+  }
 
   async function save(event: Event) {
     event.preventDefault();
@@ -99,13 +116,19 @@
     />
   </FormField>
   <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-    <FormField label="Date" id="indiv-date"><Input id="indiv-date" type="date" bind:value={date} /></FormField>
-    <FormField label="Début" id="indiv-start"><Input id="indiv-start" type="time" bind:value={startTime} /></FormField>
+    <FormField label="Date" id="indiv-date"><Input id="indiv-date" type="date" bind:value={date} onchange={onDateChange} /></FormField>
+    <FormField label="Début" id="indiv-start"><Input id="indiv-start" type="time" bind:value={startTime} oninput={() => (startTouched = true)} /></FormField>
   </div>
   <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
-    <FormField label="Créneaux" id="indiv-count"><Input id="indiv-count" type="number" min="1" max={MAX_SLOT_COUNT} bind:value={slotCount} /></FormField>
-    <FormField label="Minutes" id="indiv-minutes"><Input id="indiv-minutes" type="number" min="5" max={MAX_SLOT_MINUTES} step="5" bind:value={slotMinutes} /></FormField>
-    <FormField label="Places par créneau" id="indiv-capacity" hint="Deux, à l'habitude du club."><Input id="indiv-capacity" type="number" min="1" max={MAX_CAPACITY_PER_SLOT} bind:value={capacityPerSlot} /></FormField>
+    <FormField label="Créneaux" id="indiv-count">
+      <ChoiceField id="indiv-count" label="Créneaux" value={slotCount} onChange={(v) => (slotCount = v)} options={withValue(COUNT_OPTIONS, slotCount, 'créneaux')} />
+    </FormField>
+    <FormField label="Durée d'un créneau" id="indiv-minutes">
+      <ChoiceField id="indiv-minutes" label="Durée d'un créneau" value={slotMinutes} onChange={(v) => (slotMinutes = v)} options={withValue(MINUTES_OPTIONS, slotMinutes, 'min')} />
+    </FormField>
+    <FormField label="Places par créneau" id="indiv-capacity" hint="Deux, à l'habitude du club.">
+      <ChoiceField id="indiv-capacity" label="Places par créneau" value={capacityPerSlot} onChange={(v) => (capacityPerSlot = v)} options={withValue(CAPACITY_OPTIONS, capacityPerSlot, 'places')} />
+    </FormField>
   </div>
   <FormField label="Libellé (facultatif)" id="indiv-label"><Input id="indiv-label" bind:value={label} placeholder="Indiv mardi" /></FormField>
   <FormField label="Consigne (facultatif)" id="indiv-notes"><Textarea id="indiv-notes" bind:value={notes} rows={2} placeholder="Terrain 4, volants fournis" /></FormField>
