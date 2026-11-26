@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from 'svelte';
   import { CalendarPlus } from '@lucide/svelte';
   import { Sheet } from '@nba/ui';
   import { androidBrowserLink, calendarMailLink, isAndroid, type CalendarLinks } from '../lib/calendar-feed';
@@ -64,6 +65,15 @@
       void load();
     }
   }
+
+  // Arrivée depuis la bulle de nouveauté (`/agenda?abonnement`) : la feuille s'ouvre d'elle-même.
+  $effect(() => {
+    const url = new URL(window.location.href);
+    if (!url.searchParams.has('abonnement')) return;
+    url.searchParams.delete('abonnement');
+    history.replaceState(history.state, '', url);
+    untrack(() => onOpenChange(true));
+  });
 
   async function create() {
     const json = await call('POST');

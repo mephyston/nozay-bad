@@ -101,6 +101,8 @@
     try {
       localStorage.setItem(HINT_KEY, '1');
     } catch {}
+    // La bulle du calendrier attend celle-ci : elle peut paraître maintenant.
+    window.dispatchEvent(new Event('nba:hint-dismissed'));
   }
 
   function toggle() {

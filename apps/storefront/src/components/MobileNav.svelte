@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Home, ShoppingCart, Newspaper, CalendarDays } from '@lucide/svelte';
   import ShuttlecockIcon from './ShuttlecockIcon.svelte';
+  import CalendarFeedHint from './CalendarFeedHint.svelte';
 
   /**
    * La barre du bas de l'espace adhérent : les onglets, et rien d'autre.
@@ -47,6 +48,9 @@
   // l'onglet reste mis en évidence tant qu'on est dans cette branche.
   const isActive = (href: string) => currentPath === href || (href !== '/' && currentPath.startsWith(`${href}/`));
   const activeIndex = $derived(items.findIndex((item) => isActive(item.href)));
+  const calendarIndex = items.findIndex((item) => item.href === '/agenda');
+  // La nouveauté se présente ailleurs que sur le calendrier, où le bouton d'abonnement est déjà là.
+  const showCalendarHint = features.calendar_feed !== false && calendarIndex >= 0 && !isActive('/agenda');
   /** Où est la lentille : sur l'onglet touché s'il y en a un, sinon sur la page courante. */
   const lensIndex = $derived(pressed ?? activeIndex);
 </script>
@@ -87,6 +91,10 @@
     </a>
   {/each}
 </nav>
+
+{#if showCalendarHint}
+  <CalendarFeedHint tabIndex={calendarIndex} tabCount={items.length} />
+{/if}
 
 <style>
   /*
