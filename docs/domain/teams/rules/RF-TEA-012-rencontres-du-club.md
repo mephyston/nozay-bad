@@ -24,7 +24,7 @@ Les adhérents ne voyaient que les rencontres de leurs propres équipes. Certain
 
 **Accueil.** Le vendredi, le samedi et le dimanche, une bande qui défile à l'horizontale montre les rencontres **datées** du week-end, du jour jusqu'au dimanche ; les autres jours, celles du jour. Elle disparaît quand il n'y en a pas. Chaque vignette mène à la journée de l'équipe.
 
-**Calendrier.** La vue « Interclubs » liste toutes les rencontres à venir, datées ou non. Un seul champ « Équipe » la filtre ; le choix est dans l'adresse et retenu sur l'appareil. Chaque équipe a sa couleur, toujours accompagnée de son nom. Les rencontres des équipes de l'adhérent gardent la carte pleine et le badge « Mon équipe ». La vue « Tout » ne montre toujours que les rencontres de l'adhérent.
+**Calendrier.** La vue « Interclubs » liste toutes les rencontres à venir, datées ou non. Un seul champ « Équipe » la filtre ; le choix est dans l'adresse et retenu sur l'appareil. Chaque équipe a sa couleur, toujours accompagnée de son nom. Les rencontres des équipes de l'adhérent gardent la carte pleine et le badge « Mon équipe ». La vue « Tout » ne montre toujours que les rencontres de l'adhérent. Un encart présente l'onglet une fois par appareil, sous le sélecteur de vue ; il se range dès que l'onglet a été ouvert ou sur « Plus tard ».
 
 **Notification « Rencontres du club ».** Le matin d'un jour de match, avec les anniversaires, un seul message annonce les rencontres **datées** du jour, trois au plus dans le corps. Elle part si le club tient la rubrique Interclubs, à tous ceux qui ont activé les notifications ; la catégorie est active par défaut et chacun s'en désabonne. Un joueur y lit aussi la ligne de sa propre équipe.
 
