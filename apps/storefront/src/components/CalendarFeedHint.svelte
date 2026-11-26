@@ -9,12 +9,12 @@
    * Posée au-dessus de l'onglet « Calendrier » de la barre du bas ; « Découvrir » ouvre
    * directement la feuille d'abonnement (`/agenda?abonnement`).
    */
-  let { tabIndex, tabCount }: { tabIndex: number; tabCount: number } = $props();
+  // `visible` remonte à la barre : l'onglet visé s'éclaire tant que la bulle est là.
+  let { tabIndex, tabCount, visible = $bindable(false) }: { tabIndex: number; tabCount: number; visible?: boolean } = $props();
 
   const HINT_KEY = 'nba:calendar-feed-hint:v1';
   const ACCOUNT_HINT_KEY = 'nba:account-hint:v1';
 
-  let visible = $state(false);
 
   function read(key: string): string | null {
     try {

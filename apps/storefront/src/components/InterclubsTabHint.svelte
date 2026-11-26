@@ -34,6 +34,18 @@
     visible = false;
     remember();
   }
+
+  /*
+    L'onglet visé s'éclaire tant que l'encart est là. Le sélecteur de vue est rendu côté
+    serveur (SegmentedNav.astro) : on lui pose la classe d'ici, et on la retire en partant.
+  */
+  const HIGHLIGHT = ['ring-2', 'ring-primary', 'text-primary'];
+  $effect(() => {
+    const tab = document.querySelector<HTMLAnchorElement>('a[href="/agenda?vue=interclubs"]');
+    if (!tab || !visible) return;
+    tab.classList.add(...HIGHLIGHT);
+    return () => tab.classList.remove(...HIGHLIGHT);
+  });
 </script>
 
 {#if visible}

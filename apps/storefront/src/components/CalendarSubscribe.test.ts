@@ -115,6 +115,19 @@ describe("abonnement à l'agenda", () => {
     expect(byId('calendar-club-feed')).toBeNull();
   });
 
+  it("s'éclaire jusqu'à sa première ouverture sur l'appareil", async () => {
+    localStorage.clear();
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+    app = mount(CalendarSubscribe, { target, props: { firstName: 'Léo' } });
+    flushSync();
+    expect(byId('calendar-subscribe')!.className).toContain('ring-primary');
+    byId('calendar-subscribe')!.click();
+    await settle();
+    expect(byId('calendar-subscribe')!.className).not.toContain('ring-primary');
+    expect(localStorage.getItem('nba:calendar-feed-hint:v1')).toBe('1');
+  });
+
   it("n'écrase une adresse existante qu'après confirmation", async () => {
     answers.GET = { ok: true, subscribed: true };
     app = await openSheet();

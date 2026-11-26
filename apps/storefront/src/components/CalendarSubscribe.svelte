@@ -41,6 +41,19 @@
   let links = $state<CalendarLinks | null>(null);
   let confirming = $state<'replace' | 'stop' | null>(null);
   let copied = $state(false);
+  /**
+   * Le bouton n'a jamais été ouvert sur cet appareil : il s'éclaire, comme l'avatar du compte à
+   * la première visite. Même clé que la bulle de la barre du bas : l'ouvrir range les deux.
+   */
+  const DISCOVERY_KEY = 'nba:calendar-feed-hint:v1';
+  let fresh = $state(false);
+  $effect(() => {
+    try {
+      fresh = localStorage.getItem(DISCOVERY_KEY) !== '1';
+    } catch {
+      fresh = false;
+    }
+  });
   // Lu à l'ouverture, jamais au rendu serveur : le tiroir n'existe qu'au navigateur.
   let android = $state(false);
 
@@ -75,6 +88,10 @@
       subscribed = null;
       error = '';
     } else {
+      fresh = false;
+      try {
+        localStorage.setItem(DISCOVERY_KEY, '1');
+      } catch {}
       android = typeof navigator !== 'undefined' && isAndroid(navigator.userAgent);
       void load();
     }
@@ -125,13 +142,19 @@
 <!-- Une simple icône à côté du titre : son nom passe par aria-label, et par title au survol. -->
 <button
   type="button"
-  class="inline-flex size-11 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+  class={`relative inline-flex size-11 shrink-0 items-center justify-center rounded-lg hover:bg-muted hover:text-foreground ${fresh ? 'text-primary ring-2 ring-primary' : 'text-muted-foreground'}`}
   aria-label="S'abonner depuis mon agenda"
   title="S'abonner depuis mon agenda"
   data-testid="calendar-subscribe"
   onclick={() => onOpenChange(true)}
 >
   <CalendarPlus class="size-5" aria-hidden="true" />
+  {#if fresh}
+    <span class="pointer-events-none absolute -right-0.5 -top-0.5 flex size-2.5" aria-hidden="true">
+      <span class="absolute inline-flex size-full rounded-full bg-primary opacity-75 motion-safe:animate-ping"></span>
+      <span class="relative inline-flex size-2.5 rounded-full bg-primary"></span>
+    </span>
+  {/if}
 </button>
 
 <Sheet.Root {open} {onOpenChange}>

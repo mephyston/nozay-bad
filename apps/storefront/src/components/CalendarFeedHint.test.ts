@@ -32,6 +32,16 @@ describe("bulle de nouveauté de l'agenda", () => {
     expect(hint()!.querySelector('a')!.getAttribute('href')).toBe('/agenda?abonnement');
   });
 
+  it("éclaire l'onglet Calendrier tant que la bulle est là", () => {
+    localStorage.setItem('nba:account-hint:v1', '1');
+    app = monter();
+    const tab = document.body.querySelector('a[href="/agenda"]')!;
+    expect(tab.querySelector('.ring-primary')).not.toBeNull();
+    [...hint()!.querySelectorAll('button')].find((b) => b.textContent?.includes('Plus tard'))!.click();
+    flushSync();
+    expect(tab.querySelector('.ring-primary')).toBeNull();
+  });
+
   it('une fois vue, ne revient plus', () => {
     localStorage.setItem('nba:account-hint:v1', '1');
     app = monter();

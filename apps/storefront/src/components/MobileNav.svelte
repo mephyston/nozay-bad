@@ -51,6 +51,8 @@
   const calendarIndex = items.findIndex((item) => item.href === '/agenda');
   // La nouveauté se présente ailleurs que sur le calendrier, où le bouton d'abonnement est déjà là.
   const showCalendarHint = features.calendar_feed !== false && calendarIndex >= 0 && !isActive('/agenda');
+  /** La bulle de nouveauté est affichée : l'onglet Calendrier s'éclaire, comme une cible. */
+  let calendarHintVisible = $state(false);
   /** Où est la lentille : sur l'onglet touché s'il y en a un, sinon sur la page courante. */
   const lensIndex = $derived(pressed ?? activeIndex);
 </script>
@@ -86,6 +88,14 @@
         lensIndex === i ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
       }`}
     >
+      {#if calendarHintVisible && item.href === '/agenda'}
+        <!-- Mise en évidence de la découverte : un anneau et une pastille, pas seulement la bulle. -->
+        <span class="pointer-events-none absolute inset-0 rounded-[1.25rem] ring-2 ring-primary" aria-hidden="true"></span>
+        <span class="pointer-events-none absolute right-[22%] top-1 flex size-2.5" aria-hidden="true">
+          <span class="absolute inline-flex size-full rounded-full bg-primary opacity-75 motion-safe:animate-ping"></span>
+          <span class="relative inline-flex size-2.5 rounded-full bg-primary"></span>
+        </span>
+      {/if}
       <Icon class="w-6 h-6 shrink-0" />
       <span class="nav-label text-[11px] font-medium truncate max-w-full px-1">{item.label}</span>
     </a>
@@ -93,7 +103,7 @@
 </nav>
 
 {#if showCalendarHint}
-  <CalendarFeedHint tabIndex={calendarIndex} tabCount={items.length} />
+  <CalendarFeedHint tabIndex={calendarIndex} tabCount={items.length} bind:visible={calendarHintVisible} />
 {/if}
 
 <style>

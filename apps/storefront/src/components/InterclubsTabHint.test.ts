@@ -32,6 +32,17 @@ describe("présentation de l'onglet Interclubs", () => {
     expect(hint()).toBeNull();
   });
 
+  it("éclaire l'onglet Interclubs du sélecteur tant que l'encart est là", () => {
+    const tab = document.createElement('a');
+    tab.setAttribute('href', '/agenda?vue=interclubs');
+    document.body.appendChild(tab);
+    app = monter();
+    expect(tab.classList.contains('ring-primary')).toBe(true);
+    [...hint()!.querySelectorAll('button')].find((b) => b.textContent?.includes('Plus tard'))!.click();
+    flushSync();
+    expect(tab.classList.contains('ring-primary')).toBe(false);
+  });
+
   it("ouvrir l'onglet suffit à l'avoir découvert", () => {
     app = monter(true);
     expect(hint()).toBeNull();
