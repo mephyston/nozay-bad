@@ -1,7 +1,7 @@
 <script lang="ts">
   import { CalendarPlus } from '@lucide/svelte';
   import { Sheet } from '@nba/ui';
-  import type { CalendarLinks } from '../lib/calendar-feed';
+  import { androidBrowserLink, calendarMailLink, isAndroid, type CalendarLinks } from '../lib/calendar-feed';
 
   /**
    * L'abonnement du profil actif à son agenda.
@@ -26,6 +26,8 @@
   let links = $state<CalendarLinks | null>(null);
   let confirming = $state<'replace' | 'stop' | null>(null);
   let copied = $state(false);
+  // Lu à l'ouverture, jamais au rendu serveur : le tiroir n'existe qu'au navigateur.
+  let android = $state(false);
 
   async function call(method: string): Promise<any> {
     loading = true;
@@ -58,6 +60,7 @@
       subscribed = null;
       error = '';
     } else {
+      android = typeof navigator !== 'undefined' && isAndroid(navigator.userAgent);
       void load();
     }
   }
@@ -122,7 +125,36 @@
         <p class="rounded-lg border border-destructive/40 p-3 text-destructive" role="alert">{error}</p>
       {/if}
 
-      {#if links}
+      {#if links && android}
+        <!--
+          Android : l'application Google Agenda ne sait pas s'abonner à une adresse et intercepte le
+          lien ?cid= sans rien en faire ; webcal:// n'y ouvre rien. L'abonnement passe par le site,
+          en version ordinateur, puis la synchronisation s'active dans l'application.
+        -->
+        <p class="font-medium text-foreground">Votre adresse est prête. Sur Android, l'abonnement se fait une fois, sur le site de Google Agenda :</p>
+        <ol class="list-decimal space-y-3 pl-5" data-testid="calendar-android-steps">
+          <li class="space-y-2">
+            <span>Copiez l'adresse.</span>
+            <button type="button" class={primary} onclick={copy} data-testid="calendar-copy">
+              {copied ? 'Adresse copiée' : "Copier l'adresse"}
+            </button>
+          </li>
+          <li class="space-y-2">
+            <span>
+              Ouvrez la page « Ajouter à partir de l'URL » de Google, collez l'adresse, puis touchez « Ajouter un agenda ».
+              Si Google vous renvoie vers l'application ou n'affiche pas ce champ, cochez « Version pour ordinateur » dans le menu ⋮ de Chrome.
+            </span>
+            <a href={androidBrowserLink()} class={secondary} data-testid="calendar-android-google">Ouvrir Google Agenda dans Chrome</a>
+          </li>
+          <li>
+            Dans l'application Google Agenda : menu ☰, Paramètres, touchez le nom du nouvel agenda, puis activez « Synchroniser ».
+            Sans cela, ses rendez-vous n'apparaissent pas sur le téléphone.
+          </li>
+        </ol>
+        <p class="text-muted-foreground">Plus simple depuis un ordinateur ? Envoyez-vous l'adresse : elle ne sera plus affichée ici.</p>
+        <a href={calendarMailLink(links.feed, firstName)} class={secondary} data-testid="calendar-mail">M'envoyer l'adresse par e-mail</a>
+        <p class="break-all rounded-lg bg-muted p-3 font-mono text-xs text-muted-foreground" data-testid="calendar-address">{links.feed}</p>
+      {:else if links}
         <p class="font-medium text-foreground">Votre adresse est prête : choisissez votre application.</p>
         <a href={links.google} target="_blank" rel="noopener noreferrer" class={primary}>Google Agenda</a>
         <a href={links.webcal} class={secondary}>Apple Calendrier, Outlook</a>
@@ -130,10 +162,7 @@
           {copied ? 'Adresse copiée' : "Copier l'adresse"}
         </button>
         <p class="break-all rounded-lg bg-muted p-3 font-mono text-xs text-muted-foreground" data-testid="calendar-address">{links.feed}</p>
-        <p class="text-muted-foreground">
-          Sur Android, ajoutez-la depuis calendar.google.com dans un navigateur : l'application Google Agenda ne le
-          propose pas. Elle apparaîtra ensuite sur le téléphone. Cette adresse ne sera plus affichée.
-        </p>
+        <p class="text-muted-foreground">Cette adresse ne sera plus affichée.</p>
       {:else if subscribed === false}
         <button type="button" class={primary} disabled={loading} onclick={create} data-testid="calendar-create">
           Créer mon adresse d'abonnement

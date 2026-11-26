@@ -45,6 +45,42 @@ export function calendarLinks(feedUrl: string): CalendarLinks {
   };
 }
 
+/**
+ * La page « Ajouter un agenda à partir de l'URL » de Google Agenda. L'application Android ne
+ * sait pas s'abonner à une adresse, ni ouvrir le lien `?cid=` qu'elle intercepte : seul le site,
+ * en version ordinateur, le propose.
+ */
+export const GOOGLE_ADD_BY_URL = 'https://calendar.google.com/calendar/u/0/r/settings/addbyurl';
+
+/**
+ * Le même lien, ouvert de force dans Chrome plutôt que dans l'application Google Agenda qui
+ * s'en emparerait. Sans Chrome, le navigateur suit l'adresse ordinaire.
+ */
+export function androidBrowserLink(url: string = GOOGLE_ADD_BY_URL): string {
+  const { host, pathname, search } = new URL(url);
+  return `intent://${host}${pathname}${search}#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=${encodeURIComponent(url)};end`;
+}
+
+/** Pour faire l'abonnement depuis un ordinateur : l'adresse ne se montre qu'une fois. */
+export function calendarMailLink(feedUrl: string, firstName: string): string {
+  const body = [
+    `L'adresse d'abonnement à l'agenda de ${firstName} :`,
+    '',
+    feedUrl,
+    '',
+    `Sur un ordinateur, ouvrez ${GOOGLE_ADD_BY_URL}, collez l'adresse, puis « Ajouter un agenda ».`,
+    "Sur le téléphone Android, dans l'application Google Agenda : Paramètres, touchez le nom du nouvel agenda, puis activez « Synchroniser ».",
+    '',
+    'Cette adresse donne accès à cet agenda : ne la transférez pas.'
+  ].join('\n');
+  return `mailto:?subject=${encodeURIComponent(`Agenda de ${firstName}`)}&body=${encodeURIComponent(body)}`;
+}
+
+/** Android, pour le parcours propre à Google Agenda. Lu côté navigateur seulement. */
+export function isAndroid(userAgent: string): boolean {
+  return /Android/i.test(userAgent);
+}
+
 /** La cible du bouton d'ajout d'un seul rendez-vous. */
 export type CalendarItemRef =
   | { kind: 'event'; id: number }

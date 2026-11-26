@@ -1,11 +1,15 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest';
 import {
+  androidBrowserLink,
   calendarFeedUrl,
+  calendarMailLink,
   calendarItemQuery,
   calendarLinks,
   generateCalendarToken,
+  GOOGLE_ADD_BY_URL,
   hashCalendarToken,
+  isAndroid,
   isCalendarToken
 } from './calendar-feed';
 
@@ -33,6 +37,27 @@ describe("adresse d'abonnement", () => {
     const links = calendarLinks(url);
     expect(links.webcal).toBe('webcal://espace.example/calendrier/jeton.ics');
     expect(new URL(links.google).searchParams.get('cid')).toBe('webcal://espace.example/calendrier/jeton.ics');
+  });
+});
+
+describe('parcours Android', () => {
+  it("ouvre la page d'ajout par adresse dans Chrome, et retombe sur l'adresse ordinaire sans lui", () => {
+    const link = androidBrowserLink();
+    expect(link.startsWith('intent://calendar.google.com/calendar/u/0/r/settings/addbyurl#Intent;scheme=https;package=com.android.chrome;')).toBe(true);
+    expect(decodeURIComponent(/S\.browser_fallback_url=([^;]+)/.exec(link)![1])).toBe(GOOGLE_ADD_BY_URL);
+  });
+
+  it("met l'adresse et la marche à suivre dans le courriel", () => {
+    const mail = calendarMailLink('https://espace.example/calendrier/jeton.ics', 'Léo');
+    expect(mail.startsWith('mailto:?subject=')).toBe(true);
+    const body = decodeURIComponent(mail.split('&body=')[1]);
+    expect(body).toContain('https://espace.example/calendrier/jeton.ics');
+    expect(body).toContain('Synchroniser');
+  });
+
+  it("reconnaît Android, et lui seul", () => {
+    expect(isAndroid('Mozilla/5.0 (Linux; Android 15; SM-S921B) Chrome/131.0 Mobile')).toBe(true);
+    expect(isAndroid('Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) Safari/604.1')).toBe(false);
   });
 });
 

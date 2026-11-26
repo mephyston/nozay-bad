@@ -30,6 +30,8 @@ L'objectif est que personne n'ait à recopier une date, et qu'un parent voie cô
 
 **L'adresse est secrète et ne s'affiche qu'à sa création.** Seule son empreinte est conservée : une perte se répare en créant une nouvelle adresse, qui révoque l'ancienne. Une révocation ou un changement d'agenda s'applique sous une heure, durée du cache.
 
+**Sur Android, l'abonnement passe par le site de Google Agenda.** L'application Google Agenda ne sait pas s'abonner à une adresse, et le lien d'abonnement de Google, comme `webcal://`, n'y aboutit pas. Sur Android, l'espace adhérent ne les propose donc pas : il donne l'adresse à copier, ouvre dans Chrome la page « Ajouter à partir de l'URL » (en version ordinateur), rappelle d'activer « Synchroniser » sur le nouvel agenda dans l'application, et permet de s'envoyer l'adresse par courriel pour faire l'abonnement depuis un ordinateur.
+
 **Le contenu est minimal.** Ni adresse électronique, ni licence, ni nom d'un autre adhérent : un titre, des horaires, un lieu et, pour une rencontre, l'alignement du profil.
 
 **L'abonnement survit au renouvellement.** Il est rattaché à la personne. Sans adhésion à la saison du jour, ou avec un dossier annulé, le flux reste valide mais vide, et se remplit de nouveau si la personne se réinscrit.
@@ -68,6 +70,13 @@ Fonctionnalité: Agenda du club dans le calendrier personnel
     Étant donné un adhérent abonné
     Quand il crée une nouvelle adresse
     Alors l'ancienne ne répond plus une fois le cache expiré
+
+  Scénario: S'abonner depuis un téléphone Android
+    Étant donné un adhérent sur un téléphone Android
+    Quand il crée son adresse d'abonnement
+    Alors l'espace adhérent lui propose de copier l'adresse, d'ouvrir l'ajout par adresse de Google Agenda dans Chrome, ou de s'envoyer l'adresse par courriel
+    Et lui rappelle d'activer « Synchroniser » dans l'application Google Agenda
+    Et ne lui propose ni le lien d'abonnement de Google ni webcal://
 
   Scénario: Un flux par profil
     Étant donné un parent et son enfant abonnés

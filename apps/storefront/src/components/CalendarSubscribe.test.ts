@@ -76,6 +76,29 @@ describe("abonnement à l'agenda", () => {
     expect(document.body.textContent).toContain('une fois leur date fixée par le capitaine');
   });
 
+  describe('sur Android', () => {
+    beforeEach(() => {
+      vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue('Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 Chrome/131.0 Mobile Safari/537.36');
+    });
+    afterEach(() => vi.restoreAllMocks());
+
+    it("passe par le site de Google en version ordinateur, et dit d'activer la synchronisation", async () => {
+      app = await openSheet();
+      byId('calendar-create')!.click();
+      await settle();
+
+      expect(byId('calendar-android-steps')?.textContent).toContain('Synchroniser');
+      const google = byId('calendar-android-google')!.getAttribute('href')!;
+      expect(google).toMatch(/^intent:\/\/calendar\.google\.com\/calendar\/u\/0\/r\/settings\/addbyurl#Intent;scheme=https;package=com\.android\.chrome;/);
+      // Ni le lien ?cid= que l'application avale, ni webcal:// qui n'ouvre rien.
+      const hrefs = Array.from(document.body.querySelectorAll('[data-testid="calendar-sheet"] a')).map((a) => a.getAttribute('href')!);
+      expect(hrefs).not.toContain(LINKS.google);
+      expect(hrefs).not.toContain(LINKS.webcal);
+      const mail = new URL(byId('calendar-mail')!.getAttribute('href')!);
+      expect(decodeURIComponent(mail.search)).toContain(LINKS.feed);
+    });
+  });
+
   it("n'écrase une adresse existante qu'après confirmation", async () => {
     answers.GET = { ok: true, subscribed: true };
     app = await openSheet();
