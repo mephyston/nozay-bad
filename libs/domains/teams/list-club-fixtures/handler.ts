@@ -1,6 +1,6 @@
 import { type DbOrTx } from '@nba/db';
 import { getClubSettings } from '@nba/club/settings';
-import { CHAMPIONSHIP_RULES, getDivision, teamName } from '../shared/championship';
+import { CHAMPIONSHIP_RULES, CHAMPIONSHIP_SHORT_LABELS, getDivision, teamName } from '../shared/championship';
 import { publishedChampionships } from '../shared/rosters-publication';
 import { ListClubFixturesRepository } from './repository';
 import type { ClubFixture, ListClubFixturesInput, ListClubFixturesOutput } from './dto';
@@ -47,6 +47,7 @@ export async function listClubFixtures(db: DbOrTx, input: ListClubFixturesInput,
           teamNumber: team.number,
           teamName: teamName(teamPrefix, team.number),
           championshipLabel: CHAMPIONSHIP_RULES[team.championship].label,
+          championshipShortLabel: CHAMPIONSHIP_SHORT_LABELS[team.championship],
           divisionLabel: division?.label ?? team.division,
           dayNumber: day.number,
           dayLabel: day.label,

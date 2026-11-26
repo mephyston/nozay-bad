@@ -42,7 +42,7 @@ describe('rencontres de toutes les équipes du club', () => {
       [2, '2026-11-04T20:00', 'Orsay 3', 'Gymnase A'],
       [1, '2026-11-05T20:30', 'Massy 1', null]
     ]);
-    expect(fixtures[0]).toMatchObject({ dateSource: 'captain', dayNumber: 1 });
+    expect(fixtures[0]).toMatchObject({ dateSource: 'captain', dayNumber: 1, championshipShortLabel: 'ICD Mixte' });
     expect(teams.map((t) => t.number)).toEqual([1, 2]);
     expect(fixtures[0]).not.toHaveProperty('lineupStatus');
   });

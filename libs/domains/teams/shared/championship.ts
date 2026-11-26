@@ -23,6 +23,14 @@ export const CHAMPIONSHIP_LABELS: Record<Championship, string> = {
   icd_veterans: 'Interclubs Départemental Vétérans'
 };
 
+/** Le sigle d'usage, pour les affichages serrés (l'encart de l'accueil). */
+export const CHAMPIONSHIP_SHORT_LABELS: Record<Championship, string> = {
+  icr_seniors: 'ICR',
+  icd_mixte: 'ICD Mixte',
+  icd_masculin: 'ICD Masculin',
+  icd_veterans: 'ICD Vétérans'
+};
+
 /** Une ligne de la rencontre : « SH2 », « MX1 ». */
 export interface MatchSlot {
   discipline: Discipline;

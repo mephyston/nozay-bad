@@ -3,7 +3,7 @@ import type { ClubFixture } from '@nba/teams-api';
 import { clubFixturesMessage } from './club-fixtures-announcement';
 
 const fixture = (teamNumber: number, date: string | null, extra: Partial<ClubFixture> = {}): ClubFixture => ({
-  teamId: teamNumber, teamNumber, teamName: `Équipe ${teamNumber}`, championshipLabel: 'Mixte', divisionLabel: 'D2',
+  teamId: teamNumber, teamNumber, teamName: `Équipe ${teamNumber}`, championshipLabel: 'Mixte', championshipShortLabel: 'ICD Mixte', divisionLabel: 'D2',
   dayNumber: 3, dayLabel: null, weekStart: '2026-11-23', weekEnd: '2026-11-29', date,
   dateSource: date ? 'captain' : null, opponent: null, venue: null, ...extra
 });

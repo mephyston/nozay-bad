@@ -43,10 +43,9 @@ const { fixtures, weekend, today } = Astro.props;
                 {fixture.teamName}{fixture.opponent ? ` vs ${fixture.opponent}` : ''}
               </span>
             </span>
-            <span class="mt-0.5 text-xs text-muted-foreground">{fixture.championshipLabel} · {dayShort(fixture)}</span>
-            {/* Quand et où sur une ligne : « 20 h 30 à Palaiseau ». */}
-            <span class="mt-2 truncate text-sm text-foreground">
-              <span class="font-medium">{fixtureWhenShort(fixture, today)}</span>{fixture.venue && <span class="text-muted-foreground"> à {venueShort(fixture.venue)}</span>}
+            {/* Le reste sur une ligne : « ICD Mixte · J3 · 20 h 30 à Palaiseau ». */}
+            <span class="mt-1 truncate text-sm text-muted-foreground">
+              {fixture.championshipShortLabel} · {dayShort(fixture)} · <span class="font-medium text-foreground">{fixtureWhenShort(fixture, today)}</span>{fixture.venue && <span> à {venueShort(fixture.venue)}</span>}
             </span>
             {!fixture.opponent && <span class="text-xs text-muted-foreground">Adversaire à préciser</span>}
           </a>

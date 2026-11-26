@@ -16,6 +16,8 @@ export interface ClubFixture {
   teamNumber: number;
   teamName: string;
   championshipLabel: string;
+  /** « ICR », « ICD Mixte » : pour les affichages serrés. */
+  championshipShortLabel: string;
   divisionLabel: string;
   dayNumber: number;
   dayLabel: string | null;
