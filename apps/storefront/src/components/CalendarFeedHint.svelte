@@ -53,13 +53,13 @@
     class="fixed inset-x-3 z-50 md:hidden"
     style="bottom: calc(env(safe-area-inset-bottom, 0px) + 5.25rem)"
   >
-    <div class="relative rounded-md border border-border bg-popover p-3 text-xs text-popover-foreground shadow-lg">
+    <div class="relative rounded-xl border border-border bg-popover p-4 text-xs text-popover-foreground shadow-lg">
       <p class="font-semibold text-foreground">Nouveau : l'agenda du club dans votre téléphone</p>
       <p class="mt-1 text-muted-foreground">
         Les rendez-vous du club, vos rencontres et vos séances de jeu libre s'ajoutent à votre
         calendrier, et suivent les changements.
       </p>
-      <div class="mt-2 flex gap-2">
+      <div class="mt-3 flex gap-2">
         <a
           href="/agenda?abonnement"
           onclick={dismiss}

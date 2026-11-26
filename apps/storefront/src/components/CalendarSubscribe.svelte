@@ -135,7 +135,13 @@
 </button>
 
 <Sheet.Root {open} {onOpenChange}>
-  <Sheet.Content side="bottom" class="max-h-[90dvh] gap-4 overflow-y-auto p-4 pb-[max(1rem,env(safe-area-inset-bottom))]" data-testid="calendar-sheet">
+  <!--
+    Les marges vivent sur un conteneur intérieur : pour un tiroir du bas, `Sheet.Content` pose en
+    style en ligne `padding-top: 0` et `padding-bottom: env(safe-area-inset-bottom)`, qui
+    écrasent toute classe `p-*` posée ici. Le contenu touchait le haut et le bas de l'écran.
+  -->
+  <Sheet.Content side="bottom" class="max-h-[90dvh] gap-0 overflow-y-auto rounded-t-2xl p-0" data-testid="calendar-sheet">
+    <div class="space-y-4 px-4 pt-6 pb-[max(1.5rem,calc(env(safe-area-inset-bottom)+1rem))] sm:px-6">
     <Sheet.Header class="p-0 pr-10">
       <Sheet.Title>L'agenda de {firstName} dans votre calendrier</Sheet.Title>
       <Sheet.Description>
@@ -240,6 +246,7 @@
           {/if}
         </section>
       {/if}
+    </div>
     </div>
   </Sheet.Content>
 </Sheet.Root>
