@@ -12,6 +12,7 @@ export default defineConfig({
       '@nba/api-client': path.resolve(__dirname, '../../libs/shared/api-client/src/index.ts'),
       '@nba/club/context': path.resolve(__dirname, '../../libs/domains/club/shared/context.ts'),
       '@nba/club-ui': path.resolve(__dirname, '../../libs/domains/club/shared/ui.ts'),
+      '@nba/buvette-ui': path.resolve(__dirname, '../../libs/domains/buvette/shared/ui.ts'),
       '@nba/security-headers': path.resolve(__dirname, '../../libs/shared/security-headers/src/index.ts'),
       '@nba/runtime-env': path.resolve(__dirname, '../../libs/shared/runtime-env/src/index.ts'),
       '@nba/mailer': path.resolve(__dirname, '../../libs/shared/mailer/src/index.ts')

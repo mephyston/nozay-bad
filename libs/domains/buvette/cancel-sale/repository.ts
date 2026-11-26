@@ -25,8 +25,17 @@ export class CancelSaleRepository {
       .where(and(eq(buvetteCardsTable.id, cardId), eq(buvetteCardsTable.kind, 'paper'), eq(buvetteCardsTable.balanceCents, 0)));
   }
 
-  buildCancelOrderStatement(db: DbOrTx, orderId: number): any {
-    return db.update(buvetteOrdersTable).set({ status: 'cancelled' }).where(eq(buvetteOrdersTable.id, orderId));
+  /**
+   * La vente remboursée rend sa commande au client, comme une CB abandonnée : la caisse peut
+   * l'encaisser de nouveau, une fois la carte rechargée. S'il en a repassé une entre-temps,
+   * l'ancienne s'annule, l'index d'une commande en cours par carte l'exige.
+   */
+  buildReopenOrderStatement(db: DbOrTx, orderId: number): any {
+    return db.update(buvetteOrdersTable)
+      .set({
+        status: sql`CASE WHEN EXISTS (SELECT 1 FROM buvette_orders o WHERE o.card_id = buvette_orders.card_id AND o.status = 'pending') THEN 'cancelled' ELSE 'pending' END` as any
+      })
+      .where(eq(buvetteOrdersTable.id, orderId));
   }
 
   getSession(db: DbOrTx, id: number) {

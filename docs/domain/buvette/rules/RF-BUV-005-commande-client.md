@@ -34,7 +34,9 @@ Un porteur de carte prépare sa commande sur son téléphone. Le bénévole n'a 
 
 **Le reste se règle en espèces ou en CB,** comme toute vente (RF-BUV-002).
 
-**Une seule vente par commande.** Deux caisses ne peuvent pas l'encaisser. Une CB abandonnée rend la commande au client ; une vente remboursée l'annule.
+**Ou la carte se recharge d'abord.** Quand la carte ne couvre pas la commande, la caisse propose de la recharger sans quitter la commande. La recharge est une vente à part, payée en espèces ou en CB, sur le QR code du client : une autre carte que celle de la commande est refusée. Une fois la recharge payée (ou sa CB abandonnée), la caisse revient d'elle-même à la commande, avec le nouveau solde. La reprise survit au passage par l'app SumUp, et s'oublie si le bénévole change d'onglet ou rouvre la caisse sans CB en attente.
+
+**Une seule vente par commande.** Deux caisses ne peuvent pas l'encaisser. Une CB abandonnée comme une vente remboursée rend la commande au client : elle reprend son numéro et peut s'encaisser de nouveau. Si le client en a repassé une entre-temps, l'ancienne s'annule.
 
 ---
 
@@ -69,6 +71,21 @@ Fonctionnalité: Commande préparée par le client
     Étant donné une commande de 6 € sur une carte de 2 €
     Quand le bénévole encaisse la commande
     Alors il reste 4 € à régler en espèces ou en CB
+
+  Scénario: Recharger la carte avant d'encaisser la commande
+    Étant donné une commande n° 3 de 6 € sur une carte à 0 €
+    Quand le bénévole choisit « Recharger la carte », 10 €, scanne le QR code du client et encaisse 10 € en espèces
+    Alors la caisse revient à la commande n° 3, avec 10 € disponibles sur la carte
+
+  Scénario: Recharger une autre carte que celle de la commande
+    Étant donné une recharge lancée depuis la commande n° 3
+    Quand le bénévole scanne la carte d'un autre client
+    Alors la recharge est refusée et rien n'est encaissé
+
+  Scénario: Une vente remboursée rend la commande
+    Étant donné une commande encaissée en espèces
+    Quand le bénévole rembourse la vente
+    Alors la commande est de nouveau en cours, sous le même numéro, et peut s'encaisser
 
   Scénario: Deux caisses sur la même commande
     Étant donné une commande déjà encaissée

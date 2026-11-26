@@ -59,7 +59,7 @@ export async function cancelSale(db: Db, input: CancelSaleInput) {
   }
   if (sale.rechargeCardId && sale.rechargeCents > 0) statements.push(...reverse('recharge', sale.rechargeCardId, -sale.rechargeCents));
   if (sale.rechargeCardId && sale.rechargeCents > 0) statements.push(repo.buildResetPaperStatement(db, sale.rechargeCardId));
-  if (sale.orderId) statements.push(repo.buildCancelOrderStatement(db, sale.orderId));
+  if (sale.orderId) statements.push(repo.buildReopenOrderStatement(db, sale.orderId));
 
   try {
     const results: any[] = await db.batch(statements as any);

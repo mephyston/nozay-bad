@@ -212,6 +212,26 @@ describe('commandes des clients', () => {
       expect(await balance(client.cardId)).toBe(200);
     });
 
+    it('rend la commande au client : elle s\'encaisse de nouveau, une fois la carte rechargée', async () => {
+      const placed = await order();
+      const { sale } = await collect(placed!.id, 600, 'caisse-especes');
+      await cancelSale(db, { saleId: sale.id, cancelledByEmail: BY });
+      expect((await getCurrentOrder(db, client.cardId, client.deviceId))?.id).toBe(placed!.id);
+      expect((await getPendingOrder(db, placed!.id)).number).toBe(placed!.number);
+      await fund(client.cardId, 1000);
+      expect((await collect(placed!.id, 0, 'caisse-carte')).sale).toMatchObject({ status: 'paid', prepaidCents: 600, orderId: placed!.id });
+    });
+
+    it('annule l\'ancienne commande si le client en a repassé une entre-temps', async () => {
+      const placed = await order();
+      const { sale } = await collect(placed!.id, 600, 'caisse-especes');
+      const next = await createOrder(db, client.cardId, client.deviceId, [{ itemId: coffee.id, quantity: 1 }]);
+      await cancelSale(db, { saleId: sale.id, cancelledByEmail: BY });
+      expect((await getCurrentOrder(db, client.cardId, client.deviceId))?.id).toBe(next!.id);
+      const old = await db.select().from(buvetteOrdersTable).where(eq(buvetteOrdersTable.id, placed!.id)).get();
+      expect(old.status).toBe('cancelled');
+    });
+
     it('si la carte n\'existe plus, sa part sort en espèces', async () => {
       await fund(client.cardId, 300);
       const { token } = await signCardToken(SECRET, 'scan', client.cardId, client.deviceId);

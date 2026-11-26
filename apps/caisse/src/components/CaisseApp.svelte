@@ -77,6 +77,37 @@
     cbRefundableCents?: number;
   }
 
+  interface ResumeOrder {
+    id: number;
+    number: number;
+    label: string;
+    missingCents: number;
+    savedAt: number;
+  }
+
+  const RESUME_KEY = 'caisse:commande-a-reprendre';
+  /** Au-delà, le client est reparti : la commande se retrouve dans l'onglet Commandes. */
+  const RESUME_TTL_MS = 30 * 60_000;
+
+  function readResumeOrder(): ResumeOrder | null {
+    try {
+      const saved = JSON.parse(localStorage.getItem(RESUME_KEY) ?? 'null') as ResumeOrder | null;
+      return saved && Date.now() - saved.savedAt < RESUME_TTL_MS ? saved : null;
+    } catch {
+      return null;
+    }
+  }
+
+  function setResumeOrder(next: ResumeOrder | null) {
+    resumeOrder = next;
+    try {
+      if (next) localStorage.setItem(RESUME_KEY, JSON.stringify(next));
+      else localStorage.removeItem(RESUME_KEY);
+    } catch {
+      // Stockage refusé : la reprise vaut pour cet onglet seulement.
+    }
+  }
+
   type Screen = 'loading' | 'closed' | 'sell' | 'cart' | 'recharge' | 'scan' | 'pay' | 'cash' | 'cb' | 'done' | 'sales' | 'sale' | 'saleConfirm' | 'handover' | 'orders' | 'order' | 'refund';
   type ScanPurpose = 'prepaid' | 'recharge' | 'refund' | 'order';
 
@@ -117,6 +148,12 @@
   let selectedOrder = $state<PendingOrder | null>(null);
   /** La commande en cours d'encaissement : ses articles et sa carte viennent d'elle. */
   let payingOrder = $state<PendingOrder | null>(null);
+  /**
+   * La commande que la carte ne couvrait pas : la caisse y revient d'elle-même une fois la carte
+   * rechargée. Gardée dans le navigateur, car une recharge par CB passe par l'app SumUp et peut
+   * revenir dans un autre onglet.
+   */
+  let resumeOrder = $state<ResumeOrder | null>(readResumeOrder());
   let ordersTimer: ReturnType<typeof setInterval> | undefined;
   let doneTimer: ReturnType<typeof setTimeout> | undefined;
   // Le même identifiant tant que la vente n'a pas abouti : un nouvel essai réseau n'encaisse qu'une fois.
@@ -184,6 +221,8 @@
   onMount(() => {
     run(async () => {
       await reload();
+      // Une recharge qui n'attend pas sa CB ne reprend rien : la caisse a été rouverte à froid.
+      if (screen !== 'cb') setResumeOrder(null);
       await resume();
     });
     document.addEventListener('visibilitychange', resume);
@@ -256,6 +295,36 @@
     clearTimeout(doneTimer);
     done = null;
     screen = current ? 'sell' : 'closed';
+    resumeOrderIfAny();
+  }
+
+  /** Après la recharge, réussie ou abandonnée : retour à la commande, avec le solde à jour. */
+  function resumeOrderIfAny() {
+    const target = resumeOrder;
+    if (!target || !current) return;
+    setResumeOrder(null);
+    screen = 'orders';
+    showOrder(target.id);
+  }
+
+  /** La carte ne couvre pas la commande : on la recharge, puis la caisse revient ici. */
+  function rechargeForOrder(order: PendingOrder) {
+    resetSale();
+    setResumeOrder({
+      id: order.id,
+      number: order.number,
+      label: order.label,
+      missingCents: Math.max(0, order.totalCents - order.availableCents),
+      savedAt: Date.now()
+    });
+    go('recharge');
+  }
+
+  function leaveOrderRecharge() {
+    const target = resumeOrder;
+    setResumeOrder(null);
+    if (target) showOrder(target.id);
+    else go('sell');
   }
 
   function startScan(purpose: ScanPurpose) {
@@ -289,10 +358,14 @@
           screen = 'refund';
         } else if (purpose === 'recharge') {
           if (card.kind === 'paper' && card.paperStatus !== 'new') throw new Error('Une carte papier ne se recharge pas : vendez-en une nouvelle.');
+          if (resumeOrder && card.pendingOrderId !== resumeOrder.id) {
+            throw new Error(`Ce n'est pas la carte de la commande n° ${resumeOrder.number} : scannez le QR code du client ${resumeOrder.label}.`);
+          }
           rechargeCard = card;
           // Une carte papier se vend à sa valeur faciale, quel que soit le montant touché.
           rechargeCents = card.kind === 'paper' ? (card.faceValueCents ?? 0) : pendingRechargeCents;
-          screen = 'sell';
+          // Pour une commande, la recharge se paie seule et tout de suite : la commande suit.
+          screen = resumeOrder ? 'pay' : 'sell';
         } else {
           if (card.kind === 'paper' && card.paperStatus === 'new') throw new Error("Cette carte papier n'a pas encore été vendue.");
           prepaidCard = card;
@@ -345,6 +418,11 @@
     error = '';
     // Le panier reste, mais un paiement commencé s'arrête : son scan ne vaut que pour lui.
     if (payingOrder) resetSale();
+    if (resumeOrder) {
+      setResumeOrder(null);
+      rechargeCents = 0;
+      rechargeCard = null;
+    }
     prepaidCard = null;
     selectedSale = null;
     selectedOrder = null;
@@ -431,6 +509,7 @@
     run(async () => {
       await callApi(`sales/${sale.saleId}/abandon`, {});
       await reload();
+      resumeOrderIfAny();
     });
   }
 
@@ -664,10 +743,21 @@
 
   {:else if screen === 'recharge'}
     <main class="grow space-y-4 p-4">
-      {@render back('Articles', 'sell')}
-      <h1 class="text-2xl font-semibold">Recharger une carte</h1>
-      <Button variant="outline" size="lg" class="h-14 w-full" onclick={() => { pendingRechargeCents = 0; startScan('recharge'); }}>Vendre une carte papier</Button>
-      <p class="text-muted-foreground text-sm">Ou choisissez un montant, puis scannez la carte du client.</p>
+      {#if resumeOrder}
+        <button type="button" class="text-muted-foreground -ml-1 flex min-h-11 items-center gap-1 text-sm" onclick={leaveOrderRecharge}>
+          <ChevronLeft class="size-5" />Commande n° {resumeOrder.number}
+        </button>
+        <h1 class="text-2xl font-semibold">Recharger la carte {resumeOrder.label}</h1>
+        <p class="bg-primary/10 border-primary rounded-2xl border p-3 text-sm">
+          Il manque {formatEuros(resumeOrder.missingCents)} pour la commande n° {resumeOrder.number}. Une fois la recharge payée, la caisse revient à la commande.
+        </p>
+        <p class="text-muted-foreground text-sm">Choisissez un montant, puis scannez le QR code du client.</p>
+      {:else}
+        {@render back('Articles', 'sell')}
+        <h1 class="text-2xl font-semibold">Recharger une carte</h1>
+        <Button variant="outline" size="lg" class="h-14 w-full" onclick={() => { pendingRechargeCents = 0; startScan('recharge'); }}>Vendre une carte papier</Button>
+        <p class="text-muted-foreground text-sm">Ou choisissez un montant, puis scannez la carte du client.</p>
+      {/if}
       <div class="grid grid-cols-2 gap-2">
         {#each RECHARGES as cents (cents)}
           <button type="button" class="bg-card active:bg-muted rounded-2xl border p-6 text-2xl font-semibold tabular-nums" onclick={() => chooseRecharge(cents)}>{cents / 100} €</button>
@@ -679,6 +769,8 @@
     <main class="flex grow flex-col gap-4 p-4">
       {#if payingOrder}
         {@render back('Commande', 'order', () => { payingOrder = null; prepaidCard = null; })}
+      {:else if resumeOrder}
+        {@render back('Montant de la recharge', 'recharge', () => { rechargeCents = 0; rechargeCard = null; })}
       {:else}
         {@render back('Panier', cartEmpty ? 'sell' : 'cart', () => (prepaidCard = null))}
       {/if}
@@ -710,6 +802,11 @@
         {#if split.cashCents > 0}
           <button type="button" class="bg-card active:bg-muted flex items-center gap-4 rounded-2xl border p-5 text-lg font-semibold" disabled={busy} onclick={() => { amountInput = ''; go('cash'); }}>
             <Banknote class="size-7" />Espèces
+          </button>
+        {/if}
+        {#if payingOrder && split.cashCents > 0}
+          <button type="button" class="active:bg-muted flex items-center gap-4 rounded-2xl border border-dashed p-5 text-lg font-semibold" disabled={busy} onclick={() => rechargeForOrder(payingOrder!)}>
+            <Plus class="size-7" />Recharger la carte d'abord
           </button>
         {/if}
       </div>
@@ -934,6 +1031,14 @@
       </ul>
       {#if unavailable}
         <p role="alert" class="bg-destructive/10 text-destructive rounded-lg p-3 text-sm">Un article n'est plus en vente : le client doit modifier sa commande.</p>
+      {/if}
+      {#if !unavailable && selectedOrder.availableCents < selectedOrder.totalCents}
+        <p class="bg-primary/10 border-primary rounded-2xl border p-3 text-sm">
+          La carte ne couvre pas la commande : il manque {formatEuros(selectedOrder.totalCents - selectedOrder.availableCents)}. Rechargez-la, ou encaissez le reste en CB ou en espèces.
+        </p>
+        <Button variant="outline" size="lg" class="h-14 w-full text-lg" disabled={busy} onclick={() => rechargeForOrder(selectedOrder!)}>
+          <Plus class="size-5" />Recharger la carte
+        </Button>
       {/if}
       <Button size="lg" class="h-14 w-full text-lg" disabled={busy || unavailable} onclick={() => collectOrder(selectedOrder!)}>Encaisser la commande</Button>
     </main>
