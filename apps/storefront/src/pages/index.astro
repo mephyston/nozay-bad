@@ -78,6 +78,12 @@ const [{ posts: latestPosts }, annonces, events, birthdays, fixtures, openPlay, 
 // Seules les rencontres datées : « ce week-end » ne vaut rien pour une semaine sans jour.
 const datedClubFixtures = clubFixtures.fixtures.filter((f) => f.date !== null);
 
+// La séance d'indiv passe devant la rencontre quand elle tombe avant : une rencontre sans
+// date se range au début de sa semaine.
+const nextFixtureDay = fixtures[0] ? (fixtures[0].date ?? fixtures[0].weekStart).slice(0, 10) : null;
+const showIndiv = Boolean(indiv.eligible && indiv.session);
+const indivFirst = showIndiv && nextFixtureDay !== null && indiv.session!.date < nextFixtureDay;
+
 /*
  * Trois actualités à l'écran, une fenêtre plus large en mémoire.
  *
@@ -144,20 +150,21 @@ const nextSession = sessionComesFirst ? firstSession : null;
       )}
 
       <!--
-        Avant l'agenda du club : une rencontre d'interclubs engage l'adhérent
-        personnellement, là où l'agenda l'invite.
+        Avant l'agenda du club, les deux rendez-vous qui engagent l'adhérent personnellement :
+        sa prochaine rencontre d'interclubs et sa prochaine séance d'indiv. Dans l'ordre du
+        temps : la plus proche d'abord (à jour égal, la rencontre).
       -->
+      {showIndiv && indivFirst && (
+        <div class="mb-6">
+          <IndivCard session={indiv.session!} endpoint="/agenda" />
+        </div>
+      )}
       <div class="mb-6 empty:mb-0">
         <NextFixtureCard fixture={fixtures[0] ?? null} today={fixturesWindow.from} />
       </div>
-
-      <!--
-        Avant l'agenda, après les interclubs : la séance d'indiv est la mienne, et elle
-        se demande — l'agenda, lui, s'annonce.
-      -->
-      {indiv.eligible && indiv.session && (
+      {showIndiv && !indivFirst && (
         <div class="mb-6">
-          <IndivCard session={indiv.session} endpoint="/agenda" />
+          <IndivCard session={indiv.session!} endpoint="/agenda" />
         </div>
       )}
 
