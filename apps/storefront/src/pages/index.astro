@@ -139,7 +139,7 @@ const nextSession = sessionComesFirst ? firstSession : null;
 
       {datedClubFixtures.length > 0 && (
         <div class="mb-6">
-          <ClubFixturesStrip fixtures={datedClubFixtures} weekend={fixturesWindow.weekend} />
+          <ClubFixturesStrip fixtures={datedClubFixtures} weekend={fixturesWindow.weekend} today={fixturesWindow.from} />
         </div>
       )}
 

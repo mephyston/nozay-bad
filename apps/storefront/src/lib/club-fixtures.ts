@@ -71,3 +71,30 @@ export function fixtureWhen(fixture: Pick<ClubFixture, 'date' | 'weekStart'>): s
   const time = /T(\d{2}):(\d{2})/.exec(fixture.date);
   return time ? `${day} · ${Number(time[1])} h${time[2] === '00' ? '' : ` ${time[2]}`}` : day;
 }
+
+/** « 20 h », « 20 h 30 » ; `null` sans heure saisie. */
+function hourOf(date: string): string | null {
+  const time = /T(\d{2}):(\d{2})/.exec(date);
+  return time ? `${Number(time[1])} h${time[2] === '00' ? '' : ` ${time[2]}`}` : null;
+}
+
+/**
+ * Le moment, au plus court, pour l'encart de l'accueil : il dit déjà « aujourd'hui » ou « ce
+ * week-end ». Le jour même, l'heure suffit ; le lendemain, « Demain » ; au-delà, le jour de la
+ * semaine. La date complète reste dans le calendrier.
+ */
+export function fixtureWhenShort(fixture: Pick<ClubFixture, 'date'>, today: string): string {
+  if (!fixture.date) return '';
+  const day = fixture.date.slice(0, 10);
+  const hour = hourOf(fixture.date);
+  const [y, m, d] = day.split('-').map(Number);
+  const tomorrow = new Date(Date.UTC(Number(today.slice(0, 4)), Number(today.slice(5, 7)) - 1, Number(today.slice(8, 10)) + 1)).toISOString().slice(0, 10);
+  if (day === today) return hour ?? "Aujourd'hui";
+  const label = day === tomorrow ? 'Demain' : DAYS[new Date(Date.UTC(y, m - 1, d)).getUTCDay()].replace(/^./, (c) => c.toUpperCase());
+  return hour ? `${label} · ${hour}` : label;
+}
+
+/** « J3 », ou le libellé d'une journée particulière (« Barrages aller »). */
+export function dayShort(fixture: Pick<ClubFixture, 'dayLabel' | 'dayNumber'>): string {
+  return fixture.dayLabel ?? `J${fixture.dayNumber}`;
+}

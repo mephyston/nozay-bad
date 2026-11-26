@@ -1,12 +1,14 @@
 ---
-import { fixtureWhen, teamColor, type ClubFixture } from '../lib/club-fixtures';
+import { dayShort, fixtureWhenShort, teamColor, type ClubFixture } from '../lib/club-fixtures';
 
 interface Props {
   fixtures: ClubFixture[];
   weekend: boolean;
+  /** Jour civil du club : le jour même, l'heure suffit. */
+  today: string;
 }
 
-const { fixtures, weekend } = Astro.props;
+const { fixtures, weekend, today } = Astro.props;
 ---
 
 {/*
@@ -34,13 +36,16 @@ const { fixtures, weekend } = Astro.props;
             href={`/equipes/${fixture.teamId}/journee/${fixture.dayNumber}`}
             class="flex h-full flex-col rounded-lg border border-border bg-background px-3 py-2.5 hover:bg-muted/50"
           >
+            {/* Le match en titre : « NBA91-1 vs Orsay 3 », tel que le capitaine a saisi l'adversaire. */}
             <span class="flex items-center gap-2">
               <span class="size-2.5 shrink-0 rounded-full" style={`background-color: ${teamColor(fixture.teamNumber)}`} aria-hidden="true"></span>
-              <span class="truncate font-semibold text-foreground">{fixture.teamName}</span>
+              <span class="truncate font-semibold text-foreground">
+                {fixture.teamName}{fixture.opponent ? ` vs ${fixture.opponent}` : ''}
+              </span>
             </span>
-            <span class="mt-0.5 text-xs text-muted-foreground">{fixture.championshipLabel} · {fixture.dayLabel ?? `Journée ${fixture.dayNumber}`}</span>
-            <span class="mt-2 text-sm text-foreground first-letter:uppercase">{fixtureWhen(fixture)}</span>
-            <span class="text-sm text-foreground">{fixture.opponent ? `contre ${fixture.opponent}` : 'adversaire à préciser'}</span>
+            <span class="mt-0.5 text-xs text-muted-foreground">{fixture.championshipLabel} · {dayShort(fixture)}</span>
+            <span class="mt-2 text-sm font-medium text-foreground">{fixtureWhenShort(fixture, today)}</span>
+            {!fixture.opponent && <span class="text-xs text-muted-foreground">Adversaire à préciser</span>}
             {fixture.venue && <span class="mt-0.5 truncate text-xs text-muted-foreground">{fixture.venue}</span>}
           </a>
         </li>
