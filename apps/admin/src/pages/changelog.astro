@@ -69,15 +69,17 @@ const day = (date: string) => new Date(`${date}T12:00:00Z`).toLocaleDateString('
             )}
 
             {month.improvements.length > 0 && (
-              <ul class="space-y-1.5 rounded-xl border bg-card p-4 text-sm">
-                <li class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Plus rapide</li>
-                {month.improvements.map((entry) => (
-                  <li data-release-date={entry.date} class="flex flex-wrap items-baseline gap-x-2">
-                    <span>{entry.text}</span>
-                    {entry.areas.length > 0 && <span class="text-xs text-muted-foreground">{entry.areas.join(' · ')}</span>}
-                  </li>
-                ))}
-              </ul>
+              <div class="rounded-xl border bg-card p-4 text-sm">
+                <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Plus rapide</p>
+                <ul class="mt-2 list-disc space-y-1.5 pl-5 marker:text-muted-foreground/60">
+                  {month.improvements.map((entry) => (
+                    <li data-release-date={entry.date}>
+                      <span>{entry.text}</span>
+                      {entry.areas.length > 0 && <span class="ml-2 text-xs text-muted-foreground">{entry.areas.join(' · ')}</span>}
+                    </li>
+                  ))}
+                </ul>
+              </div>
             )}
 
             {month.fixes.length > 0 && (
@@ -86,11 +88,11 @@ const day = (date: string) => new Date(`${date}T12:00:00Z`).toLocaleDateString('
                   <span class="inline-block transition-transform group-open:rotate-90" aria-hidden="true">›</span>
                   {month.fixes.length === 1 ? '1 correction' : `${month.fixes.length} corrections`} ce mois-ci
                 </summary>
-                <ul class="mt-3 space-y-1.5 text-muted-foreground">
+                <ul class="mt-3 list-disc space-y-1.5 pl-5 text-muted-foreground marker:text-muted-foreground/60">
                   {month.fixes.map((entry) => (
-                    <li data-release-date={entry.date} class="flex flex-wrap items-baseline gap-x-2">
+                    <li data-release-date={entry.date}>
                       <span class="text-foreground/80">{entry.text}</span>
-                      {entry.areas.length > 0 && <span class="text-xs">{entry.areas.join(' · ')}</span>}
+                      {entry.areas.length > 0 && <span class="ml-2 text-xs">{entry.areas.join(' · ')}</span>}
                     </li>
                   ))}
                 </ul>
