@@ -2,7 +2,8 @@
 import Layout from '../layouts/Layout.astro';
 import AdminLayout from '../components/AdminLayout.svelte';
 import { PageHeader } from '@nba/ui';
-import { Content } from '../../../../CHANGELOG.md';
+import changelog from '../../../../CHANGELOG.md?raw';
+import { groupByMonth, parseReleaseNotes, type ReleaseEntry } from '../lib/release-notes';
 
 /*
   Page figée.
@@ -12,21 +13,127 @@ import { Content } from '../../../../CHANGELOG.md';
   prerender supprime est le rendu, pas l'invocation.
 
   Corollaire : la page ne porte aucune donnée, aucune identité et aucun paramètre d'URL.
-  L'îlot demande les siennes au relais, et lit l'URL dans le navigateur.
+  « Nouveau depuis votre visite » se décide donc dans le navigateur (script plus bas).
+
+  Le contenu vient de `CHANGELOG.md`, reconstitué à chaque déploiement depuis les Releases
+  GitHub : `lib/release-notes.ts` en garde le texte et en jette le technique.
 */
 export const prerender = true;
+
+const months = groupByMonth(parseReleaseNotes(changelog));
+/** Au-delà, les nouveautés d'un mois se déplient : septembre 2026 en compte plus de cent cinquante. */
+const VISIBLE_FEATURES = 6;
+
+const badges = (entry: ReleaseEntry) => [...entry.areas, ...(entry.audience ? [entry.audience] : [])];
+const day = (date: string) => new Date(`${date}T12:00:00Z`).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', timeZone: 'UTC' });
 ---
 
 <Layout title="Nouveautés">
   <AdminLayout client:idle breadcrumb="Nouveautés">
     <div class="space-y-6 pb-20">
-      <PageHeader
-        title="Nouveautés"
-        description="Historique des versions et changements de l'application."
-      />
-      <div class="prose prose-sm dark:prose-invert max-w-4xl bg-card text-card-foreground p-6 md:p-8 rounded-xl border shadow-sm">
-        <Content />
+      <PageHeader title="Nouveautés" description="Ce qui change dans l'application, mois par mois." />
+
+      {months.length === 0 && <p class="text-sm text-muted-foreground">Aucune nouveauté à afficher pour le moment.</p>}
+
+      <div class="max-w-4xl space-y-10">
+        {months.map((month) => (
+          <section class="space-y-3" aria-labelledby={`mois-${month.key}`}>
+            <h2 id={`mois-${month.key}`} class="text-lg font-semibold">{month.label}</h2>
+
+            {month.features.length > 0 && (
+              <ul class="grid gap-3 sm:grid-cols-2">
+                {month.features.map((entry, i) => (
+                  <li
+                    data-release-date={entry.date}
+                    class:list={['relative rounded-xl border border-primary/30 bg-primary/5 p-4', i >= VISIBLE_FEATURES && 'hidden data-[more=open]:block']}
+                    data-more-of={i >= VISIBLE_FEATURES ? month.key : undefined}
+                  >
+                    <div class="mb-2 flex flex-wrap items-center gap-1.5 text-xs">
+                      <span class="inline-flex items-center gap-1 font-semibold text-primary">
+                        <svg viewBox="0 0 24 24" class="size-3.5" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z" /></svg>
+                        Nouveauté
+                      </span>
+                      {badges(entry).map((badge) => <span class="rounded-full bg-background px-2 py-0.5 text-muted-foreground">{badge}</span>)}
+                      <span class="release-new hidden rounded-full bg-primary px-2 py-0.5 font-semibold text-primary-foreground">Nouveau pour vous</span>
+                    </div>
+                    <p class="text-sm font-medium leading-snug text-foreground">{entry.text}</p>
+                    <p class="mt-1 text-xs text-muted-foreground">{day(entry.date)}</p>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {month.features.length > VISIBLE_FEATURES && (
+              <button type="button" class="text-sm font-medium text-primary underline-offset-4 hover:underline" data-more-toggle={month.key}>
+                Voir les {month.features.length - VISIBLE_FEATURES} autres nouveautés
+              </button>
+            )}
+
+            {month.improvements.length > 0 && (
+              <ul class="space-y-1.5 rounded-xl border bg-card p-4 text-sm">
+                <li class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Plus rapide</li>
+                {month.improvements.map((entry) => (
+                  <li data-release-date={entry.date} class="flex flex-wrap items-baseline gap-x-2">
+                    <span>{entry.text}</span>
+                    {entry.areas.length > 0 && <span class="text-xs text-muted-foreground">{entry.areas.join(' · ')}</span>}
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            {month.fixes.length > 0 && (
+              <details class="group rounded-xl border border-dashed px-4 py-3 text-sm">
+                <summary class="cursor-pointer list-none text-muted-foreground marker:hidden">
+                  <span class="inline-block transition-transform group-open:rotate-90" aria-hidden="true">›</span>
+                  {month.fixes.length === 1 ? '1 correction' : `${month.fixes.length} corrections`} ce mois-ci
+                </summary>
+                <ul class="mt-3 space-y-1.5 text-muted-foreground">
+                  {month.fixes.map((entry) => (
+                    <li data-release-date={entry.date} class="flex flex-wrap items-baseline gap-x-2">
+                      <span class="text-foreground/80">{entry.text}</span>
+                      {entry.areas.length > 0 && <span class="text-xs">{entry.areas.join(' · ')}</span>}
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            )}
+          </section>
+        ))}
       </div>
     </div>
   </AdminLayout>
 </Layout>
+
+<script>
+  /*
+    « Nouveau pour vous » : les nouveautés publiées depuis la dernière visite de cet écran,
+    sur cet appareil. La date de la visite précédente est lue, puis remplacée par la plus
+    récente des notes. Première visite : rien n'est marqué, tout serait « nouveau ».
+  */
+  // Navigation douce de l'admin : un script de page ne s'exécute qu'une fois, `astro:page-load`
+  // le rejoue à chaque arrivée sur l'écran.
+  document.addEventListener('astro:page-load', () => {
+    if (!document.querySelector('[data-release-date]')) return;
+    const KEY = 'nba:changelog-seen';
+    const dated = [...document.querySelectorAll<HTMLElement>('[data-release-date]')];
+    const latest = dated.reduce((max, el) => (el.dataset.releaseDate! > max ? el.dataset.releaseDate! : max), '');
+    let seen: string | null = null;
+    try {
+      seen = localStorage.getItem(KEY);
+      if (latest) localStorage.setItem(KEY, latest);
+    } catch {
+      // Stockage refusé : pas de marque, la page reste lisible.
+    }
+    if (seen) {
+      for (const el of dated) {
+        if (el.dataset.releaseDate! > seen) el.querySelector('.release-new')?.classList.remove('hidden');
+      }
+    }
+
+    for (const button of document.querySelectorAll<HTMLButtonElement>('[data-more-toggle]')) {
+      button.addEventListener('click', () => {
+        for (const el of document.querySelectorAll<HTMLElement>(`[data-more-of="${button.dataset.moreToggle}"]`)) el.dataset.more = 'open';
+        button.remove();
+      });
+    }
+  });
+</script>
