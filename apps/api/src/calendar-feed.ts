@@ -5,7 +5,8 @@ import { createDb, type Db } from '@nba/db';
 import { getClubSettings, localDate } from '@nba/club/settings';
 import { listEvents, type ClubEventListItem } from '@nba/events-api';
 import { listOpenPlaySessions, type OpenPlaySessionListItem } from '@nba/schedules-api';
-import { listMyFixtures, type MyFixture } from '@nba/teams-api';
+import { getSeasonAtDate } from '@nba/accounting-api';
+import { listClubFixtures, listMyFixtures, type ClubFixture, type MyFixture } from '@nba/teams-api';
 import { resolveCalendarProfileByLicence, resolveCalendarProfileByToken, type CalendarProfile } from '@nba/members-api';
 import { isolateFeatures, type ClubFeatureBindings } from './club-features';
 import { googleCalendarUrl, isValidLocalDate, renderCalendar, type CalendarItem } from './calendar-ics';
@@ -182,6 +183,44 @@ calendarFeedRouter.get(
     });
   }
 );
+
+/**
+ * Toutes les rencontres du club, pour qui veut suivre les autres équipes.
+ *
+ * Une adresse unique et sans jeton : elle ne dit que ce que l'espace adhérent montre à tout
+ * adhérent — quand, où, contre qui —, jamais une composition ni un nom. Seules les rencontres
+ * datées : une semaine sans jour n'a rien de juste à inscrire dans un agenda.
+ */
+function clubFixtureItem(fixture: ClubFixture, domain: string): CalendarItem | null {
+  if (!fixture.date) return null;
+  const against = fixture.opponent ? ` contre ${fixture.opponent}` : '';
+  return {
+    uid: `club-fixture-${fixture.teamId}-${fixture.dayNumber}@${domain}`,
+    title: `${fixture.teamName} · ${fixture.dayLabel ?? `J${fixture.dayNumber}`}${against}`,
+    start: fixture.date,
+    end: null,
+    allDay: fixture.date.length <= 10,
+    location: fixture.venue,
+    description: `${fixture.championshipLabel} · ${fixture.divisionLabel}`,
+    url: null,
+    cancelled: false
+  };
+}
+
+// Littérale : avant `/:hash`.
+calendarFeedRouter.get('/club-fixtures', async (c) => {
+  if (!c.env?.DB) return c.json({ success: false, error: 'Database binding DB is missing' }, 500);
+  const db = createDb(c.env.DB);
+  const now = new Date();
+  const { name, timezone } = await getClubSettings(db);
+  const features = await isolateFeatures(c.env);
+  const season = features.teams ? await getSeasonAtDate(db, localDate(now, timezone)) : null;
+  const { fixtures } = season ? await listClubFixtures(db, { seasonCode: season.code }, now) : { fixtures: [] };
+  const domain = uidDomain(name);
+  const items = fixtures.flatMap((fixture) => clubFixtureItem(fixture, domain) ?? []).filter((item) => isValidLocalDate(item.start));
+  const body = renderCalendar({ name: `${name} – rencontres du club`, timeZone: timezone, items, now });
+  return c.body(body, 200, { 'Content-Type': 'text/calendar; charset=utf-8' });
+});
 
 calendarFeedRouter.get(
   '/:hash',

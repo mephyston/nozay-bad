@@ -48,6 +48,11 @@ export const NOTIFICATION_CATEGORIES = [
     id: 'interclubs',
     label: 'Mes équipes interclubs',
     description: 'Convocations, rappels de composition et anomalies de valeur de vos équipes.'
+  },
+  {
+    id: 'club_fixtures',
+    label: 'Rencontres du club',
+    description: 'Le matin d’un jour de match, les rencontres de toutes les équipes du club.'
   }
 ] as const;
 

@@ -51,6 +51,10 @@ const CACHED_READS = new Map<string, number>([
   ['/schedules/venues', 300],
   ['/shop/products', 300],
   ['/teams', 300],
+  // Les rencontres de tout le club : les mêmes pour tous, lues à chaque accueil du week-end.
+  ['/teams/club-fixtures', 300],
+  // Le flux d'agenda de toutes les rencontres : une heure, comme les flux personnels.
+  ['/calendar-feed/club-fixtures', 3600],
   ['/teams/days', 300],
   ['/teams/players', 300]
 ]);

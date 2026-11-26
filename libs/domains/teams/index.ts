@@ -24,6 +24,7 @@ import { saveLineupRoute } from './save-lineup/route';
 import { saveFixtureDateRoute } from './save-fixture-date/route';
 import { notifyCaptainRoute } from './notify-captain/route';
 import { listMyFixturesRoute } from './list-my-fixtures/route';
+import { listClubFixturesRoute } from './list-club-fixtures/route';
 
 export type Bindings = {
   DB: D1Database;
@@ -42,6 +43,7 @@ teamsRouter.route('/', saveChampionshipSettingsRoute);
 teamsRouter.route('/', listChampionshipDaysRoute);
 teamsRouter.route('/', saveChampionshipDaysRoute);
 teamsRouter.route('/', listMyFixturesRoute);
+teamsRouter.route('/', listClubFixturesRoute);
 teamsRouter.route('/', listTeamsRoute);
 teamsRouter.route('/', saveTeamRoute);
 teamsRouter.route('/', saveTeamStaffRoute);
@@ -89,6 +91,7 @@ export { saveLineup } from './save-lineup/handler';
 export { saveFixtureDate } from './save-fixture-date/handler';
 export { notifyCaptain } from './notify-captain/handler';
 export { listMyFixtures } from './list-my-fixtures/handler';
+export { listClubFixtures } from './list-club-fixtures/handler';
 export { notifyLineup } from './notify-lineup/handler';
 
 export type { ImportRankingsInput, ImportRankingsOutput, UnmatchedCompetitor } from './import-rankings/dto';
@@ -111,6 +114,7 @@ export type { SaveLineupInput, SaveLineupSlot } from './save-lineup/dto';
 export type { SaveFixtureDateInput, SaveFixtureDateOutput } from './save-fixture-date/dto';
 export type { NotifyCaptainInput, NotifyCaptainOutput } from './notify-captain/dto';
 export type { ListMyFixturesInput, ListMyFixturesOutput, MyFixture } from './list-my-fixtures/dto';
+export type { ClubFixture, ClubTeam, ListClubFixturesInput, ListClubFixturesOutput } from './list-club-fixtures/dto';
 export type { NotifyLineupInput, NotifyLineupOutput } from './notify-lineup/dto';
 // Rappels programmés et constat automatique de valeur : consommés par le cron du
 // Worker API (`apps/api/src/scheduled.ts`) et par `save-lineup`.

@@ -23,7 +23,7 @@ describe('préférences de notification', () => {
   it('active toutes les catégories tant que rien n\'a été réglé', async () => {
     const prefs = await getPreferences(db, 'a@example.com');
 
-    expect(prefs).toHaveLength(8);
+    expect(prefs).toHaveLength(9);
     expect(prefs.every((p) => p.enabled)).toBe(true);
     expect(prefs.map((p) => p.id)).toEqual([
       'announcement',
@@ -36,7 +36,9 @@ describe('préférences de notification', () => {
       // Réponse de l'entraîneur à une candidature de séance individuelle.
       'indiv',
       // Anomalie signalée par le coach sur une composition d'interclubs.
-      'interclubs'
+      'interclubs',
+      // Les rencontres de toutes les équipes, le matin d'un jour de match.
+      'club_fixtures'
     ]);
   });
 

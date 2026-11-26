@@ -20,6 +20,7 @@ import {
   type VapidEnv
 } from '@nba/notifications-api';
 import { sendOpenPlayBoardAlert } from './open-play-board-alert';
+import { sendClubFixturesAnnouncement } from './club-fixtures-announcement';
 
 export type ScheduledBindings = SumUpBindings & {
   DB: D1Database;
@@ -372,6 +373,11 @@ export async function handleScheduled(
         }
         if (on('reminder_open_play_board')) {
           await sendOpenPlayBoardAlert(db, season, now, clock.date);
+        }
+        // Avec les anniversaires : un seul passage du matin. Le club qui a des équipes
+        // les annonce ; chacun s'en désabonne par la catégorie « Rencontres du club ».
+        if (on('teams')) {
+          await sendClubFixturesAnnouncement(db, season, now, clock.date);
         }
         if (on('reminder_lineups')) {
           const { reminded } = await remindMissingLineups(

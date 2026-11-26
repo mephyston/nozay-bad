@@ -1792,6 +1792,10 @@
               {
                 "const": "interclubs",
                 "type": "string"
+              },
+              {
+                "const": "club_fixtures",
+                "type": "string"
               }
             ]
           }

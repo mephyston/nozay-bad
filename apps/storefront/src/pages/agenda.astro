@@ -3,6 +3,8 @@ import Layout from '../layouts/Layout.astro';
 import Header from '../components/Header.astro';
 import SegmentedNav from '../components/SegmentedNav.astro';
 import MobileNav from '../components/MobileNav.svelte';
+import ClubFixturesList from '../components/ClubFixturesList.astro';
+import TeamFilter from '../components/TeamFilter.svelte';
 import EventRow from '../components/EventRow.astro';
 import OpenPlayRow from '../components/OpenPlayRow.astro';
 import IndivCard from '../components/IndivCard.astro';
@@ -21,6 +23,7 @@ import { fetchUpcomingEvents } from '../lib/agenda';
 import { fetchAnnouncements, ANNOUNCEMENT_LOOKUP_LIMIT, postAnchor } from '../lib/posts';
 import { announcementsByEvent } from '@nba/cms/public';
 import { fetchMyFixtures, normalizeLicence } from '../lib/my-fixtures';
+import { fetchClubFixtures } from '../lib/club-fixtures';
 import { toFixtureEntries } from '../lib/fixture-events';
 
 /**
@@ -249,8 +252,11 @@ const active = session?.members.find((m) => m.id === session.activeMemberId);
  */
 const openPlayEnabled = featureOn(Astro.locals.club, 'open_play');
 const indivEnabled = featureOn(Astro.locals.club, 'indiv');
+const teamsEnabled = featureOn(Astro.locals.club, 'teams');
+// Lue avant les autres : la vue « Interclubs » est la seule à demander toutes les rencontres du club.
+const interclubsView = teamsEnabled && Astro.url.searchParams.get('vue') === 'interclubs';
 
-const [events, myFixtures, annonces, openPlay, indiv] = await Promise.all([
+const [events, myFixtures, annonces, openPlay, indiv, clubFixtures] = await Promise.all([
   fetchUpcomingEvents(env, 50, session?.activeMemberId),
   fetchMyFixtures(env, status.seasonCode ?? null, normalizeLicence(active?.licence)),
   fetchAnnouncements(env, ANNOUNCEMENT_LOOKUP_LIMIT),
@@ -266,7 +272,8 @@ const [events, myFixtures, annonces, openPlay, indiv] = await Promise.all([
   // Une seule soirée d'indiv, en tête de frise, pour les groupes compétiteurs seulement.
   indivEnabled
     ? fetchNextIndivSession(env, { memberId: session?.activeMemberId, group: status.membershipType })
-    : Promise.resolve({ session: null, eligible: false })
+    : Promise.resolve({ session: null, eligible: false }),
+  interclubsView ? fetchClubFixtures(env, status.seasonCode ?? null) : Promise.resolve({ fixtures: [], teams: [] })
 ]);
 
 /*
@@ -298,11 +305,20 @@ type Row =
 const VIEWS = [
   { id: 'tout', label: 'Tout' },
   { id: 'rendez-vous', label: 'Rendez-vous' },
-  { id: 'jeu-libre', label: 'Jeu libre' }
+  { id: 'jeu-libre', label: 'Jeu libre' },
+  { id: 'interclubs', label: 'Interclubs' }
 ] as const;
+// Une vue n'existe que si le club tient la rubrique qu'elle montre.
+const views = VIEWS.filter((v) => (v.id === 'jeu-libre' ? openPlayEnabled : v.id === 'interclubs' ? teamsEnabled : true));
 
 const requested = Astro.url.searchParams.get('vue');
-const view = VIEWS.some((v) => v.id === requested) ? requested : 'tout';
+const view = views.some((v) => v.id === requested) ? requested : 'tout';
+
+// Vue « Interclubs » : toutes les rencontres du club, filtrables par équipe.
+const teamParam = Astro.url.searchParams.get('equipe') ?? '';
+const selectedTeam = clubFixtures.teams.some((t) => String(t.id) === teamParam) ? teamParam : '';
+const shownClubFixtures = selectedTeam ? clubFixtures.fixtures.filter((f) => String(f.teamId) === selectedTeam) : clubFixtures.fixtures;
+const myTeamIds = [...new Set(myFixtures.map((f) => f.teamId))];
 
 const rows: Row[] = [
   ...events.map((event) => ({ kind: 'event' as const, at: event.startsAt, event, entry: null })),
@@ -327,7 +343,11 @@ const today = new Date().toISOString().slice(0, 10);
       <div class="mb-4 flex items-center gap-1">
         <h1 class="text-2xl font-bold text-foreground sm:text-3xl">Calendrier</h1>
         {featureOn(Astro.locals.club, 'calendar_feed') && active && (
-          <CalendarSubscribe client:idle firstName={active.firstName} />
+          <CalendarSubscribe
+            client:idle
+            firstName={active.firstName}
+            clubFeedUrl={teamsEnabled ? new URL('/calendrier/rencontres-du-club.ics', Astro.url.origin).toString() : null}
+          />
         )}
       </div>
 
@@ -336,16 +356,22 @@ const today = new Date().toISOString().slice(0, 10);
         l'adresse doit pouvoir se partager et le retour arrière fonctionner. C'est aussi
         ce qui les rend utilisables sans JavaScript.
       */}
-      {openPlayEnabled && (
+      {views.length > 2 ? (
         <SegmentedNav
           class="mb-4"
           label="Filtrer le calendrier"
-          items={VIEWS.map((v) => ({
+          items={views.map((v) => ({
             href: v.id === 'tout' ? '/agenda' : `/agenda?vue=${v.id}`,
             label: v.label,
             actif: view === v.id
           }))}
         />
+      ) : null}
+
+      {view === 'interclubs' && clubFixtures.teams.length > 1 && (
+        <div class="mb-4">
+          <TeamFilter client:load teams={clubFixtures.teams} selected={selectedTeam} />
+        </div>
       )}
 
       {indiv.eligible && indiv.session && view === 'tout' && (
@@ -354,7 +380,9 @@ const today = new Date().toISOString().slice(0, 10);
         </div>
       )}
 
-      {rows.length === 0 ? (
+      {view === 'interclubs' ? (
+        <ClubFixturesList fixtures={shownClubFixtures} myTeamIds={myTeamIds} filtered={selectedTeam !== ''} />
+      ) : rows.length === 0 ? (
         <p class="rounded-xl border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">
           {view === 'jeu-libre'
             ? 'Aucune séance de jeu libre dans les quinze prochains jours.'

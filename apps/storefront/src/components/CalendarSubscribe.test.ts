@@ -99,6 +99,22 @@ describe("abonnement à l'agenda", () => {
     });
   });
 
+  it("propose aussi l'adresse commune de toutes les rencontres, quand le club en a", async () => {
+    const target = document.createElement('div');
+    document.body.appendChild(target);
+    app = mount(CalendarSubscribe, { target, props: { firstName: 'Léo', clubFeedUrl: 'https://espace.example/calendrier/rencontres-du-club.ics' } });
+    flushSync();
+    byId('calendar-subscribe')!.click();
+    await settle();
+    const hrefs = Array.from(byId('calendar-club-feed')!.querySelectorAll('a')).map((a) => a.getAttribute('href'));
+    expect(hrefs).toContain('webcal://espace.example/calendrier/rencontres-du-club.ics');
+  });
+
+  it("sans équipes au club, pas d'adresse commune", async () => {
+    app = await openSheet();
+    expect(byId('calendar-club-feed')).toBeNull();
+  });
+
   it("n'écrase une adresse existante qu'après confirmation", async () => {
     answers.GET = { ok: true, subscribed: true };
     app = await openSheet();

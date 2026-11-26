@@ -39,6 +39,7 @@ export const ROUTE_PERMISSIONS: RouteRule[] = [
   // Appelées par le seul storefront. `:hash` est l'empreinte d'un jeton que seul le
   // titulaire de l'adresse connaît ; la licence de `/item` et de `/members/calendar-feed`
   // vient de la session. Rien de nominatif hors du prénom du profil concerné.
+  { method: 'GET', path: '/calendar-feed/club-fixtures', permission: 'teams:teams:read', service: true, feature: 'calendar_feed' },
   { method: 'GET', path: '/calendar-feed/item', permission: 'members:members:read', service: true, feature: 'calendar_feed' },
   { method: 'GET', path: '/calendar-feed/:hash', permission: 'members:members:read', service: true, feature: 'calendar_feed' },
   { method: 'GET', path: '/members/calendar-feed', permission: 'members:members:read', service: true, feature: 'calendar_feed' },
@@ -505,6 +506,7 @@ export const ROUTE_PERMISSIONS: RouteRule[] = [
   // montre à tout le club ses équipes et leur staff. L'écriture ne l'est pas : créer une
   // équipe ou désigner un capitaine relève du coach, depuis l'administration.
   { method: 'GET', path: '/teams/my-fixtures', permission: 'teams:teams:read', service: true, feature: 'teams' },
+  { method: 'GET', path: '/teams/club-fixtures', permission: 'teams:teams:read', service: true, feature: 'teams' },
   { method: 'GET', path: '/teams', permission: 'teams:teams:read', service: true, feature: 'teams' },
   { method: 'POST', path: '/teams', permission: 'teams:teams:write', feature: 'teams' },
   // Fiche adhérent de l'espace adhérent : les équipes et les classements d'UNE licence.

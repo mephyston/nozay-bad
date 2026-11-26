@@ -1,0 +1,54 @@
+---
+import { fixtureWhen, teamColor, type ClubFixture } from '../lib/club-fixtures';
+
+interface Props {
+  fixtures: ClubFixture[];
+  /** Les équipes de l'adhérent : leurs rencontres restent mises en avant. */
+  myTeamIds: number[];
+  filtered: boolean;
+}
+
+const { fixtures, myTeamIds, filtered } = Astro.props;
+const mine = new Set(myTeamIds);
+---
+
+{/*
+  Toutes les rencontres du club, dans l'ordre du temps. Une pastille de couleur par équipe,
+  toujours suivie de son nom ; les rencontres de l'adhérent gardent la carte pleine et le
+  badge « Mon équipe », celles des autres équipes sont plus légères.
+*/}
+{fixtures.length === 0 ? (
+  <p class="rounded-xl border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">
+    {filtered ? 'Aucune rencontre à venir pour cette équipe.' : 'Aucune rencontre à venir pour le moment.'}
+  </p>
+) : (
+  <ul class="space-y-2">
+    {fixtures.map((fixture) => {
+      const own = mine.has(fixture.teamId);
+      return (
+        <li>
+          <a
+            href={`/equipes/${fixture.teamId}/journee/${fixture.dayNumber}`}
+            class:list={[
+              'flex items-start gap-3 rounded-xl border p-3 sm:p-4',
+              own ? 'border-border bg-card shadow-sm' : 'border-border/60 bg-card/50'
+            ]}
+          >
+            <span class="mt-1.5 size-2.5 shrink-0 rounded-full" style={`background-color: ${teamColor(fixture.teamNumber)}`} aria-hidden="true"></span>
+            <span class="min-w-0 flex-1">
+              <span class="flex flex-wrap items-center gap-x-2 gap-y-1">
+                <span class="text-sm font-semibold text-foreground">{fixture.teamName}</span>
+                {own && <span class="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">Mon équipe</span>}
+                <span class="text-xs text-muted-foreground">{fixture.championshipLabel} · {fixture.dayLabel ?? `J${fixture.dayNumber}`}</span>
+              </span>
+              <span class:list={['mt-1 block text-sm first-letter:uppercase', own ? 'text-foreground' : 'text-foreground/80']}>
+                {fixtureWhen(fixture)}{fixture.opponent ? ` · contre ${fixture.opponent}` : ''}
+              </span>
+              {fixture.venue && <span class="block text-xs text-muted-foreground">{fixture.venue}</span>}
+            </span>
+          </a>
+        </li>
+      );
+    })}
+  </ul>
+)}

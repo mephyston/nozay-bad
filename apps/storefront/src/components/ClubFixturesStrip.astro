@@ -1,0 +1,46 @@
+---
+import { fixtureWhen, teamColor, type ClubFixture } from '../lib/club-fixtures';
+
+interface Props {
+  fixtures: ClubFixture[];
+  weekend: boolean;
+}
+
+const { fixtures, weekend } = Astro.props;
+---
+
+{/*
+  Les rencontres de toutes les équipes, le week-end dès le vendredi, le jour même en semaine.
+
+  Une bande qui défile à l'horizontale, à hauteur fixe : dix équipes qui jouent ne doivent
+  pas repousser l'accueil d'autant d'écrans. Elle n'apparaît que lorsqu'il y a un match daté,
+  comme l'encart des anniversaires. Chaque vignette porte la couleur de son équipe, mais
+  aussi son nom : la couleur seule ne se lit pas pour tout le monde.
+*/}
+{fixtures.length > 0 && (
+  <section aria-labelledby="rencontres-club-title">
+    <div class="mb-2 flex items-baseline justify-between gap-3">
+      <h2 id="rencontres-club-title" class="text-base font-semibold text-foreground">
+        {weekend ? 'Ce week-end, nos équipes jouent' : "Aujourd'hui, nos équipes jouent"}
+      </h2>
+      <a href="/agenda?vue=interclubs" class="shrink-0 text-sm font-semibold text-primary hover:underline">Tout voir</a>
+    </div>
+    <ul class="-mx-3 flex snap-x snap-mandatory gap-3 overflow-x-auto px-3 pb-2 sm:mx-0 sm:px-0" style="scrollbar-width: none">
+      {fixtures.map((fixture) => (
+        <li class="w-64 shrink-0 snap-start">
+          <a
+            href={`/equipes/${fixture.teamId}/journee/${fixture.dayNumber}`}
+            class="flex h-full flex-col rounded-xl border border-border bg-card p-3 shadow-sm"
+            style={`border-left: 4px solid ${teamColor(fixture.teamNumber)}`}
+          >
+            <span class="text-sm font-semibold text-foreground">{fixture.teamName}</span>
+            <span class="text-xs text-muted-foreground">{fixture.championshipLabel} · {fixture.divisionLabel}</span>
+            <span class="mt-2 text-sm text-foreground">{fixture.opponent ? `contre ${fixture.opponent}` : 'adversaire à préciser'}</span>
+            <span class="mt-auto pt-2 text-xs font-medium text-foreground/80 first-letter:uppercase">{fixtureWhen(fixture)}</span>
+            {fixture.venue && <span class="text-xs text-muted-foreground">{fixture.venue}</span>}
+          </a>
+        </li>
+      ))}
+    </ul>
+  </section>
+)}

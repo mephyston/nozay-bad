@@ -2,7 +2,7 @@
   import { untrack } from 'svelte';
   import { CalendarPlus } from '@lucide/svelte';
   import { Sheet } from '@nba/ui';
-  import { androidBrowserLink, calendarMailLink, isAndroid, type CalendarLinks } from '../lib/calendar-feed';
+  import { androidBrowserLink, calendarLinks, calendarMailLink, isAndroid, type CalendarLinks } from '../lib/calendar-feed';
 
   /**
    * L'abonnement du profil actif à son agenda.
@@ -14,9 +14,23 @@
    */
   interface Props {
     firstName: string;
+    /** L'adresse commune des rencontres de toutes les équipes, quand le club en a. */
+    clubFeedUrl?: string | null;
   }
 
-  let { firstName }: Props = $props();
+  let { firstName, clubFeedUrl = null }: Props = $props();
+  const clubLinks = $derived(clubFeedUrl ? calendarLinks(clubFeedUrl) : null);
+  let clubCopied = $state(false);
+
+  async function copyClub() {
+    if (!clubLinks) return;
+    try {
+      await navigator.clipboard.writeText(clubLinks.feed);
+      clubCopied = true;
+    } catch {
+      error = "La copie a échoué : sélectionnez l'adresse à la main.";
+    }
+  }
 
   const ENDPOINT = '/api/agenda/abonnement';
 
@@ -201,6 +215,30 @@
           <li>Les changements peuvent mettre plusieurs heures à arriver, parfois une journée avec Google : pour une annulation de dernière minute, fiez-vous aux notifications.</li>
           <li>Cette adresse donne accès à l'agenda de {firstName} : ne la partagez pas.</li>
         </ul>
+      {/if}
+
+      {#if clubLinks}
+        <!--
+          Une adresse commune, sans jeton : elle ne porte que ce que tout adhérent voit déjà dans
+          le calendrier (quand, où, contre qui), et peut donc se partager.
+        -->
+        <section class="space-y-2 border-t border-border pt-3" data-testid="calendar-club-feed">
+          <p class="font-medium text-foreground">Suivre toutes les équipes du club</p>
+          <p class="text-muted-foreground">Les rencontres datées de toutes les équipes, sans les compositions. Une adresse commune, qui peut se partager.</p>
+          {#if android}
+            <button type="button" class={secondary} onclick={copyClub} data-testid="calendar-club-copy">
+              {clubCopied ? 'Adresse copiée' : "Copier l'adresse des rencontres"}
+            </button>
+            <p class="text-muted-foreground">Puis ajoutez-la depuis la page de Google, comme ci-dessus, et activez « Synchroniser ».</p>
+            <a href={androidBrowserLink()} class={secondary}>Ouvrir Google Agenda dans Chrome</a>
+          {:else}
+            <a href={clubLinks.google} target="_blank" rel="noopener noreferrer" class={secondary}>Google Agenda</a>
+            <a href={clubLinks.webcal} class={secondary}>Apple Calendrier, Outlook</a>
+            <button type="button" class={secondary} onclick={copyClub} data-testid="calendar-club-copy">
+              {clubCopied ? 'Adresse copiée' : "Copier l'adresse des rencontres"}
+            </button>
+          {/if}
+        </section>
       {/if}
     </div>
   </Sheet.Content>

@@ -8,6 +8,7 @@ import AgendaCard from '../components/AgendaCard.astro';
 import IndivCard from '../components/IndivCard.astro';
 import NextFixtureCard from '../components/NextFixtureCard.astro';
 import BirthdayCard from '../components/BirthdayCard.astro';
+import ClubFixturesStrip from '../components/ClubFixturesStrip.astro';
 import { env } from 'cloudflare:workers';
 import { getActiveMemberStatus } from '../lib/member-status';
 import { fetchPosts, fetchAnnouncements, ANNOUNCEMENT_LOOKUP_LIMIT, postAnchor } from '../lib/posts';
@@ -18,6 +19,8 @@ import { fetchNextIndivSession } from '../lib/indiv';
 import { featureOn } from '@nba/club/context';
 import { fetchTodayBirthdays } from '../lib/birthdays';
 import { fetchMyFixtures, normalizeLicence } from '../lib/my-fixtures';
+import { fetchClubFixtures, homeFixturesWindow } from '../lib/club-fixtures';
+import { parisToday } from '../lib/season';
 
 const session = Astro.locals.session;
 const active = session?.members.find((m) => m.id === session.activeMemberId);
@@ -42,13 +45,15 @@ const licence = normalizeLicence(active?.licence);
 // Le jeu libre et les indiv suivent la configuration du club (Réglages → Fonctionnalités).
 const openPlayEnabled = featureOn(Astro.locals.club, 'open_play');
 const indivEnabled = featureOn(Astro.locals.club, 'indiv');
+// Les rencontres de toutes les équipes : le week-end dès le vendredi, le jour même en semaine.
+const fixturesWindow = homeFixturesWindow(parisToday(new Date(), Astro.locals.club?.settings.timezone));
 
 /*
  * Deux lectures d'actualités, et non plus une : trois articles à afficher, et l'index des
  * annonces. La lecture unique de cinquante articles complets servait surtout à en jeter
  * quarante-sept.
  */
-const [{ posts: latestPosts }, annonces, events, birthdays, fixtures, openPlay, indiv] = await Promise.all([
+const [{ posts: latestPosts }, annonces, events, birthdays, fixtures, openPlay, indiv, clubFixtures] = await Promise.all([
   fetchPosts(env, 3),
   fetchAnnouncements(env, ANNOUNCEMENT_LOOKUP_LIMIT),
   fetchUpcomingEvents(env, 1, session?.activeMemberId),
@@ -65,8 +70,13 @@ const [{ posts: latestPosts }, annonces, events, birthdays, fixtures, openPlay, 
   // l'API répond `eligible` d'après le type d'adhésion lu à l'instant.
   indivEnabled
     ? fetchNextIndivSession(env, { memberId: session?.activeMemberId, group: status.membershipType })
-    : Promise.resolve({ session: null, eligible: false })
+    : Promise.resolve({ session: null, eligible: false }),
+  featureOn(Astro.locals.club, 'teams')
+    ? fetchClubFixtures(env, status.seasonCode ?? null, fixturesWindow)
+    : Promise.resolve({ fixtures: [], teams: [] })
 ]);
+// Seules les rencontres datées : « ce week-end » ne vaut rien pour une semaine sans jour.
+const datedClubFixtures = clubFixtures.fixtures.filter((f) => f.date !== null);
 
 /*
  * Trois actualités à l'écran, une fenêtre plus large en mémoire.
@@ -124,6 +134,12 @@ const nextSession = sessionComesFirst ? firstSession : null;
       {birthdays.length > 0 && (
         <div class="mb-6">
           <BirthdayCard birthdays={birthdays} />
+        </div>
+      )}
+
+      {datedClubFixtures.length > 0 && (
+        <div class="mb-6">
+          <ClubFixturesStrip fixtures={datedClubFixtures} weekend={fixturesWindow.weekend} />
         </div>
       )}
 
