@@ -12,35 +12,45 @@ const { fixtures, weekend } = Astro.props;
 {/*
   Les rencontres de toutes les équipes, le week-end dès le vendredi, le jour même en semaine.
 
-  Une bande qui défile à l'horizontale, à hauteur fixe : dix équipes qui jouent ne doivent
-  pas repousser l'accueil d'autant d'écrans. Elle n'apparaît que lorsqu'il y a un match daté,
-  comme l'encart des anniversaires. Chaque vignette porte la couleur de son équipe, mais
-  aussi son nom : la couleur seule ne se lit pas pour tout le monde.
+  La même carte que « Prochaine rencontre » : en-tête avec son icône, contenu, pied avec le
+  lien. Dedans, une bande qui défile à l'horizontale, à hauteur fixe : dix équipes qui jouent
+  ne repoussent pas l'accueil d'autant d'écrans. La couleur de l'équipe n'est qu'une pastille,
+  comme dans le calendrier, et toujours accompagnée de son nom.
 */}
 {fixtures.length > 0 && (
-  <section aria-labelledby="rencontres-club-title">
-    <div class="mb-2 flex items-baseline justify-between gap-3">
+  <section class="rounded-xl border border-border bg-card shadow-sm" aria-labelledby="rencontres-club-title">
+    <header class="flex items-center gap-2.5 border-b border-border px-4 py-3 sm:px-5">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shrink-0 text-primary" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
       <h2 id="rencontres-club-title" class="text-base font-semibold text-foreground">
         {weekend ? 'Ce week-end, nos équipes jouent' : "Aujourd'hui, nos équipes jouent"}
       </h2>
-      <a href="/agenda?vue=interclubs" class="shrink-0 text-sm font-semibold text-primary hover:underline">Tout voir</a>
-    </div>
-    <ul class="-mx-3 flex snap-x snap-mandatory gap-3 overflow-x-auto px-3 pb-2 sm:mx-0 sm:px-0" style="scrollbar-width: none">
+      <span class="ml-auto rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">{fixtures.length}</span>
+    </header>
+
+    <ul class="flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 py-3 sm:px-5" style="scrollbar-width: none">
       {fixtures.map((fixture) => (
-        <li class="w-64 shrink-0 snap-start">
+        <li class="w-60 shrink-0 snap-start">
           <a
             href={`/equipes/${fixture.teamId}/journee/${fixture.dayNumber}`}
-            class="flex h-full flex-col rounded-xl border border-border bg-card p-3 shadow-sm"
-            style={`border-left: 4px solid ${teamColor(fixture.teamNumber)}`}
+            class="flex h-full flex-col rounded-lg border border-border bg-background px-3 py-2.5 hover:bg-muted/50"
           >
-            <span class="text-sm font-semibold text-foreground">{fixture.teamName}</span>
-            <span class="text-xs text-muted-foreground">{fixture.championshipLabel} · {fixture.divisionLabel}</span>
-            <span class="mt-2 text-sm text-foreground">{fixture.opponent ? `contre ${fixture.opponent}` : 'adversaire à préciser'}</span>
-            <span class="mt-auto pt-2 text-xs font-medium text-foreground/80 first-letter:uppercase">{fixtureWhen(fixture)}</span>
-            {fixture.venue && <span class="text-xs text-muted-foreground">{fixture.venue}</span>}
+            <span class="flex items-center gap-2">
+              <span class="size-2.5 shrink-0 rounded-full" style={`background-color: ${teamColor(fixture.teamNumber)}`} aria-hidden="true"></span>
+              <span class="truncate font-semibold text-foreground">{fixture.teamName}</span>
+            </span>
+            <span class="mt-0.5 text-xs text-muted-foreground">{fixture.championshipLabel} · {fixture.dayLabel ?? `Journée ${fixture.dayNumber}`}</span>
+            <span class="mt-2 text-sm text-foreground first-letter:uppercase">{fixtureWhen(fixture)}</span>
+            <span class="text-sm text-foreground">{fixture.opponent ? `contre ${fixture.opponent}` : 'adversaire à préciser'}</span>
+            {fixture.venue && <span class="mt-0.5 truncate text-xs text-muted-foreground">{fixture.venue}</span>}
           </a>
         </li>
       ))}
     </ul>
+
+    <footer class="border-t border-border px-4 py-3 sm:px-5">
+      <a href="/agenda?vue=interclubs" class="inline-flex min-h-[44px] items-center gap-1 text-sm font-semibold text-primary hover:underline">
+        Toutes les rencontres du club &rarr;
+      </a>
+    </footer>
   </section>
 )}
