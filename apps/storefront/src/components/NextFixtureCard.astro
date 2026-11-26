@@ -1,5 +1,6 @@
 ---
 import type { MyFixture } from '../lib/my-fixtures';
+import DatePill from './DatePill.astro';
 import { dayShort, fixtureWhenShort, venueShort } from '../lib/club-fixtures';
 
 interface Props {
@@ -26,9 +27,12 @@ const { fixture, today } = Astro.props;
  */
 // Même présentation que l'encart « nos équipes jouent » : le match en titre, puis le sigle,
 // la journée, le moment et la ville sur une ligne.
-const meta = fixture
-  ? [fixture.championshipShortLabel, dayShort(fixture), fixtureWhenShort(fixture, today)].filter(Boolean).join(' · ')
-  : '';
+// La date vit dans la pastille de gauche, comme dans le calendrier : la ligne ne garde que
+// l'heure. Sans date, la pastille porte le lundi de la semaine, et la ligne le dit.
+const pillDate = fixture ? new Date(`${(fixture.date ?? fixture.weekStart).slice(0, 10)}T12:00:00`) : null;
+const hour = fixture?.date && /T\d{2}:\d{2}/.test(fixture.date) ? fixtureWhenShort({ date: fixture.date }, fixture.date.slice(0, 10)) : null;
+const moment = fixture && !fixture.date ? fixtureWhenShort(fixture, today) : hour;
+const meta = fixture ? [fixture.championshipShortLabel, dayShort(fixture), moment].filter(Boolean).join(' · ') : '';
 const where = fixture ? venueShort(fixture.venue) : null;
 ---
 
@@ -44,7 +48,9 @@ const where = fixture ? venueShort(fixture.venue) : null;
       </h2>
     </header>
 
-    <div class="px-4 py-3 sm:px-5">
+    <div class="flex items-stretch gap-3 px-4 py-3 sm:gap-4 sm:px-5">
+      {pillDate && <DatePill date={pillDate} family="jeu" />}
+      <div class="min-w-0 flex-1">
       <p class="truncate font-semibold text-foreground">
         {fixture.teamName}{fixture.opponent ? ` vs ${fixture.opponent}` : ''}
       </p>
@@ -80,11 +86,12 @@ const where = fixture ? venueShort(fixture.venue) : null;
           </span>
         )}
       </div>
+      </div>
     </div>
 
     <footer class="border-t border-border px-4 py-3 sm:px-5">
       <a
-        href={`/equipes/${fixture.teamId}/journee/${fixture.dayNumber}`}
+        href={`/equipes/${fixture.teamId}/journee/${fixture.dayNumber}${fixture.slot > 1 ? `?r=${fixture.slot}` : ''}`}
         class="inline-flex min-h-[44px] items-center gap-1 text-sm font-semibold text-primary hover:underline"
       >
         Voir la composition &rarr;
