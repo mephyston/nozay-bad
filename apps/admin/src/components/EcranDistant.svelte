@@ -123,7 +123,7 @@
       } catch (erreur) {
         // Un appel qui lève, réseau présent : Access renvoie ailleurs (cookie périmé, ancien
         // domaine d'équipe). La reconnexion efface les cookies et refait la connexion.
-        if (versReconnexion()) return;
+        if (await versReconnexion(`/admin/api/${domaine}/${ecran}${recherche}`)) return;
         throw erreur;
       }
       // Jeton Access périmé : le middleware a effacé le cookie (lib/access-reauth.ts). Seule
@@ -156,9 +156,18 @@
     charger();
   });
 
-  /** Une reconnexion automatique par période de deux minutes : au-delà, l'écran dit l'erreur. */
-  function versReconnexion(): boolean {
+  /**
+   * Envoie sur /reconnexion, mais seulement si c'est bien Cloudflare Access qui renvoie
+   * ailleurs. Un appel qui lève peut aussi venir d'un réseau instable ou d'un déploiement en
+   * cours : déconnecter alors quelqu'un de bien connecté serait une erreur. On rejoue donc
+   * l'appel sans suivre les redirections ; les routes /admin/api ne redirigent jamais
+   * d'elles-mêmes (elles répondent en JSON), une redirection ne peut venir que d'Access.
+   * Une seule reconnexion automatique par période de deux minutes.
+   */
+  async function versReconnexion(url: string): Promise<boolean> {
     if (typeof navigator !== 'undefined' && navigator.onLine === false) return false;
+    const sonde = await fetch(url, { redirect: 'manual' }).catch(() => null);
+    if (sonde?.type !== 'opaqueredirect') return false;
     const CLE = 'nba:reconnexion-auto';
     try {
       const derniere = Number(sessionStorage.getItem(CLE) ?? 0);
