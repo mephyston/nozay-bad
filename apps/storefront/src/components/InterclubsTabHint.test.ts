@@ -14,7 +14,10 @@ function monter(active = false) {
 
 describe("présentation de l'onglet Interclubs", () => {
   let app: ReturnType<typeof mount> | undefined;
-  beforeEach(() => localStorage.clear());
+  beforeEach(() => {
+    localStorage.clear();
+    localStorage.setItem('nba:account-hint:v1', '1');
+  });
   afterEach(() => {
     if (app) unmount(app);
     app = undefined;

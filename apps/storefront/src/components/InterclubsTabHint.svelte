@@ -27,11 +27,19 @@
       remember();
       return;
     }
-    try {
-      visible = localStorage.getItem(KEY) !== '1';
-    } catch {
-      visible = false;
-    }
+    // Une bulle à la fois : après celle du compte, puis celle de l'icône d'agenda quand elle existe.
+    const read = () => {
+      try {
+        const accountSeen = localStorage.getItem('nba:account-hint:v1') === '1';
+        const agendaSeen = !document.querySelector('[data-testid="calendar-subscribe"]') || localStorage.getItem('nba:calendar-feed-hint:v1') === '1';
+        visible = localStorage.getItem(KEY) !== '1' && accountSeen && agendaSeen;
+      } catch {
+        visible = false;
+      }
+    };
+    read();
+    window.addEventListener('nba:hint-dismissed', read);
+    return () => window.removeEventListener('nba:hint-dismissed', read);
   });
 
   function dismiss() {

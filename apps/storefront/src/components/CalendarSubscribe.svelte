@@ -1,6 +1,7 @@
 <script lang="ts">
   import { untrack } from 'svelte';
   import { CalendarPlus } from '@lucide/svelte';
+  import DiscoveryBubble from './DiscoveryBubble.svelte';
   import { Sheet } from '@nba/ui';
   import { androidBrowserLink, calendarLinks, calendarMailLink, isAndroid, type CalendarLinks } from '../lib/calendar-feed';
 
@@ -47,12 +48,20 @@
    */
   const DISCOVERY_KEY = 'nba:calendar-feed-hint:v1';
   let fresh = $state(false);
+  /** Une bulle à la fois : celle-ci attend que la bulle du compte ait été vue. */
+  let accountSeen = $state(false);
   $effect(() => {
-    try {
-      fresh = localStorage.getItem(DISCOVERY_KEY) !== '1';
-    } catch {
-      fresh = false;
-    }
+    const read = () => {
+      try {
+        fresh = localStorage.getItem(DISCOVERY_KEY) !== '1';
+        accountSeen = localStorage.getItem('nba:account-hint:v1') === '1';
+      } catch {
+        fresh = false;
+      }
+    };
+    read();
+    window.addEventListener('nba:hint-dismissed', read);
+    return () => window.removeEventListener('nba:hint-dismissed', read);
   });
   // Lu à l'ouverture, jamais au rendu serveur : le tiroir n'existe qu'au navigateur.
   let android = $state(false);
@@ -88,10 +97,7 @@
       subscribed = null;
       error = '';
     } else {
-      fresh = false;
-      try {
-        localStorage.setItem(DISCOVERY_KEY, '1');
-      } catch {}
+      forgetDiscovery();
       android = typeof navigator !== 'undefined' && isAndroid(navigator.userAgent);
       void load();
     }
@@ -105,6 +111,16 @@
     history.replaceState(history.state, '', url);
     untrack(() => onOpenChange(true));
   });
+
+  /** La découverte est faite : ni l'éclairage ni les bulles (ici et dans la barre du bas) ne reviennent. */
+  function forgetDiscovery() {
+    fresh = false;
+    try {
+      localStorage.setItem(DISCOVERY_KEY, '1');
+    } catch {}
+    // La bulle suivante (l'onglet Interclubs) attendait celle-ci.
+    window.dispatchEvent(new Event('nba:hint-dismissed'));
+  }
 
   async function create() {
     const json = await call('POST');
@@ -140,22 +156,36 @@
 </script>
 
 <!-- Une simple icône à côté du titre : son nom passe par aria-label, et par title au survol. -->
-<button
-  type="button"
-  class={`relative inline-flex size-11 shrink-0 items-center justify-center rounded-lg hover:bg-muted hover:text-foreground ${fresh ? 'text-primary ring-2 ring-primary' : 'text-muted-foreground'}`}
-  aria-label="S'abonner depuis mon agenda"
-  title="S'abonner depuis mon agenda"
-  data-testid="calendar-subscribe"
-  onclick={() => onOpenChange(true)}
->
-  <CalendarPlus class="size-5" aria-hidden="true" />
-  {#if fresh}
-    <span class="pointer-events-none absolute -right-0.5 -top-0.5 flex size-2.5" aria-hidden="true">
-      <span class="absolute inline-flex size-full rounded-full bg-primary opacity-75 motion-safe:animate-ping"></span>
-      <span class="relative inline-flex size-2.5 rounded-full bg-primary"></span>
-    </span>
+<span class="relative inline-flex">
+  <button
+    type="button"
+    class={`relative inline-flex size-11 shrink-0 items-center justify-center rounded-lg hover:bg-muted hover:text-foreground ${fresh ? 'text-primary ring-2 ring-primary' : 'text-muted-foreground'}`}
+    aria-label="S'abonner depuis mon agenda"
+    title="S'abonner depuis mon agenda"
+    data-testid="calendar-subscribe"
+    onclick={() => onOpenChange(true)}
+  >
+    <CalendarPlus class="size-5" aria-hidden="true" />
+    {#if fresh}
+      <span class="pointer-events-none absolute -right-0.5 -top-0.5 flex size-2.5" aria-hidden="true">
+        <span class="absolute inline-flex size-full rounded-full bg-primary opacity-75 motion-safe:animate-ping"></span>
+        <span class="relative inline-flex size-2.5 rounded-full bg-primary"></span>
+      </span>
+    {/if}
+  </button>
+  {#if fresh && accountSeen && !open}
+    <!-- La même bulle que celle du compte : elle pointe l'icône, une fois par appareil. -->
+    <DiscoveryBubble
+      testid="calendar-subscribe-hint"
+      class="absolute left-0 top-full mt-2 w-64"
+      arrowStyle="left: 1rem"
+      title="Votre agenda, dans votre téléphone"
+      text="Ajoutez les rendez-vous du club et vos rencontres à Google Agenda, Apple Calendrier ou Outlook : ils suivront les changements."
+      primary={{ label: 'Découvrir', onclick: () => onOpenChange(true) }}
+      secondary={{ label: 'Plus tard', onclick: forgetDiscovery }}
+    />
   {/if}
-</button>
+</span>
 
 <Sheet.Root {open} {onOpenChange}>
   <!--
