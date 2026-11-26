@@ -834,7 +834,7 @@
                 <DropdownMenu.Item
                   class="flex w-full items-center px-2 py-1.5 text-xs font-medium rounded-md hover:bg-muted cursor-pointer focus:bg-muted focus:outline-none"
                   onclick={() => {
-                    window.location.href = "/reconnexion";
+                    window.location.href = "/reconnexion?depuis=menu";
                   }}
                 >
                   <RefreshCw class="mr-2 h-3.5 w-3.5" /> Se reconnecter

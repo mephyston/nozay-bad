@@ -136,6 +136,11 @@
   let scanPurpose = $state<ScanPurpose>('prepaid');
   let amountInput = $state('');
   let error = $state('');
+  /**
+   * Le message d'une erreur qui se règle par une reconnexion (connexion Access périmée). Lié au
+   * message lui-même : une erreur suivante, d'une autre nature, ne propose pas la reconnexion.
+   */
+  let reconnectMessage = $state('');
   let busy = $state(false);
   let done = $state<{ title: string; amountCents: number; changeCents: number | null; detail: string } | null>(null);
   let lastSale = $state<{ id: number; cashCents: number; cardCents: number; prepaidCents: number } | null>(null);
@@ -193,6 +198,7 @@
       await action();
     } catch (e) {
       error = e instanceof Error ? e.message : 'Une erreur est survenue.';
+      reconnectMessage = e instanceof Error && 'reconnect' in e ? error : '';
       // Le bureau vient de couper la CB : relire la session fait disparaître ses boutons.
       if (/CB est suspendue/.test(error)) await refresh().catch(() => {});
     } finally {
@@ -613,7 +619,7 @@
       Sortie de secours de Cloudflare Access : une connexion restée d'avant un changement
       d'adresse bloque certains téléphones. Navigation dure, la page efface les cookies.
     -->
-    <a href="/reconnexion" class="text-muted-foreground -mr-2 flex min-h-11 items-center px-2 text-xs font-medium">Se reconnecter</a>
+    <a href="/reconnexion?depuis=entete" class="text-muted-foreground -mr-2 flex min-h-11 items-center px-2 text-xs font-medium">Se reconnecter</a>
   </div>
 </header>
 
@@ -622,7 +628,13 @@
   style={`min-height: calc(100dvh - 3.5rem); padding-bottom: ${showNav ? 'calc(env(safe-area-inset-bottom, 0px) + 5.5rem)' : '0px'}`}
 >
   {#if error}
-    <p role="alert" class="bg-destructive/10 text-destructive m-3 mb-0 rounded-lg p-3 text-sm">{error}</p>
+    <div role="alert" class="bg-destructive/10 text-destructive m-3 mb-0 rounded-lg p-3 text-sm">
+      <p>{error}</p>
+      {#if reconnectMessage === error}
+        <!-- Navigation dure : la page efface les cookies Cloudflare Access. Pas d'envoi automatique en plein encaissement. -->
+        <a href="/reconnexion?depuis=caisse" class="mt-2 inline-flex min-h-11 items-center font-semibold underline underline-offset-4">Se reconnecter</a>
+      {/if}
+    </div>
   {/if}
   {#if current?.toRefund?.length && screen === 'sell'}
     <section role="alert" class="bg-destructive/10 text-destructive m-3 mb-0 space-y-2 rounded-lg p-3 text-sm">

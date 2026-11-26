@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { notSignedInPage, reconnectPage } from './access-reconnect';
+import { notSignedInPage, reconnectPage, reconnectSource } from './access-reconnect';
 
 describe('sortie de secours Cloudflare Access de la caisse', () => {
   it('efface les cookies Access, avec et sans domaine, puis renvoie vers l\'accueil', async () => {
@@ -17,6 +17,12 @@ describe('sortie de secours Cloudflare Access de la caisse', () => {
   it('une page sans connexion valable propose la reconnexion', async () => {
     const res = notSignedInPage();
     expect(res.status).toBe(401);
-    expect(await res.text()).toContain('href="/reconnexion"');
+    expect(await res.text()).toContain('href="/reconnexion?depuis=page"');
+  });
+
+  it("note d'où vient la reconnexion, sans rien accepter d'autre qu'une valeur connue", () => {
+    expect(reconnectSource(new Request('https://caisse.example/reconnexion?depuis=caisse'))).toBe('caisse');
+    expect(reconnectSource(new Request('https://caisse.example/reconnexion?depuis=<script>'))).toBe('lien');
+    expect(reconnectSource(new Request('https://caisse.example/reconnexion'))).toBe('lien');
   });
 });

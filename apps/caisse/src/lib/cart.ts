@@ -55,13 +55,28 @@ export function changeDue(receivedCents: number | null, cashCents: number): numb
   return receivedCents - cashCents;
 }
 
+/**
+ * Une erreur qui se règle en se reconnectant : la connexion Cloudflare Access est périmée, ou
+ * renvoie vers l'ancien domaine d'équipe (l'appel lève alors, réseau présent).
+ */
+export class ReconnectError extends Error {
+  readonly reconnect = true;
+}
+
 export async function callApi<T = any>(path: string, body?: unknown): Promise<T> {
-  const res = await fetch(`/api/${path}`, body === undefined ? undefined : {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
-  });
+  let res: Response;
+  try {
+    res = await fetch(`/api/${path}`, body === undefined ? undefined : {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+  } catch {
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) throw new Error('Pas de réseau : réessayez dans un instant.');
+    throw new ReconnectError('La caisse ne joint plus le serveur : votre connexion est peut-être à refaire.');
+  }
   const payload = (await res.json().catch(() => null)) as any;
+  if (res.status === 401) throw new ReconnectError(payload?.error || 'Connexion expirée.');
   if (!res.ok || !payload?.success) throw new Error(payload?.error || 'Le serveur ne répond pas.');
   return payload.data as T;
 }

@@ -9,6 +9,14 @@
  */
 export const RECONNECT_PATH = '/reconnexion';
 
+/** D'où vient la reconnexion, pour la compter : une valeur connue, rien d'autre (pas d'identité, la page est hors Access). */
+const RECONNECT_SOURCES = new Set(['sw', 'ecran', 'menu', 'entete', 'caisse', 'page']);
+export function reconnectSource(request: Request): string {
+  const value = new URL(request.url).searchParams.get('depuis') ?? '';
+  return RECONNECT_SOURCES.has(value) ? value : 'lien';
+}
+
+
 const ACCESS_COOKIES = ['CF_Authorization', 'CF_AppSession', 'CF_Binding'];
 
 const page = (title: string, body: string) =>
@@ -21,6 +29,8 @@ const button = (label: string, href: string) =>
   `<p><a href="${href}" style="display:inline-block;padding:10px 18px;border:1px solid #ccc;border-radius:12px;color:inherit;text-decoration:none;font-weight:600">${label}</a></p>`;
 
 export function reconnectPage(request: Request): Response {
+  // Le seul moyen de voir le problème : il se produit chez Cloudflare, avant la caisse.
+  console.log(`[reconnexion] caisse depuis=${reconnectSource(request)}`);
   const host = new URL(request.url).hostname;
   const headers = new Headers({ 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
   for (const name of ACCESS_COOKIES) {
@@ -44,7 +54,7 @@ export function notSignedInPage(): Response {
     'Connexion requise',
     '<h1 style="font-size:1.4rem">Connexion requise</h1>' +
       '<p>Votre connexion à la caisse n\'a pas pu être vérifiée. Effacez-la et demandez un nouveau code.</p>' +
-      button('Se reconnecter', RECONNECT_PATH)
+      button('Se reconnecter', `${RECONNECT_PATH}?depuis=page`)
   );
   return new Response(html, { status: 401, headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' } });
 }

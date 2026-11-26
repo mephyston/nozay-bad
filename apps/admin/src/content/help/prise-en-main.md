@@ -13,6 +13,12 @@ L'accès à l'administration passe par **Cloudflare Access** : vous vous authent
 
 Une adresse authentifiée mais inconnue de l'application n'obtient que le rôle par défaut : tableau de bord et centre d'aide.
 
+### Connexion bloquée
+
+Une ancienne connexion restée sur l'appareil peut bloquer l'accès, par exemple sur une page de Cloudflare « Unable to find your Access organization ». La page **/reconnexion** (ajoutée à l'adresse de l'administration ou de la caisse) l'efface : un nouveau code arrive ensuite par e-mail. On la trouve aussi dans le menu du compte (**Se reconnecter**), sous « Impossible de charger cet écran » et dans l'en-tête de la caisse.
+
+L'application installée sur téléphone y passe d'elle-même quand la connexion repart vers Cloudflare, une fois toutes les deux minutes au plus. Chaque passage est compté (d'où il vient, jamais qui) : le bureau peut ainsi savoir si le problème touche encore quelqu'un.
+
 ## Le menu
 
 Le menu latéral regroupe les rubriques par domaine : Adhérents, Comptabilité, Boutique, Communication, Site public, Réglages, Assistance. **Vous ne voyez que les rubriques auxquelles vous avez droit** — le menu est construit à partir des mêmes permissions que le contrôle d'accès des pages, une entrée visible mène donc toujours à une page qui s'ouvre.

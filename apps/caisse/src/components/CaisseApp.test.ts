@@ -126,6 +126,17 @@ describe('caisse : commande que la carte ne couvre pas', () => {
     expect(posted.some((p) => p.path === 'sales')).toBe(false);
   });
 
+  it("propose de se reconnecter quand le serveur ne répond plus, réseau présent", async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => {
+      throw new TypeError('Failed to fetch');
+    }));
+    await click('Encaisser la commande');
+    await click('Espèces');
+    await click('Montant exact');
+    const link = [...document.body.querySelectorAll('a')].find((a) => a.textContent?.includes('Se reconnecter') && a.getAttribute('href')?.includes('depuis=caisse'));
+    expect(link).toBeDefined();
+  });
+
   it('se propose aussi depuis les moyens de paiement, et le retour ramène à la commande', async () => {
     await click('Encaisser la commande');
     await click(/Recharger la carte d'abord/);

@@ -117,7 +117,15 @@
       const recherche = parametres
         ? `?${new URLSearchParams(Object.entries(parametres).map(([c, v]) => [c, String(v)]))}`
         : window.location.search;
-      const res = await fetch(`/admin/api/${domaine}/${ecran}${recherche}`);
+      let res: Response;
+      try {
+        res = await fetch(`/admin/api/${domaine}/${ecran}${recherche}`);
+      } catch (erreur) {
+        // Un appel qui lève, réseau présent : Access renvoie ailleurs (cookie périmé, ancien
+        // domaine d'équipe). La reconnexion efface les cookies et refait la connexion.
+        if (versReconnexion()) return;
+        throw erreur;
+      }
       // Jeton Access périmé : le middleware a effacé le cookie (lib/access-reauth.ts). Seule
       // une vraie navigation repasse par Access, une navigation douce n'y suffirait pas.
       if (res.status === 401 && (await res.clone().json().catch(() => null))?.reauth) {
@@ -147,6 +155,21 @@
   $effect(() => {
     charger();
   });
+
+  /** Une reconnexion automatique par période de deux minutes : au-delà, l'écran dit l'erreur. */
+  function versReconnexion(): boolean {
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) return false;
+    const CLE = 'nba:reconnexion-auto';
+    try {
+      const derniere = Number(sessionStorage.getItem(CLE) ?? 0);
+      if (Date.now() - derniere < 2 * 60 * 1000) return false;
+      sessionStorage.setItem(CLE, String(Date.now()));
+    } catch {
+      return false;
+    }
+    window.location.assign('/reconnexion?depuis=ecran');
+    return true;
+  }
 </script>
 
 {#if etat === 'pret' && donnees}
@@ -160,7 +183,7 @@
         <p class="text-sm text-destructive">Impossible de charger cet écran.</p>
         <Button variant="outline" onclick={charger}>Réessayer</Button>
         <!-- Navigation dure : la page de reconnexion efface les cookies Cloudflare Access. -->
-        <a href="/reconnexion" class="text-sm text-muted-foreground underline underline-offset-4">Toujours bloqué ? Se reconnecter</a>
+        <a href="/reconnexion?depuis=ecran" class="text-sm text-muted-foreground underline underline-offset-4">Toujours bloqué ? Se reconnecter</a>
       {/if}
     </Card.Content>
   </Card.Root>

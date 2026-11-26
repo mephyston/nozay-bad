@@ -107,7 +107,13 @@ export default defineConfig({
          * ligne. Celle-ci est derrière Cloudflare Access et lit une base : sans réseau,
          * une coquille vide n'apprendrait rien à personne.
          */
-        navigateFallback: null
+        navigateFallback: null,
+        /*
+         * Garde des navigations vers Cloudflare Access : renvoie sur /reconnexion une
+         * navigation qu'un cookie périmé enverrait vers l'ancien domaine d'équipe. Écrit à la
+         * main, chargé avant les routes de workbox (voir public/reauth-sw.js).
+         */
+        importScripts: ['/reauth-sw.js']
       }
     })
   ],

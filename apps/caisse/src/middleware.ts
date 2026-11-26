@@ -49,7 +49,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
   const email = await resolveEmail(context.request, env);
   if (!email) {
     const isPage = context.request.method === 'GET' && !context.url.pathname.startsWith('/api/');
-    return applySecurityHeaders(isPage ? notSignedInPage() : json({ success: false, error: 'Accès non autorisé : touchez « Se reconnecter ».' }, 401));
+    return applySecurityHeaders(isPage ? notSignedInPage() : json({ success: false, error: 'Connexion expirée ou non reconnue.' }, 401));
   }
   context.locals.email = email;
 
