@@ -148,7 +148,7 @@ const nextSession = sessionComesFirst ? firstSession : null;
         personnellement, là où l'agenda l'invite.
       -->
       <div class="mb-6 empty:mb-0">
-        <NextFixtureCard fixture={fixtures[0] ?? null} />
+        <NextFixtureCard fixture={fixtures[0] ?? null} today={fixturesWindow.from} />
       </div>
 
       <!--

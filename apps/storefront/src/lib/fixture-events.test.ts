@@ -5,7 +5,7 @@ import type { MyFixture } from './my-fixtures';
 const base: MyFixture = {
   teamId: 3,
   teamName: 'NBA91-3',
-  championshipLabel: 'Départemental Mixte',
+  championshipLabel: 'Départemental Mixte', championshipShortLabel: 'ICD Mixte',
   divisionLabel: 'D2',
   dayNumber: 4,
   dayLabel: null,

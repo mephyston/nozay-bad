@@ -1,6 +1,6 @@
 import { type DbOrTx } from '@nba/db';
 import { getClubSettings } from '@nba/club/settings';
-import { CHAMPIONSHIP_RULES, getDivision, teamName } from '../shared/championship';
+import { CHAMPIONSHIP_RULES, CHAMPIONSHIP_SHORT_LABELS, getDivision, teamName } from '../shared/championship';
 import { normalizeLicence } from '../shared/ranking';
 import { lineLabel } from '../shared/team-value';
 import { publishedChampionships } from '../shared/rosters-publication';
@@ -102,6 +102,7 @@ export async function listMyFixtures(
       teamId: team.id,
       teamName: teamName(teamPrefix, team.number),
       championshipLabel: rules.label,
+      championshipShortLabel: CHAMPIONSHIP_SHORT_LABELS[team.championship],
       divisionLabel: division?.label ?? team.division,
       dayNumber: day.number,
       dayLabel: day.label,

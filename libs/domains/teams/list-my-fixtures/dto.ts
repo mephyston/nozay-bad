@@ -10,6 +10,8 @@ export interface MyFixture {
   teamId: number;
   teamName: string;
   championshipLabel: string;
+  /** « ICR », « ICD Mixte » : pour les affichages serrés. */
+  championshipShortLabel: string;
   divisionLabel: string;
   dayNumber: number;
   /** « Barrages aller », ou `null` pour une journée régulière. */

@@ -21,6 +21,8 @@ describe("rencontres du club dans l'espace adhérent", () => {
     expect(fixtureWhenShort({ date: '2026-11-27' }, '2026-11-27')).toBe("Aujourd'hui");
     expect(fixtureWhenShort({ date: '2026-11-28T14:00' }, '2026-11-27')).toBe('Demain · 14 h');
     expect(fixtureWhenShort({ date: '2026-11-29T10:00' }, '2026-11-27')).toBe('Dimanche · 10 h');
+    expect(fixtureWhenShort({ date: '2026-12-12T14:00' }, '2026-11-27')).toBe('sam. 12 déc. · 14 h');
+    expect(fixtureWhenShort({ date: null, weekStart: '2026-11-23' }, '2026-11-20')).toBe('semaine du 23 nov.');
     expect(dayShort({ dayLabel: null, dayNumber: 3 })).toBe('J3');
     expect(dayShort({ dayLabel: 'Barrages aller', dayNumber: 9 })).toBe('Barrages aller');
   });

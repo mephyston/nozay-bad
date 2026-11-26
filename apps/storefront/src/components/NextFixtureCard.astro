@@ -1,12 +1,15 @@
 ---
 import type { MyFixture } from '../lib/my-fixtures';
+import { dayShort, fixtureWhenShort, venueShort } from '../lib/club-fixtures';
 
 interface Props {
   /** `null` quand l'adhérent n'est dans aucune équipe : l'encart disparaît. */
   fixture: MyFixture | null;
+  /** Jour civil du club : le jour même, l'heure suffit. */
+  today: string;
 }
 
-const { fixture } = Astro.props;
+const { fixture, today } = Astro.props;
 
 /**
  * La prochaine rencontre d'interclubs de l'adhérent.
@@ -21,21 +24,12 @@ const { fixture } = Astro.props;
  * va de même de la composition. Présenter ces absences comme des décisions en attente
  * laisserait les joueurs patienter là où il suffit de relancer leur capitaine.
  */
-const french = (iso: string) =>
-  new Date(`${iso.slice(0, 10)}T00:00:00Z`).toLocaleDateString('fr-FR', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    timeZone: 'UTC'
-  });
-
-const when = fixture
-  ? fixture.date
-    ? french(fixture.date)
-    : `Semaine du ${french(fixture.weekStart).replace(/^\S+\s/, '')}`
+// Même présentation que l'encart « nos équipes jouent » : le match en titre, puis le sigle,
+// la journée, le moment et la ville sur une ligne.
+const meta = fixture
+  ? [fixture.championshipShortLabel, dayShort(fixture), fixtureWhenShort(fixture, today)].filter(Boolean).join(' · ')
   : '';
-
-const dayLabel = fixture ? (fixture.dayLabel ?? `Journée ${fixture.dayNumber}`) : '';
+const where = fixture ? venueShort(fixture.venue) : null;
 ---
 
 {fixture && (
@@ -51,17 +45,11 @@ const dayLabel = fixture ? (fixture.dayLabel ?? `Journée ${fixture.dayNumber}`)
     </header>
 
     <div class="px-4 py-3 sm:px-5">
-      <div class="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-        <p class="font-semibold text-foreground">{fixture.teamName}</p>
-        <p class="text-sm text-muted-foreground">
-          {fixture.championshipLabel} · {fixture.divisionLabel} · {dayLabel}
-        </p>
-      </div>
-
-      <p class="mt-1 text-sm text-foreground first-letter:uppercase">
-        {when}
-        {fixture.opponent && <span> · contre {fixture.opponent}</span>}
-        {fixture.venue && <span class="text-muted-foreground"> · {fixture.venue}</span>}
+      <p class="truncate font-semibold text-foreground">
+        {fixture.teamName}{fixture.opponent ? ` vs ${fixture.opponent}` : ''}
+      </p>
+      <p class="mt-0.5 truncate text-sm text-muted-foreground">
+        {meta}{where && <span> à {where}</span>}
       </p>
 
       {!fixture.date && (

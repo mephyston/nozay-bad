@@ -78,19 +78,31 @@ function hourOf(date: string): string | null {
   return time ? `${Number(time[1])} h${time[2] === '00' ? '' : ` ${time[2]}`}` : null;
 }
 
+const SHORT_DAYS = ['dim.', 'lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.'];
+const SHORT_MONTHS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
+
+const dayIndex = (iso: string) => Date.UTC(Number(iso.slice(0, 4)), Number(iso.slice(5, 7)) - 1, Number(iso.slice(8, 10))) / 86_400_000;
+
 /**
- * Le moment, au plus court, pour l'encart de l'accueil : il dit déjà « aujourd'hui » ou « ce
- * week-end ». Le jour même, l'heure suffit ; le lendemain, « Demain » ; au-delà, le jour de la
- * semaine. La date complète reste dans le calendrier.
+ * Le moment, au plus court, pour les encarts de l'accueil. Le jour même, l'heure suffit ; le
+ * lendemain, « Demain » ; dans la semaine, le jour (« Dimanche ») ; au-delà, la date courte
+ * (« sam. 12 déc. »). Sans date, la semaine (« semaine du 23 nov. »). La date complète reste
+ * dans le calendrier.
  */
-export function fixtureWhenShort(fixture: Pick<ClubFixture, 'date'>, today: string): string {
-  if (!fixture.date) return '';
+export function fixtureWhenShort(fixture: Pick<ClubFixture, 'date'> & { weekStart?: string }, today: string): string {
+  if (!fixture.date) {
+    if (!fixture.weekStart) return '';
+    const [, m, d] = fixture.weekStart.split('-').map(Number);
+    return `semaine du ${d} ${SHORT_MONTHS[m - 1]}`;
+  }
   const day = fixture.date.slice(0, 10);
   const hour = hourOf(fixture.date);
+  const ahead = dayIndex(day) - dayIndex(today);
   const [y, m, d] = day.split('-').map(Number);
-  const tomorrow = new Date(Date.UTC(Number(today.slice(0, 4)), Number(today.slice(5, 7)) - 1, Number(today.slice(8, 10)) + 1)).toISOString().slice(0, 10);
-  if (day === today) return hour ?? "Aujourd'hui";
-  const label = day === tomorrow ? 'Demain' : DAYS[new Date(Date.UTC(y, m - 1, d)).getUTCDay()].replace(/^./, (c) => c.toUpperCase());
+  const weekday = new Date(Date.UTC(y, m - 1, d)).getUTCDay();
+  if (ahead === 0) return hour ?? "Aujourd'hui";
+  const label =
+    ahead === 1 ? 'Demain' : ahead > 1 && ahead < 7 ? DAYS[weekday].replace(/^./, (c) => c.toUpperCase()) : `${SHORT_DAYS[weekday]} ${d} ${SHORT_MONTHS[m - 1]}`;
   return hour ? `${label} · ${hour}` : label;
 }
 
