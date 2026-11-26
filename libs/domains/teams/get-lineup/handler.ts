@@ -297,6 +297,7 @@ export async function loadLineup(
     teamName: teamName(teamPrefix, team.number),
     championship: team.championship,
     championshipLabel: rules.label,
+    shuttlesReminder: rules.shuttlesReminder === true,
     divisionLabel: division.label,
     dayNumber: day.number,
     dayLabel: day.label,

@@ -73,6 +73,11 @@ export interface ChampionshipRules {
   /** Rencontres par journée : 2 en régional (art. 1.6.3), 1 ailleurs. */
   fixturesPerDay: number;
   /**
+   * Le capitaine récupère les boîtes de volants avant la journée : rappel au staff trois
+   * jours avant, et encart sur l'écran de composition.
+   */
+  shuttlesReminder?: true;
+  /**
    * Jours où une rencontre se dispute, en ISO (1 = lundi … 7 = dimanche).
    *
    * Les départementaux mixte et masculin se jouent **en semaine, le soir** : « un club
@@ -209,6 +214,8 @@ export const CHAMPIONSHIP_RULES: Record<Championship, ChampionshipRules> = {
     maxMuted: null,
     maxMatchesPerPlayer: 2,
     fixturesPerDay: 1,
+    // Aux vétérans, c'est au capitaine de prévoir les volants de la journée.
+    shuttlesReminder: true,
     // « Le jour retenu pour jouer les rencontres est le dimanche » ; le samedi est
     // accepté à titre exceptionnel si le club hôte n'a pas de gymnase le dimanche.
     matchDays: [7],

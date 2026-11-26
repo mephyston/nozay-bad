@@ -11,7 +11,7 @@ import {
 } from '@nba/members-api';
 import { getOrdersAwaitingPaymentSince } from '@nba/shop-api';
 import { listOpenPlayOpeners, listOpenPlaySessions } from '@nba/schedules-api';
-import { findRankingReminderDays, remindMissingLineups } from '@nba/teams-api';
+import { findRankingReminderDays, isShuttlesReminderDue, remindMissingLineups, remindShuttles } from '@nba/teams-api';
 import {
   dispatchPendingNotifications,
   enqueueNotification,
@@ -346,6 +346,23 @@ export async function handleScheduled(
   // droit d'envoyer, à l'heure qu'il a réglée dans son fuseau. Le drain, lui, tourne
   // toujours — il ne crée rien, il expédie ce qu'une action métier a déjà mis en file.
   const sendsEnabled = env.SCHEDULED_SENDS_ENABLED === 'true';
+
+  // Le rappel des volants part le jeudi à 19 h 30, au début de l'entraînement : une demi-heure
+  // que le cron horaire, à l'heure pile, ne sait pas viser. Il passe donc par celui de la file,
+  // qui tourne toutes les cinq minutes. La lecture des réglages n'a lieu qu'autour du jeudi (en
+  // UTC, de mercredi à vendredi, pour tout fuseau) : D1 est la contrainte du plan gratuit.
+  if (event.cron === DISPATCH_CRON && sendsEnabled && [3, 4, 5].includes(now.getUTCDay())) {
+    const [features, settings] = await Promise.all([getClubFeatures(db), getClubSettings(db)]);
+    const clock = localClock(now, settings.timezone);
+    if (features.reminder_shuttles === true && isShuttlesReminderDue(clock)) {
+      const season = await getSeasonAtDate(db, clock.date);
+      if (season) {
+        const { reminded } = await remindShuttles(db, { seasonCode: season.code, today: clock.date }, now);
+        if (reminded.length > 0) console.log(`[push] volants : ${reminded.length} équipe(s) prévenue(s)`);
+      }
+    }
+  }
+
   if (event.cron === HOURLY_CRON && sendsEnabled) {
     const [features, settings] = await Promise.all([getClubFeatures(db), getClubSettings(db)]);
     const on = (feature: keyof FeatureState) => features[feature] === true;

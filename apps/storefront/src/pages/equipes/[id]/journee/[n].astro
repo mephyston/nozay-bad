@@ -156,6 +156,13 @@ const frenchDate = (iso: string) =>
 
         <FixtureDateCard client:load {lineup} />
 
+        {/* Aux vétérans, le capitaine apporte les volants : rappel au staff, qui prépare la journée. */}
+        {lineup.shuttlesReminder && lineup.canEdit && (
+          <p class="rounded-xl border border-primary/30 bg-primary/10 p-4 text-sm text-foreground" data-testid="shuttles-reminder">
+            <span class="font-semibold">Volants à prévoir.</span> Pensez à récupérer les boîtes de volants pour la journée.
+          </p>
+        )}
+
         <!--
           La composition respire sous le cadre de la date : la rangée « SH1 » commençait
           juste sous lui, et les deux blocs se lisaient comme un seul.

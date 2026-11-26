@@ -92,6 +92,7 @@ export { saveFixtureDate } from './save-fixture-date/handler';
 export { notifyCaptain } from './notify-captain/handler';
 export { listMyFixtures } from './list-my-fixtures/handler';
 export { listClubFixtures } from './list-club-fixtures/handler';
+export { remindShuttles, isShuttlesReminderDue } from './remind-shuttles/handler';
 export { notifyLineup } from './notify-lineup/handler';
 
 export type { ImportRankingsInput, ImportRankingsOutput, UnmatchedCompetitor } from './import-rankings/dto';

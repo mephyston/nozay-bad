@@ -50,6 +50,7 @@ export const FEATURES = [
   'reminder_unpaid',
   'reminder_rankings',
   'reminder_lineups',
+  'reminder_shuttles',
   'reminder_open_play',
   'reminder_open_play_board'
 ] as const;
@@ -197,6 +198,11 @@ export const FEATURE_CATALOG: Record<Feature, FeatureInfo> = {
     description: "De la veille d'une journée jusqu'à la rencontre, aux capitaines dont la composition n'est pas validée.",
     group: 'Envois programmés'
   },
+  reminder_shuttles: {
+    label: 'Rappel des volants',
+    description: "Le jeudi à 19 h 30, au début de l'entraînement, au capitaine et au vice-capitaine d'une équipe de vétérans qui joue le week-end : récupérer les boîtes de volants pour la journée.",
+    group: 'Envois programmés'
+  },
   reminder_open_play: {
     label: 'Rappel des bénévoles',
     description: 'Chaque matin, aux bénévoles désignés, les séances de jeu libre des sept prochains jours sans personne pour ouvrir.',
@@ -225,6 +231,7 @@ export const FEATURE_PREREQUISITES: Partial<Record<Feature, readonly Feature[]>>
   reminder_unpaid: ['push'],
   reminder_rankings: ['push', 'teams'],
   reminder_lineups: ['push', 'teams'],
+  reminder_shuttles: ['push', 'teams'],
   reminder_open_play: ['push', 'open_play'],
   reminder_open_play_board: ['push', 'open_play']
 };

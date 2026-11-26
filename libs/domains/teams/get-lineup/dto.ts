@@ -56,6 +56,8 @@ export interface GetLineupOutput {
   teamName: string;
   championship: Championship;
   championshipLabel: string;
+  /** Le capitaine apporte les volants de la journée (vétérans) : l'écran le lui rappelle. */
+  shuttlesReminder: boolean;
   divisionLabel: string;
   dayNumber: number;
   /** « Barrages aller », ou `null` pour une journée régulière. */
