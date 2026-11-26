@@ -1,4 +1,5 @@
 <script lang="ts">
+  import DiscoveryBubble from './DiscoveryBubble.svelte';
   import { User, IdCard, Wallet, FileText, Bell, Receipt, LogOut, Check, ChevronDown, ChevronRight, ScanLine } from '@lucide/svelte';
   import { Sheet } from '@nba/ui';
 
@@ -260,25 +261,13 @@
 
   {#if hint && !open}
     <!-- Bulle de première visite : elle nomme ce que le bouton cache, une fois. -->
-    <div
-      role="status"
-      data-testid="account-hint"
-      class="absolute right-0 z-50 mt-2 w-64 rounded-md border border-border bg-popover p-3 text-xs text-popover-foreground shadow-lg"
-    >
-      <span class="absolute -top-1.5 right-4 h-3 w-3 rotate-45 border-l border-t border-border bg-popover" aria-hidden="true"></span>
-      <p class="font-semibold text-foreground">Votre espace personnel est ici</p>
-      <p class="mt-1 text-muted-foreground">
-        Votre fiche, votre cotisation, votre attestation CSE et vos notifications se
-        trouvent derrière ce bouton.
-      </p>
-      <button
-        type="button"
-        onclick={dismissHint}
-        class="mt-2 inline-flex min-h-[36px] items-center rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
-      >
-        Compris
-      </button>
-    </div>
+    <DiscoveryBubble
+      testid="account-hint"
+      class="absolute right-0 mt-2 w-64"
+      title="Votre espace personnel est ici"
+      text="Votre fiche, votre cotisation, votre attestation CSE et vos notifications se trouvent derrière ce bouton."
+      primary={{ label: 'Compris', onclick: dismissHint }}
+    />
   {/if}
 
   {#if open && mobile}

@@ -1,15 +1,19 @@
 <script lang="ts">
+  import DiscoveryBubble from './DiscoveryBubble.svelte';
+
   /**
-   * Présente l'onglet « Interclubs » du calendrier, une fois par appareil.
-   *
-   * Un encart posé sous le sélecteur de vue, pas une bulle flottante : il ne masque rien et ne
-   * se dispute pas l'écran avec celle de l'abonnement, qui n'apparaît pas sur le calendrier.
-   * Ouvrir l'onglet, c'est l'avoir découvert : sur la vue « Interclubs », il se range seul.
+   * Présente l'onglet « Interclubs » du calendrier, une fois par appareil : la même bulle que
+   * celle du compte, posée sous le sélecteur de vue, pointe sur l'onglet. Ouvrir l'onglet, c'est
+   * l'avoir découvert : sur la vue « Interclubs », elle ne paraît pas.
    */
   let { active = false }: { active?: boolean } = $props();
 
   const KEY = 'nba:interclubs-tab-hint:v1';
+  const TAB = 'a[href="/agenda?vue=interclubs"]';
   let visible = $state(false);
+  let anchor = $state<HTMLDivElement | null>(null);
+  /** Abscisse de la pointe, mesurée sur l'onglet : le sélecteur défile et sa largeur varie. */
+  let arrowLeft = $state('50%');
 
   function remember() {
     try {
@@ -36,32 +40,39 @@
   }
 
   /*
-    L'onglet visé s'éclaire tant que l'encart est là. Le sélecteur de vue est rendu côté
-    serveur (SegmentedNav.astro) : on lui pose la classe d'ici, et on la retire en partant.
+    L'onglet visé s'éclaire tant que la bulle est là, et la pointe le suit. Le sélecteur est
+    rendu côté serveur (SegmentedNav.astro) : on lui pose la classe d'ici, et on la retire en partant.
   */
   const HIGHLIGHT = ['ring-2', 'ring-primary', 'text-primary'];
   $effect(() => {
-    const tab = document.querySelector<HTMLAnchorElement>('a[href="/agenda?vue=interclubs"]');
-    if (!tab || !visible) return;
+    const tab = document.querySelector<HTMLAnchorElement>(TAB);
+    if (!tab || !visible || !anchor) return;
     tab.classList.add(...HIGHLIGHT);
-    return () => tab.classList.remove(...HIGHLIGHT);
+    const place = () => {
+      const t = tab.getBoundingClientRect();
+      const a = anchor!.getBoundingClientRect();
+      arrowLeft = `${Math.round(t.left + t.width / 2 - a.left - 6)}px`;
+    };
+    place();
+    window.addEventListener('resize', place);
+    return () => {
+      tab.classList.remove(...HIGHLIGHT);
+      window.removeEventListener('resize', place);
+    };
   });
 </script>
 
-{#if visible}
-  <div role="status" data-testid="interclubs-tab-hint" class="mb-4 rounded-xl border border-primary/30 bg-primary/10 p-3 text-sm">
-    <p class="font-semibold text-foreground">Nouveau : l'onglet Interclubs</p>
-    <p class="mt-1 text-muted-foreground">
-      Quand et où jouent toutes les équipes du club, pour venir les encourager. Filtrez par équipe ; les vôtres sont
-      marquées « Mon équipe ».
-    </p>
-    <div class="mt-2 flex gap-2">
-      <a href="/agenda?vue=interclubs" onclick={remember} class="inline-flex min-h-[36px] items-center rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90">
-        Voir les rencontres
-      </a>
-      <button type="button" onclick={dismiss} class="inline-flex min-h-[36px] items-center rounded-md border border-border px-3 py-1.5 text-xs font-semibold">
-        Plus tard
-      </button>
-    </div>
-  </div>
-{/if}
+<!-- Ancre sans hauteur sous le sélecteur : la bulle passe par-dessus la liste, sans la pousser. -->
+<div class="relative" bind:this={anchor}>
+  {#if visible}
+    <DiscoveryBubble
+      testid="interclubs-tab-hint"
+      class="absolute inset-x-0 -top-2 sm:right-auto sm:w-80"
+      arrowStyle={`left: ${arrowLeft}`}
+      title="Nouveau : l'onglet Interclubs"
+      text="Quand et où jouent toutes les équipes du club, pour venir les encourager. Filtrez par équipe ; les vôtres sont marquées « Mon équipe »."
+      primary={{ label: 'Voir les rencontres', href: '/agenda?vue=interclubs', onclick: remember }}
+      secondary={{ label: 'Plus tard', onclick: dismiss }}
+    />
+  {/if}
+</div>
