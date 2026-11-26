@@ -108,7 +108,8 @@ describe('prévenir l’équipe d’une composition', () => {
     const toBenched = sent.find((m) => m.title.includes("pas aligné"))!;
     // La semaine suffit à annoncer : aucune date n'a encore été fixée.
     expect(toSelected.body).toContain('la semaine du 2 novembre');
-    expect(toBenched.body).toContain("Vous restez dans l'effectif");
+    expect(toBenched.body).toContain('ne vous retient pas.');
+    expect(toBenched.body).not.toContain('effectif');
   });
 
   it('reprévient quand une composition déjà validée est modifiée', async () => {

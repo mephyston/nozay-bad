@@ -123,7 +123,7 @@ export async function notifyLineup(
     benchedEmails,
     {
       title: `${lineup.teamName} — ${day} : vous n'êtes pas aligné`,
-      body: `La composition de ${lineup.teamName} pour ${day} (${when}) ne vous retient pas. Vous restez dans l'effectif de l'équipe. ${state}`,
+      body: `La composition de ${lineup.teamName} pour ${day} (${when}) ne vous retient pas. ${state}`,
       url,
       source: 'teams:lineup',
       category: 'interclubs'
