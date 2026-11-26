@@ -4,6 +4,7 @@ import { loadClubContext } from '@nba/club/context';
 import { buvetteClosedResponse } from '@nba/buvette-ui';
 import { applySecurityHeaders } from './lib/security';
 import { isSameOrigin, IS_DEV, json, resolveEnv } from './lib/http';
+import { notSignedInPage, reconnectPage, RECONNECT_PATH } from './lib/access-reconnect';
 
 const PUBLIC_PATHS = new Set(['/retour', '/api/retour']);
 
@@ -42,9 +43,14 @@ export const onRequest = defineMiddleware(async (context, next) => {
   }
   // Le retour de SumUp n'a pas de session : voir pages/retour.astro.
   if (PUBLIC_PATHS.has(context.url.pathname)) return applySecurityHeaders(await next());
+  // Hors Access (application Bypass) : sans jeton, elle efface les cookies Access périmés.
+  if (context.url.pathname === RECONNECT_PATH) return applySecurityHeaders(reconnectPage(context.request));
 
   const email = await resolveEmail(context.request, env);
-  if (!email) return applySecurityHeaders(json({ success: false, error: 'Accès non autorisé.' }, 401));
+  if (!email) {
+    const isPage = context.request.method === 'GET' && !context.url.pathname.startsWith('/api/');
+    return applySecurityHeaders(isPage ? notSignedInPage() : json({ success: false, error: 'Accès non autorisé : touchez « Se reconnecter ».' }, 401));
+  }
   context.locals.email = email;
 
   // Éteinte par le club, la caisse le dit, au lieu d'un « ressource introuvable » sur chaque

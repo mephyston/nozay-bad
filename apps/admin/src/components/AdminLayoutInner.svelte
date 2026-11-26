@@ -26,6 +26,7 @@
     ShieldCheck,
     User,
     LogOut,
+    RefreshCw,
     HelpCircle,
     Bell,
     Megaphone,
@@ -826,6 +827,18 @@
                   <DropdownMenu.Separator />
                 {/if}
 
+                <!--
+                  Sortie de secours de Cloudflare Access (lib/access-reauth.ts) : une connexion
+                  restée d'avant un changement d'adresse bloque encore certains appareils.
+                -->
+                <DropdownMenu.Item
+                  class="flex w-full items-center px-2 py-1.5 text-xs font-medium rounded-md hover:bg-muted cursor-pointer focus:bg-muted focus:outline-none"
+                  onclick={() => {
+                    window.location.href = "/reconnexion";
+                  }}
+                >
+                  <RefreshCw class="mr-2 h-3.5 w-3.5" /> Se reconnecter
+                </DropdownMenu.Item>
                 <DropdownMenu.Item
                   class="flex w-full items-center px-2 py-1.5 text-xs font-medium rounded-md text-destructive hover:bg-destructive/10 hover:text-destructive cursor-pointer focus:bg-destructive/10 focus:text-destructive focus:outline-none"
                   onclick={() => {

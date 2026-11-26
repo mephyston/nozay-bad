@@ -609,6 +609,11 @@
         <span class="text-muted-foreground -mt-0.5 block text-[10px] font-semibold tracking-wider uppercase">Caisse</span>
       </div>
     </div>
+    <!--
+      Sortie de secours de Cloudflare Access : une connexion restée d'avant un changement
+      d'adresse bloque certains téléphones. Navigation dure, la page efface les cookies.
+    -->
+    <a href="/reconnexion" class="text-muted-foreground -mr-2 flex min-h-11 items-center px-2 text-xs font-medium">Se reconnecter</a>
   </div>
 </header>
 

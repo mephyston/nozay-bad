@@ -159,6 +159,8 @@
       {:else}
         <p class="text-sm text-destructive">Impossible de charger cet écran.</p>
         <Button variant="outline" onclick={charger}>Réessayer</Button>
+        <!-- Navigation dure : la page de reconnexion efface les cookies Cloudflare Access. -->
+        <a href="/reconnexion" class="text-sm text-muted-foreground underline underline-offset-4">Toujours bloqué ? Se reconnecter</a>
       {/if}
     </Card.Content>
   </Card.Root>
